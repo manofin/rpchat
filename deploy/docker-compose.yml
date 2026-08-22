@@ -1,0 +1,45 @@
+services:
+  rpchat:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: rpchat:latest
+    container_name: rpchat
+    restart: unless-stopped
+    # 호스트 루프백에만 노출한다. Tailscale Serve 가 이 포트를 사설망으로 프록시한다.
+    # 절대 0.0.0.0 이나 공인 IP 에 바인딩하지 말 것.
+    ports:
+      - "127.0.0.1:8787:8787"
+    volumes:
+      - rpchat-data:/data
+    environment:
+      PORT: "8787"
+      HOST: "0.0.0.0"            # 컨테이너 내부 바인딩. 외부 노출은 위 ports 매핑으로만.
+      DATA_DIR: "/data"
+      WEB_DIST: "../web/dist"
+
+      # 로컬 모델 서버 (Mac Studio). Tailscale 내부 주소 또는 호스트 경유 주소.
+      # 예: http://100.x.y.z:8080/v1  또는  http://host.docker.internal:8080/v1
+      MODEL_BASE_URL: "${MODEL_BASE_URL:-http://host.docker.internal:8080/v1}"
+      MODEL_API_KEY: "${MODEL_API_KEY:-}"
+      MODEL_NAME: "${MODEL_NAME:-}"          # 비우면 /v1/models 첫 항목 사용
+      CONTEXT_TOKENS: "${CONTEXT_TOKENS:-32768}"
+      MODEL_TIMEOUT_MS: "${MODEL_TIMEOUT_MS:-180000}"
+
+      # 인증: Tailscale Serve 헤더 신원 확인 (권장)
+      AUTH_MODE: "${AUTH_MODE:-tailscale}"
+      ALLOWED_LOGIN: "${ALLOWED_LOGIN:-}"     # 본인 Tailscale 로그인(이메일). tailscale 모드 필수.
+      # 토큰 모드로 쓸 경우:
+      APP_TOKEN: "${APP_TOKEN:-}"
+      SESSION_SECRET: "${SESSION_SECRET:-}"
+    # host.docker.internal 을 리눅스에서 쓰기 위한 매핑 (Mac 모델서버가 호스트 경유일 때)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  rpchat-data:

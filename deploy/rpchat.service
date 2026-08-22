@@ -1,0 +1,25 @@
+# /etc/systemd/system/rpchat.service
+# Docker Compose 스택을 부팅 시 자동 기동/유지한다.
+# 설치:
+#   sudo cp deploy/rpchat.service /etc/systemd/system/rpchat.service
+#   (WorkingDirectory 를 실제 배포 경로로 수정)
+#   sudo systemctl daemon-reload && sudo systemctl enable --now rpchat
+
+[Unit]
+Description=RP Chat (local LLM character chat)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/rpchat/deploy
+# .env 파일에 MODEL_BASE_URL, ALLOWED_LOGIN 등을 넣어두면 compose 가 읽는다.
+ExecStartPre=/usr/bin/docker compose pull --ignore-buildable
+ExecStart=/usr/bin/docker compose up -d --build
+ExecStop=/usr/bin/docker compose down
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

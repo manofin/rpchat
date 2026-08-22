@@ -1,0 +1,33 @@
+# /etc/systemd/system/rpchat-node.service
+# Docker 없이 Node 로 직접 실행하는 대안. (better-sqlite3 네이티브 빌드가 호스트에서 성공해야 함)
+# 준비:
+#   cd /opt/rpchat && npm install && npm run build
+#   sudo cp deploy/rpchat-node.service /etc/systemd/system/
+#   sudo cp deploy/rpchat.env.example /opt/rpchat/.env  (편집)
+#   sudo systemctl daemon-reload && sudo systemctl enable --now rpchat-node
+
+[Unit]
+Description=RP Chat (node, no docker)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rpchat
+Group=rpchat
+WorkingDirectory=/opt/rpchat
+EnvironmentFile=/opt/rpchat/.env
+# DATA_DIR 은 .env 에서 절대경로로 지정 권장 (예: /var/lib/rpchat)
+ExecStart=/usr/bin/node apps/server/dist/index.js
+Restart=on-failure
+RestartSec=3
+# 안전 강화
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/rpchat
+StateDirectory=rpchat
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,15 @@
+node_modules/
+dist/
+data/
+.env
+.env.*
+!.env.example
+*.log
+bench/out/
+*.db
+*.db-wal
+*.db-shm
+backups/
+*.tar.gz
+*.patch
+content/
