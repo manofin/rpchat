@@ -15,6 +15,7 @@ import { conversationRoutes } from './routes/conversations.js';
 import { chatRoutes } from './routes/chat.js';
 import { memoryRoutes } from './routes/memory.js';
 import { settingsRoutes } from './routes/settings.js';
+import { searchRoutes } from './routes/search.js';
 
 async function main() {
   const problems = validateConfig();
@@ -74,6 +75,7 @@ async function main() {
   await app.register(chatRoutes(ctx));
   await app.register(memoryRoutes(ctx));
   await app.register(settingsRoutes(ctx));
+  await app.register(searchRoutes(ctx));
 
   // 정적 SPA (빌드 결과가 있을 때만). /api 외 경로는 index.html 로 폴백.
   const hasWeb = fs.existsSync(config.webDist) && fs.existsSync(`${config.webDist}/index.html`);
