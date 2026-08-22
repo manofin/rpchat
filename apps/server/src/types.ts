@@ -112,7 +112,7 @@ export interface MemoryRow {
   character_id: string | null;
   content: string;
   source: 'user' | 'model';
-  status: 'candidate' | 'pinned' | 'rejected';
+  status: 'candidate' | 'pinned' | 'rejected' | 'superseded';
   importance: number;
   scope: 'conversation' | 'character';
   evidence_message_ids_json: string;

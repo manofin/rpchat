@@ -27,7 +27,7 @@ const memoryPatch = z.object({
   content: z.string().min(1).max(1000).optional(),
   scope: z.enum(['conversation', 'character']).optional(),
   importance: z.number().int().min(1).max(5).optional(),
-  status: z.enum(['candidate', 'pinned', 'rejected']).optional(),
+  status: z.enum(['candidate', 'pinned', 'rejected', 'superseded']).optional(),
 });
 const summaryPatch = z.object({ content: z.string().min(1).max(6000).optional(), status: z.enum(['draft', 'approved']).optional() });
 
@@ -39,7 +39,7 @@ export function memoryRoutes(ctx: Ctx) {
       if (!conv) return reply.code(404).send({ error: 'not found' });
       const rows = many<MemoryRow>(
         db,
-        `SELECT * FROM memories WHERE status != 'rejected' AND (conversation_id = ? OR (scope = 'character' AND character_id = ?))
+        `SELECT * FROM memories WHERE status IN ('pinned', 'candidate') AND (conversation_id = ? OR (scope = 'character' AND character_id = ?))
          ORDER BY status DESC, importance DESC, created_at`,
         conv.id, conv.character_id,
       ).map(memoryOut);
