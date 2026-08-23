@@ -340,8 +340,8 @@ function MessageView(props: {
         {m.status === 'interrupted' && <div className="small muted" style={{ marginTop: 4 }}>(중단됨)</div>}
       </div>
 
-      {/* 스토리 선택지 */}
-      {!props.streaming && m.meta.choices && m.meta.choices.length > 0 && (
+      {/* 스토리 선택지: 최신 assistant 턴에서만 노출 — 다음 턴이 시작되면 이전 선택지는 사라진다 */}
+      {!props.streaming && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
         <div className="chips">
           {m.meta.choices.map((c, i) => <button key={i} className="chip" onClick={() => props.onChoice(c)}>{c}</button>)}
         </div>
