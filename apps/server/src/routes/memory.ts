@@ -5,7 +5,7 @@ import { config } from '../config.js';
 import { many, nowIso, one, parseJson, run, uid } from '../db/index.js';
 import { getPath } from '../db/tree.js';
 import { isOocMessage, loadProfile, resolvePersona } from '../prompt/builder.js';
-import { renderSummaryPrompt, stateToBullets } from '../prompt/templates.js';
+import { renderSummaryPrompt, renderEpisodePrompt, stateToBullets } from '../prompt/templates.js';
 import { estimateTokens, getCalibration, truncateToTokens } from '../prompt/tokens.js';
 import { classify } from '../memory/conflict.js';
 import type { CharacterRow, MemoryRow, SummaryRow } from '../types.js';
@@ -109,8 +109,12 @@ export function memoryRoutes(ctx: Ctx) {
     });
 
     app.delete<{ Params: { id: string } }>('/api/summaries/:id', async (req, reply) => {
-      const r = run(db, 'DELETE FROM summaries WHERE id = ?', req.params.id);
-      if (r.changes === 0) return reply.code(404).send({ error: 'not found' });
+      const s = one<SummaryRow>(db, 'SELECT * FROM summaries WHERE id = ?', req.params.id);
+      if (!s) return reply.code(404).send({ error: 'not found' });
+      db.transaction(() => {
+        if (s.tier === 'episode') run(db, 'UPDATE summaries SET rolled_up_into = NULL WHERE rolled_up_into = ?', s.id); // 접힌 장면 해제
+        run(db, 'DELETE FROM summaries WHERE id = ?', s.id);
+      })();
       return { ok: true };
     });
 
@@ -224,6 +228,49 @@ export function memoryRoutes(ctx: Ctx) {
         }),
         inputMessages: lines.length,
       };
+    });
+
+    app.post<{ Params: { id: string }; Querystring: { force?: string } }>('/api/conversations/:id/rollup-episode', async (req, reply) => {
+      const conv = loadConversation(ctx, req.params.id);
+      if (!conv) return reply.code(404).send({ error: 'not found' });
+      if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '생성 중에는 묶을 수 없음' });
+      const THRESHOLD = 5;
+      const force = req.query.force === '1';
+      const scenes = many<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'scene' AND status = 'approved' AND rolled_up_into IS NULL ORDER BY created_at ASC`, conv.id);
+      const targets = scenes.slice(0, THRESHOLD);
+      if (targets.length === 0) return reply.code(400).send({ error: '묶을 장면 없음' });
+      if (targets.length < THRESHOLD && !force) return reply.code(400).send({ error: `묶을 장면이 부족 (${targets.length}/${THRESHOLD})` });
+
+      const profile = loadProfile(db, 'summary');
+      const prompt = renderEpisodePrompt(targets.map((s) => s.content));
+      const messages = profile.system_mode === 'merge'
+        ? [{ role: 'user' as const, content: prompt }]
+        : [{ role: 'system' as const, content: '당신은 역할극 기록을 정확하게 요약하는 편집자다. 요청된 JSON 만 출력한다.' }, { role: 'user' as const, content: prompt }];
+      const controller = new AbortController();
+      const genId = uid();
+      ctx.queue.register({ id: genId, conversationId: conv.id, messageId: '', startedAt: nowIso(), controller });
+      let text = '';
+      try {
+        const r = await ctx.queue.run(() => ctx.model.complete({ model: profile.model || ctx.resolvedModel(), messages, temperature: profile.temperature, top_p: profile.top_p, max_tokens: profile.max_tokens, signal: controller.signal }), controller.signal);
+        text = r.text;
+      } catch (err) {
+        return reply.code(502).send({ error: `에피소드 생성 실패: ${(err as Error).message}` });
+      } finally {
+        ctx.queue.unregister(genId);
+      }
+      const parsed = lenientJson(text) as { episode?: unknown } | null;
+      const episodeText = parsed && typeof parsed.episode === 'string' ? parsed.episode.trim() : '';
+      if (!episodeText) return reply.code(502).send({ error: '모델 출력을 JSON 으로 해석하지 못함', raw: text.slice(0, 2000) });
+
+      const epId = uid();
+      const t = nowIso();
+      const coversFrom = targets[0].covers_from_message_id ?? targets[0].covers_until_message_id;
+      const coversUntil = targets[targets.length - 1].covers_until_message_id;
+      db.transaction(() => {
+        run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', epId, conv.id, episodeText, coversUntil, coversFrom, 'draft', t, 'episode');
+        run(db, `UPDATE summaries SET rolled_up_into = ? WHERE id IN (${targets.map(() => '?').join(',')})`, epId, ...targets.map((s) => s.id));
+      })();
+      return { episode: one<SummaryRow>(db, 'SELECT * FROM summaries WHERE id = ?', epId), rolledScenes: targets.map((s) => s.id) };
     });
   };
 }

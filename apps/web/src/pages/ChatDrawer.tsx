@@ -314,12 +314,18 @@ function SummaryTab({ conversationId, open, onApplied, onClose }: { conversation
     await load();
     onApplied();
   }
+  async function rollup() {
+    try { await post(`/api/conversations/${conversationId}/rollup-episode`, {}); await load(); onApplied(); ui.toast('에피소드 초안 생성 — 승인하면 장면이 접힙니다'); }
+    catch (e) { ui.toast((e as Error).message, 'err'); }
+  }
 
   const stateRows = summaries.filter((s) => s.tier === 'state');
   const sceneRows = summaries.filter((s) => s.tier === 'scene');
+  const episodeRows = summaries.filter((s) => s.tier === 'episode');
   const wholeRows = summaries.filter((s) => s.tier !== 'state' && s.tier !== 'scene' && s.tier !== 'episode');
+  const foldableScenes = summaries.filter((s) => s.tier === 'scene' && s.status === 'approved' && !s.rolled_up_into).length;
 
-  function renderCard(s: Summary, kind: '상태' | '전체' | '장면') {
+  function renderCard(s: Summary, kind: '상태' | '전체' | '장면' | '에피소드') {
     return (
       <div className="card" key={s.id} style={{ marginBottom: 10 }}>
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 6 }}>
@@ -352,9 +358,11 @@ function SummaryTab({ conversationId, open, onApplied, onClose }: { conversation
   return (
     <div>
       <button className="btn primary block" disabled={busy} onClick={generate}>{busy ? '요약 생성 중… (모델 호출)' : '지금까지 대화 요약하기'}</button>
+      {foldableScenes >= 5 && <button className="btn sm block" onClick={rollup}>에피소드로 묶기 ({foldableScenes})</button>}
       <div className="small muted" style={{ margin: '8px 0 14px' }}>요약과 자동 추출 기억은 <b>초안</b>으로 저장되며, 승인해야 프롬프트에 들어갑니다. 마지막 승인 이후의 새 메시지만 요약합니다.</div>
       {summaries.length === 0 && <div className="muted small">아직 요약이 없습니다.</div>}
       {stateRows.map((s) => renderCard(s, '상태'))}
+      {episodeRows.map((s) => renderCard(s, '에피소드'))}
       {sceneRows.map((s) => renderCard(s, '장면'))}
       {wholeRows.map((s) => renderCard(s, '전체'))}
     </div>

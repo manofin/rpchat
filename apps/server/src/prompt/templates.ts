@@ -121,6 +121,18 @@ export function renderState(bullets: string | null): string | null {
   return bullets && bullets.trim() ? `### 현재 상태\n${bullets.trim()}` : null;
 }
 
+export function renderEpisodePrompt(sceneContents: string[]): string {
+  return [
+    '다음은 시간순 장면 요약들이다. 이들을 하나의 에피소드로 압축한다. 아래 JSON 객체 하나만 출력한다. 설명·코드펜스 금지.',
+    '{"episode":"장면들을 아우르는 하나의 아크로 4~6문장. 시간순, 핵심 사건·변화 중심."}',
+    '',
+    sceneContents.map((c, i) => `${i + 1}. ${c}`).join('\n'),
+  ].join('\n');
+}
+export function renderEpisode(text: string | null): string | null {
+  return text && text.trim() ? `### 지난 에피소드\n${text.trim()}` : null;
+}
+
 /** 요약 + 후보 기억 추출 프롬프트 (JSON 만 출력하도록 요구) */
 export function renderSummaryPrompt(charName: string, userName: string, previousSummary: string | null, transcript: string): string {
   return [
