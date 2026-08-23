@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { del, get, patch, post } from '../lib/api';
+import { navigate } from '../lib/router';
 import type { BudgetReport, Memory, PromptPreview, Summary } from '../types';
 import { BottomSheet, useUi } from '../components/ui';
 
@@ -19,7 +20,7 @@ export function ChatDrawer({ open, conversationId, draft, onClose, onApplied, in
       </div>
       <div className="sheet-body">
         {tab === 'budget' && <BudgetTab conversationId={conversationId} draft={draft} open={open} />}
-        {tab === 'memory' && <MemoryTab conversationId={conversationId} open={open} onApplied={onApplied} />}
+        {tab === 'memory' && <MemoryTab conversationId={conversationId} open={open} onApplied={onApplied} onClose={onClose} />}
         {tab === 'summary' && <SummaryTab conversationId={conversationId} open={open} onApplied={onApplied} />}
       </div>
     </BottomSheet>
@@ -81,12 +82,20 @@ export function BudgetBars({ budget }: { budget: BudgetReport }) {
   );
 }
 
-function MemoryTab({ conversationId, open, onApplied }: { conversationId: string; open: boolean; onApplied: () => void }) {
+function MemoryTab({ conversationId, open, onApplied, onClose }: { conversationId: string; open: boolean; onApplied: () => void; onClose: () => void }) {
   const ui = useUi();
   const [pinned, setPinned] = useState<Memory[]>([]);
   const [candidates, setCandidates] = useState<Memory[]>([]);
   const [text, setText] = useState('');
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+
+  function jumpToEvidence(m: Memory) {
+    const eid = m.evidence_message_ids?.[0];
+    if (!eid) return;
+    // SearchPage 와 동일 패턴. 같은 대화에선 pathname 불변이라 popstate 만으로는 ChatPage 가 안 다시 그린다 — onClose 가 리렌더를 만든다.
+    navigate(`/chat/${conversationId}?jump=${eid}`);
+    onClose();
+  }
 
   async function load() {
     const r = await get<{ pinned: Memory[]; candidates: Memory[] }>(`/api/conversations/${conversationId}/memories`);
@@ -151,6 +160,9 @@ function MemoryTab({ conversationId, open, onApplied }: { conversationId: string
                   </div>
                   <button className="btn sm" onClick={() => setStatus(m.id, 'pinned')}>채택</button>
                   <button className="btn sm ghost" onClick={() => setStatus(m.id, 'rejected')}>버림</button>
+                  {m.evidence_message_ids?.[0] && (
+                    <button className="btn sm ghost" onClick={() => jumpToEvidence(m)}>원본</button>
+                  )}
                 </div>
                 {dup && (
                   <div className="banner warn" style={{ marginTop: 6 }}>
@@ -179,6 +191,9 @@ function MemoryTab({ conversationId, open, onApplied }: { conversationId: string
               <div className="imp">중요도 {m.importance}{m.scope === 'character' ? ' · 캐릭터 공용' : ''}</div>
             </div>
             <button className="btn sm ghost" onClick={() => remove(m.id)} aria-label="삭제">🗑</button>
+            {m.evidence_message_ids?.[0] && (
+              <button className="btn sm ghost" onClick={() => jumpToEvidence(m)}>원본</button>
+            )}
           </div>
         ))
       )}
