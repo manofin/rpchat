@@ -85,16 +85,26 @@ export interface ConversationDetail {
   activeGeneration: { id: string; messageId: string; startedAt: string } | null;
 }
 
+/** 규칙 기반 기억 판정 (P1-2b). conflict 는 P1-2b-fix 에서 억제되어 실질적으로 duplicate 만 도착한다. */
+export interface MemoryVerdict {
+  kind: 'new' | 'duplicate' | 'conflict';
+  withMemoryId: string | null;
+  reason: string;
+}
+
 export interface Memory {
   id: string;
   conversation_id: string | null;
   character_id: string | null;
   content: string;
   source: 'user' | 'model';
-  status: 'candidate' | 'pinned' | 'rejected';
+  status: 'candidate' | 'pinned' | 'rejected' | 'superseded';
   importance: number;
   scope: 'conversation' | 'character';
   created_at: string;
+  evidence_message_ids?: string[];
+  /** 서버가 후보 조회 시 부여하는 중복/충돌 플래그 (new 는 null 로 옴) */
+  conflict?: MemoryVerdict | null;
 }
 
 export interface Summary {

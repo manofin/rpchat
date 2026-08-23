@@ -86,6 +86,7 @@ function MemoryTab({ conversationId, open, onApplied }: { conversationId: string
   const [pinned, setPinned] = useState<Memory[]>([]);
   const [candidates, setCandidates] = useState<Memory[]>([]);
   const [text, setText] = useState('');
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   async function load() {
     const r = await get<{ pinned: Memory[]; candidates: Memory[] }>(`/api/conversations/${conversationId}/memories`);
@@ -99,6 +100,21 @@ function MemoryTab({ conversationId, open, onApplied }: { conversationId: string
     await load();
     onApplied();
   }
+  // 중복 병합: 기존(canonical) 기억이 후보면 채택(pin)하고, 중복 후보는 정리(reject) → 하나로 통합.
+  // 판정은 플래그일 뿐이므로 사용자가 [병합]을 눌러야 실행된다(§8 자동변경 금지).
+  async function merge(cand: Memory) {
+    const canonicalId = cand.conflict?.withMemoryId ?? null;
+    const canonical = canonicalId ? [...pinned, ...candidates].find((m) => m.id === canonicalId) : null;
+    if (canonical && canonical.status === 'candidate') await patch(`/api/memories/${canonicalId}`, { status: 'pinned' });
+    await patch(`/api/memories/${cand.id}`, { status: 'rejected' });
+    await load();
+    onApplied();
+    ui.toast(canonical ? '중복 병합 — 기존 기억을 채택하고 후보를 정리했습니다' : '중복 후보를 정리했습니다');
+  }
+  function dismiss(id: string) {
+    setDismissed((s) => new Set(s).add(id));
+  }
+  const byId = new Map<string, Memory>([...pinned, ...candidates].map((m) => [m.id, m]));
   async function remove(id: string) {
     await del(`/api/memories/${id}`);
     await load();
@@ -123,16 +139,32 @@ function MemoryTab({ conversationId, open, onApplied }: { conversationId: string
       {candidates.length > 0 && (
         <>
           <div className="section-title" style={{ marginTop: 4 }}>승인 대기 ({candidates.length})</div>
-          {candidates.map((m) => (
-            <div className="mem-item" key={m.id}>
-              <div className="body">
-                <div>{m.content}</div>
-                <div className="imp">중요도 {m.importance} · {m.source === 'model' ? '자동 추출' : '직접'}</div>
+          {candidates.map((m) => {
+            const dup = m.conflict?.kind === 'duplicate' && !dismissed.has(m.id);
+            const matched = dup && m.conflict?.withMemoryId ? byId.get(m.conflict.withMemoryId) : null;
+            return (
+              <div key={m.id}>
+                <div className="mem-item">
+                  <div className="body">
+                    <div>{m.content}</div>
+                    <div className="imp">중요도 {m.importance} · {m.source === 'model' ? '자동 추출' : '직접'}{dup ? ' · 중복 가능성' : ''}</div>
+                  </div>
+                  <button className="btn sm" onClick={() => setStatus(m.id, 'pinned')}>채택</button>
+                  <button className="btn sm ghost" onClick={() => setStatus(m.id, 'rejected')}>버림</button>
+                </div>
+                {dup && (
+                  <div className="banner warn" style={{ marginTop: 6 }}>
+                    <div className="small">기존 기억과 중복 가능성 · {m.conflict!.reason}</div>
+                    {matched && <div className="small" style={{ marginTop: 4, opacity: 0.85 }}>기존: 「{matched.content}」</div>}
+                    <div className="row" style={{ gap: 6, marginTop: 8, justifyContent: 'flex-end' }}>
+                      <button className="btn sm ghost" onClick={() => dismiss(m.id)}>무시</button>
+                      <button className="btn sm primary" onClick={() => merge(m)}>병합</button>
+                    </div>
+                  </div>
+                )}
               </div>
-              <button className="btn sm" onClick={() => setStatus(m.id, 'pinned')}>채택</button>
-              <button className="btn sm ghost" onClick={() => setStatus(m.id, 'rejected')}>버림</button>
-            </div>
-          ))}
+            );
+          })}
         </>
       )}
 
