@@ -212,3 +212,10 @@ P1-3c 설계검수 완료, REVIEW-P1-3c.md 참조
 - 모델 다운로드: ~/.cache/rpchat-embed/Xenova/{paraphrase-multilingual-MiniLM-L12-v2, multilingual-e5-small} 각 130M. e5-small ONNX 가용성 **확인** → 벤치 무효/교체 경로 불발동.
 - 게이트 raw: `H1_DIM 384 / H1_COSINE_SANITY 0.9425 / H2_DIM 384 / H2_COSINE_SANITY 0.8777 / SMOKE_OK`.
 - 시행착오 기록: tsx -e top-level await 불가(CJS) → smoke 파일 분리; env.allowRemoteModels=false는 사전다운로드 전엔 실패 → 기본값 유지(allowRemoteCode=false만 고정).
+
+## [2026-08-23 P3 임베딩 벤치 Task 3 by hermes] run-lore 실행 — 게이트 FAIL (판정: 벤치 무효 후 재설계 대기)
+- baseline(키워드-only, live loreEntryActive): must_fire 10/10, **false_trigger 10/10** — live 엔트리 전부 selective=0이라 2차키워드 미적용 상태에서는 오발동 억제 장치가 꺼져 있음. 계획서가 가정한 "selective 켠 baseline 0/3"과 다른 설정.
+- 임베딩 게이트식(cos≥θ AND keyword) 설계상 결함 확인: keyword 항이 baseline과 동일한 오발동을 그대로 통과시킴 → H1·H2 모두 false_trigger 10/10. 즉 이 조합은 "임베딩이 오발동을 줄인다"를 검증할 수 없음(게이트가 키워드 판정에 묶여있음).
+- 참고 raw: H2 must_not_fire cos 0.795~0.838(e5 점수 스케일 특성), θ=0.75에서도 전부 통과. H1은 cos 낮아 θ만으로도 차단 가능하나 θ=0.70에서 L17(0.441) 등 이미 미달.
+- ambiguous top-1: H1 3/5 (L21·L22·L23 오답), H2 4/5 (L23 '골짜기'를 추격자로 오매칭).
+- **처리**: 사전등록 §6 분기 중 "결과 해석 금지" 사유에 해당하는 설계 무효 — 픽스처/게이트식의 구조적 문제로 성공기준 자체가 검증 불가. 결과 후 컷/픽스처 조정 금지 원칙(§5)에 따라 임의 재설계하지 않고 사용자 결정 대기. 옵션: (a) baseline을 selective+2차키워드 켠 상태로 고정하고 임베딩 게이트식도 동일 selective 규칙 적용해 재실행 (b) 게이트식을 cos-only 또는 cos OR keyword 로 변경 — 어느 쪽이든 사전등록 append 정정 후.
