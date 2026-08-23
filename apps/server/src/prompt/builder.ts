@@ -60,6 +60,9 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   const mode = conv.mode === 'story' ? 'story' : 'chat';
   const last = history[history.length - 1];
   const isOoc = !!last && isOocMessage(last);
+  // 브랜치 스코프 가드: 스와이프/재생성으로 갈라진 다른 가지에서 만든 요약이 현재 경로로 새지 않도록,
+  // covers_until_message_id 가 현재 활성 경로(history)에 실제로 있는 것만 후보로 인정한다.
+  const pathIds = new Set(history.map((m) => m.id));
 
   const available = Math.max(512, contextTokens - profile.max_tokens - REPLY_MARGIN);
   const budgets = {
@@ -157,15 +160,13 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
     memEst += t;
     memDiag.push({ content: m.content, status: 'included', importance: m.importance, tokens: t });
   }
-  const summaryRow = one<SummaryRow>(
-    db,
-    `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'whole' AND status = 'approved' ORDER BY created_at DESC LIMIT 1`,
-    conv.id,
+  const summaryRow = pickOnPath(
+    many<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'whole' AND status = 'approved' ORDER BY created_at DESC LIMIT 5`, conv.id),
+    pathIds,
   );
-  const stateRow = one<SummaryRow>(
-    db,
-    `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'state' AND status = 'approved' ORDER BY created_at DESC LIMIT 1`,
-    conv.id,
+  const stateRow = pickOnPath(
+    many<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'state' AND status = 'approved' ORDER BY created_at DESC LIMIT 5`, conv.id),
+    pathIds,
   );
   const sumBudget = Math.max(0, budgets.memory - memEst);
   const stateCap = Math.min(200, sumBudget);
@@ -177,14 +178,19 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   const recentGuardIds = new Set(history.slice(-SCENE_RECENT_GUARD).map((m) => m.id));
   // episode: 최신 approved 1건, 예약(상태 후 잔여의 35%), recentGuard 적용
   const afterState = Math.max(0, sumBudget - stateEst);
-  const episodeRow = one<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'episode' AND status = 'approved' ORDER BY created_at DESC LIMIT 1`, conv.id);
+  const episodeRow = pickOnPath(
+    many<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'episode' AND status = 'approved' ORDER BY created_at DESC LIMIT 5`, conv.id),
+    pathIds,
+  );
+  const MIN_EPISODE_TOKENS = 30; // 이 미만으로 잘리면 가비지(거의 " …")에 가까움 — 폴백 없이 미주입 처리
   let episodeText: string | null = null;
   let episodeEst = 0;
   if (episodeRow && !(episodeRow.covers_until_message_id && recentGuardIds.has(episodeRow.covers_until_message_id))) {
     const epCap = Math.floor(afterState * 0.35);
     const rendered = renderEpisode(episodeRow.content);
     const truncated = rendered ? truncateToTokens(rendered, epCap, cal) : null;
-    if (truncated) { episodeText = truncated; episodeEst = estimateTokens(truncated, cal); }
+    const truncatedEst = truncated ? estimateTokens(truncated, cal) : 0;
+    if (truncated && truncatedEst >= MIN_EPISODE_TOKENS) { episodeText = truncated; episodeEst = truncatedEst; }
   }
   // whole: 상태·episode 예약 후 잔여
   const summaryText = summaryRow ? truncateToTokens(summaryRow.content, Math.max(0, sumBudget - stateEst - episodeEst), cal) : null;
@@ -201,6 +207,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
     for (const sc of scenes) {
       if (sceneParts.length >= 2) break; // 최대 2개
       if (sc.covers_until_message_id && recentGuardIds.has(sc.covers_until_message_id)) continue; // 아직 recent에 있음 → 중복
+      if (sc.covers_until_message_id && !pathIds.has(sc.covers_until_message_id)) continue; // 다른 가지에서 만든 장면 — 현재 경로에 없음
       const rendered = `- ${sc.content}`;
       const tok = estimateTokens(rendered, cal);
       if (sceneEst + tok > sceneBudget) break;
@@ -296,6 +303,11 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   }
 
   return { messages, budget, profile, model: profile.model || defaultModel, stop, charName, userName, isOoc };
+}
+
+/** 후보(created_at DESC로 정렬된) 중 현재 활성 경로에 실제로 있는 첫 건. 다른 가지에서 만든 요약을 걸러낸다. */
+function pickOnPath(rows: SummaryRow[], pathIds: Set<string>): SummaryRow | null {
+  return rows.find((r) => !r.covers_until_message_id || pathIds.has(r.covers_until_message_id)) ?? null;
 }
 
 function mergeConsecutive(turns: ChatMessage[]): ChatMessage[] {
