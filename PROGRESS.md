@@ -206,3 +206,9 @@ P1-3c 설계검수 완료, REVIEW-P1-3c.md 참조
 - lore snapshot: live DB 1회 읽기(읽기전용), snapshot sha256=c35e103de58dd62330b516faf290e5da10969fd44d8a8ba28453561a68bce1af, _meta 기록. enabled=1 전부 selective=0/secondary=[] — 벤치 게이트식에서 keyword-only baseline으로 정합.
 - 생성: fixtures/lore-v1.json (25 = must_fire 10/must_not_fire 10/ambiguous 5), fixtures/memory-v1.json (20 = new5/dup5/complement3/conflict5/transient2), verify-fixtures.ts.
 - 게이트 raw: `FIXTURE_OK lore=25 memory=20`, `JSON_PARSE_OK`. 첫 검증에서 L22 ambiguous에 키워드 '소리' 포함 위반을 체커가 잡음 → L22 문장 수정 후 재통과 (체커 유효성 부수 확인).
+
+## [2026-08-23 P3 임베딩 벤치 Task 2 by hermes] engine.ts + 의존성
+- 설치: apps/server devDependencies에 @xenova/transformers@^2.17.2, onnxruntime-node@^1.27.0 (workspace root로 hoist). ORT_LOAD_OK raw 확인.
+- 모델 다운로드: ~/.cache/rpchat-embed/Xenova/{paraphrase-multilingual-MiniLM-L12-v2, multilingual-e5-small} 각 130M. e5-small ONNX 가용성 **확인** → 벤치 무효/교체 경로 불발동.
+- 게이트 raw: `H1_DIM 384 / H1_COSINE_SANITY 0.9425 / H2_DIM 384 / H2_COSINE_SANITY 0.8777 / SMOKE_OK`.
+- 시행착오 기록: tsx -e top-level await 불가(CJS) → smoke 파일 분리; env.allowRemoteModels=false는 사전다운로드 전엔 실패 → 기본값 유지(allowRemoteCode=false만 고정).
