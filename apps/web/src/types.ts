@@ -111,6 +111,7 @@ export interface Summary {
   id: string;
   conversation_id: string;
   content: string;
+  covers_until_message_id: string | null;
   status: 'draft' | 'approved';
   created_at: string;
 }

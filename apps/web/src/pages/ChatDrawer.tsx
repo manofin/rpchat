@@ -21,7 +21,7 @@ export function ChatDrawer({ open, conversationId, draft, onClose, onApplied, in
       <div className="sheet-body">
         {tab === 'budget' && <BudgetTab conversationId={conversationId} draft={draft} open={open} />}
         {tab === 'memory' && <MemoryTab conversationId={conversationId} open={open} onApplied={onApplied} onClose={onClose} />}
-        {tab === 'summary' && <SummaryTab conversationId={conversationId} open={open} onApplied={onApplied} />}
+        {tab === 'summary' && <SummaryTab conversationId={conversationId} open={open} onApplied={onApplied} onClose={onClose} />}
       </div>
     </BottomSheet>
   );
@@ -225,11 +225,18 @@ function MemoryTab({ conversationId, open, onApplied, onClose }: { conversationI
   );
 }
 
-function SummaryTab({ conversationId, open, onApplied }: { conversationId: string; open: boolean; onApplied: () => void }) {
+function SummaryTab({ conversationId, open, onApplied, onClose }: { conversationId: string; open: boolean; onApplied: () => void; onClose: () => void }) {
   const ui = useUi();
   const [summaries, setSummaries] = useState<Summary[]>([]);
   const [busy, setBusy] = useState(false);
   const [edit, setEdit] = useState<{ id: string; content: string } | null>(null);
+
+  function jumpToCover(s: Summary) {
+    const eid = s.covers_until_message_id;
+    if (!eid) return;
+    navigate(`/chat/${conversationId}?jump=${eid}`);
+    onClose();
+  }
 
   async function load() {
     setSummaries(await get<Summary[]>(`/api/conversations/${conversationId}/summaries`));
@@ -288,6 +295,7 @@ function SummaryTab({ conversationId, open, onApplied }: { conversationId: strin
             <>
               <div style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{s.content}</div>
               <div className="row end" style={{ gap: 6, marginTop: 8 }}>
+                {s.covers_until_message_id && <button className="btn sm ghost" onClick={() => jumpToCover(s)}>원본</button>}
                 <button className="btn sm ghost" onClick={() => remove(s.id)}>삭제</button>
                 <button className="btn sm" onClick={() => setEdit({ id: s.id, content: s.content })}>편집</button>
                 {s.status !== 'approved' && <button className="btn sm primary" onClick={() => approve(s.id)}>승인</button>}
