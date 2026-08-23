@@ -136,13 +136,13 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
     conv.id, conv.character_id,
   );
   const memItems: string[] = [];
+  const droppedMemItems: string[] = [];
   let memEst = 0;
   const memCap = Math.floor(budgets.memory * 0.5);
-  let droppedMem = 0;
   for (const m of pinned) {
     const t = estimateTokens(`- ${m.content}`, cal);
     if (memEst + t > memCap) {
-      droppedMem++;
+      droppedMemItems.push(m.content);
       continue;
     }
     memItems.push(m.content);
@@ -159,7 +159,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
     name: '고정 기억+요약',
     est_tokens: memEst + sumEst,
     budget: budgets.memory,
-    note: [droppedMem ? `기억 ${droppedMem}건 예산 초과로 제외` : '', summaryRow ? '' : '승인된 요약 없음'].filter(Boolean).join('; ') || undefined,
+    note: [droppedMemItems.length ? `기억 ${droppedMemItems.length}건 예산 초과로 제외` : '', summaryRow ? '' : '승인된 요약 없음'].filter(Boolean).join('; ') || undefined,
   });
   used += memEst + sumEst;
 
@@ -224,6 +224,12 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
     included_messages: recent.length,
     active_lore: activeLore.map((e) => e.title),
     dropped_lore: droppedLore,
+    included_memories: memItems,
+    dropped_memories: droppedMemItems,
+    summary_used: !!summaryText,
+    summary_preview: summaryText ? summaryText.slice(0, 160) : null,
+    recent_from_id: recent[0]?.id ?? null,
+    recent_to_id: recent[recent.length - 1]?.id ?? null,
   };
 
   return { messages, budget, profile, model: profile.model || defaultModel, stop, charName, userName, isOoc };

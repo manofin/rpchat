@@ -50,10 +50,21 @@ function BudgetTab({ conversationId, draft, open }: { conversationId: string; dr
       <BudgetBars budget={b} />
       <div className="small muted" style={{ marginTop: 8 }}>
         컨텍스트 {b.context_tokens}t 중 응답용 {b.reply_reserve}t 예약 · 보정계수 ×{b.calibration.toFixed(2)}
-        {b.dropped_messages > 0 && ` · 오래된 메시지 ${b.dropped_messages}건 제외`}
       </div>
-      {b.active_lore.length > 0 && <div className="small" style={{ marginTop: 6 }}>활성 로어: {b.active_lore.join(', ')}</div>}
-      {b.dropped_lore.length > 0 && <div className="small muted">예산초과 로어: {b.dropped_lore.join(', ')}</div>}
+      <DebugList label="포함된 기억" items={b.included_memories} empty="없음 (pinned 0 또는 예산 탈락)" />
+      <DebugList label="발동 로어" items={b.active_lore} empty="없음" />
+      <DebugList label="제외 로어" items={b.dropped_lore} empty="없음" />
+      <div className="small" style={{ marginTop: 8 }}>
+        <div className="muted">사용 요약</div>
+        {b.summary_used ? (b.summary_preview || '있음') : '없음 (승인된 요약 없음)'}
+      </div>
+      <div className="small" style={{ marginTop: 8 }}>
+        <div className="muted">최근 범위</div>
+        {b.included_messages}건 포함
+        {b.recent_from_id && b.recent_to_id ? ` · ${b.recent_from_id.slice(0, 8)}… → ${b.recent_to_id.slice(0, 8)}…` : ''}
+        {b.dropped_messages > 0 ? ` · 오래된 메시지 ${b.dropped_messages}건 제외` : ''}
+      </div>
+      <DebugList label="예산 초과 탈락 기억" items={b.dropped_memories} empty="없음" />
       {preview.isOoc && <div className="banner warn" style={{ marginTop: 8 }}>OOC 메시지로 감지됨 — 캐릭터 밖 응답 모드</div>}
       <button className="btn sm block" style={{ marginTop: 12 }} onClick={() => setShowRaw((v) => !v)}>{showRaw ? '원문 숨기기' : '조립된 프롬프트 보기'}</button>
       {showRaw && (
@@ -78,6 +89,19 @@ export function BudgetBars({ budget }: { budget: BudgetReport }) {
           {s.note && <span className="small muted">{s.note}</span>}
         </div>
       ))}
+    </div>
+  );
+}
+
+function DebugList({ label, items, empty }: { label: string; items: string[]; empty: string }) {
+  return (
+    <div className="small" style={{ marginTop: 8 }}>
+      <div className="muted">{label} · {items.length}</div>
+      {items.length === 0 ? empty : (
+        <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+          {items.map((t, i) => <li key={i}>{t.length > 120 ? `${t.slice(0, 120)}…` : t}</li>)}
+        </ul>
+      )}
     </div>
   );
 }

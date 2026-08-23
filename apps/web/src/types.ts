@@ -137,6 +137,12 @@ export interface BudgetReport {
   included_messages: number;
   active_lore: string[];
   dropped_lore: string[];
+  included_memories: string[];
+  dropped_memories: string[];
+  summary_used: boolean;
+  summary_preview: string | null;
+  recent_from_id: string | null;
+  recent_to_id: string | null;
 }
 
 export interface PromptPreview {
