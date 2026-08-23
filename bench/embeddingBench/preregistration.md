@@ -86,3 +86,15 @@ new 5 / duplicate 5 / complement 3 / conflict 5 (XOR-suppressed 유형 3 + XOR �
 ---
 ## Append log
 - (초판 2026-08-23, Task 0. 정정 시 아래에 append)
+
+---
+## Append 2026-08-23T23:5x — 성공기준 1번 정정 (must_fire_recall 누락)
+- 사유: Task 3 실행 후 확인된 사전등록 결함. §4-1(=계획 승인본 §0 성공기준1)이
+  "오발동 억제 + 애매 재현율"만 규정하고 **must_fire_recall이 baseline(10/10) 대비 회귀 없음**
+  조건을 누락. 이 누락으로 H1의 "전혀 발동하지 않음" 실패가 문구상 통과처럼 보일 뻔함.
+- **추가 조건**: 성공기준 1은 다음을 포함한다 — **AND must_fire_recall ≥ baseline 수준 (10/10 유지, 회귀 없음)**.
+- 적용 방식: 재실행 없음. 기존 results/lore-1787528032904.json raw로만 재평가.
+- 판정 영향: H1 must_fire 0/10 → 불충족. H2 false_trigger 10/10 → 불충족(기존 조건).
+  **H1·H2 둘 다 성공기준 1 불충족 → 합산규칙(§5, 둘 다 전부 충족 시에만 채택)에 따라 비채택 확정.**
+- 명시: 게이트식(cos≥θ AND keyword)과 baseline 설정은 변경하지 않는다. 옵션(a)/(b) 재설계·재실행은
+  하지 않는다 — 결과를 바꾸기 위한 규칙 변경은 §5 사후편향 금지와 충돌한다.
