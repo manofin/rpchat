@@ -211,7 +211,7 @@ export function memoryRoutes(ctx: Ctx) {
             db,
             `INSERT INTO memories (id, conversation_id, character_id, content, source, status, importance, scope, evidence_message_ids_json, created_at, updated_at)
              VALUES (?, ?, ?, ?, 'model', 'candidate', ?, 'conversation', ?, ?, ?)`,
-            id, conv.id, conv.character_id, content, imp, JSON.stringify([lastId]), t, t,
+            id, conv.id, conv.character_id, content, imp, JSON.stringify([firstId]), t, t,
           );
           created.push(id);
         }
