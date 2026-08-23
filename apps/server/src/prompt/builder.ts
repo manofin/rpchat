@@ -213,6 +213,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   summaries.push({ tier: 'state', used: !!stateText, tokens: stateEst, note: stateText ? undefined : (stateRow ? '예산 부족' : '승인된 상태 없음') });
   summaries.push({ tier: 'whole', used: !!summaryText, tokens: wholeEstOnly, note: summaryText ? undefined : (summaryRow ? '예산 부족' : '승인된 요약 없음') });
   summaries.push({ tier: 'scene', used: sceneParts.length > 0, tokens: sceneEst, note: sceneParts.length ? undefined : '해당 장면 없음/제외' });
+  summaries.push({ tier: 'episode', used: !!episodeText, tokens: episodeEst, note: episodeText ? undefined : (episodeRow ? '예산 부족/최근창' : '승인된 에피소드 없음') });
   const sumEst = wholeEstOnly + stateEst + sceneEst + episodeEst;
   sections.push({
     name: '고정 기억+요약',
