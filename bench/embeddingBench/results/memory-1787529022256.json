@@ -1,0 +1,588 @@
+{
+  "run": "run-memory",
+  "note": "참고자료 전용 — 비채택 확정 후 실행. 판정 불영향.",
+  "judge_theta": 0.7,
+  "baseline": [
+    {
+      "id": "M01",
+      "label": "new",
+      "kind": "new",
+      "reason": "규칙 적중 없음 → new"
+    },
+    {
+      "id": "M02",
+      "label": "new",
+      "kind": "new",
+      "reason": "규칙 적중 없음 → new"
+    },
+    {
+      "id": "M03",
+      "label": "new",
+      "kind": "new",
+      "reason": "규칙 적중 없음 → new"
+    },
+    {
+      "id": "M04",
+      "label": "new",
+      "kind": "new",
+      "reason": "규칙 적중 없음 → new"
+    },
+    {
+      "id": "M05",
+      "label": "new",
+      "kind": "new",
+      "reason": "규칙 적중 없음 → new"
+    },
+    {
+      "id": "M06",
+      "label": "conflict",
+      "kind": "new",
+      "reason": "개체 [서리의, 과거에] 겹침, 양쪽 긍정 → XOR 거짓 → new"
+    },
+    {
+      "id": "M07",
+      "label": "conflict",
+      "kind": "new",
+      "reason": "개체 [서리는, 과거를] 겹침, 양쪽 긍정 → XOR 거짓 → new"
+    },
+    {
+      "id": "M08",
+      "label": "conflict",
+      "kind": "new",
+      "reason": "conflict-suppressed: P3 임베딩 이월 — conflict였을 것(개체 [카이는, 검을], XOR 못)이나 규칙 정밀도 한계로 보류"
+    },
+    {
+      "id": "M09",
+      "label": "conflict",
+      "kind": "new",
+      "reason": "개체 [서리는, 보관소] 겹침, 양쪽 긍정 → XOR 거짓 → new"
+    },
+    {
+      "id": "M10",
+      "label": "conflict",
+      "kind": "new",
+      "reason": "개체 [카이는, 여행, 가방을] 겹침, 양쪽 긍정 → XOR 거짓 → new"
+    },
+    {
+      "id": "M11",
+      "label": "complement",
+      "kind": "new",
+      "reason": "규칙 적중 없음 → new"
+    },
+    {
+      "id": "M12",
+      "label": "complement",
+      "kind": "new",
+      "reason": "규칙 적중 없음 → new"
+    },
+    {
+      "id": "M13",
+      "label": "complement",
+      "kind": "new",
+      "reason": "규칙 적중 없음 → new"
+    },
+    {
+      "id": "M14",
+      "label": "duplicate",
+      "kind": "duplicate",
+      "reason": "bigram 자카드 0.53 ≥ 0.35 (중복 컷)"
+    },
+    {
+      "id": "M15",
+      "label": "duplicate",
+      "kind": "duplicate",
+      "reason": "bigram 자카드 0.50 ≥ 0.35 (중복 컷)"
+    },
+    {
+      "id": "M16",
+      "label": "duplicate",
+      "kind": "new",
+      "reason": "개체 [협곡의, 돌다리들은] 겹침, 양쪽 긍정 → XOR 거짓 → new"
+    },
+    {
+      "id": "M17",
+      "label": "duplicate",
+      "kind": "new",
+      "reason": "conflict-suppressed: P3 임베딩 이월 — conflict였을 것(개체 [카이는, 추격자의, 확실히], XOR 못)이나 규칙 정밀도 한계로 보류"
+    },
+    {
+      "id": "M18",
+      "label": "duplicate",
+      "kind": "new",
+      "reason": "개체 [밤에는, 포식자와, 산적이, 산맥에] 겹침, 양쪽 긍정 → XOR 거짓 → new"
+    },
+    {
+      "id": "M19",
+      "label": "transient",
+      "kind": "new",
+      "reason": "규칙 적중 없음 → new"
+    },
+    {
+      "id": "M20",
+      "label": "transient",
+      "kind": "new",
+      "reason": "규칙 적중 없음 → new"
+    }
+  ],
+  "baseline_summary": {
+    "duplicate_recall": "2/5",
+    "duplicate_false_positive_on_new": "0/5",
+    "conflict_detected_suppressed": "1/5"
+  },
+  "engines": {
+    "H1": {
+      "rows": [
+        {
+          "id": "M01",
+          "label": "new",
+          "cos": 0.5571,
+          "fired_per_theta": {
+            "0.65": false,
+            "0.7": false,
+            "0.75": false
+          }
+        },
+        {
+          "id": "M02",
+          "label": "new",
+          "cos": 0.5784,
+          "fired_per_theta": {
+            "0.65": false,
+            "0.7": false,
+            "0.75": false
+          }
+        },
+        {
+          "id": "M03",
+          "label": "new",
+          "cos": 0.5321,
+          "fired_per_theta": {
+            "0.65": false,
+            "0.7": false,
+            "0.75": false
+          }
+        },
+        {
+          "id": "M04",
+          "label": "new",
+          "cos": 0.474,
+          "fired_per_theta": {
+            "0.65": false,
+            "0.7": false,
+            "0.75": false
+          }
+        },
+        {
+          "id": "M05",
+          "label": "new",
+          "cos": 0.2303,
+          "fired_per_theta": {
+            "0.65": false,
+            "0.7": false,
+            "0.75": false
+          }
+        },
+        {
+          "id": "M06",
+          "label": "conflict",
+          "cos": 0.912,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M07",
+          "label": "conflict",
+          "cos": 0.9294,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M08",
+          "label": "conflict",
+          "cos": 0.8418,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M09",
+          "label": "conflict",
+          "cos": 0.9166,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M10",
+          "label": "conflict",
+          "cos": 0.8695,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M11",
+          "label": "complement",
+          "cos": 0.6905,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": false,
+            "0.75": false
+          }
+        },
+        {
+          "id": "M12",
+          "label": "complement",
+          "cos": 0.903,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M13",
+          "label": "complement",
+          "cos": 0.9308,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M14",
+          "label": "duplicate",
+          "cos": 0.839,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M15",
+          "label": "duplicate",
+          "cos": 0.9539,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M16",
+          "label": "duplicate",
+          "cos": 0.8397,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M17",
+          "label": "duplicate",
+          "cos": 0.9508,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M18",
+          "label": "duplicate",
+          "cos": 0.9546,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M19",
+          "label": "transient",
+          "cos": 0.5263,
+          "fired_per_theta": {
+            "0.65": false,
+            "0.7": false,
+            "0.75": false
+          }
+        },
+        {
+          "id": "M20",
+          "label": "transient",
+          "cos": 0.5309,
+          "fired_per_theta": {
+            "0.65": false,
+            "0.7": false,
+            "0.75": false
+          }
+        }
+      ],
+      "summary": {
+        "0.65": {
+          "duplicate_recall": "5/5",
+          "false_duplicate_on_new": "0/5",
+          "conflict_cos_ge_cut": "5/5 (cos-only 참고 — 극성 판정 미구현)",
+          "complement_misfire_as_dup_or_conf": "3/3",
+          "transient_misfire": "0/2"
+        },
+        "0.7": {
+          "duplicate_recall": "5/5",
+          "false_duplicate_on_new": "0/5",
+          "conflict_cos_ge_cut": "5/5 (cos-only 참고 — 극성 판정 미구현)",
+          "complement_misfire_as_dup_or_conf": "2/3",
+          "transient_misfire": "0/2"
+        },
+        "0.75": {
+          "duplicate_recall": "5/5",
+          "false_duplicate_on_new": "0/5",
+          "conflict_cos_ge_cut": "5/5 (cos-only 참고 — 극성 판정 미구현)",
+          "complement_misfire_as_dup_or_conf": "2/3",
+          "transient_misfire": "0/2"
+        }
+      }
+    },
+    "H2": {
+      "rows": [
+        {
+          "id": "M01",
+          "label": "new",
+          "cos": 0.8091,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M02",
+          "label": "new",
+          "cos": 0.8074,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M03",
+          "label": "new",
+          "cos": 0.794,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M04",
+          "label": "new",
+          "cos": 0.8166,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M05",
+          "label": "new",
+          "cos": 0.7749,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M06",
+          "label": "conflict",
+          "cos": 0.9093,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M07",
+          "label": "conflict",
+          "cos": 0.912,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M08",
+          "label": "conflict",
+          "cos": 0.8931,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M09",
+          "label": "conflict",
+          "cos": 0.8901,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M10",
+          "label": "conflict",
+          "cos": 0.9163,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M11",
+          "label": "complement",
+          "cos": 0.8639,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M12",
+          "label": "complement",
+          "cos": 0.8848,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M13",
+          "label": "complement",
+          "cos": 0.8884,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M14",
+          "label": "duplicate",
+          "cos": 0.9401,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M15",
+          "label": "duplicate",
+          "cos": 0.9261,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M16",
+          "label": "duplicate",
+          "cos": 0.9199,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M17",
+          "label": "duplicate",
+          "cos": 0.9172,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M18",
+          "label": "duplicate",
+          "cos": 0.9283,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M19",
+          "label": "transient",
+          "cos": 0.7943,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        },
+        {
+          "id": "M20",
+          "label": "transient",
+          "cos": 0.8244,
+          "fired_per_theta": {
+            "0.65": true,
+            "0.7": true,
+            "0.75": true
+          }
+        }
+      ],
+      "summary": {
+        "0.65": {
+          "duplicate_recall": "5/5",
+          "false_duplicate_on_new": "5/5",
+          "conflict_cos_ge_cut": "5/5 (cos-only 참고 — 극성 판정 미구현)",
+          "complement_misfire_as_dup_or_conf": "3/3",
+          "transient_misfire": "2/2"
+        },
+        "0.7": {
+          "duplicate_recall": "5/5",
+          "false_duplicate_on_new": "5/5",
+          "conflict_cos_ge_cut": "5/5 (cos-only 참고 — 극성 판정 미구현)",
+          "complement_misfire_as_dup_or_conf": "3/3",
+          "transient_misfire": "2/2"
+        },
+        "0.75": {
+          "duplicate_recall": "5/5",
+          "false_duplicate_on_new": "5/5",
+          "conflict_cos_ge_cut": "5/5 (cos-only 참고 — 극성 판정 미구현)",
+          "complement_misfire_as_dup_or_conf": "3/3",
+          "transient_misfire": "2/2"
+        }
+      }
+    }
+  }
+}

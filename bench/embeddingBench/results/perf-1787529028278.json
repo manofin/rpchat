@@ -1,0 +1,15 @@
+{
+  "run": "run-perf",
+  "note": "참고자료 전용 — 판정 불영향.",
+  "workload_n": 100,
+  "gemma_health_idle_ms": null,
+  "engines": {
+    "H2": {
+      "encode_100_ms": 446,
+      "per_sentence_ms": 4.46,
+      "rss_idle_mb": 687,
+      "rss_after_mb": 693,
+      "gemma_health_busy_ms": []
+    }
+  }
+}
