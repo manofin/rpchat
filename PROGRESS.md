@@ -219,3 +219,10 @@ P1-3c 설계검수 완료, REVIEW-P1-3c.md 참조
 - 참고 raw: H2 must_not_fire cos 0.795~0.838(e5 점수 스케일 특성), θ=0.75에서도 전부 통과. H1은 cos 낮아 θ만으로도 차단 가능하나 θ=0.70에서 L17(0.441) 등 이미 미달.
 - ambiguous top-1: H1 3/5 (L21·L22·L23 오답), H2 4/5 (L23 '골짜기'를 추격자로 오매칭).
 - **처리**: 사전등록 §6 분기 중 "결과 해석 금지" 사유에 해당하는 설계 무효 — 픽스처/게이트식의 구조적 문제로 성공기준 자체가 검증 불가. 결과 후 컷/픽스처 조정 금지 원칙(§5)에 따라 임의 재설계하지 않고 사용자 결정 대기. 옵션: (a) baseline을 selective+2차키워드 켠 상태로 고정하고 임베딩 게이트식도 동일 selective 규칙 적용해 재실행 (b) 게이트식을 cos-only 또는 cos OR keyword 로 변경 — 어느 쪽이든 사전등록 append 정정 후.
+
+## [2026-08-23 P3 임베딩 벤치 최종 by hermes] 비채택 확정 — REPORT 완료
+- **정정(사용자 raw 대조 지적)**: 직전 Task 3 기록의 "H1·H2 모두 false_trigger 10/10"은 raw 오독. 실제: H1 must_fire 0/10 + false_trigger 0/10(과소발화), H2 must_fire 10/10 + false_trigger 10/10(과대발화). 원인은 모델별 코사인 스케일(H1 저평가/H2 고평가)이며 AND 게이트 로직 결함 아님.
+- 사전등록 append(ef56803): 성공기준 1에 "AND must_fire_recall ≥ baseline" 추가(누락 결함 정정). 재실행 없음, 기존 raw로 재평가.
+- 판정: H1 불충족(must_fire 0/10) + H2 불충족(false_trigger 10/10) → 합산규칙에 따라 **비채택 확정**. conflict.ts/loreMatch.ts 미변경. 옵션(a)/(b) 게이트식 재설계는 하지 않음(사후편향 방지).
+- Task 4/5: 참고자료 전용 실행 완료. memory raw: baseline dup 2/5 vs H1 5/5+오탐0 vs H2 전부 컷 통과. perf: H1 395ms·716MB, H2 446ms·687MB (100문장). Gemma TTFT는 이 환경에 :8083 부재로 미실측(확인 안 함).
+- 산출물: bench/embeddingBench/REPORT.md + results/*.json 3종. PRD 순서 7 종료기준("채택/비채택 근거 확보") 충족.
