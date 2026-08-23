@@ -5,7 +5,7 @@ import type {
 import { estimateTokens, estimateMessageTokens, getCalibration, truncateToTokens } from './tokens.js';
 import { loreEntryActive } from './loreMatch.js';
 import {
-  OOC_INSTRUCTION, STORY_CHOICES_INSTRUCTION, renderCharacter, renderLore, renderMemories, renderPersona, renderRules, renderScene, renderSummary, substitute,
+  OOC_INSTRUCTION, STORY_CHOICES_INSTRUCTION, renderCharacter, renderLore, renderMemories, renderPersona, renderRules, renderScene, renderState, renderSummary, substitute,
 } from './templates.js';
 
 export interface BuiltPrompt {
@@ -150,16 +150,26 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   }
   const summaryRow = one<SummaryRow>(
     db,
-    `SELECT * FROM summaries WHERE conversation_id = ? AND status = 'approved' ORDER BY created_at DESC LIMIT 1`,
+    `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'whole' AND status = 'approved' ORDER BY created_at DESC LIMIT 1`,
     conv.id,
   );
-  const summaryText = summaryRow ? truncateToTokens(summaryRow.content, budgets.memory - memEst, cal) : null;
-  const sumEst = summaryText ? estimateTokens(summaryText, cal) : 0;
+  const stateRow = one<SummaryRow>(
+    db,
+    `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'state' AND status = 'approved' ORDER BY created_at DESC LIMIT 1`,
+    conv.id,
+  );
+  const sumBudget = Math.max(0, budgets.memory - memEst);
+  const stateCap = Math.min(200, sumBudget);
+  const stateRendered = renderState(stateRow?.content ?? null);
+  const stateText = stateRendered ? truncateToTokens(stateRendered, stateCap, cal) : null;
+  const stateEst = stateText ? estimateTokens(stateText, cal) : 0;
+  const summaryText = summaryRow ? truncateToTokens(summaryRow.content, Math.max(0, sumBudget - stateEst), cal) : null;
+  const sumEst = (summaryText ? estimateTokens(summaryText, cal) : 0) + stateEst;
   sections.push({
     name: '고정 기억+요약',
     est_tokens: memEst + sumEst,
     budget: budgets.memory,
-    note: [droppedMemItems.length ? `기억 ${droppedMemItems.length}건 예산 초과로 제외` : '', summaryRow ? '' : '승인된 요약 없음'].filter(Boolean).join('; ') || undefined,
+    note: [droppedMemItems.length ? `기억 ${droppedMemItems.length}건 예산 초과로 제외` : '', stateText ? 'state 포함' : (stateRow ? 'state 예산 부족' : '승인된 상태 없음'), summaryRow ? '' : '승인된 요약 없음'].filter(Boolean).join('; ') || undefined,
   });
   used += memEst + sumEst;
 
@@ -192,7 +202,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   used += recentEst;
 
   // 5) 시스템 메시지 합성
-  const systemParts = [rules, charText, personaText, sceneText, renderMemories(memItems), loreText, renderSummary(summaryText)].filter((x): x is string => !!x);
+  const systemParts = [rules, charText, personaText, sceneText, renderMemories(memItems), stateText, renderSummary(summaryText), loreText].filter((x): x is string => !!x);
   if (isOoc) systemParts.push(OOC_INSTRUCTION);
   else if (mode === 'story') systemParts.push(substitute(STORY_CHOICES_INSTRUCTION, charName, userName));
   const systemText = systemParts.join('\n\n');

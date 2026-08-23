@@ -5,7 +5,7 @@ import { config } from '../config.js';
 import { many, nowIso, one, parseJson, run, uid } from '../db/index.js';
 import { getPath } from '../db/tree.js';
 import { isOocMessage, loadProfile, resolvePersona } from '../prompt/builder.js';
-import { renderSummaryPrompt } from '../prompt/templates.js';
+import { renderSummaryPrompt, stateToBullets } from '../prompt/templates.js';
 import { estimateTokens, getCalibration, truncateToTokens } from '../prompt/tokens.js';
 import { classify } from '../memory/conflict.js';
 import type { CharacterRow, MemoryRow, SummaryRow } from '../types.js';
@@ -127,7 +127,7 @@ export function memoryRoutes(ctx: Ctx) {
       const userName = persona?.name || '나';
       const profile = loadProfile(db, 'summary');
       const cal = getCalibration(db);
-      const prev = one<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND status = 'approved' ORDER BY created_at DESC LIMIT 1`, conv.id);
+      const prev = one<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'whole' AND status = 'approved' ORDER BY created_at DESC LIMIT 1`, conv.id);
 
       const path = getPath(db, conv).filter((m) => m.status !== 'error' && m.content.trim() && !isOocMessage(m));
       let start = 0;
@@ -171,15 +171,25 @@ export function memoryRoutes(ctx: Ctx) {
         ctx.queue.unregister(genId);
       }
 
-      const parsed = lenientJson(text) as { summary?: unknown; memories?: unknown } | null;
+      const parsed = lenientJson(text) as { summary?: unknown; memories?: unknown; state?: unknown } | null;
       if (!parsed || typeof parsed.summary !== 'string') return reply.code(502).send({ error: '모델 출력을 JSON 으로 해석하지 못함', raw: text.slice(0, 2000) });
 
       const t = nowIso();
       const sumId = uid();
+      const stateId = uid();
       const lastId = slice[slice.length - 1].id;
       const created: string[] = [];
+      let stateDraft: SummaryRow | null = null;
+      const rawState = parsed.state;
+      const stateObj = rawState && typeof rawState === 'object' && !Array.isArray(rawState)
+        ? Object.fromEntries(Object.entries(rawState as Record<string, unknown>).map(([k, v]) => [k, String(v ?? '')]))
+        : null;
+      const stateBullets = stateToBullets(stateObj);
       db.transaction(() => {
-        run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, status, created_at) VALUES (?, ?, ?, ?, ?, ?)', sumId, conv.id, String(parsed.summary).trim(), lastId, 'draft', t);
+        run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', sumId, conv.id, String(parsed.summary).trim(), lastId, null, 'draft', t, 'whole');
+        if (stateBullets) {
+          run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', stateId, conv.id, stateBullets, lastId, null, 'draft', t, 'state');
+        }
         const mems = Array.isArray(parsed.memories) ? (parsed.memories as Array<Record<string, unknown>>) : [];
         for (const m of mems.slice(0, 8)) {
           const content = String(m?.content ?? '').trim();
@@ -195,8 +205,10 @@ export function memoryRoutes(ctx: Ctx) {
           created.push(id);
         }
       })();
+      if (stateBullets) stateDraft = one<SummaryRow>(db, 'SELECT * FROM summaries WHERE id = ?', stateId) ?? null;
       return {
         summary: one<SummaryRow>(db, 'SELECT * FROM summaries WHERE id = ?', sumId),
+        state: stateDraft,
         candidates: created.map((id) => {
           const m = one<MemoryRow>(db, 'SELECT * FROM memories WHERE id = ?', id)!;
           const v = classify(m, many<MemoryRow>(db, `SELECT * FROM memories WHERE status IN ('pinned','candidate') AND id != ?`, id));

@@ -125,6 +125,9 @@ export interface SummaryRow {
   conversation_id: string;
   content: string;
   covers_until_message_id: string | null;
+  covers_from_message_id: string | null;
+  rolled_up_into: string | null;
+  tier: 'scene' | 'episode' | 'whole' | 'state';
   status: 'draft' | 'approved';
   created_at: string;
 }

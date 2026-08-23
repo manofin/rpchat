@@ -111,12 +111,23 @@ export function renderSummary(text: string | null): string | null {
   return text && text.trim() ? `### 이전 대화 요약\n${text.trim()}` : null;
 }
 
+export function stateToBullets(s: Record<string, string> | null): string | null {
+  if (!s) return null;
+  const order: Array<[string, string]> = [['장소', '장소'], ['시각', '시각'], ['동석', '동석 인물'], ['관계', '관계·감정'], ['보류', '보류된 목표'], ['신체소지', '신체·소지']];
+  const lines = order.map(([k, label]) => { const v = (s[k] ?? '').trim(); return v ? `- ${label}: ${v}` : null; }).filter(Boolean);
+  return lines.length ? lines.join('\n') : null;
+}
+export function renderState(bullets: string | null): string | null {
+  return bullets && bullets.trim() ? `### 현재 상태\n${bullets.trim()}` : null;
+}
+
 /** 요약 + 후보 기억 추출 프롬프트 (JSON 만 출력하도록 요구) */
 export function renderSummaryPrompt(charName: string, userName: string, previousSummary: string | null, transcript: string): string {
   return [
     `다음은 '${charName}'와 '${userName}'의 역할극 대화 기록이다. 아래 JSON 객체 하나만 출력한다. 설명·코드펜스·앞뒤 문장은 금지한다.`,
-    `{"summary":"사건·관계 변화·보류된 약속·다음 훅을 시간순으로 8문장 이내","memories":[{"content":"대화에서 직접 확인된 사실 1개 (추론·예측 금지)","importance":1}]}`,
+    `{"summary":"사건·관계 변화·보류된 약속·다음 훅을 시간순으로 8문장 이내","state":{"장소":"","시각":"","동석":"","관계":"","보류":"","신체소지":""},"memories":[{"content":"대화에서 직접 확인된 사실 1개 (추론·예측 금지)","importance":1}]}`,
     'memories 는 최대 8개, importance 는 1(사소)~5(핵심). 이미 기존 요약에 있는 사실은 넣지 않는다.',
+    'state 는 현재 시점의 사실만. 모르면 빈 문자열. 6개 키 고정(장소/시각/동석/관계/보류/신체소지).',
     previousSummary ? `\n[기존 요약]\n${previousSummary}` : '',
     `\n[대화]\n${transcript}`,
   ].join('\n');

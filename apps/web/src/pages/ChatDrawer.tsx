@@ -246,8 +246,8 @@ function SummaryTab({ conversationId, open, onApplied, onClose }: { conversation
   async function generate() {
     setBusy(true);
     try {
-      const r = await post<{ summary: Summary; candidates: Memory[]; inputMessages: number }>(`/api/conversations/${conversationId}/summarize`, {});
-      ui.toast(`요약 초안 생성 (기억 후보 ${r.candidates.length}개)`);
+      const r = await post<{ summary: Summary; state?: Summary | null; candidates: Memory[]; inputMessages: number }>(`/api/conversations/${conversationId}/summarize`, {});
+      ui.toast(`요약 초안 — 상태 + 전체 + 기억 ${r.candidates.length}`);
       await load();
     } catch (e) {
       ui.toast((e as Error).message, 'err');
@@ -275,35 +275,46 @@ function SummaryTab({ conversationId, open, onApplied, onClose }: { conversation
     onApplied();
   }
 
+  const stateRows = summaries.filter((s) => s.tier === 'state');
+  const wholeRows = summaries.filter((s) => s.tier !== 'state' && s.tier !== 'scene' && s.tier !== 'episode');
+
+  function renderCard(s: Summary, kind: '상태' | '전체') {
+    return (
+      <div className="card" key={s.id} style={{ marginBottom: 10 }}>
+        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 6 }}>
+          <span className="row" style={{ gap: 6 }}>
+            <span className="tag" style={{ background: 'var(--bg-3)', color: 'var(--fg-2)' }}>{kind}</span>
+            <span className={`tag`} style={{ background: s.status === 'approved' ? 'rgba(61,220,151,0.15)' : 'var(--bg-3)', color: s.status === 'approved' ? 'var(--ok)' : 'var(--fg-2)' }}>{s.status === 'approved' ? '승인됨' : '초안'}</span>
+          </span>
+          <span className="small muted">{new Date(s.created_at).toLocaleString('ko-KR')}</span>
+        </div>
+        {edit?.id === s.id ? (
+          <>
+            <textarea value={edit.content} onChange={(e) => setEdit({ id: s.id, content: e.target.value })} style={{ width: '100%', minHeight: 120, background: 'var(--bg)', border: '1px solid var(--bg-3)', borderRadius: 8, padding: 10 }} />
+            <div className="row end" style={{ gap: 8, marginTop: 8 }}><button className="btn sm" onClick={() => setEdit(null)}>취소</button><button className="btn sm primary" onClick={saveEdit}>저장</button></div>
+          </>
+        ) : (
+          <>
+            <div style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{s.content}</div>
+            <div className="row end" style={{ gap: 6, marginTop: 8 }}>
+              {s.covers_until_message_id && <button className="btn sm ghost" onClick={() => jumpToCover(s)}>원본</button>}
+              <button className="btn sm ghost" onClick={() => remove(s.id)}>삭제</button>
+              <button className="btn sm" onClick={() => setEdit({ id: s.id, content: s.content })}>편집</button>
+              {s.status !== 'approved' && <button className="btn sm primary" onClick={() => approve(s.id)}>승인</button>}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div>
       <button className="btn primary block" disabled={busy} onClick={generate}>{busy ? '요약 생성 중… (모델 호출)' : '지금까지 대화 요약하기'}</button>
       <div className="small muted" style={{ margin: '8px 0 14px' }}>요약과 자동 추출 기억은 <b>초안</b>으로 저장되며, 승인해야 프롬프트에 들어갑니다. 마지막 승인 이후의 새 메시지만 요약합니다.</div>
       {summaries.length === 0 && <div className="muted small">아직 요약이 없습니다.</div>}
-      {summaries.map((s) => (
-        <div className="card" key={s.id} style={{ marginBottom: 10 }}>
-          <div className="row" style={{ justifyContent: 'space-between', marginBottom: 6 }}>
-            <span className={`tag`} style={{ background: s.status === 'approved' ? 'rgba(61,220,151,0.15)' : 'var(--bg-3)', color: s.status === 'approved' ? 'var(--ok)' : 'var(--fg-2)' }}>{s.status === 'approved' ? '승인됨' : '초안'}</span>
-            <span className="small muted">{new Date(s.created_at).toLocaleString('ko-KR')}</span>
-          </div>
-          {edit?.id === s.id ? (
-            <>
-              <textarea value={edit.content} onChange={(e) => setEdit({ id: s.id, content: e.target.value })} style={{ width: '100%', minHeight: 120, background: 'var(--bg)', border: '1px solid var(--bg-3)', borderRadius: 8, padding: 10 }} />
-              <div className="row end" style={{ gap: 8, marginTop: 8 }}><button className="btn sm" onClick={() => setEdit(null)}>취소</button><button className="btn sm primary" onClick={saveEdit}>저장</button></div>
-            </>
-          ) : (
-            <>
-              <div style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{s.content}</div>
-              <div className="row end" style={{ gap: 6, marginTop: 8 }}>
-                {s.covers_until_message_id && <button className="btn sm ghost" onClick={() => jumpToCover(s)}>원본</button>}
-                <button className="btn sm ghost" onClick={() => remove(s.id)}>삭제</button>
-                <button className="btn sm" onClick={() => setEdit({ id: s.id, content: s.content })}>편집</button>
-                {s.status !== 'approved' && <button className="btn sm primary" onClick={() => approve(s.id)}>승인</button>}
-              </div>
-            </>
-          )}
-        </div>
-      ))}
+      {stateRows.map((s) => renderCard(s, '상태'))}
+      {wholeRows.map((s) => renderCard(s, '전체'))}
     </div>
   );
 }
