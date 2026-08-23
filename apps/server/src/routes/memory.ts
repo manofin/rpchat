@@ -7,6 +7,7 @@ import { getPath } from '../db/tree.js';
 import { isOocMessage, loadProfile, resolvePersona } from '../prompt/builder.js';
 import { renderSummaryPrompt } from '../prompt/templates.js';
 import { estimateTokens, getCalibration, truncateToTokens } from '../prompt/tokens.js';
+import { classify } from '../memory/conflict.js';
 import type { CharacterRow, MemoryRow, SummaryRow } from '../types.js';
 import { loadConversation } from './conversations.js';
 
@@ -43,7 +44,11 @@ export function memoryRoutes(ctx: Ctx) {
          ORDER BY status DESC, importance DESC, created_at`,
         conv.id, conv.character_id,
       ).map(memoryOut);
-      return { pinned: rows.filter((m) => m.status === 'pinned'), candidates: rows.filter((m) => m.status === 'candidate') };
+      const withVerdict = rows.map((m) => {
+        const v = classify(m, rows.filter((o) => o.id !== m.id));
+        return { ...memoryOut(m), conflict: v.kind !== 'new' ? v : null };
+      });
+      return { pinned: withVerdict.filter((m) => m.status === 'pinned'), candidates: withVerdict.filter((m) => m.status === 'candidate') };
     });
 
     app.post('/api/memories', async (req, reply) => {
@@ -192,7 +197,11 @@ export function memoryRoutes(ctx: Ctx) {
       })();
       return {
         summary: one<SummaryRow>(db, 'SELECT * FROM summaries WHERE id = ?', sumId),
-        candidates: created.map((id) => memoryOut(one<MemoryRow>(db, 'SELECT * FROM memories WHERE id = ?', id)!)),
+        candidates: created.map((id) => {
+          const m = one<MemoryRow>(db, 'SELECT * FROM memories WHERE id = ?', id)!;
+          const v = classify(m, many<MemoryRow>(db, `SELECT * FROM memories WHERE status IN ('pinned','candidate') AND id != ?`, id));
+          return { ...memoryOut(m), conflict: v.kind !== 'new' ? v : null };
+        }),
         inputMessages: lines.length,
       };
     });
