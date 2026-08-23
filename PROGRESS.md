@@ -201,3 +201,8 @@ P1-3c 설계검수 완료, REVIEW-P1-3c.md 참조
 - 계획 승인(2026-08-23, 피드백 3건 반영): H2 bge-small-zh 폐기→multilingual-e5-small, θ=0.70 단일 판정컷(0.65/0.75 참고 전용), H1·H2 각각 3조건 전부 충족 시에만 채택(분열 시 비채택).
 - 생성: bench/embeddingBench/preregistration.md (신호/대조군/성공기준/합산규칙/분기/픽스처스키마). 실행 중 정정은 append만.
 - raw: git show --stat HEAD = `1 file changed, 88 insertions(+)` / commit a775c01ab5427a9e22c12f4201f26cc92324cf4d.
+
+## [2026-08-23 P3 임베딩 벤치 Task 1 by hermes] 픽스처 생성
+- lore snapshot: live DB 1회 읽기(읽기전용), snapshot sha256=c35e103de58dd62330b516faf290e5da10969fd44d8a8ba28453561a68bce1af, _meta 기록. enabled=1 전부 selective=0/secondary=[] — 벤치 게이트식에서 keyword-only baseline으로 정합.
+- 생성: fixtures/lore-v1.json (25 = must_fire 10/must_not_fire 10/ambiguous 5), fixtures/memory-v1.json (20 = new5/dup5/complement3/conflict5/transient2), verify-fixtures.ts.
+- 게이트 raw: `FIXTURE_OK lore=25 memory=20`, `JSON_PARSE_OK`. 첫 검증에서 L22 ambiguous에 키워드 '소리' 포함 위반을 체커가 잡음 → L22 문장 수정 후 재통과 (체커 유효성 부수 확인).
