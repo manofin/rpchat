@@ -247,7 +247,7 @@ function SummaryTab({ conversationId, open, onApplied, onClose }: { conversation
     setBusy(true);
     try {
       const r = await post<{ summary: Summary; state?: Summary | null; candidates: Memory[]; inputMessages: number }>(`/api/conversations/${conversationId}/summarize`, {});
-      ui.toast(`요약 초안 — 상태 + 전체 + 기억 ${r.candidates.length}`);
+      ui.toast(`요약 초안 — 상태 + 장면 + 전체 + 기억 ${r.candidates.length}`);
       await load();
     } catch (e) {
       ui.toast((e as Error).message, 'err');
@@ -276,9 +276,10 @@ function SummaryTab({ conversationId, open, onApplied, onClose }: { conversation
   }
 
   const stateRows = summaries.filter((s) => s.tier === 'state');
+  const sceneRows = summaries.filter((s) => s.tier === 'scene');
   const wholeRows = summaries.filter((s) => s.tier !== 'state' && s.tier !== 'scene' && s.tier !== 'episode');
 
-  function renderCard(s: Summary, kind: '상태' | '전체') {
+  function renderCard(s: Summary, kind: '상태' | '전체' | '장면') {
     return (
       <div className="card" key={s.id} style={{ marginBottom: 10 }}>
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 6 }}>
@@ -314,6 +315,7 @@ function SummaryTab({ conversationId, open, onApplied, onClose }: { conversation
       <div className="small muted" style={{ margin: '8px 0 14px' }}>요약과 자동 추출 기억은 <b>초안</b>으로 저장되며, 승인해야 프롬프트에 들어갑니다. 마지막 승인 이후의 새 메시지만 요약합니다.</div>
       {summaries.length === 0 && <div className="muted small">아직 요약이 없습니다.</div>}
       {stateRows.map((s) => renderCard(s, '상태'))}
+      {sceneRows.map((s) => renderCard(s, '장면'))}
       {wholeRows.map((s) => renderCard(s, '전체'))}
     </div>
   );

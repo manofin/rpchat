@@ -164,12 +164,34 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   const stateText = stateRendered ? truncateToTokens(stateRendered, stateCap, cal) : null;
   const stateEst = stateText ? estimateTokens(stateText, cal) : 0;
   const summaryText = summaryRow ? truncateToTokens(summaryRow.content, Math.max(0, sumBudget - stateEst), cal) : null;
-  const sumEst = (summaryText ? estimateTokens(summaryText, cal) : 0) + stateEst;
+  // scene: whole 실사용 후 잔여 예산에만. 이미 recent 창에 있는 장면(=최근 SCENE_RECENT_GUARD개 메시지 안에 끝나는)은 원문 중복이라 제외.
+  const SCENE_RECENT_GUARD = 24; // 휴리스틱 가드(튜닝 가능): 최근 이만큼 메시지는 recent로 곧 들어감
+  const wholeEstOnly = summaryText ? estimateTokens(summaryText, cal) : 0;
+  let sceneBudget = Math.max(0, sumBudget - stateEst - wholeEstOnly);
+  const recentGuardIds = new Set(history.slice(-SCENE_RECENT_GUARD).map((m) => m.id));
+  const sceneParts: string[] = [];
+  let sceneEst = 0;
+  if (sceneBudget > 0) {
+    const scenes = many<SummaryRow>(db,
+      `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'scene' AND status = 'approved' AND rolled_up_into IS NULL ORDER BY created_at DESC`,
+      conv.id);
+    for (const sc of scenes) {
+      if (sceneParts.length >= 2) break; // 최대 2개
+      if (sc.covers_until_message_id && recentGuardIds.has(sc.covers_until_message_id)) continue; // 아직 recent에 있음 → 중복
+      const rendered = `- ${sc.content}`;
+      const tok = estimateTokens(rendered, cal);
+      if (sceneEst + tok > sceneBudget) break;
+      sceneParts.push(sc.content);
+      sceneEst += tok;
+    }
+  }
+  const sceneTierText = sceneParts.length ? `### 최근 장면\n${sceneParts.map((c) => `- ${c}`).join('\n')}` : null;
+  const sumEst = wholeEstOnly + stateEst + sceneEst;
   sections.push({
     name: '고정 기억+요약',
     est_tokens: memEst + sumEst,
     budget: budgets.memory,
-    note: [droppedMemItems.length ? `기억 ${droppedMemItems.length}건 예산 초과로 제외` : '', stateText ? 'state 포함' : (stateRow ? 'state 예산 부족' : '승인된 상태 없음'), summaryRow ? '' : '승인된 요약 없음'].filter(Boolean).join('; ') || undefined,
+    note: [droppedMemItems.length ? `기억 ${droppedMemItems.length}건 예산 초과로 제외` : '', stateText ? 'state 포함' : (stateRow ? 'state 예산 부족' : '승인된 상태 없음'), summaryRow ? '' : '승인된 요약 없음', sceneParts.length ? `장면 ${sceneParts.length}` : ''].filter(Boolean).join('; ') || undefined,
   });
   used += memEst + sumEst;
 
@@ -202,7 +224,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   used += recentEst;
 
   // 5) 시스템 메시지 합성
-  const systemParts = [rules, charText, personaText, sceneText, renderMemories(memItems), stateText, renderSummary(summaryText), loreText].filter((x): x is string => !!x);
+  const systemParts = [rules, charText, personaText, sceneText, renderMemories(memItems), stateText, renderSummary(summaryText), sceneTierText, loreText].filter((x): x is string => !!x);
   if (isOoc) systemParts.push(OOC_INSTRUCTION);
   else if (mode === 'story') systemParts.push(substitute(STORY_CHOICES_INSTRUCTION, charName, userName));
   const systemText = systemParts.join('\n\n');

@@ -171,13 +171,16 @@ export function memoryRoutes(ctx: Ctx) {
         ctx.queue.unregister(genId);
       }
 
-      const parsed = lenientJson(text) as { summary?: unknown; memories?: unknown; state?: unknown } | null;
+      const parsed = lenientJson(text) as { summary?: unknown; memories?: unknown; state?: unknown; scene?: unknown } | null;
       if (!parsed || typeof parsed.summary !== 'string') return reply.code(502).send({ error: '모델 출력을 JSON 으로 해석하지 못함', raw: text.slice(0, 2000) });
 
       const t = nowIso();
       const sumId = uid();
       const stateId = uid();
       const lastId = slice[slice.length - 1].id;
+      const firstId = slice[0].id;
+      const sceneText = typeof parsed.scene === 'string' ? parsed.scene.trim() : '';
+      const sceneId = uid();
       const created: string[] = [];
       let stateDraft: SummaryRow | null = null;
       const rawState = parsed.state;
@@ -189,6 +192,10 @@ export function memoryRoutes(ctx: Ctx) {
         run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', sumId, conv.id, String(parsed.summary).trim(), lastId, null, 'draft', t, 'whole');
         if (stateBullets) {
           run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', stateId, conv.id, stateBullets, lastId, null, 'draft', t, 'state');
+        }
+        if (sceneText) {
+          run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+              sceneId, conv.id, sceneText, lastId, firstId, 'draft', t, 'scene');
         }
         const mems = Array.isArray(parsed.memories) ? (parsed.memories as Array<Record<string, unknown>>) : [];
         for (const m of mems.slice(0, 8)) {
@@ -209,6 +216,7 @@ export function memoryRoutes(ctx: Ctx) {
       return {
         summary: one<SummaryRow>(db, 'SELECT * FROM summaries WHERE id = ?', sumId),
         state: stateDraft,
+        scene: sceneText ? one<SummaryRow>(db, 'SELECT * FROM summaries WHERE id = ?', sceneId) : null,
         candidates: created.map((id) => {
           const m = one<MemoryRow>(db, 'SELECT * FROM memories WHERE id = ?', id)!;
           const v = classify(m, many<MemoryRow>(db, `SELECT * FROM memories WHERE status IN ('pinned','candidate') AND id != ?`, id));
