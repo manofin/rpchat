@@ -147,6 +147,13 @@ export interface BudgetReport {
   summary_preview: string | null;
   recent_from_id: string | null;
   recent_to_id: string | null;
+  diagnostics?: BudgetDiagnostics;
+}
+
+export interface BudgetDiagnostics {
+  lore: Array<{ title: string; alwaysOn: boolean; matched: string[]; tokens: number; included: boolean; status: 'active' | 'dropped-budget' | 'no-match' }>;
+  memories: Array<{ content: string; status: 'included' | 'dropped-budget'; importance: number; tokens: number }>;
+  summaries: Array<{ tier: 'state' | 'whole' | 'scene' | 'episode'; used: boolean; tokens: number; note?: string }>;
 }
 
 export interface PromptPreview {

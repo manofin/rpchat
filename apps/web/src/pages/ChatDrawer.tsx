@@ -51,20 +51,60 @@ function BudgetTab({ conversationId, draft, open }: { conversationId: string; dr
       <div className="small muted" style={{ marginTop: 8 }}>
         컨텍스트 {b.context_tokens}t 중 응답용 {b.reply_reserve}t 예약 · 보정계수 ×{b.calibration.toFixed(2)}
       </div>
-      <DebugList label="포함된 기억" items={b.included_memories} empty="없음 (pinned 0 또는 예산 탈락)" />
-      <DebugList label="발동 로어" items={b.active_lore} empty="없음" />
-      <DebugList label="제외 로어" items={b.dropped_lore} empty="없음" />
-      <div className="small" style={{ marginTop: 8 }}>
-        <div className="muted">사용 요약</div>
-        {b.summary_used ? (b.summary_preview || '있음') : '없음 (승인된 요약 없음)'}
-      </div>
+      {(() => {
+        const g = b.diagnostics;
+        if (!g) {
+          return (
+            <>
+              <DebugList label="포함된 기억" items={b.included_memories} empty="없음 (pinned 0 또는 예산 탈락)" />
+              <DebugList label="발동 로어" items={b.active_lore} empty="없음" />
+              <DebugList label="제외 로어" items={b.dropped_lore} empty="없음" />
+              <div className="small" style={{ marginTop: 8 }}>
+                <div className="muted">사용 요약</div>
+                {b.summary_used ? (b.summary_preview || '있음') : '없음 (승인된 요약 없음)'}
+              </div>
+              <DebugList label="예산 초과 탈락 기억" items={b.dropped_memories} empty="없음" />
+            </>
+          );
+        }
+        return (
+          <>
+            <div className="small" style={{ marginTop: 8 }}>
+              <div className="muted">로어 · {g.lore.length}</div>
+              {g.lore.length === 0 ? '없음' : (
+                <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+                  {g.lore.map((l) => {
+                    const keys = l.alwaysOn ? 'always' : (l.matched.join(', ') || '(키워드 없음)');
+                    if (l.status === 'no-match') {
+                      return <li key={l.title} style={{ opacity: 0.5 }}>○ [{l.title}] 미매칭 · {keys}</li>;
+                    }
+                    if (l.status === 'dropped-budget') {
+                      return <li key={l.title}>○ [{l.title}] {keys} · {l.tokens}t · 예산 초과</li>;
+                    }
+                    return <li key={l.title}>● [{l.title}] {keys} · {l.tokens}t</li>;
+                  })}
+                </ul>
+              )}
+            </div>
+            <DebugList
+              label="기억"
+              items={g.memories.map((m) => `${m.status === 'included' ? '●' : '○'} ${m.content.slice(0, 60)} · 중요도 ${m.importance} · ${m.tokens}t`)}
+              empty="없음"
+            />
+            <DebugList
+              label="요약"
+              items={g.summaries.map((s) => `${s.used ? '●' : '○'} ${s.tier} · ${s.tokens}t${s.note ? ` · ${s.note}` : ''}`)}
+              empty="없음"
+            />
+          </>
+        );
+      })()}
       <div className="small" style={{ marginTop: 8 }}>
         <div className="muted">최근 범위</div>
         {b.included_messages}건 포함
         {b.recent_from_id && b.recent_to_id ? ` · ${b.recent_from_id.slice(0, 8)}… → ${b.recent_to_id.slice(0, 8)}…` : ''}
         {b.dropped_messages > 0 ? ` · 오래된 메시지 ${b.dropped_messages}건 제외` : ''}
       </div>
-      <DebugList label="예산 초과 탈락 기억" items={b.dropped_memories} empty="없음" />
       {preview.isOoc && <div className="banner warn" style={{ marginTop: 8 }}>OOC 메시지로 감지됨 — 캐릭터 밖 응답 모드</div>}
       <button className="btn sm block" style={{ marginTop: 12 }} onClick={() => setShowRaw((v) => !v)}>{showRaw ? '원문 숨기기' : '조립된 프롬프트 보기'}</button>
       {showRaw && (

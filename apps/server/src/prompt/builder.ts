@@ -3,7 +3,7 @@ import type {
   BudgetReport, CharacterRow, ChatMessage, ConversationRow, LoreEntryRow, MemoryRow, MessageRow, ModelProfile, PersonaRow, Scene, SummaryRow,
 } from '../types.js';
 import { estimateTokens, estimateMessageTokens, getCalibration, truncateToTokens } from './tokens.js';
-import { loreEntryActive } from './loreMatch.js';
+import { loreEntryMatch } from './loreMatch.js';
 import {
   OOC_INSTRUCTION, STORY_CHOICES_INSTRUCTION, renderCharacter, renderLore, renderMemories, renderPersona, renderRules, renderScene, renderState, renderSummary, substitute,
 } from './templates.js';
@@ -48,7 +48,7 @@ export function resolvePersona(db: DB, conv: ConversationRow): PersonaRow | null
  * 시스템 규칙 → 캐릭터 카드 → 페르소나 → 장면 → 고정 기억 → 활성 로어 → 요약 → 최근 N개 → 현재 입력
  * history: 현재 활성 분기의 메시지(시간순). 마지막 원소가 현재 사용자 입력이어야 한다(인사 재생성 시 빈 배열).
  */
-export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[], contextTokens: number, defaultModel: string, profileName?: string): BuiltPrompt {
+export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[], contextTokens: number, defaultModel: string, profileName?: string, opts?: { diagnostics?: boolean }): BuiltPrompt {
   const character = one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', conv.character_id);
   if (!character) throw new Error('캐릭터를 찾을 수 없음');
   const persona = resolvePersona(db, conv);
@@ -104,19 +104,25 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   );
   const activeLore: Array<{ title: string; content: string }> = [];
   const droppedLore: string[] = [];
+  const loreDiag: NonNullable<BudgetReport['diagnostics']>['lore'] = [];
   let loreEst = 0;
   for (const e of entries) {
-    const hit = loreEntryActive({
+    const match = loreEntryMatch({
       always_on: e.always_on,
       keywords: parseJson<string[]>(e.keywords_json, []),
       secondary_keys: parseJson<string[]>(e.secondary_keys_json, []),
       selective: e.selective,
       scanText,
     });
-    if (!hit) continue;
+    if (!match.hit) {
+      loreDiag.push({ title: e.title, alwaysOn: !!e.always_on, matched: match.matched, tokens: 0, included: false, status: 'no-match' });
+      continue;
+    }
     const content = truncateToTokens(e.content, e.token_cap, cal);
     const t = estimateTokens(`- [${e.title}] ${content}`, cal);
-    if (loreEst + t > budgets.lore) {
+    const included = loreEst + t <= budgets.lore;
+    loreDiag.push({ title: e.title, alwaysOn: !!e.always_on, matched: match.matched, tokens: t, included, status: included ? 'active' : 'dropped-budget' });
+    if (!included) {
       droppedLore.push(e.title);
       continue;
     }
@@ -137,16 +143,19 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   );
   const memItems: string[] = [];
   const droppedMemItems: string[] = [];
+  const memDiag: NonNullable<BudgetReport['diagnostics']>['memories'] = [];
   let memEst = 0;
   const memCap = Math.floor(budgets.memory * 0.5);
   for (const m of pinned) {
     const t = estimateTokens(`- ${m.content}`, cal);
     if (memEst + t > memCap) {
       droppedMemItems.push(m.content);
+      memDiag.push({ content: m.content, status: 'dropped-budget', importance: m.importance, tokens: t });
       continue;
     }
     memItems.push(m.content);
     memEst += t;
+    memDiag.push({ content: m.content, status: 'included', importance: m.importance, tokens: t });
   }
   const summaryRow = one<SummaryRow>(
     db,
@@ -186,6 +195,10 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
     }
   }
   const sceneTierText = sceneParts.length ? `### 최근 장면\n${sceneParts.map((c) => `- ${c}`).join('\n')}` : null;
+  const summaries: NonNullable<BudgetReport['diagnostics']>['summaries'] = [];
+  summaries.push({ tier: 'state', used: !!stateText, tokens: stateEst, note: stateText ? undefined : (stateRow ? '예산 부족' : '승인된 상태 없음') });
+  summaries.push({ tier: 'whole', used: !!summaryText, tokens: wholeEstOnly, note: summaryText ? undefined : (summaryRow ? '예산 부족' : '승인된 요약 없음') });
+  summaries.push({ tier: 'scene', used: sceneParts.length > 0, tokens: sceneEst, note: sceneParts.length ? undefined : '해당 장면 없음/제외' });
   const sumEst = wholeEstOnly + stateEst + sceneEst;
   sections.push({
     name: '고정 기억+요약',
@@ -263,6 +276,9 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
     recent_from_id: recent[0]?.id ?? null,
     recent_to_id: recent[recent.length - 1]?.id ?? null,
   };
+  if (opts?.diagnostics) {
+    budget.diagnostics = { lore: loreDiag, memories: memDiag, summaries };
+  }
 
   return { messages, budget, profile, model: profile.model || defaultModel, stop, charName, userName, isOoc };
 }

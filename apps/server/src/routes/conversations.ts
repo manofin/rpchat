@@ -148,7 +148,7 @@ export function conversationRoutes(ctx: Ctx) {
           id: 'draft', conversation_id: conv.id, parent_id: conv.head_message_id, role: 'user', content: req.query.draft, status: 'complete', meta_json: '{}', bookmarked: 0, created_at: nowIso(),
         });
       }
-      const built = buildPrompt(db, conv, history, config.model.contextTokens, ctx.resolvedModel());
+      const built = buildPrompt(db, conv, history, config.model.contextTokens, ctx.resolvedModel(), undefined, { diagnostics: true });
       return { messages: built.messages, budget: built.budget, model: built.model, profile: built.profile, stop: built.stop, isOoc: built.isOoc };
     });
 
