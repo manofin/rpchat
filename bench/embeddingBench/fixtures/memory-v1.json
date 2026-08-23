@@ -1,0 +1,33 @@
+{
+  "_meta": {
+    "date": "2026-08-23",
+    "source": "synthetic",
+    "note": "인공 픽스처 — 실 라이브 기억 6행과 분포 상이 가능. 개체: 서리(사서), 카이(동행자) — 라이브 로어 세계관과 동일 인물 사용."
+  },
+  "pairs": [
+    { "id": "M01", "cand": "서리는 매일 아침 보관소 서가의 먼지를 닦는다", "existing": "카이는 여행 가방을 하나 지니고 다닌다", "existingId": "synthetic-1", "label": "new" },
+    { "id": "M02", "cand": "카이는 검을 허리에 착용한다", "existing": "서리는 밤에 잘 자지 못한다", "existingId": "synthetic-2", "label": "new" },
+    { "id": "M03", "cand": "시장은 격월로 열린다", "existing": "보관소 지하는 서리만 출입할 수 있다", "existingId": "synthetic-3", "label": "new" },
+    { "id": "M04", "cand": "카이는 달빛 아래에서 시력이 약해진다", "existing": "서리는 만년필을 소중히 여긴다", "existingId": "synthetic-4", "label": "new" },
+    { "id": "M05", "cand": "협곡 상류에는 폭포가 있다", "existing": "서리의 나이는 스물넷이다", "existingId": "synthetic-5", "label": "new" },
+
+    { "id": "M06", "cand": "서리의 과거에 대한 기억이 돌아왔다", "existing": "서리는 과거를 잊고 살았다", "existingId": "synthetic-6", "label": "conflict" },
+    { "id": "M07", "cand": "서리는 과거를 모두 기억한다", "existing": "서리는 과거를 잊고 살았다", "existingId": "synthetic-7", "label": "conflict" },
+    { "id": "M08", "cand": "카이는 더 이상 검을 쓰지 못한다", "existing": "카이는 뛰어난 검술 실력을 지녔다", "existingId": "synthetic-8", "label": "conflict" },
+    { "id": "M09", "cand": "서리는 보관소 지하에 들어가지 못하게 되었다", "existing": "보관소 지하는 서리만 출입할 수 있다", "existingId": "synthetic-9", "label": "conflict" },
+    { "id": "M10", "cand": "카이는 사실 여행 가방을 버렸다고 고백했다", "existing": "카이는 여행 가방을 하나 지니고 다닌다", "existingId": "synthetic-10", "label": "conflict" },
+
+    { "id": "M11", "cand": "서리가 오래된 일기장을 발견했다", "existing": "서리는 과거를 잊고 살았다", "existingId": "synthetic-11", "label": "complement" },
+    { "id": "M12", "cand": "카이는 검 손질을 직접 한다", "existing": "카이는 뛰어난 검술 실력을 지녔다", "existingId": "synthetic-12", "label": "complement" },
+    { "id": "M13", "cand": "서리는 흐린 날씨를 좋아한다", "existing": "서리는 밤에 잘 자지 못한다", "existingId": "synthetic-13", "label": "complement" },
+
+    { "id": "M14", "cand": "보관소에는 시민들의 편지가 보관되어 있다", "existing": "보관소에는 시민들이 기증한 편지와 사진이 보관되어 있다", "existingId": "synthetic-14", "label": "duplicate" },
+    { "id": "M15", "cand": "그 만년필은 전임 사서에게 물려받은 것이다", "existing": "만년필은 전임 사서에게 물려받아 서리가 지닌다", "existingId": "synthetic-15", "label": "duplicate" },
+    { "id": "M16", "cand": "협곡의 돌다리들은 대부분 낡아 무너졌다", "existing": "무너진 돌다리들이 협곡 곳곳에 남아 있다", "existingId": "synthetic-16", "label": "duplicate" },
+    { "id": "M17", "cand": "카이는 추격자의 정체를 확실히 알지 못한다", "existing": "카이조차 그 추격자의 실체를 확실히 모른다", "existingId": "synthetic-17", "label": "duplicate" },
+    { "id": "M18", "cand": "밤에는 포식자와 산적이 산맥에 나타난다", "existing": "산맥에서는 밤이 되면 포식자와 산적이 출몰한다", "existingId": "synthetic-18", "label": "duplicate" },
+
+    { "id": "M19", "cand": "지금 카이는 창가에 서 있다", "existing": "서리는 열람실에서 문서를 정리하고 있다", "existingId": "synthetic-19", "label": "transient" },
+    { "id": "M20", "cand": "서리는 지금 차를 마시고 있다", "existing": "카이는 문 앞에서 기다리고 있다", "existingId": "synthetic-20", "label": "transient" }
+  ]
+}

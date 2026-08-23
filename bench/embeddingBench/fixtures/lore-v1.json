@@ -1,0 +1,38 @@
+{
+  "_meta": {
+    "lore_snapshot_sha": "c35e103de58dd62330b516faf290e5da10969fd44d8a8ba28453561a68bce1af",
+    "date": "2026-08-23",
+    "source": "live DB read",
+    "db_path": "/home/hermes/rpchat/data/rpchat.db",
+    "note": "enabled=1 5행. 모든 엔트리 selective=0, secondary_keys=[], always_on=0 (실사용 미설정 상태 — 계획 §3.1과 동일 전제)."
+  },
+  "cases": [
+    { "id": "L01", "entryId": "7b60162c-bee3-4e66-bb7e-6e9249272dc5", "text": "두 사람은 무너진 돌다리 위를 조심스럽게 건너며 협곡을 내려다보았다.", "label": "must_fire" },
+    { "id": "L02", "entryId": "7b60162c-bee3-4e66-bb7e-6e9249272dc5", "text": "절벽 아래로 산맥이 어둡게 이어져 있었고, 밤이 오면 무언가가 나온다는 말이 있었다.", "label": "must_fire" },
+    { "id": "L03", "entryId": "810e7ed3-31a7-4b9a-9038-bcaf44e4b5f5", "text": "어둠 속에서 무언가가 그들을 쫓고 있다는 확신이 들었다.", "label": "must_fire" },
+    { "id": "L04", "entryId": "810e7ed3-31a7-4b9a-9038-bcaf44e4b5f5", "text": "카이는 포식자의 숨소리를 뒤로한 채 도망쳤다. 그것은 놀랍도록 빠르게 움직였다.", "label": "must_fire" },
+    { "id": "L05", "entryId": "1870f500-673f-4706-ba3c-15ec5a7238bc", "text": "서리는 기록보관소의 열람실 열쇠를 받아 들었다.", "label": "must_fire" },
+    { "id": "L06", "entryId": "1870f500-673f-4706-ba3c-15ec5a7238bc", "text": "지하 서가에는 시민들이 기증한 오래된 편지와 사진이 가득했다.", "label": "must_fire" },
+    { "id": "L07", "entryId": "1be5ac19-0932-418c-b8e6-1ba6f74a3196", "text": "서리는 낡은 만년필에 잉크를 채웠다.", "label": "must_fire" },
+    { "id": "L08", "entryId": "1be5ac19-0932-418c-b8e6-1ba6f74a3196", "text": "그녀는 펜 끝으로 종이 위에 희미한 획을 남겼다.", "label": "must_fire" },
+    { "id": "L09", "entryId": "7b60162c-bee3-4e66-bb7e-6e9249272dc5", "text": "상류로 가면 물건너 갈 수 있는 여울이 있다는 소문을 들었다.", "label": "must_fire" },
+    { "id": "L10", "entryId": "1870f500-673f-4706-ba3c-15ec5a7238bc", "text": "밤에는 서리 혼자 보관소에 남아 문서를 정리한다.", "label": "must_fire" },
+
+    { "id": "L11", "entryId": "7b60162c-bee3-4e66-bb7e-6e9249272dc5", "text": "다리가 부러진 새를 치료해 주었다.", "label": "must_not_fire" },
+    { "id": "L12", "entryId": "7b60162c-bee3-4e66-bb7e-6e9249272dc5", "text": "종이 너머에서 다리 소리가 들렸다.", "label": "must_not_fire" },
+    { "id": "L13", "entryId": "810e7ed3-31a7-4b9a-9038-bcaf44e4b5f5", "text": "바람에 나뭇잎 소리가 사락거렸다.", "label": "must_not_fire" },
+    { "id": "L14", "entryId": "810e7ed3-31a7-4b9a-9038-bcaf44e4b5f5", "text": "그녀의 노래는 시에서 가장 아름다운 소리였다.", "label": "must_not_fire" },
+    { "id": "L15", "entryId": "1be5ac19-0932-418c-b8e6-1ba6f74a3196", "text": "호텔 프론트의 펜 서랍에서 볼펜 하나가 굴러 나왔다.", "label": "must_not_fire" },
+    { "id": "L16", "entryId": "1870f500-673f-4706-ba3c-15ec5a7238bc", "text": "도서관 앞 정류장에서 버스를 기다렸다.", "label": "must_not_fire" },
+    { "id": "L17", "entryId": "7b60162c-bee3-4e66-bb7e-6e9249272dc5", "text": "산맥처럼 높게 쌓인 서류 더미를 정리했다.", "label": "must_not_fire" },
+    { "id": "L18", "entryId": "810e7ed3-31a7-4b9a-9038-bcaf44e4b5f5", "text": "경찰이 용의자를 추격했지만 놓쳤다는 뉴스를 들었다.", "label": "must_not_fire" },
+    { "id": "L19", "entryId": "1be5ac19-0932-418c-b8e6-1ba6f74a3196", "text": "잉크가 번진 영수증을 바닥에 버렸다.", "label": "must_not_fire" },
+    { "id": "L20", "entryId": "1870f500-673f-4706-ba3c-15ec5a7238bc", "text": "서가 곤충을 채집하러 들판에 나갔다.", "label": "must_not_fire" },
+
+    { "id": "L21", "entryId": "1870f500-673f-4706-ba3c-15ec5a7238bc", "text": "시 외곽의 석조 건물 지하에는 아무도 출입할 수 없는 어두운 창고가 있었다.", "label": "ambiguous" },
+    { "id": "L22", "entryId": "810e7ed3-31a7-4b9a-9038-bcaf44e4b5f5", "text": "정체를 알 수 없는 무언가가 밤마다 그들의 발걸음을 따라오는 것만 같았다.", "label": "ambiguous" },
+    { "id": "L23", "entryId": "7b60162c-bee3-4e66-bb7e-6e9249272dc5", "text": "깊게 팬 골짜기를 건너는 안전한 길은 낮에만 찾을 수 있었다.", "label": "ambiguous" },
+    { "id": "L24", "entryId": "1be5ac19-0932-418c-b8e6-1ba6f74a3196", "text": "전임자에게 물려받은 유일한 유품을 그녀는 늘 몸에 지니고 다녔다.", "label": "ambiguous" },
+    { "id": "L25", "entryId": "1870f500-673f-4706-ba3c-15ec5a7238bc", "text": "개인의 일기와 편지까지 보관하는 특별한 수장고가 시 한켠에 있었다.", "label": "ambiguous" }
+  ]
+}
