@@ -270,6 +270,7 @@ function SummaryTab({ conversationId, open, onApplied, onClose }: { conversation
   const [summaries, setSummaries] = useState<Summary[]>([]);
   const [busy, setBusy] = useState(false);
   const [edit, setEdit] = useState<{ id: string; content: string } | null>(null);
+  const [stateHistoryOpen, setStateHistoryOpen] = useState(false);
 
   function jumpToCover(s: Summary) {
     const eid = s.covers_until_message_id;
@@ -318,6 +319,12 @@ function SummaryTab({ conversationId, open, onApplied, onClose }: { conversation
     try { await post(`/api/conversations/${conversationId}/rollup-episode`, {}); await load(); onApplied(); ui.toast('에피소드 초안 생성 — 승인하면 장면이 접힙니다'); }
     catch (e) { ui.toast((e as Error).message, 'err'); }
   }
+  async function restore(id: string) {
+    await post(`/api/summaries/${id}/restore`, {});
+    await load();
+    onApplied();
+    ui.toast('이전 상태로 복원됨 — 새 체크포인트로 저장');
+  }
 
   const stateRows = summaries.filter((s) => s.tier === 'state');
   const sceneRows = summaries.filter((s) => s.tier === 'scene');
@@ -325,7 +332,7 @@ function SummaryTab({ conversationId, open, onApplied, onClose }: { conversation
   const wholeRows = summaries.filter((s) => s.tier !== 'state' && s.tier !== 'scene' && s.tier !== 'episode');
   const foldableScenes = summaries.filter((s) => s.tier === 'scene' && s.status === 'approved' && !s.rolled_up_into).length;
 
-  function renderCard(s: Summary, kind: '상태' | '전체' | '장면' | '에피소드') {
+  function renderCard(s: Summary, kind: '상태' | '전체' | '장면' | '에피소드', opts?: { onRestore?: () => void }) {
     return (
       <div className="card" key={s.id} style={{ marginBottom: 10 }}>
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 6 }}>
@@ -345,6 +352,7 @@ function SummaryTab({ conversationId, open, onApplied, onClose }: { conversation
             <div style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{s.content}</div>
             <div className="row end" style={{ gap: 6, marginTop: 8 }}>
               {s.covers_until_message_id && <button className="btn sm ghost" onClick={() => jumpToCover(s)}>원본</button>}
+              {opts?.onRestore && <button className="btn sm ghost" onClick={opts.onRestore}>복원</button>}
               <button className="btn sm ghost" onClick={() => remove(s.id)}>삭제</button>
               <button className="btn sm" onClick={() => setEdit({ id: s.id, content: s.content })}>편집</button>
               {s.status !== 'approved' && <button className="btn sm primary" onClick={() => approve(s.id)}>승인</button>}
@@ -361,7 +369,26 @@ function SummaryTab({ conversationId, open, onApplied, onClose }: { conversation
       {foldableScenes >= 5 && <button className="btn sm block" onClick={rollup}>에피소드로 묶기 ({foldableScenes})</button>}
       <div className="small muted" style={{ margin: '8px 0 14px' }}>요약과 자동 추출 기억은 <b>초안</b>으로 저장되며, 승인해야 프롬프트에 들어갑니다. 마지막 승인 이후의 새 메시지만 요약합니다.</div>
       {summaries.length === 0 && <div className="muted small">아직 요약이 없습니다.</div>}
-      {stateRows.map((s) => renderCard(s, '상태'))}
+      {(() => {
+        const approved = stateRows.filter((s) => s.status === 'approved').sort((a, b) => b.created_at.localeCompare(a.created_at));
+        const drafts = stateRows.filter((s) => s.status !== 'approved');
+        const current = approved[0];
+        const history = approved.slice(1);
+        return (
+          <>
+            {drafts.map((s) => renderCard(s, '상태'))}
+            {current && renderCard(current, '상태')}
+            {history.length > 0 && (
+              <>
+                <button className="btn sm ghost block" style={{ marginBottom: 10 }} onClick={() => setStateHistoryOpen((v) => !v)}>
+                  {stateHistoryOpen ? '이전 상태 이력 숨기기' : `이전 상태 이력 보기 (${history.length})`}
+                </button>
+                {stateHistoryOpen && history.map((s) => renderCard(s, '상태', { onRestore: () => restore(s.id) }))}
+              </>
+            )}
+          </>
+        );
+      })()}
       {episodeRows.map((s) => renderCard(s, '에피소드'))}
       {sceneRows.map((s) => renderCard(s, '장면'))}
       {wholeRows.map((s) => renderCard(s, '전체'))}

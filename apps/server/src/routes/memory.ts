@@ -118,6 +118,20 @@ export function memoryRoutes(ctx: Ctx) {
       return { ok: true };
     });
 
+    /** 과거 체크포인트 복원: 기존 행은 그대로 두고(이력 보존), 그 내용으로 새 approved 행을 만든다(git revert와 동일 원리). */
+    app.post<{ Params: { id: string } }>('/api/summaries/:id/restore', async (req, reply) => {
+      const s = one<SummaryRow>(db, 'SELECT * FROM summaries WHERE id = ?', req.params.id);
+      if (!s) return reply.code(404).send({ error: 'not found' });
+      const id = uid();
+      const t = nowIso();
+      run(
+        db,
+        'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        id, s.conversation_id, s.content, s.covers_until_message_id, s.covers_from_message_id, 'approved', t, s.tier,
+      );
+      return one<SummaryRow>(db, 'SELECT * FROM summaries WHERE id = ?', id);
+    });
+
     /**
      * 모델로 요약 초안 + 후보 기억을 생성한다. 결과는 항상 draft/candidate 로 저장되고 사용자가 승인해야 프롬프트에 들어간다.
      * 마지막 승인 요약 이후의 메시지만 입력으로 쓴다(없으면 전체, 예산 내에서 최근순).
