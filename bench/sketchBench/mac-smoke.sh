@@ -33,7 +33,7 @@ trap cleanup EXIT INT TERM
 
 rm -rf "${SCRATCH}"
 mkdir -p "${SCRATCH}"
-ssh "${HOST}" "tar -C '${REMOTE}' -cf - bench/sketchBench --exclude=bench/sketchBench/results --exclude=bench/sketchBench/lib/queryGenerationLog.ts" | tar -xf - -C "${SCRATCH}"
+ssh "${HOST}" "tar -C '${REMOTE}' --exclude=bench/sketchBench/results --exclude=bench/sketchBench/lib/queryGenerationLog.ts -cf - bench/sketchBench" | tar -xf - -C "${SCRATCH}"
 # tar emits bench/sketchBench/... under SCRATCH
 WORKDIR="${SCRATCH}/bench/sketchBench"
 mkdir -p "${WORKDIR}/results"

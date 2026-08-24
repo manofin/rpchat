@@ -21,7 +21,7 @@ fi
 
 rm -rf /tmp/bench
 mkdir -p /tmp
-ssh "$HOST" "tar -C '$REMOTE' -cf - bench/sketchBench --exclude=bench/sketchBench/results --exclude=bench/sketchBench/lib/queryGenerationLog.ts" | tar -xf - -C /tmp/
+ssh "$HOST" "tar -C '$REMOTE' --exclude=bench/sketchBench/results --exclude=bench/sketchBench/lib/queryGenerationLog.ts -cf - bench/sketchBench" | tar -xf - -C /tmp/
 mkdir -p "$SCRATCH/results"
 cd "$SCRATCH"
 npx tsx "$@"

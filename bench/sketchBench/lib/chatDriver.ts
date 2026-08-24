@@ -26,10 +26,14 @@ export type ExtraHeaders = Record<string, string>;
  */
 export function serveHeaders(extra?: ExtraHeaders, opts?: { json?: boolean }): Record<string, string> {
   const h: Record<string, string> = {};
-  if (opts?.json ?? true) h['Content-Type'] = 'application/json';
   const login = process.env.TAILSCALE_USER_LOGIN;
   if (login) h['Tailscale-User-Login'] = login;
   if (extra) Object.assign(h, extra);
+  // json flag is authoritative and applied last: a caller passing a pre-built
+  // headers object (run-concurrent shares one headers object carrying Content-Type)
+  // must not be able to re-introduce the JSON content-type on a bodyless DELETE.
+  if (opts?.json ?? true) h['Content-Type'] = 'application/json';
+  else delete h['Content-Type'];
   return h;
 }
 
