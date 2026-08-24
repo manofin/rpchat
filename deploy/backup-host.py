@@ -81,6 +81,12 @@ def main() -> int:
         f_out.writelines(f_in)
     applied = schema_names(raw)
     raw.unlink()
+    # backup .backup() 목적지가 원본과 같은 WAL 모드를 그대로 물려받아, 체크포인트 없이
+    # 메인 파일만 지우면 -wal/-shm 사이드카가 고아로 남는다(2026-08-24 실측 확인). 정리.
+    for suffix in ("-wal", "-shm"):
+        side = raw.with_name(raw.name + suffix)
+        if side.exists():
+            side.unlink()
     required = load_required()
     app_version, git_sha = git_describe(REPO_DIR)
     missing = [m for m in required if m not in applied]

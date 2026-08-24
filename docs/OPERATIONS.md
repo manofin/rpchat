@@ -97,7 +97,12 @@ deploy/restore.sh /home/hermes/rpchat/backups/rpchat-YYYYMMDD-HHMMSS.db.gz
 - 스키마 변경 커밋은 `schema-compat.json` 의 `required_migrations` 와 CHANGELOG 를
   같은 커밋에서 갱신한다.
 
-2차(오프호스트) 백업 사본 경로는 아직 없다 — 이 호스트 디스크 장애 시 백업까지 함께 소실된다.
+2차(오프호스트) 백업 사본: Mac Studio(macstudio-llm)가 `deploy/restore.sh`와
+같은 tailnet SSH 신뢰로 hermes를 **pull**한다(반대 방향은 hermes에 Mac용 키가 없음).
+- 스크립트: Mac `/Users/llm/rpchat-backups-sync.sh` (`rsync -a rpchat:.../backups/ /Users/llm/rpchat-backups-mirror/`)
+- 자동화: launchd `com.rpchat.backupsync`(Mac), 매일 14:00 KST = 05:00 UTC (hermes 04:00 UTC 백업 1시간 후)
+- 로그: Mac `/Users/llm/logs/rpchat-backupsync.{out,err}.log`
+- .db.gz + .manifest.json 둘 다 미러링됨. Mac 쪽은 별도 삭제 정책 없음(용량 문제 없음, 수백KB 수준).
 
 앱 내 **설정 → 내보내기** 또는 `/api/export/all` 로 전체 JSON 백업도 가능하다(캐릭터·대화·기억 등).
 
