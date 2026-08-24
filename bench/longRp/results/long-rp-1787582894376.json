@@ -1,0 +1,907 @@
+{
+  "run": "run-long-rp-v1",
+  "valid": true,
+  "convId": "96222ef0-ceff-45be-93af-cb5f5fdff593",
+  "characterId": "e1288984-7a06-4b02-b87d-fc7f177d15d0",
+  "startedHealth": {
+    "promptVersion": "2026.08.22-r1",
+    "resolvedModel": "/Users/llm/models/Gemma-4-Dark-Thoughts-V2-31B.i1-Q4_K_M.gguf",
+    "contextTokens": 16384,
+    "modelOk": true
+  },
+  "storyComplete": 100,
+  "probeComplete": 9,
+  "story": [
+    {
+      "turn": 1,
+      "ok": true,
+      "type": "done",
+      "ms": 6350,
+      "chars": 72
+    },
+    {
+      "turn": 2,
+      "ok": true,
+      "type": "done",
+      "ms": 2163,
+      "chars": 56
+    },
+    {
+      "turn": 3,
+      "ok": true,
+      "type": "done",
+      "ms": 2835,
+      "chars": 81
+    },
+    {
+      "turn": 4,
+      "ok": true,
+      "type": "done",
+      "ms": 3433,
+      "chars": 104
+    },
+    {
+      "turn": 5,
+      "ok": true,
+      "type": "done",
+      "ms": 3554,
+      "chars": 110
+    },
+    {
+      "turn": 6,
+      "ok": true,
+      "type": "done",
+      "ms": 3254,
+      "chars": 91
+    },
+    {
+      "turn": 7,
+      "ok": true,
+      "type": "done",
+      "ms": 2722,
+      "chars": 73
+    },
+    {
+      "turn": 8,
+      "ok": true,
+      "type": "done",
+      "ms": 2909,
+      "chars": 85
+    },
+    {
+      "turn": 9,
+      "ok": true,
+      "type": "done",
+      "ms": 2718,
+      "chars": 82
+    },
+    {
+      "turn": 10,
+      "ok": true,
+      "type": "done",
+      "ms": 2382,
+      "chars": 66
+    },
+    {
+      "turn": 11,
+      "ok": true,
+      "type": "done",
+      "ms": 2721,
+      "chars": 74
+    },
+    {
+      "turn": 12,
+      "ok": true,
+      "type": "done",
+      "ms": 2959,
+      "chars": 90
+    },
+    {
+      "turn": 13,
+      "ok": true,
+      "type": "done",
+      "ms": 3052,
+      "chars": 90
+    },
+    {
+      "turn": 14,
+      "ok": true,
+      "type": "done",
+      "ms": 2778,
+      "chars": 87
+    },
+    {
+      "turn": 15,
+      "ok": true,
+      "type": "done",
+      "ms": 2979,
+      "chars": 89
+    },
+    {
+      "turn": 16,
+      "ok": true,
+      "type": "done",
+      "ms": 3673,
+      "chars": 120
+    },
+    {
+      "turn": 17,
+      "ok": true,
+      "type": "done",
+      "ms": 3312,
+      "chars": 89
+    },
+    {
+      "turn": 18,
+      "ok": true,
+      "type": "done",
+      "ms": 2847,
+      "chars": 84
+    },
+    {
+      "turn": 19,
+      "ok": true,
+      "type": "done",
+      "ms": 3064,
+      "chars": 91
+    },
+    {
+      "turn": 20,
+      "ok": true,
+      "type": "done",
+      "ms": 2662,
+      "chars": 70
+    },
+    {
+      "turn": 21,
+      "ok": true,
+      "type": "done",
+      "ms": 2877,
+      "chars": 75
+    },
+    {
+      "turn": 22,
+      "ok": true,
+      "type": "done",
+      "ms": 3330,
+      "chars": 98
+    },
+    {
+      "turn": 23,
+      "ok": true,
+      "type": "done",
+      "ms": 2906,
+      "chars": 84
+    },
+    {
+      "turn": 24,
+      "ok": true,
+      "type": "done",
+      "ms": 3443,
+      "chars": 108
+    },
+    {
+      "turn": 25,
+      "ok": true,
+      "type": "done",
+      "ms": 3229,
+      "chars": 94
+    },
+    {
+      "turn": 26,
+      "ok": true,
+      "type": "done",
+      "ms": 2836,
+      "chars": 90
+    },
+    {
+      "turn": 27,
+      "ok": true,
+      "type": "done",
+      "ms": 3129,
+      "chars": 91
+    },
+    {
+      "turn": 28,
+      "ok": true,
+      "type": "done",
+      "ms": 2873,
+      "chars": 83
+    },
+    {
+      "turn": 29,
+      "ok": true,
+      "type": "done",
+      "ms": 2782,
+      "chars": 73
+    },
+    {
+      "turn": 30,
+      "ok": true,
+      "type": "done",
+      "ms": 2948,
+      "chars": 81
+    },
+    {
+      "turn": 31,
+      "ok": true,
+      "type": "done",
+      "ms": 3182,
+      "chars": 84
+    },
+    {
+      "turn": 32,
+      "ok": true,
+      "type": "done",
+      "ms": 3448,
+      "chars": 101
+    },
+    {
+      "turn": 33,
+      "ok": true,
+      "type": "done",
+      "ms": 3653,
+      "chars": 109
+    },
+    {
+      "turn": 34,
+      "ok": true,
+      "type": "done",
+      "ms": 3325,
+      "chars": 93
+    },
+    {
+      "turn": 35,
+      "ok": true,
+      "type": "done",
+      "ms": 2982,
+      "chars": 93
+    },
+    {
+      "turn": 36,
+      "ok": true,
+      "type": "done",
+      "ms": 3829,
+      "chars": 114
+    },
+    {
+      "turn": 37,
+      "ok": true,
+      "type": "done",
+      "ms": 2728,
+      "chars": 72
+    },
+    {
+      "turn": 38,
+      "ok": true,
+      "type": "done",
+      "ms": 3112,
+      "chars": 89
+    },
+    {
+      "turn": 39,
+      "ok": true,
+      "type": "done",
+      "ms": 2821,
+      "chars": 76
+    },
+    {
+      "turn": 40,
+      "ok": true,
+      "type": "done",
+      "ms": 2960,
+      "chars": 87
+    },
+    {
+      "turn": 41,
+      "ok": true,
+      "type": "done",
+      "ms": 2581,
+      "chars": 61
+    },
+    {
+      "turn": 42,
+      "ok": true,
+      "type": "done",
+      "ms": 3258,
+      "chars": 83
+    },
+    {
+      "turn": 43,
+      "ok": true,
+      "type": "done",
+      "ms": 3178,
+      "chars": 89
+    },
+    {
+      "turn": 44,
+      "ok": true,
+      "type": "done",
+      "ms": 2564,
+      "chars": 64
+    },
+    {
+      "turn": 45,
+      "ok": true,
+      "type": "done",
+      "ms": 3363,
+      "chars": 92
+    },
+    {
+      "turn": 46,
+      "ok": true,
+      "type": "done",
+      "ms": 3240,
+      "chars": 85
+    },
+    {
+      "turn": 47,
+      "ok": true,
+      "type": "done",
+      "ms": 2831,
+      "chars": 68
+    },
+    {
+      "turn": 48,
+      "ok": true,
+      "type": "done",
+      "ms": 3332,
+      "chars": 89
+    },
+    {
+      "turn": 49,
+      "ok": true,
+      "type": "done",
+      "ms": 3178,
+      "chars": 92
+    },
+    {
+      "turn": 50,
+      "ok": true,
+      "type": "done",
+      "ms": 3395,
+      "chars": 96
+    },
+    {
+      "turn": 51,
+      "ok": true,
+      "type": "done",
+      "ms": 2851,
+      "chars": 73
+    },
+    {
+      "turn": 52,
+      "ok": true,
+      "type": "done",
+      "ms": 3240,
+      "chars": 88
+    },
+    {
+      "turn": 53,
+      "ok": true,
+      "type": "done",
+      "ms": 2907,
+      "chars": 83
+    },
+    {
+      "turn": 54,
+      "ok": true,
+      "type": "done",
+      "ms": 3329,
+      "chars": 92
+    },
+    {
+      "turn": 55,
+      "ok": true,
+      "type": "done",
+      "ms": 3262,
+      "chars": 89
+    },
+    {
+      "turn": 56,
+      "ok": true,
+      "type": "done",
+      "ms": 3132,
+      "chars": 85
+    },
+    {
+      "turn": 57,
+      "ok": true,
+      "type": "done",
+      "ms": 3141,
+      "chars": 94
+    },
+    {
+      "turn": 58,
+      "ok": true,
+      "type": "done",
+      "ms": 3538,
+      "chars": 100
+    },
+    {
+      "turn": 59,
+      "ok": true,
+      "type": "done",
+      "ms": 3387,
+      "chars": 86
+    },
+    {
+      "turn": 60,
+      "ok": true,
+      "type": "done",
+      "ms": 3437,
+      "chars": 98
+    },
+    {
+      "turn": 61,
+      "ok": true,
+      "type": "done",
+      "ms": 3399,
+      "chars": 75
+    },
+    {
+      "turn": 62,
+      "ok": true,
+      "type": "done",
+      "ms": 3849,
+      "chars": 111
+    },
+    {
+      "turn": 63,
+      "ok": true,
+      "type": "done",
+      "ms": 3491,
+      "chars": 88
+    },
+    {
+      "turn": 64,
+      "ok": true,
+      "type": "done",
+      "ms": 3723,
+      "chars": 109
+    },
+    {
+      "turn": 65,
+      "ok": true,
+      "type": "done",
+      "ms": 3163,
+      "chars": 88
+    },
+    {
+      "turn": 66,
+      "ok": true,
+      "type": "done",
+      "ms": 3596,
+      "chars": 95
+    },
+    {
+      "turn": 67,
+      "ok": true,
+      "type": "done",
+      "ms": 3818,
+      "chars": 101
+    },
+    {
+      "turn": 68,
+      "ok": true,
+      "type": "done",
+      "ms": 3666,
+      "chars": 88
+    },
+    {
+      "turn": 69,
+      "ok": true,
+      "type": "done",
+      "ms": 3686,
+      "chars": 102
+    },
+    {
+      "turn": 70,
+      "ok": true,
+      "type": "done",
+      "ms": 3859,
+      "chars": 101
+    },
+    {
+      "turn": 71,
+      "ok": true,
+      "type": "done",
+      "ms": 3660,
+      "chars": 103
+    },
+    {
+      "turn": 72,
+      "ok": true,
+      "type": "done",
+      "ms": 3328,
+      "chars": 93
+    },
+    {
+      "turn": 73,
+      "ok": true,
+      "type": "done",
+      "ms": 3649,
+      "chars": 105
+    },
+    {
+      "turn": 74,
+      "ok": true,
+      "type": "done",
+      "ms": 3528,
+      "chars": 94
+    },
+    {
+      "turn": 75,
+      "ok": true,
+      "type": "done",
+      "ms": 3573,
+      "chars": 91
+    },
+    {
+      "turn": 76,
+      "ok": true,
+      "type": "done",
+      "ms": 3791,
+      "chars": 108
+    },
+    {
+      "turn": 77,
+      "ok": true,
+      "type": "done",
+      "ms": 3909,
+      "chars": 106
+    },
+    {
+      "turn": 78,
+      "ok": true,
+      "type": "done",
+      "ms": 4136,
+      "chars": 104
+    },
+    {
+      "turn": 79,
+      "ok": true,
+      "type": "done",
+      "ms": 3866,
+      "chars": 103
+    },
+    {
+      "turn": 80,
+      "ok": true,
+      "type": "done",
+      "ms": 3902,
+      "chars": 106
+    },
+    {
+      "turn": 81,
+      "ok": true,
+      "type": "done",
+      "ms": 3938,
+      "chars": 105
+    },
+    {
+      "turn": 82,
+      "ok": true,
+      "type": "done",
+      "ms": 3786,
+      "chars": 102
+    },
+    {
+      "turn": 83,
+      "ok": true,
+      "type": "done",
+      "ms": 3733,
+      "chars": 101
+    },
+    {
+      "turn": 84,
+      "ok": true,
+      "type": "done",
+      "ms": 3806,
+      "chars": 93
+    },
+    {
+      "turn": 85,
+      "ok": true,
+      "type": "done",
+      "ms": 3990,
+      "chars": 108
+    },
+    {
+      "turn": 86,
+      "ok": true,
+      "type": "done",
+      "ms": 3340,
+      "chars": 86
+    },
+    {
+      "turn": 87,
+      "ok": true,
+      "type": "done",
+      "ms": 3738,
+      "chars": 102
+    },
+    {
+      "turn": 88,
+      "ok": true,
+      "type": "done",
+      "ms": 3890,
+      "chars": 97
+    },
+    {
+      "turn": 89,
+      "ok": true,
+      "type": "done",
+      "ms": 3613,
+      "chars": 91
+    },
+    {
+      "turn": 90,
+      "ok": true,
+      "type": "done",
+      "ms": 4123,
+      "chars": 103
+    },
+    {
+      "turn": 91,
+      "ok": true,
+      "type": "done",
+      "ms": 3782,
+      "chars": 94
+    },
+    {
+      "turn": 92,
+      "ok": true,
+      "type": "done",
+      "ms": 4180,
+      "chars": 110
+    },
+    {
+      "turn": 93,
+      "ok": true,
+      "type": "done",
+      "ms": 3779,
+      "chars": 91
+    },
+    {
+      "turn": 94,
+      "ok": true,
+      "type": "done",
+      "ms": 3908,
+      "chars": 105
+    },
+    {
+      "turn": 95,
+      "ok": true,
+      "type": "done",
+      "ms": 3871,
+      "chars": 94
+    },
+    {
+      "turn": 96,
+      "ok": true,
+      "type": "done",
+      "ms": 3756,
+      "chars": 90
+    },
+    {
+      "turn": 97,
+      "ok": true,
+      "type": "done",
+      "ms": 3875,
+      "chars": 96
+    },
+    {
+      "turn": 98,
+      "ok": true,
+      "type": "done",
+      "ms": 3790,
+      "chars": 89
+    },
+    {
+      "turn": 99,
+      "ok": true,
+      "type": "done",
+      "ms": 3920,
+      "chars": 93
+    },
+    {
+      "turn": 100,
+      "ok": true,
+      "type": "done",
+      "ms": 4069,
+      "chars": 108
+    }
+  ],
+  "probes": [
+    {
+      "id": "P30-a",
+      "horizon": 30,
+      "ok": true,
+      "text": "린은 매일 등유를 보충하고 램프를 닦으며 빛의 각도를 점검합니다. 또한 벽면에 날씨와 파도 높이를 기록하는 눈금을 새깁니다. 현재 그녀의 주머니에는 열쇠 꾸러미가 들어있으며, 주변에는 빗자루, 찻잔, 냄비가 있습니다.",
+      "pass": false,
+      "missing": [
+        "등대지기"
+      ],
+      "hitForbid": []
+    },
+    {
+      "id": "P30-b",
+      "horizon": 30,
+      "ok": true,
+      "text": "폭풍우로 배가 난파되어 절벽에 표류한 후 린의 등대에 구조되었습니다. 현재는 왼손목이 바위에 찢어져 천으로 감은 상태이며, 비에 젖어 춥고 지쳐 있는 몸 상태입니다.",
+      "pass": false,
+      "missing": [
+        "사흘"
+      ],
+      "hitForbid": []
+    },
+    {
+      "id": "P30-c",
+      "horizon": 30,
+      "ok": true,
+      "text": "열쇠는 린의 주머니 속에 계속 있었습니다. 여행자가 착각했거나, 보이지 않는다고 생각한 것일 뿐 실제로 옮긴 사람은 없습니다.",
+      "pass": false,
+      "missing": [
+        "모르"
+      ],
+      "hitForbid": []
+    },
+    {
+      "id": "P60-a",
+      "horizon": 60,
+      "ok": true,
+      "text": "(OOC) 열쇠는 여행자가 젖은 외투를 털 때 주머니에서 발견되었으며, 사실은 린이 잃어버린 줄 알았던 등실 열쇠입니다. 미나는 린의 언니로, 2년 전 항구 도시로 떠나며 등대 일지만을 남기고 연락이 끊긴 상태입니다.",
+      "pass": true,
+      "missing": [],
+      "hitForbid": []
+    },
+    {
+      "id": "P60-b",
+      "horizon": 60,
+      "ok": true,
+      "text": "린의 빚은 떠난 미나가 남긴 흔적이며, 등불이 일시적으로 꺼진 것은 기계적 결함이 아니라 누군가 고의로 심지를 건드린 흔적입니다. 린은 이를 단순한 바람 탓으로 돌리며 외면하려 합니다.",
+      "pass": false,
+      "missing": [
+        "모르"
+      ],
+      "hitForbid": []
+    },
+    {
+      "id": "P60-c",
+      "horizon": 60,
+      "ok": true,
+      "text": "사용자의 거주 범위는 처음과 달라졌습니다. 초기에는 폭풍우를 피해 잠시 머무는 상태였으나, 이제는 린의 허락하에 '부엌과 침실 옆 골방'이라는 구체적인 공간을 사용할 수 있게 되었습니다.",
+      "pass": true,
+      "missing": [],
+      "hitForbid": []
+    },
+    {
+      "id": "P100-a",
+      "horizon": 100,
+      "ok": true,
+      "text": "미나의 편지는 '불을 끄지 말라'는 경고성 내용만 담긴 짧은 쪽지였으며, 발신자가 정말 미나인지 혹은 누군가의 사칭인지는 아직 불분명한 상태입니다. 어젯밤 등불이 잠깐 꺼졌던 사건은 린이 바람 탓이라며 대수롭지 않게 넘기려 했으나, 의문의 편지와 맞물려 누군가 의도적으로 등불을 끄려 했을 가능성이 암시되어 긴장감을 유발하는 장치로 설정되어 있습니다.",
+      "pass": true,
+      "missing": [],
+      "hitForbid": []
+    },
+    {
+      "id": "P100-b",
+      "horizon": 100,
+      "ok": true,
+      "text": "사용자는 현재 1층의 메인 거실이자 주방이 포함된 공용 공간에 있습니다. 린과 함께 램프 근처에 머물며 불빛을 관찰하고 있는 상태입니다.",
+      "pass": false,
+      "missing": [
+        "조수",
+        "당번"
+      ],
+      "hitForbid": []
+    },
+    {
+      "id": "P100-c",
+      "horizon": 100,
+      "ok": true,
+      "text": "상처는 린이 감아준 천 덕분에 출혈이 멈추고 회복 중입니다. 보급은 작년 겨울분이 남아 있어 식량과 등유 모두 한 시즌을 버틸 수 있는 충분한 양입니다.",
+      "pass": false,
+      "missing": [
+        "왼손"
+      ],
+      "hitForbid": []
+    }
+  ],
+  "hold": {
+    "30": {
+      "scored": [
+        "F01",
+        "F02",
+        "F03",
+        "F05",
+        "F06",
+        "F07"
+      ],
+      "held": [],
+      "missed": [
+        "F01",
+        "F02",
+        "F03",
+        "F05",
+        "F06",
+        "F07"
+      ],
+      "unscored": [
+        "F04",
+        "F08"
+      ],
+      "hold_rate": 0
+    },
+    "60": {
+      "scored": [
+        "F01",
+        "F09",
+        "F10",
+        "F11",
+        "F12",
+        "F13"
+      ],
+      "held": [
+        "F01",
+        "F09",
+        "F10",
+        "F13"
+      ],
+      "missed": [
+        "F11",
+        "F12"
+      ],
+      "unscored": [
+        "F02",
+        "F03",
+        "F04",
+        "F05",
+        "F06",
+        "F07",
+        "F08",
+        "F14"
+      ],
+      "hold_rate": 0.6666666666666666
+    },
+    "100": {
+      "scored": [
+        "F03",
+        "F15",
+        "F16",
+        "F17",
+        "F18",
+        "F19",
+        "F20"
+      ],
+      "held": [
+        "F15",
+        "F17",
+        "F18"
+      ],
+      "missed": [
+        "F03",
+        "F16",
+        "F19",
+        "F20"
+      ],
+      "unscored": [
+        "F01",
+        "F02",
+        "F04",
+        "F05",
+        "F06",
+        "F07",
+        "F08",
+        "F09",
+        "F10",
+        "F11",
+        "F12",
+        "F13",
+        "F14"
+      ],
+      "hold_rate": 0.42857142857142855
+    }
+  }
+}

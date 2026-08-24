@@ -254,3 +254,11 @@ P1-3c 설계검수 완료, REVIEW-P1-3c.md 참조
 - 한 경계: `bench/longRp/fixtures/long-rp-fixtures-v1.json` gold facts 20 + probe 9. 라이브 DB/모델/제품 경로 무접촉. 100턴 실측 안 함. 95%는 목표가 아님.
 - 게이트: `npx tsx bench/longRp/verify-fixtures.ts` → `JSON_PARSE_OK` / `FIXTURE_OK long-rp=20 probes=9` / due 30=8 60=14 100=20.
 - 제외: 러너, infer 호출, 라이브 대화 추출, 신규 테이블.
+
+## [2026-08-24 ⑥ runner first VALID by hermes]
+- 한 경계: 격리 `[TEST-longrp-v1]` 라이브 POST /messages 100턴 + OOC probe 9. `apps/**` 무수정. 요약/기억 승인 없음. 95% 아님.
+- raw: `VALID` story=100 probe=9. hold 30=0/6 60=4/6 100=3/7.
+- 파일 sha256 `456e1489ebb87ca18e2e562505201a0fdcab1915048d1f7bf152e2e0107f75da`
+- model Gemma-4-Dark-Thoughts-V2-31B.i1-Q4_K_M / 16384 / prompt `2026.08.22-r1`
+- 서리 messages 55→55. conv 삭제됨. char `린-longrp-v1` archived.
+- 게이트 재설계 없음. 상세 `bench/longRp/REPORT.md`.

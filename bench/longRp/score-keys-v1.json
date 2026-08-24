@@ -1,0 +1,18 @@
+{
+  "_meta": {
+    "id": "long-rp-score-keys-v1",
+    "match": "nfc+lower+ws-collapse substring",
+    "note": "Preregistered before first live run. Do not edit after seeing answers."
+  },
+  "probes": {
+    "P30-a": { "must": ["등대지기", "열쇠"], "forbid": ["교대"] },
+    "P30-b": { "must": ["폭풍", "왼손", "사흘"], "forbid": ["초대"] },
+    "P30-c": { "must": ["모르"], "forbid": ["범인은"] },
+    "P60-a": { "must": ["주머니", "미나"], "forbid": ["사망"] },
+    "P60-b": { "must": ["빚", "모르"], "forbid": ["청산"] },
+    "P60-c": { "must": ["골방"], "forbid": ["처음부터 전부"] },
+    "P100-a": { "must": ["편지", "끄지"], "forbid": ["범인은"] },
+    "P100-b": { "must": ["조수", "당번"], "forbid": ["침입자"] },
+    "P100-c": { "must": ["왼손", "등유"], "forbid": ["바닥"] }
+  }
+}
