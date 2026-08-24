@@ -56,18 +56,28 @@
 설정 → 콘텐츠 지침. 전 대화 공통으로 시스템 규칙에 삽입되는 문구(톤·수위·금지 등). **미성년자 보호 등 핵심 안전 규칙은 이 값과 무관하게 항상 강제**된다.
 
 ## 백업·복원
-SQLite(WAL) 단일 파일이 전부다.
-```bash
-# 온라인 백업 (앱 실행 중 가능). VOLUME 은 docker volume ls 로 실제 이름 확인.
-VOLUME=deploy_rpchat-data OUT_DIR=/opt/rpchat/backups deploy/backup.sh
-# cron 예 (매일 04:00)
-0 4 * * *  VOLUME=deploy_rpchat-data /opt/rpchat/deploy/backup.sh >> /var/log/rpchat-backup.log 2>&1
+SQLite(WAL) 단일 파일이 전부다. **이 배포는 docker 를 쓰지 않는다** — systemd `--user` 서비스로
+직접 실행한다 (호스트에 docker 자체가 설치되어 있지 않음, 2026-08-24 확인).
 
-# 복원 (컨테이너 중지 후)
-docker compose stop
-deploy/restore.sh /opt/rpchat/backups/rpchat-YYYYMMDD-HHMMSS.db.gz
-docker compose start
+```bash
+# 백업: systemd --user 타이머가 매일 04:00 자동 실행 (RandomizedDelaySec=120).
+systemctl --user list-timers rpchat-backup.timer
+systemctl --user cat rpchat-backup.service   # ExecStart: python3 deploy/backup-host.py
+# 수동 1회 실행:
+systemctl --user start rpchat-backup.service
+# 산출물: /home/hermes/rpchat/backups/rpchat-YYYYMMDD-HHMMSS.db.gz (WAL-safe sqlite3 .backup, KEEP_DAYS=14)
+
+# 복원 (호스트 경로 기반, 라이브 서비스는 스크립트가 직접 중지/재기동한다):
+deploy/restore.sh /home/hermes/rpchat/backups/rpchat-YYYYMMDD-HHMMSS.db.gz
 ```
+`restore.sh`는 실행 전 `PRAGMA integrity_check`와 conversations/messages 건수를 raw로 보여주고,
+`yes` 확인 후에만 `rpchat.service`를 멈추고 교체한다. 교체 직전 현재 라이브 상태를
+`rpchat-pre-restore-<timestamp>.db`로 같은 백업 디렉터리에 안전판으로 남긴 뒤 복원이 잘못됐을 때
+그 파일로 되돌릴 수 있게 한다. `deploy/backup.sh`·`deploy/docker-compose.yml`은 이전 docker 배포
+방식의 유물로 **현재 배포에서 쓰이지 않는다** — 실제 백업 산출은 `backup-host.py`가 전부다.
+
+2차(오프호스트) 백업 사본 경로는 아직 없다 — 이 호스트 디스크 장애 시 백업까지 함께 소실된다.
+
 앱 내 **설정 → 내보내기** 또는 `/api/export/all` 로 전체 JSON 백업도 가능하다(캐릭터·대화·기억 등).
 
 ## 헬스·모니터링
