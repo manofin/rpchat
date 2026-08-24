@@ -226,3 +226,6 @@ P1-3c 설계검수 완료, REVIEW-P1-3c.md 참조
 - 판정: H1 불충족(must_fire 0/10) + H2 불충족(false_trigger 10/10) → 합산규칙에 따라 **비채택 확정**. conflict.ts/loreMatch.ts 미변경. 옵션(a)/(b) 게이트식 재설계는 하지 않음(사후편향 방지).
 - Task 4/5: 참고자료 전용 실행 완료. memory raw: baseline dup 2/5 vs H1 5/5+오탐0 vs H2 전부 컷 통과. perf: H1 395ms·716MB, H2 446ms·687MB (100문장). Gemma TTFT는 이 환경에 :8083 부재로 미실측(확인 안 함).
 - 산출물: bench/embeddingBench/REPORT.md + results/*.json 3종. PRD 순서 7 종료기준("채택/비채택 근거 확보") 충족.
+
+## [2026-08-23 PRD 개정 1.2 by hermes] 문서만 — 코드/DB/git(app) 없음
+- `/home/hermes/rpchat/RP-Chat-PRD.md` 1.1 → 1.2. 반영: 메타데이터(운영버전 표기에 bench 커밋 명시), §5 A트랙 순서7 → ✅ 비채택 확정(REPORT·사전등록 참조), "0–7 전부 종료 — A트랙 완료", §5.3 B군 로어 의미발동 ❌ 닫힘, §6에 순서7 측정 이력 추가(lore/memory 픽스처 v1 버전관리됨), §8 회람질문 갱신(다음 국면 = Phase 2 vs B/C).
