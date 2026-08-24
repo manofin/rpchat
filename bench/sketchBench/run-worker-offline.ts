@@ -13,6 +13,12 @@ import { fileURLToPath } from 'node:url';
 import { generateImage, requireDrawThingsBase } from './lib/drawThingsClient.ts';
 
 const N = Number(process.argv.includes('--n') ? process.argv[process.argv.indexOf('--n') + 1] : 2);
+if (!Number.isInteger(N) || N <= 0) {
+  // Vacuous-truth trap: [].every(...) is true, so a bad/missing --n value would
+  // otherwise silently produce 0 requests and report fast_fail_all:true as if verified.
+  console.error(`--n must be a positive integer, got ${JSON.stringify(process.argv[process.argv.indexOf('--n') + 1])} (parsed ${N})`);
+  process.exit(2);
+}
 const TIMEOUT_MS = Number(process.env.OFFLINE_TIMEOUT_MS ?? 5000);
 
 async function main() {

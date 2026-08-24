@@ -25,9 +25,15 @@ export function intervalsOverlap(a0: number, a1: number, b0: number, b1: number)
 }
 
 export function compressActiveIntervals(samples: Array<{ t_poll: number; our_active: boolean }>): Array<{ start: number; end: number }> {
+  // activePoller fires each tick without awaiting the previous one's completion, so
+  // under network jitter a later tick can resolve (and push into the samples array)
+  // before an earlier one -> array order is not guaranteed to match t_poll order.
+  // Sort defensively rather than trusting push order (confirmed via synthetic repro:
+  // unsorted [t=800,t=400] collapses into an inverted {start:800,end:400} interval).
+  const ordered = [...samples].sort((a, b) => a.t_poll - b.t_poll);
   const out: Array<{ start: number; end: number }> = [];
   let cur: { start: number; end: number } | null = null;
-  for (const s of samples) {
+  for (const s of ordered) {
     if (s.our_active) {
       if (!cur) cur = { start: s.t_poll, end: s.t_poll };
       else cur.end = s.t_poll;

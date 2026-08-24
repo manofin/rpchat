@@ -103,18 +103,23 @@ async function preflight(serve: string, headers: Record<string, string>): Promis
 
 function attachOverlap(chat: ChatRow[], images: ImageRow[], intervals: Array<{ start: number; end: number }>): void {
   for (const c of chat) {
+    // Primary signal: direct wall-clock overlap between this chat request's own
+    // [t_sent, t_done] window and each image job's [t_start, t_end]. Previously this
+    // unioned the poller-derived active intervals first and checked images against
+    // that union instead -- with no idle gap between back-to-back chat turns, the
+    // poller often collapses into one interval spanning the whole run, so every turn
+    // came out overlapped regardless of real timing (confirmed via synthetic repro:
+    // 3 sequential turns, only 1 truly overlapped an image, shipped code marked all 3).
+    c.overlapped_image = images.some((im) => intervalsOverlap(c.t_sent, c.t_done, im.t_start, im.t_end));
+    // Poller window is kept for diagnostics/corroboration only -- not load-bearing.
     const covering = intervals.filter((iv) => intervalsOverlap(c.t_sent, c.t_done, iv.start, iv.end));
     if (covering.length === 0) {
       c.poll_active_start = null;
       c.poll_active_end = null;
-      c.overlapped_image = false;
-      continue;
+    } else {
+      c.poll_active_start = Math.min(...covering.map((iv) => iv.start));
+      c.poll_active_end = Math.max(...covering.map((iv) => iv.end));
     }
-    const start = Math.min(...covering.map((iv) => iv.start));
-    const end = Math.max(...covering.map((iv) => iv.end));
-    c.poll_active_start = start;
-    c.poll_active_end = end;
-    c.overlapped_image = images.some((im) => intervalsOverlap(start, end, im.t_start, im.t_end));
   }
 }
 
@@ -211,8 +216,18 @@ async function main() {
     notes.push(`generation_log read failed: ${e instanceof Error ? e.message : String(e)}`);
   }
 
+  const logCountMismatch = logRows.length !== chatPartial.length;
+  if (logCountMismatch) {
+    // Index-based zip assumes generation_log rows (ORDER BY created_at) line up 1:1
+    // with the sequential chat requests. If counts disagree we cannot trust that
+    // alignment for ANY row from that point on -- fail closed (null everything) rather
+    // than silently attributing TTFT from the wrong turn onward.
+    notes.push(
+      `generation_log n=${logRows.length} != chat n=${chatPartial.length} -- refusing index-based join (fail-closed), ttft_ms/total_ms/completion_tokens left null this run`,
+    );
+  }
   const chatRows: ChatRow[] = chatPartial.map((c, idx) => {
-    const log = logRows[idx];
+    const log = logCountMismatch ? undefined : logRows[idx];
     return {
       ...c,
       ttft_ms: log?.ttft_ms ?? null,
@@ -224,9 +239,6 @@ async function main() {
       poll_active_end: null,
     };
   });
-  if (logRows.length !== chatPartial.length) {
-    notes.push(`generation_log n=${logRows.length} != chat n=${chatPartial.length}`);
-  }
 
   const intervals = compressActiveIntervals(pollSamples);
   attachOverlap(chatRows, imageRows, intervals);
@@ -297,7 +309,7 @@ async function main() {
       n_requested: nImage,
       n_ok: imgOk.length,
       success_rate: nImage === 0 ? 0 : imgOk.length / nImage,
-      latency_ms: percentiles(imageRows.map((r) => r.latency_ms)),
+      latency_ms: percentiles(imgOk.map((r) => r.latency_ms)), // ok:true only -- fast failures must not pull §4.2.6 arrival p95 down
     },
     activePoll: { interval_ms: pollMs, samples: pollSamples, intervals },
     memory: {

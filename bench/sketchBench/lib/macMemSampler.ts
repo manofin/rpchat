@@ -73,7 +73,12 @@ export function snapshot(label: string, pgrepPattern: string | null): MemSnapsho
   const swap = parseSwapUsage(swapCap.stdout);
   const vm = parseVmStat(vmCap.stdout);
   const pids = pgrepPattern ? parsePgrep(pgrepCap.stdout) : [];
-  const pid = pids.length === 1 ? pids[0] : pids.length > 1 ? pids[0] : null;
+  if (pids.length > 1) {
+    console.error(
+      `macMemSampler: ambiguous pgrep match (${pids.length} pids: ${pids.join('","')}) for pattern ${JSON.stringify(pgrepPattern)} -- treating pid as unknown rather than guessing`,
+    );
+  }
+  const pid = pids.length === 1 ? pids[0] : null;
   let psCap: CmdCapture | null = null;
   let rss_kb: number | null = null;
   if (pid != null) {
