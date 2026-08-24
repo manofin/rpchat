@@ -236,3 +236,10 @@ P1-3c 설계검수 완료, REVIEW-P1-3c.md 참조
 - 격리 raw: BIND_OK / BIND_WARN(0099 missing) / BIND_NO_SIDECAR. LIVE_SHA_UNCHANGED. SERVICE_STILL_ACTIVE. LIVE_MANIFEST_COUNT=0.
 - sha256: CHANGELOG `bcdcc883…`, schema-compat `abaaf9df…`, backup-host.py `1a6593c8…`, restore.sh `be6780a2…`, OPERATIONS `93e4063e…`.
 - 미커밋. 제안 메시지: `docs(ops): CHANGELOG + schema/app_version bind for backups`.
+
+## [2026-08-24 P0-6 min reconnect by hermes]
+- 최소 스펙(한 경계): 신규 테이블/idempotency key/SSE 재구독 없음. 고아 `streaming` → `interrupted`(boot + GET minAge 2s + generate). PWA는 `activeGeneration` 있고 라이브 SSE가 없을 때 700ms GET 폴링 + abort id 복원.
+- 제외(잠금): request-id 영속 테이블, 동일 request 중복 POST 억제, GET `/generations/:id/stream`. ⑤⑥ 미착수.
+- 파일: `apps/server/src/db/generation.ts`, `index.ts`, `routes/chat.ts`, `routes/conversations.ts`, `apps/web/src/pages/useChat.ts`, `bench/generation-orphan.test.ts`, CHANGELOG Unreleased.
+- 격리 raw: `UNIT_OK 4` / `SERVER_TSC_EXIT:0` / `WEB_TSC_EXIT:0` / live `STREAMING_COUNT 0`. 서비스 재시작·웹 배포·Galaxy 재접속 **확인 안 함**.
+- 커밋 메시지: `fix(gen): orphan streaming interrupt + PWA poll reconnect`.

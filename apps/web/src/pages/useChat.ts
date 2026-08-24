@@ -24,6 +24,8 @@ export function useChat(conversationId: string) {
   const reload = useCallback(async () => {
     try {
       const d = await get<ConversationDetail>(`/api/conversations/${conversationId}`);
+      if (d.activeGeneration) genIdRef.current = d.activeGeneration.id;
+      else if (!abortRef.current) genIdRef.current = null;
       setState((s) => ({ ...s, detail: d, messages: d.messages, loading: false, error: null, generating: !!d.activeGeneration, streamingId: d.activeGeneration?.messageId ?? null }));
       return d;
     } catch (e) {
@@ -37,6 +39,21 @@ export function useChat(conversationId: string) {
     reload();
     return () => abortRef.current?.abort();
   }, [conversationId, reload]);
+
+  // 재접속: 라이브 SSE 가 없을 때만 GET 폴링. 서버는 800ms persist.
+  useEffect(() => {
+    if (!state.generating || abortRef.current) return;
+    const t = window.setInterval(() => { void reload(); }, 700);
+    return () => window.clearInterval(t);
+  }, [state.generating, conversationId, reload]);
+
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === 'visible' && !abortRef.current) void reload();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [reload]);
 
   const applyEvent = useCallback((e: SseEvent) => {
     setState((s) => {

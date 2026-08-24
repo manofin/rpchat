@@ -4,6 +4,7 @@ import fastifyCookie from '@fastify/cookie';
 import fastifyStatic from '@fastify/static';
 import { PROMPT_VERSION, config, validateConfig } from './config.js';
 import { openDb } from './db/index.js';
+import { interruptOrphanStreaming } from './db/generation.js';
 import { seed } from './db/seed.js';
 import { ModelClient } from './model/adapter.js';
 import { GenerationQueue } from './model/queue.js';
@@ -31,6 +32,8 @@ async function main() {
   });
 
   const db = openDb(config.dataDir, config.migrationsDir);
+  const orphaned = interruptOrphanStreaming(db);
+  if (orphaned) app.log.warn({ orphaned }, '고아 streaming 메시지를 interrupted 로 접음');
   seed(db, config.contentDir, (m) => app.log.info(m));
 
   const model = new ModelClient(config.model.baseUrl, config.model.apiKey, config.model.timeoutMs);

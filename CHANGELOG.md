@@ -13,6 +13,8 @@
   (`app_version` = `git describe`, `schema_migrations`, `required_migrations`).
 - `restore.sh --check <gz>`: 무결성 + 스키마 바인딩만 출력. 라이브 중지/덮어쓰기 없음.
 - 스키마 불일치 시 `BIND_WARN`(missing/extra). 롤백을 막지 않는다.
+- P0-6 최소: 고아 `streaming` 을 boot/GET/generate 에서 `interrupted` 로 접음.
+  PWA 는 `activeGeneration` 이 있으면 700ms GET 폴링 + abort id 복원. 신규 테이블/idempotency key 없음.
 
 ### Fixed
 - `restore.sh` / `OPERATIONS.md` 를 docker 전제에서 host/systemd 토폴로지로 재작성 (`13e694f`).

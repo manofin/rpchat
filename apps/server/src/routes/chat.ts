@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { Ctx } from '../ctx.js';
 import { PROMPT_VERSION, config } from '../config.js';
 import { nowIso, one, run, uid } from '../db/index.js';
+import { interruptOrphanStreaming } from '../db/generation.js';
 import { getPath, insertMessage, messageOut, setHead, updateMessage } from '../db/tree.js';
 import { ModelError } from '../model/adapter.js';
 import { buildPrompt } from '../prompt/builder.js';
@@ -70,6 +71,7 @@ export function chatRoutes(ctx: Ctx) {
    * 클라이언트가 끊겨도 생성은 계속되어 DB 에 저장된다(모바일 백그라운드 대응). 중단은 abort 엔드포인트로만.
    */
   async function generate(req: FastifyRequest, reply: FastifyReply, conv: ConversationRow, parentId: string | null, userMessage?: MessageRow) {
+    interruptOrphanStreaming(db, { keepMessageIds: ctx.queue.activeList.map((g) => g.messageId) });
     if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
 
     setHead(db, conv.id, parentId);

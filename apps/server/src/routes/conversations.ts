@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { Ctx } from '../ctx.js';
 import { PROMPT_VERSION, config } from '../config.js';
 import { many, nowIso, one, parseJson, run, uid } from '../db/index.js';
+import { interruptOrphanStreaming } from '../db/generation.js';
 import { deepestLeaf, getPath, insertMessage, messageOut, setHead, updateMessage } from '../db/tree.js';
 import { buildPrompt, resolvePersona } from '../prompt/builder.js';
 import { substitute } from '../prompt/templates.js';
@@ -101,6 +102,10 @@ export function conversationRoutes(ctx: Ctx) {
       if (!conv) return reply.code(404).send({ error: 'not found' });
       const character = one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', conv.character_id)!;
       const persona = resolvePersona(db, conv);
+      interruptOrphanStreaming(db, {
+        keepMessageIds: ctx.queue.activeList.map((g) => g.messageId),
+        minAgeMs: 2000,
+      });
       const messages = getPath(db, conv).map((m) => messageOut(db, m));
       const active = ctx.queue.activeList.find((g) => g.conversationId === conv.id);
       return {
