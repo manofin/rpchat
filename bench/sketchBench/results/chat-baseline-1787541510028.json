@@ -1,0 +1,204 @@
+{
+  "run": "run-chat-baseline",
+  "convId": "01ca4255-719d-43a0-8270-b4cab48b7bfb",
+  "rows": [
+    {
+      "ttft_ms": 5527,
+      "total_ms": 8557,
+      "completion_tokens": 83,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 868,
+      "total_ms": 5267,
+      "completion_tokens": 117,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 1045,
+      "total_ms": 4379,
+      "completion_tokens": 90,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 871,
+      "total_ms": 4510,
+      "completion_tokens": 98,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 979,
+      "total_ms": 4285,
+      "completion_tokens": 89,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 859,
+      "total_ms": 4227,
+      "completion_tokens": 91,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 868,
+      "total_ms": 4669,
+      "completion_tokens": 102,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 991,
+      "total_ms": 4834,
+      "completion_tokens": 103,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 990,
+      "total_ms": 4757,
+      "completion_tokens": 101,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 996,
+      "total_ms": 4654,
+      "completion_tokens": 98,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 1001,
+      "total_ms": 4623,
+      "completion_tokens": 97,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 1003,
+      "total_ms": 4999,
+      "completion_tokens": 107,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 1012,
+      "total_ms": 5210,
+      "completion_tokens": 112,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 1018,
+      "total_ms": 5210,
+      "completion_tokens": 112,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 1023,
+      "total_ms": 4732,
+      "completion_tokens": 99,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 1023,
+      "total_ms": 4889,
+      "completion_tokens": 103,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 1014,
+      "total_ms": 5151,
+      "completion_tokens": 110,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 1028,
+      "total_ms": 5233,
+      "completion_tokens": 112,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 1031,
+      "total_ms": 5933,
+      "completion_tokens": 130,
+      "status": "complete"
+    },
+    {
+      "ttft_ms": 1168,
+      "total_ms": 6721,
+      "completion_tokens": 147,
+      "status": "complete"
+    }
+  ],
+  "summary": {
+    "n_requested": 20,
+    "n_logged": 20,
+    "n_complete": 20,
+    "ttft_ms": {
+      "p50": 1012,
+      "p95": 5527,
+      "raw": [
+        859,
+        868,
+        868,
+        871,
+        979,
+        990,
+        991,
+        996,
+        1001,
+        1003,
+        1012,
+        1014,
+        1018,
+        1023,
+        1023,
+        1028,
+        1031,
+        1045,
+        1168,
+        5527
+      ]
+    },
+    "tok_per_s": {
+      "p50": 21.40263711064399,
+      "raw": [
+        9.699661096178566,
+        20.552637588490526,
+        20.770128354725788,
+        20.92138630600169,
+        20.98204629028769,
+        21.057155135367427,
+        21.067703006749845,
+        21.231868824889638,
+        21.307405875051717,
+        21.355076684139004,
+        21.40263711064399,
+        21.404280856171237,
+        21.497120921305182,
+        21.497120921305182,
+        21.52827064111663,
+        21.72949002217295,
+        21.846219747269224,
+        21.871745276000595,
+        21.911343333895164,
+        22.21378393772546
+      ]
+    },
+    "statuses": [
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete"
+    ]
+  }
+}
