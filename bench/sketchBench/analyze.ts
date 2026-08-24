@@ -206,6 +206,21 @@ function analyze(base: BaselineResult, cur: ConcurrentResult, forceStub: boolean
       cur.memory.swap_delta_bytes == null ? 'NA' : cur.memory.swap_delta_bytes <= 0 ? 'PASS' : 'FAIL',
     ),
   });
+  const lastImageEnd = cur.image.rows.length ? Math.max(...cur.image.rows.map((r) => r.t_end)) : null;
+  const completeChat = cur.chat.rows.filter((r) => r.status === 'complete' && r.ttft_ms != null);
+  const postImageChat = lastImageEnd == null ? [] : completeChat.filter((r) => r.t_sent > lastImageEnd!);
+  const postImageTtft = percentiles(postImageChat.map((r) => r.ttft_ms!));
+  const dColdStart = relDelta(bTtft.p50, postImageTtft.p50);
+  rows.push({
+    id: '§4.4.3',
+    metric: `TTFT cold-start after last image job ends (n_post_image=${postImageChat.length}); no explicit numeric gate in prereg, judged qualitatively in REPORT.md`,
+    baseline: `p50=${fmtNum(bTtft.p50, 0)} ms`,
+    current: postImageChat.length === 0 ? 'no chat request occurred after the last image job — not measurable this run' : `post-image TTFT p50=${fmtNum(postImageTtft.p50, 0)} ms (raw ${JSON.stringify(postImageTtft.raw)})`,
+    delta: postImageChat.length === 0 ? 'NA' : fmtPct(dColdStart),
+    gate: 'qualitative — no cold-start spike vs baseline (interpret in REPORT.md, like §4.4.4)',
+    verdict: vOrStub(forceStub, 'NA'),
+  });
+
   rows.push({
     id: '§4.4.2',
     metric: 'Gemma PID stable (pgrep pattern, not hardcoded name)',

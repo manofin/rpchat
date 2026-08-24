@@ -59,7 +59,14 @@ function queryLog(convId: string, mode: 'read' | 'delete', via: 'ssh' | 'local')
       `cd ${remote} && PATH=/home/hermes/.local/bin:$PATH npx tsx ${REMOTE_QUERY} --conv ${convId} --mode ${mode}`,
     ];
   }
-  const r = spawnSync(cmd, args, { encoding: 'utf8', timeout: 60_000 });
+  // 'local' mode (queryVia) executes on hermes itself (or hermes-local dev), where the
+  // default SSH-shell node is v20 (ABI 115) but better-sqlite3 is built against the v22
+  // service node (ABI 127) -- self-sufficient the same way the 'ssh' branch already is,
+  // instead of silently depending on the caller's own PATH already being v22.
+  const env = via === 'local'
+    ? { ...process.env, PATH: `/home/hermes/.local/bin:${process.env.PATH ?? ''}` }
+    : process.env;
+  const r = spawnSync(cmd, args, { encoding: 'utf8', timeout: 60_000, env });
   const raw = (r.stdout || '') + (r.stderr ? `\nSTDERR:\n${r.stderr}` : '');
   if (r.status !== 0) {
     throw new Error(`queryGenerationLog ${mode} failed (code=${r.status}): ${raw}`);
