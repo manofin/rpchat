@@ -123,6 +123,7 @@ export type ConcurrentResult = {
     image_interval_ms: number;
     n_chat: number;
     n_image: number;
+    tag?: string;
   };
   notes: string[];
 };

@@ -122,6 +122,7 @@ async function main() {
   --mem-interval-ms N         default 1500
   --gemma-pgrep PAT           or env GEMMA_PGREP (no hardcoded model name)
   --query-via ssh|local       default ssh
+  --tag NAME                  optional; sets environment.tag and results/concurrent-NAME-<ended_at>.json
   --skip-preflight
   --skip-cleanup
   --help`);
@@ -136,6 +137,11 @@ async function main() {
   const memInterval = numArg('--mem-interval-ms', 1500);
   const pgrep = arg('--gemma-pgrep', process.env.GEMMA_PGREP ?? '') || null;
   const queryVia = (arg('--query-via', 'ssh') === 'local' ? 'local' : 'ssh') as 'ssh' | 'local';
+  const tagRaw = arg('--tag');
+  const tag = tagRaw == null || tagRaw === '' ? undefined : tagRaw;
+  if (tag != null && !/^[A-Za-z0-9._-]{1,64}$/.test(tag)) {
+    throw new Error(`--tag must match [A-Za-z0-9._-]{1,64}, got ${JSON.stringify(tag)}`);
+  }
   const headers = serveHeaders();
   const notes: string[] = [];
   const dtBase = requireDrawThingsBase();
@@ -306,13 +312,14 @@ async function main() {
       image_interval_ms: imageInterval,
       n_chat: nChat,
       n_image: nImage,
+      ...(tag != null ? { tag } : {}),
     },
     notes,
   };
 
   const dir = fileURLToPath(new URL('./results/', import.meta.url));
   mkdirSync(dir, { recursive: true });
-  const file = join(dir, `concurrent-${ended_at}.json`);
+  const file = join(dir, tag != null ? `concurrent-${tag}-${ended_at}.json` : `concurrent-${ended_at}.json`);
   writeFileSync(file, JSON.stringify(result, null, 2));
   console.error('saved', file);
   console.log(JSON.stringify({ file, convId, notes, n_overlapped: overlapped.length, image_ok: imgOk.length }, null, 2));

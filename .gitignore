@@ -13,3 +13,6 @@ backups/
 *.tar.gz
 *.patch
 content/
+
+# sketchBench smoke-test artifacts (--tag STUBIMG) — not §4 evidence, never commit
+bench/sketchBench/results/concurrent-STUBIMG-*.json

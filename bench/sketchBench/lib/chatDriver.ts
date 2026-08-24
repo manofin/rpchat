@@ -18,8 +18,15 @@ export const LINES = [
 
 export type ExtraHeaders = Record<string, string>;
 
-export function serveHeaders(extra?: ExtraHeaders): Record<string, string> {
-  const h: Record<string, string> = { 'Content-Type': 'application/json' };
+/**
+ * `json` defaults true (POST calls send a JSON body). DELETE has no body — sending
+ * Content-Type: application/json anyway trips Fastify's default JSON parser
+ * (FST_ERR_CTP_EMPTY_JSON_BODY, empty body + json content-type -> 400), so
+ * deleteConv() must call this with `{ json: false }`.
+ */
+export function serveHeaders(extra?: ExtraHeaders, opts?: { json?: boolean }): Record<string, string> {
+  const h: Record<string, string> = {};
+  if (opts?.json ?? true) h['Content-Type'] = 'application/json';
   const login = process.env.TAILSCALE_USER_LOGIN;
   if (login) h['Tailscale-User-Login'] = login;
   if (extra) Object.assign(h, extra);
@@ -53,7 +60,7 @@ export async function createIsolatedConv(serveBase: string, title: string, heade
 export async function deleteConv(serveBase: string, convId: string, headers?: ExtraHeaders): Promise<void> {
   const res = await fetch(`${serveBase.replace(/\/$/, '')}/api/conversations/${convId}`, {
     method: 'DELETE',
-    headers: serveHeaders(headers),
+    headers: serveHeaders(headers, { json: false }),
     signal: AbortSignal.timeout(15000),
   });
   if (!res.ok) {
