@@ -1,0 +1,11 @@
+{
+  "format": "rpchat-schema-compat-v1",
+  "note": "schema_version is the ordered set of schema_migrations.name. PRAGMA user_version is unused (stays 0). app_version SoT is git describe --tags, not package.json 0.1.0.",
+  "required_migrations": [
+    "0001_init.sql",
+    "0002_search.sql",
+    "0003_lore_selective.sql",
+    "0004_memory_scope.sql",
+    "0005_summary_tiers.sql"
+  ]
+}

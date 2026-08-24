@@ -65,16 +65,37 @@ systemctl --user list-timers rpchat-backup.timer
 systemctl --user cat rpchat-backup.service   # ExecStart: python3 deploy/backup-host.py
 # 수동 1회 실행:
 systemctl --user start rpchat-backup.service
-# 산출물: /home/hermes/rpchat/backups/rpchat-YYYYMMDD-HHMMSS.db.gz (WAL-safe sqlite3 .backup, KEEP_DAYS=14)
+# 산출물: /home/hermes/rpchat/backups/rpchat-YYYYMMDD-HHMMSS.db.gz
+#          + 같은 stamp 의 rpchat-YYYYMMDD-HHMMSS.manifest.json
+#          (WAL-safe sqlite3 .backup, KEEP_DAYS=14)
+
+# 복원 전 바인딩만 확인 (라이브 무변경):
+deploy/restore.sh --check /home/hermes/rpchat/backups/rpchat-YYYYMMDD-HHMMSS.db.gz
 
 # 복원 (호스트 경로 기반, 라이브 서비스는 스크립트가 직접 중지/재기동한다):
 deploy/restore.sh /home/hermes/rpchat/backups/rpchat-YYYYMMDD-HHMMSS.db.gz
 ```
-`restore.sh`는 실행 전 `PRAGMA integrity_check`와 conversations/messages 건수를 raw로 보여주고,
+`restore.sh`는 실행 전 `PRAGMA integrity_check`와 conversations/messages 건수,
+그리고 `schema_migrations` vs `deploy/schema-compat.json` 바인딩을 raw로 보여준다.
+`BIND_OK` = 백업 스키마가 이 트리 요구 집합과 같다. `BIND_WARN` = missing/extra
+(구버전 롤백이거나 이 트리보다 새 마이그레이션). `BIND_NO_SIDECAR` = 매니페스트 없는
+구백업 — DB 안의 `schema_migrations` 로는 여전히 비교한다. 불일치해도 복원을
+막지 않는다(롤백이 그 경우다).
 `yes` 확인 후에만 `rpchat.service`를 멈추고 교체한다. 교체 직전 현재 라이브 상태를
 `rpchat-pre-restore-<timestamp>.db`로 같은 백업 디렉터리에 안전판으로 남긴 뒤 복원이 잘못됐을 때
 그 파일로 되돌릴 수 있게 한다. `deploy/backup.sh`·`deploy/docker-compose.yml`은 이전 docker 배포
 방식의 유물로 **현재 배포에서 쓰이지 않는다** — 실제 백업 산출은 `backup-host.py`가 전부다.
+
+### 버전 바인딩·롤백
+- 앱 버전 SoT: `git describe --tags` (`package.json` 0.1.0 은 무시).
+- 스키마 버전 SoT: `SELECT name FROM schema_migrations ORDER BY name`.
+  `PRAGMA user_version` 은 쓰지 않으며 0 으로 남아 있다.
+- 이 트리가 요구하는 집합: `deploy/schema-compat.json` → `required_migrations`.
+- 태그 이력: 저장소 루트 `CHANGELOG.md`.
+- 코드 롤백: `git switch --detach <tag>` 후 해당 태그가 요구하는 스키마의 백업을
+  `restore.sh` 로 복원. 스키마가 앞선 백업을 옛 태그에 올리면 `BIND_WARN extra_in_backup`.
+- 스키마 변경 커밋은 `schema-compat.json` 의 `required_migrations` 와 CHANGELOG 를
+  같은 커밋에서 갱신한다.
 
 2차(오프호스트) 백업 사본 경로는 아직 없다 — 이 호스트 디스크 장애 시 백업까지 함께 소실된다.
 

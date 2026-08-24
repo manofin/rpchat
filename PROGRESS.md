@@ -230,3 +230,9 @@ P1-3c 설계검수 완료, REVIEW-P1-3c.md 참조
 ## [2026-08-23 PRD 개정 1.2 by hermes] 문서만 — 코드/DB/git(app) 없음
 - `/home/hermes/rpchat/RP-Chat-PRD.md` 1.1 → 1.2. 반영: 메타데이터(운영버전 표기에 bench 커밋 명시), §5 A트랙 순서7 → ✅ 비채택 확정(REPORT·사전등록 참조), "0–7 전부 종료 — A트랙 완료", §5.3 B군 로어 의미발동 ❌ 닫힘, §6에 순서7 측정 이력 추가(lore/memory 픽스처 v1 버전관리됨), §8 회람질문 갱신(다음 국면 = Phase 2 vs B/C).
 - PRD 1.2 보강: Phase 2를 "기본 다음 단계"가 아닌 게이트된 선택지로 재서술 — §5.2에 위협모델 주의(tailnet 전용+funnel 없음+loopback 구조에서 토큰 세션의 실질 위험 감소 제한적, 개방 근거는 사용자 명시 선호뿐), §5.4 열린 질문·§8 회람1도 동일 정신으로 갱신. A트랙 완료 확정 문구 유지. sha256(RP-Chat-PRD.md)은 최종 커밋 후 별도 기록.
+
+## [2026-08-24 CHANGELOG + schema/app bind by hermes]
+- 한 일: `CHANGELOG.md` (태그 v0.0.1–v0.0.19 + Unreleased). `deploy/schema-compat.json` required_migrations = 0001–0005. `backup-host.py` sidecar `rpchat-<stamp>.manifest.json`. `restore.sh --check` BIND_OK/WARN/NO_SIDECAR. OPERATIONS.md 버전/롤백 절. 서버/라이브 DB 무변경.
+- 격리 raw: BIND_OK / BIND_WARN(0099 missing) / BIND_NO_SIDECAR. LIVE_SHA_UNCHANGED. SERVICE_STILL_ACTIVE. LIVE_MANIFEST_COUNT=0.
+- sha256: CHANGELOG `bcdcc883…`, schema-compat `abaaf9df…`, backup-host.py `1a6593c8…`, restore.sh `be6780a2…`, OPERATIONS `93e4063e…`.
+- 미커밋. 제안 메시지: `docs(ops): CHANGELOG + schema/app_version bind for backups`.
