@@ -239,7 +239,18 @@ P1-3c 설계검수 완료, REVIEW-P1-3c.md 참조
 
 ## [2026-08-24 P0-6 min reconnect by hermes]
 - 최소 스펙(한 경계): 신규 테이블/idempotency key/SSE 재구독 없음. 고아 `streaming` → `interrupted`(boot + GET minAge 2s + generate). PWA는 `activeGeneration` 있고 라이브 SSE가 없을 때 700ms GET 폴링 + abort id 복원.
-- 제외(잠금): request-id 영속 테이블, 동일 request 중복 POST 억제, GET `/generations/:id/stream`. ⑤⑥ 미착수.
+- 제외(잠금): request-id 영속 테이블, 동일 request 중복 POST 억제, GET `/generations/:id/stream`.
 - 파일: `apps/server/src/db/generation.ts`, `index.ts`, `routes/chat.ts`, `routes/conversations.ts`, `apps/web/src/pages/useChat.ts`, `bench/generation-orphan.test.ts`, CHANGELOG Unreleased.
-- 격리 raw: `UNIT_OK 4` / `SERVER_TSC_EXIT:0` / `WEB_TSC_EXIT:0` / live `STREAMING_COUNT 0`. 서비스 재시작·웹 배포·Galaxy 재접속 **확인 안 함**.
-- 커밋 메시지: `fix(gen): orphan streaming interrupt + PWA poll reconnect`.
+- 격리 raw: `UNIT_OK 4` / `SERVER_TSC_EXIT:0` / `WEB_TSC_EXIT:0` / live `STREAMING_COUNT 0`.
+- 커밋 `3fb2fa5` (`v0.0.19-24-g3fb2fa5`) `fix(gen): orphan streaming interrupt + PWA poll reconnect`.
+- 이후 배포: server/web build EXIT:0 (`index-D4OdaJMr.js`). `systemctl --user restart rpchat` active. `/api/health` `ok` / `db:ok` / `model.ok` / `generation.active=[]`. boot orphan warn 없음(streaming 0). Galaxy 재접속 **확인 안 함**.
+
+## [2026-08-24 ⑤ checkpoint/choices — not opened]
+- PRD 3.4 체크포인트는 v0.0.19 상태 요약 복원으로 이미 닫힘. 묶음(브랜치+기억+장면)은 작업지시서 v1이지 현 PRD가 아님.
+- PRD 3.5 선택지 분리 생성은 **보류**(표본·임계 전 구조 변경 없음). 라이브는 인라인 태그 + 재생성.
+- 제품 코드 0줄. ⑥만 픽스처 경계로 염.
+
+## [2026-08-24 ⑥ long-rp-fixtures-v1 lock by hermes]
+- 한 경계: `bench/longRp/fixtures/long-rp-fixtures-v1.json` gold facts 20 + probe 9. 라이브 DB/모델/제품 경로 무접촉. 100턴 실측 안 함. 95%는 목표가 아님.
+- 게이트: `npx tsx bench/longRp/verify-fixtures.ts` → `JSON_PARSE_OK` / `FIXTURE_OK long-rp=20 probes=9` / due 30=8 60=14 100=20.
+- 제외: 러너, infer 호출, 라이브 대화 추출, 신규 테이블.

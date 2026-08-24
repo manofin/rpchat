@@ -1,0 +1,50 @@
+{
+  "_meta": {
+    "id": "long-rp-fixtures-v1",
+    "date": "2026-08-24",
+    "source": "synthetic",
+    "note": "Gold facts only. Not a 100-turn transcript and not live-DB content. Product path unchanged. 95% is not a target until a run exists.",
+    "horizons": [30, 60, 100],
+    "metric": "hold_rate = (exactly_recalled_or_consistent) / facts_due_at_horizon"
+  },
+  "cast": {
+    "user": "나",
+    "character": "린",
+    "setting": "외딴 절벽 등대. 합성 시나리오 — 라이브 서리/카이 세계와 분리."
+  },
+  "facts": [
+    { "id": "F01", "kind": "fact", "introduced_by_turn": 2, "must_hold_at": [30, 60, 100], "text": "린은 이 등대의 유일한 야간 등대지기다.", "contradiction": "린이 등대와 무관한 직업이거나 교대 근무자가 있다고 단정" },
+    { "id": "F02", "kind": "fact", "introduced_by_turn": 4, "must_hold_at": [30, 60, 100], "text": "사용자는 폭풍 뒤 작은 배로 절벽에 표류해 등대에 도착했다.", "contradiction": "사용자가 정기 보급선이나 초대로 왔다고 단정" },
+    { "id": "F03", "kind": "fact", "introduced_by_turn": 6, "must_hold_at": [30, 60, 100], "text": "사용자의 왼손목은 표류 때 찢어져 린이 천으로 감아 주었다.", "contradiction": "부상이 없거나 오른손/다른 부위만 다쳤다고 단정" },
+    { "id": "F04", "kind": "relationship", "introduced_by_turn": 8, "must_hold_at": [30, 60, 100], "text": "린은 사용자를 구조했지만 처음 사흘은 등대 안을 혼자 돌아다니지 못하게 한다.", "contradiction": "처음부터 등대 전체를 자유롭게 쓰게 했다고 단정" },
+    { "id": "F05", "kind": "fact", "introduced_by_turn": 11, "must_hold_at": [30, 60, 100], "text": "등실(램프실) 열쇠는 도착 직후부터 보이지 않는다.", "contradiction": "열쇠가 처음부터 린 손에 있었다고 단정" },
+    { "id": "F06", "kind": "unresolved", "introduced_by_turn": 14, "must_hold_at": [30, 60, 100], "text": "누가 등실 열쇠를 옮겼는지는 30턴 시점에도 밝혀지지 않는다.", "contradiction": "30턴 이전에 범인이나 위치를 확정" },
+    { "id": "F07", "kind": "relationship", "introduced_by_turn": 18, "must_hold_at": [30, 60, 100], "text": "린은 사용자에게 폭풍이 잦아질 때까지 사흘만 머물라고 했다.", "contradiction": "무기한 체류를 처음부터 허락했다고 단정" },
+    { "id": "F08", "kind": "fact", "introduced_by_turn": 22, "must_hold_at": [30, 60, 100], "text": "등대 지하 창고에는 작년 겨울 보급품이 아직 남아 있다.", "contradiction": "식량·보급이 바닥났다고 단정" },
+
+    { "id": "F09", "kind": "fact", "introduced_by_turn": 34, "must_hold_at": [60, 100], "text": "등실 열쇠는 사용자의 젖은 외투 안주머니에서 나왔다.", "contradiction": "열쇠가 바다에서 떠올랐거나 린이 숨겼다고 단정" },
+    { "id": "F10", "kind": "relationship", "introduced_by_turn": 38, "must_hold_at": [60, 100], "text": "린의 언니 미나는 2년 전 이 등대를 떠나 항구 도시로 갔다.", "contradiction": "미나가 등대에 같이 산다거나 사망했다고 단정" },
+    { "id": "F11", "kind": "fact", "introduced_by_turn": 42, "must_hold_at": [60, 100], "text": "린은 항구 관리인에게 등유값 빚이 남아 있다.", "contradiction": "빚이 없다거나 이미 청산됐다고 단정" },
+    { "id": "F12", "kind": "unresolved", "introduced_by_turn": 48, "must_hold_at": [60, 100], "text": "한 밤 등불이 꺼진 이유는 60턴 시점에도 미해결이다.", "contradiction": "60턴 이전에 고장 원인을 확정" },
+    { "id": "F13", "kind": "relationship", "introduced_by_turn": 52, "must_hold_at": [60, 100], "text": "사흘이 지난 뒤 린은 사용자가 부엌과 침실 옆 골방만 쓰도록 허용을 늘렸다.", "contradiction": "사흘 규칙이 그대로이거나 처음부터 전부 개방이었다고 단정" },
+    { "id": "F14", "kind": "fact", "introduced_by_turn": 56, "must_hold_at": [60, 100], "text": "미나는 떠날 때 등대 일지만 남기고 편지는 남기지 않았다.", "contradiction": "미나가 작별 편지를 남겼다고 단정" },
+
+    { "id": "F15", "kind": "fact", "introduced_by_turn": 64, "must_hold_at": [100], "text": "항구에서 미나 명의의 짧은 편지가 뒤늦게 도착했다.", "contradiction": "편지가 가짜라고 단정하거나 도착하지 않았다고 단정" },
+    { "id": "F16", "kind": "relationship", "introduced_by_turn": 70, "must_hold_at": [100], "text": "사용자는 폭풍 시즌이 끝날 때까지 조수로 남겠다고 했고 린이 잠정 수락했다.", "contradiction": "사용자가 바로 떠났거나 린이 영구 거주를 확정했다고 단정" },
+    { "id": "F17", "kind": "fact", "introduced_by_turn": 76, "must_hold_at": [100], "text": "편지에는 미나가 ‘불을 끄지 말라’고만 적혀 있고 이유는 없다.", "contradiction": "편지에 방해 공작 범인이나 구체 이유가 적혀 있다고 단정" },
+    { "id": "F18", "kind": "unresolved", "introduced_by_turn": 82, "must_hold_at": [100], "text": "등불을 누가 끄려 했는지는 100턴에도 미해결로 남는다.", "contradiction": "등불을 끈 사람이나 원인을 확정" },
+    { "id": "F19", "kind": "fact", "introduced_by_turn": 88, "must_hold_at": [100], "text": "지하 창고 보급은 줄었지만 등유는 한 시즌분 남아 있다.", "contradiction": "등유가 바닥났다고 단정" },
+    { "id": "F20", "kind": "relationship", "introduced_by_turn": 94, "must_hold_at": [100], "text": "린은 사용자를 더 이상 손님으로만 부르지 않고 당번표에 이름을 적었다.", "contradiction": "끝까지 손님/침입자로만 대한다고 단정" }
+  ],
+  "probes": [
+    { "id": "P30-a", "horizon": 30, "fact_ids": ["F01", "F05"], "ask": "린의 일과 지금 없는 물건은?", "expect": "야간 등대지기. 등실 열쇠가 없음." },
+    { "id": "P30-b", "horizon": 30, "fact_ids": ["F02", "F03", "F07"], "ask": "사용자는 왜 여기 있고 몸의 상태는?", "expect": "폭풍 표류. 왼손목 부상. 사흘만 머물라는 조건." },
+    { "id": "P30-c", "horizon": 30, "fact_ids": ["F06"], "ask": "열쇠를 누가 옮겼나?", "expect": "아직 모름." },
+    { "id": "P60-a", "horizon": 60, "fact_ids": ["F09", "F10"], "ask": "열쇠는 어디서 나왔고 미나는 누구인가?", "expect": "사용자 외투 안주머니. 2년 전 떠난 린의 언니." },
+    { "id": "P60-b", "horizon": 60, "fact_ids": ["F11", "F12"], "ask": "린의 빚과 꺼진 등불의 원인은?", "expect": "항구 관리인 등유 빚. 원인 미해결." },
+    { "id": "P60-c", "horizon": 60, "fact_ids": ["F01", "F13"], "ask": "사용자의 거주 범위는 처음과 같은가?", "expect": "처음엔 단독 배회 금지. 이후 부엌·골방까지 허용." },
+    { "id": "P100-a", "horizon": 100, "fact_ids": ["F15", "F17", "F18"], "ask": "미나 편지와 등불 사건은?", "expect": "편지 도착. ‘불을 끄지 말라’만. 범인 미해결." },
+    { "id": "P100-b", "horizon": 100, "fact_ids": ["F16", "F20"], "ask": "사용자는 지금 어떤 위치인가?", "expect": "폭풍 시즌까지 조수. 당번표에 이름이 있음." },
+    { "id": "P100-c", "horizon": 100, "fact_ids": ["F03", "F19"], "ask": "부상과 보급은?", "expect": "왼손목은 초반 사실로 유지. 등유는 한 시즌분." }
+  ]
+}
