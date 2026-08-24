@@ -55,3 +55,9 @@ horizon 30/60/100에서 OOC probe 9개를 같은 경로로 물어 **hold_rate를
 - `VALID`. `bench/longRp/results/long-rp-1787582894376.json` sha256 `456e1489ebb87ca18e2e562505201a0fdcab1915048d1f7bf152e2e0107f75da`
 - hold_rate 30=0/6 · 60=4/6 · 100=3/7. 재추출은 REPORT.md.
 - score-keys / θ 변경 없음.
+
+## Append 2026-08-24 frost guard (채점 불변)
+
+- 서리 character_id = `f89ace9b-8684-4d97-96dc-e00c4b25a819`. `09e7827f-…` 는 그 캐릭터의 대화 하나(그 방 messages 55). 서리 전체 대화 메시지 합은 별도.
+- `FROST_ID`(대화 UUID) 는 캐릭터 가드가 되지 않음. `FROST_CHARACTER_ID` + 라이브 `conversations.character_id` 집합 + cleanup refuse.
+- `npx tsx bench/longRp/verify-frost-guard.ts` → `FROST_GUARD_OK`.

@@ -53,3 +53,9 @@
 - 요약 approve 켠 대조.
 - probe를 사실당 1개로 늘려 unscored 축소.
 - 금지 문구를 모순 유형별로. **현 벤치 재작업 아님.**
+
+## Correction 2026-08-24 frost counts / guard
+
+- `09e7827f` 한 방 messages=55 는 그 방만. 서리 character `f89ace9b-…` 의 모든 대화 합은 그와 다를 수 있음(검증 시점 재추출).
+- 런이 쓴 캐릭터는 `e1288984` (린). 서리 오염 증거 없음.
+- 죽은 가드 `FROST_ID=09e7827f`(대화) → `FROST_CHARACTER_ID` + 그 캐릭터 conv 집합. 채점 키 불변.

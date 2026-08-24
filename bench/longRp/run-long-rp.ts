@@ -10,9 +10,28 @@ import Database from 'better-sqlite3';
 const HOST = process.env.RPCHAT_HOST ?? 'http://127.0.0.1:8787';
 const HEADER = { 'Tailscale-User-Login': 'manofin@github' };
 const DB_PATH = process.env.RPCHAT_DB ?? '/home/hermes/rpchat/data/rpchat.db';
-const FROST_ID = '09e7827f-c2c4-4db8-89c0-e37aea2fe62d';
+/** Live character_id for 서리. Conversation UUID 09e7827f-… is one room, not the character. */
+const FROST_CHARACTER_ID = 'f89ace9b-8684-4d97-96dc-e00c4b25a819';
 const KEEP = process.env.KEEP_LONGRP === '1';
 const DIR = path.dirname(new URL(import.meta.url).pathname);
+
+function loadFrostConversationIds(dbPath: string): Set<string> {
+  const db = new Database(dbPath, { readonly: true });
+  try {
+    const rows = db
+      .prepare('SELECT id FROM conversations WHERE character_id = ?')
+      .all(FROST_CHARACTER_ID) as Array<{ id: string }>;
+    return new Set(rows.map((r) => r.id));
+  } finally {
+    db.close();
+  }
+}
+
+function refuseIfFrost(label: string, id: string | undefined, frostConvIds: Set<string>): asserts id is string {
+  if (!id) throw new Error(`refused: empty ${label}`);
+  if (id === FROST_CHARACTER_ID) throw new Error(`refused: frost character ${label} ${id}`);
+  if (frostConvIds.has(id)) throw new Error(`refused: frost conversation ${label} ${id}`);
+}
 
 type Fact = { id: string; must_hold_at: number[] };
 type Probe = { id: string; horizon: number; fact_ids: string[]; ask: string };
@@ -123,6 +142,9 @@ async function main() {
     if (!scoreDoc.probes[p.id]) throw new Error(`score key missing ${p.id}`);
   }
 
+  const frostConvIds = loadFrostConversationIds(DB_PATH);
+  console.error('FROST_GUARD char', FROST_CHARACTER_ID, 'convs', frostConvIds.size);
+
   const healthRes = await api('/api/health');
   const health = await healthRes.json() as {
     ok: boolean;
@@ -153,7 +175,7 @@ async function main() {
   });
   const character = await charRes.json() as { id?: string; error?: unknown };
   if (!character.id) throw new Error(`character create failed ${JSON.stringify(character)}`);
-  if (character.id === FROST_ID) throw new Error('refused: frost id');
+  refuseIfFrost('created character', character.id, frostConvIds);
 
   const convRes = await api('/api/conversations', {
     method: 'POST',
@@ -167,7 +189,7 @@ async function main() {
   });
   const conv = await convRes.json() as { id?: string };
   if (!conv.id) throw new Error(`conv create failed ${JSON.stringify(conv)}`);
-  if (conv.id === FROST_ID) throw new Error('refused: frost id');
+  refuseIfFrost('created conversation', conv.id, frostConvIds);
   const convId = conv.id;
   console.error('conv', convId, 'char', character.id);
 
@@ -285,6 +307,8 @@ async function main() {
     console.error('saved', file);
   } finally {
     if (!KEEP) {
+      refuseIfFrost('cleanup conversation', convId, frostConvIds);
+      refuseIfFrost('cleanup character', character.id, frostConvIds);
       await api(`/api/conversations/${convId}`, { method: 'DELETE' });
       await api(`/api/characters/${character.id}`, { method: 'DELETE' });
       const db = new Database(DB_PATH);

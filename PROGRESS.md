@@ -262,3 +262,8 @@ P1-3c 설계검수 완료, REVIEW-P1-3c.md 참조
 - model Gemma-4-Dark-Thoughts-V2-31B.i1-Q4_K_M / 16384 / prompt `2026.08.22-r1`
 - 서리 messages 55→55. conv 삭제됨. char `린-longrp-v1` archived.
 - 게이트 재설계 없음. 상세 `bench/longRp/REPORT.md`.
+
+## [2026-08-24 frost-guard fix by hermes]
+- 독립검증: 서리 **character** `f89ace9b-8684-4d97-96dc-e00c4b25a819`. 대화 여러 개. `09e7827f` 한 방 55, 서리 전체 messages 합은 그 이상.
+- 이전 보고 `55→55` 는 그 한 방 count. 캐릭터 합과 혼동됨. 이번 런이 서리를 쓴 흔적은 없음(격리 `e1288984`).
+- 가드: `FROST_ID` 대화 UUID → `FROST_CHARACTER_ID` + 그 캐릭터의 모든 conv + cleanup refuse. 채점 키 불변. `apps/**` 무수정.
