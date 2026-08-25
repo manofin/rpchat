@@ -8,6 +8,7 @@ import { isOocMessage, loadProfile, resolvePersona } from '../prompt/builder.js'
 import { renderSummaryPrompt, renderEpisodePrompt, stateToBullets } from '../prompt/templates.js';
 import { estimateTokens, getCalibration, truncateToTokens } from '../prompt/tokens.js';
 import { classify } from '../memory/conflict.js';
+import { evidenceIdsForSlice, isSummarizeBlocked, sceneCoverRange } from './summarizeContract.js';
 import type { CharacterRow, MemoryRow, SummaryRow } from '../types.js';
 import { loadConversation } from './conversations.js';
 
@@ -139,7 +140,7 @@ export function memoryRoutes(ctx: Ctx) {
     app.post<{ Params: { id: string } }>('/api/conversations/:id/summarize', async (req, reply) => {
       const conv = loadConversation(ctx, req.params.id);
       if (!conv) return reply.code(404).send({ error: 'not found' });
-      if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '생성 중에는 요약할 수 없음' });
+      if (isSummarizeBlocked(ctx.queue.activeList, conv.id)) return reply.code(409).send({ error: '생성 중에는 요약할 수 없음' });
       const character = one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', conv.character_id)!;
       const persona = resolvePersona(db, conv);
       const userName = persona?.name || '나';
@@ -196,7 +197,7 @@ export function memoryRoutes(ctx: Ctx) {
       const sumId = uid();
       const stateId = uid();
       const lastId = slice[slice.length - 1].id;
-      const firstId = slice[0].id;
+      const [firstId] = evidenceIdsForSlice(slice);
       const sceneText = typeof parsed.scene === 'string' ? parsed.scene.trim() : '';
       const sceneId = uid();
       const created: string[] = [];
@@ -212,8 +213,9 @@ export function memoryRoutes(ctx: Ctx) {
           run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', stateId, conv.id, stateBullets, lastId, null, 'draft', t, 'state');
         }
         if (sceneText) {
+          const cover = sceneCoverRange(slice);
           run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-              sceneId, conv.id, sceneText, lastId, firstId, 'draft', t, 'scene');
+              sceneId, conv.id, sceneText, cover.coversUntil, cover.coversFrom, 'draft', t, 'scene');
         }
         const mems = Array.isArray(parsed.memories) ? (parsed.memories as Array<Record<string, unknown>>) : [];
         for (const m of mems.slice(0, 8)) {

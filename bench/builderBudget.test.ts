@@ -55,3 +55,39 @@ t('scene cap 2 and rolled-up scenes excluded; order state→whole→episode→sc
 });
 
 console.log(`passed ${passed}`);
+
+// --- 회귀 테스트 (2026-08-24 정정): 라이브 builder.ts L201–209 시맨틱 ---
+t('REGRESSION: episode in recentGuard does NOT block scenes; per-scene covers_until decides', () => {
+  const recent = Array.from({ length: 24 }, (_, i) => `m${i}`);
+  const a = allocateSummaryBudget({
+    sumBudget: 1000,
+    stateEst: 40,
+    episodeContentTokens: 60,
+    episodeCoversUntil: 'm23', // recentGuard에 걸림 → episode만 생략
+    wholeContentTokens: 100,
+    recentGuardIds: recent,
+    scenes: [
+      { id: 'old1', tokens: 30, coversUntil: 'ancient1', rolledUpInto: null },
+      { id: 'recent1', tokens: 30, coversUntil: 'm22', rolledUpInto: null },
+      { id: 'old2', tokens: 20, coversUntil: 'ancient2', rolledUpInto: null },
+    ],
+  });
+  assert.equal(a.episodeUsed, false);
+  // 라이브: sceneBudget>0이면 장면 수집 진행. old1/old2만 주입(recent1은 개별 guard로 skip)
+  assert.deepEqual(a.scenesUsed.map((s) => s.id), ['old1', 'old2']);
+});
+
+t('REGRESSION: off-path scenes are skipped by pathIds like live builder', () => {
+  const a = allocateSummaryBudget({
+    sumBudget: 1000,
+    stateEst: 40,
+    episodeContentTokens: 0,
+    wholeContentTokens: 0,
+    pathIds: ['p1'],
+    scenes: [
+      { id: 'onpath', tokens: 30, coversUntil: 'p1', rolledUpInto: null },
+      { id: 'offpath', tokens: 30, coversUntil: 'other-branch', rolledUpInto: null },
+    ],
+  });
+  assert.deepEqual(a.scenesUsed.map((s) => s.id), ['onpath']);
+});

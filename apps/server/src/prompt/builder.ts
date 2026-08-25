@@ -4,6 +4,7 @@ import type {
 } from '../types.js';
 import { estimateTokens, estimateMessageTokens, getCalibration, truncateToTokens } from './tokens.js';
 import { loreEntryMatch } from './loreMatch.js';
+import { MIN_EPISODE_TOKENS, SCENE_RECENT_GUARD, allocateSummaryBudget } from './summaryBudget.js';
 import {
   OOC_INSTRUCTION, STORY_CHOICES_INSTRUCTION, renderCharacter, renderEpisode, renderLore, renderMemories, renderPersona, renderRules, renderScene, renderState, renderSummary, substitute,
 } from './templates.js';
@@ -173,8 +174,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   const stateRendered = renderState(stateRow?.content ?? null);
   const stateText = stateRendered ? truncateToTokens(stateRendered, stateCap, cal) : null;
   const stateEst = stateText ? estimateTokens(stateText, cal) : 0;
-  // recentGuard 를 episode/scene 공용으로 먼저 정의
-  const SCENE_RECENT_GUARD = 24;
+  // recentGuard 를 episode/scene 공용으로 먼저 정의 (상수는 summaryBudget.ts에서)
   const recentGuardIds = new Set(history.slice(-SCENE_RECENT_GUARD).map((m) => m.id));
   // episode: 최신 approved 1건, 예약(상태 후 잔여의 35%), recentGuard 적용
   const afterState = Math.max(0, sumBudget - stateEst);
@@ -182,15 +182,25 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
     many<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'episode' AND status = 'approved' ORDER BY created_at DESC LIMIT 5`, conv.id),
     pathIds,
   );
-  const MIN_EPISODE_TOKENS = 30; // 이 미만으로 잘리면 가비지(거의 " …")에 가까움 — 폴백 없이 미주입 처리
   let episodeText: string | null = null;
   let episodeEst = 0;
-  if (episodeRow && !(episodeRow.covers_until_message_id && recentGuardIds.has(episodeRow.covers_until_message_id))) {
-    const epCap = Math.floor(afterState * 0.35);
-    const rendered = renderEpisode(episodeRow.content);
-    const truncated = rendered ? truncateToTokens(rendered, epCap, cal) : null;
-    const truncatedEst = truncated ? estimateTokens(truncated, cal) : 0;
-    if (truncated && truncatedEst >= MIN_EPISODE_TOKENS) { episodeText = truncated; episodeEst = truncatedEst; }
+  if (episodeRow) {
+    // 헬퍼로 cap/채택 판정(35% 예약 + MIN_EPISODE_TOKENS + recentGuard)을 계산하고,
+    // 실측(truncate/estimateTokens)은 기존 경로 그대로 유지한다.
+    const renderedFull = renderEpisode(episodeRow.content);
+    const allocEp = allocateSummaryBudget({
+      sumBudget,
+      stateEst,
+      episodeContentTokens: renderedFull ? estimateTokens(renderedFull, cal) : 0,
+      wholeContentTokens: 0,
+      episodeCoversUntil: episodeRow.covers_until_message_id,
+      recentGuardIds: [...recentGuardIds],
+    });
+    if (allocEp.episodeUsed) {
+      const truncated = renderedFull ? truncateToTokens(renderedFull, allocEp.episodeCap, cal) : null;
+      const truncatedEst = truncated ? estimateTokens(truncated, cal) : 0;
+      if (truncated && truncatedEst >= MIN_EPISODE_TOKENS) { episodeText = truncated; episodeEst = truncatedEst; }
+    }
   }
   // whole: 상태·episode 예약 후 잔여
   const summaryText = summaryRow ? truncateToTokens(summaryRow.content, Math.max(0, sumBudget - stateEst - episodeEst), cal) : null;
@@ -204,15 +214,29 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
          AND (rolled_up_into IS NULL OR rolled_up_into NOT IN (SELECT id FROM summaries WHERE tier = 'episode' AND status = 'approved'))
        ORDER BY created_at DESC`,
       conv.id);
-    for (const sc of scenes) {
-      if (sceneParts.length >= 2) break; // 최대 2개
-      if (sc.covers_until_message_id && recentGuardIds.has(sc.covers_until_message_id)) continue; // 아직 recent에 있음 → 중복
-      if (sc.covers_until_message_id && !pathIds.has(sc.covers_until_message_id)) continue; // 다른 가지에서 만든 장면 — 현재 경로에 없음
-      const rendered = `- ${sc.content}`;
-      const tok = estimateTokens(rendered, cal);
-      if (sceneEst + tok > sceneBudget) break;
+    // 헬퍼로 개별 장면 채택(recentGuard/pathIds/rollup 제외/최대 2/예산 break)을 계산한다.
+    const approvedEpisodeIds = new Set(
+      many<{ id: string }>(db, `SELECT id FROM summaries WHERE conversation_id = ? AND tier = 'episode' AND status = 'approved'`, conv.id).map((r) => r.id),
+    );
+    const sceneAlloc = allocateSummaryBudget({
+      sumBudget: sceneBudget,
+      stateEst: 0,
+      episodeContentTokens: 0,
+      wholeContentTokens: 0,
+      recentGuardIds: [...recentGuardIds],
+      pathIds: [...pathIds],
+      approvedEpisodeIds: [...approvedEpisodeIds],
+      scenes: scenes.map((sc) => {
+        const tok = estimateTokens(`- ${sc.content}`, cal);
+        return { id: sc.id, tokens: tok, coversUntil: sc.covers_until_message_id, rolledUpInto: sc.rolled_up_into };
+      }),
+    });
+    const byId = new Map(scenes.map((sc) => [sc.id, sc]));
+    for (const used of sceneAlloc.scenesUsed) {
+      const sc = byId.get(used.id);
+      if (!sc) continue;
       sceneParts.push(sc.content);
-      sceneEst += tok;
+      sceneEst += used.tokens;
     }
   }
   const sceneTierText = sceneParts.length ? `### 최근 장면\n${sceneParts.map((c) => `- ${c}`).join('\n')}` : null;

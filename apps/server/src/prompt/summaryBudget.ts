@@ -36,6 +36,8 @@ export interface SummaryBudgetInput {
   episodeCoversUntil?: string | null;
   /** 최근 SCENE_RECENT_GUARD 메시지 id 목록 */
   recentGuardIds?: string[];
+  /** 현재 활성 경로의 메시지 id — 오프경로 장면 제외 판정용(라이브 pathIds) */
+  pathIds?: string[];
   /** 승인된 에피소드 id 집합 — rollup 제외 판정용 */
   approvedEpisodeIds?: string[];
   scenes?: SceneCandidate[];
@@ -79,15 +81,18 @@ export function allocateSummaryBudget(input: SummaryBudgetInput): SummaryBudgetR
   const wholeCap = Math.max(0, afterState - episodeEst);
   void wholeContentTokens; // 실측은 min(wholeContentTokens, wholeCap); 계약 검증은 cap 기준
 
-  // scene: 잔여, 최대 2, rollup 제외, recentGuard skip. episode 생략 시 폴백 없음.
+  // scene: episode와 독립. sceneBudget > 0 이면 수집 진행(라이브 builder L201–209 시맨틱):
+  // 최대 2, rollup 제외, recentGuard/오프경로는 개별 covers_until 기준 continue.
   const approvedEpisodes = new Set(input.approvedEpisodeIds ?? []);
+  const pathIds = new Set(input.pathIds ?? []);
   const sceneBudget = Math.max(0, wholeCap - Math.min(wholeContentTokens, wholeCap));
   const scenesUsed: SceneCandidate[] = [];
-  if (!guardedByRecent && sceneBudget > 0) {
+  if (sceneBudget > 0) {
     for (const sc of input.scenes ?? []) {
       if (scenesUsed.length >= MAX_SCENES) break;
       if (sc.rolledUpInto && approvedEpisodes.has(sc.rolledUpInto)) continue;
-      if (sc.coversUntil && guard.has(sc.coversUntil)) continue;
+      if (sc.coversUntil && guard.has(sc.coversUntil)) continue; // 아직 recent에 있음 → 중복
+      if (sc.coversUntil && pathIds.size > 0 && !pathIds.has(sc.coversUntil)) continue; // 다른 가지의 장면
       if (scenesUsed.reduce((s, x) => s + x.tokens, 0) + sc.tokens > sceneBudget) break;
       scenesUsed.push(sc);
     }

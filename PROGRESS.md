@@ -267,3 +267,44 @@ P1-3c 설계검수 완료, REVIEW-P1-3c.md 참조
 - 독립검증: 서리 **character** `f89ace9b-8684-4d97-96dc-e00c4b25a819`. 대화 여러 개. `09e7827f` 한 방 55, 서리 전체 messages 합은 그 이상.
 - 이전 보고 `55→55` 는 그 한 방 count. 캐릭터 합과 혼동됨. 이번 런이 서리를 쓴 흔적은 없음(격리 `e1288984`).
 - 가드: `FROST_ID` 대화 UUID → `FROST_CHARACTER_ID` + 그 캐릭터의 모든 conv + cleanup refuse. 채점 키 불변. `apps/**` 무수정.
+
+## 2026-08-24 (doc) 미래 참고안 보관 — 다중캐릭터/월드 로드맵 문서
+
+- 원문 수신 완료 → /home/hermes/rpchat/planning_documents/미래_참고안_다중캐릭터_월드_설계.md 로 격하 보관
+- 등급: 미래 참고안(Reference Architecture), 실행 로드맵 아님. 상단에 PRD/실측 대조 분석 요약(충돌·무근거 수치·기구현 항목)을 헤더로 명기
+- 코드/스키마/프롬프트 파이프라인 변경 없음. 실제 착수 시 PRD 5.3 절차(개인 최우선 → 소규모 실험 승인 → ADR) 따름
+- sha256: 611a85c79ea63c1a4bc87b691e2b8faf7d7490d856cb2d9a860aa54ee6185f86
+
+## 2026-08-24 (doc) 미래 참고안 부록 추가 — 장면 연출/2채널/PC 주체성 문서
+
+- 제2문서를 planning_documents/미래_참고안_다중캐릭터_월드_설계.md에 "부록: 제2참고안"으로 append
+- 코드 대조 검증 결과 헤더 명기: PC 주체성·전개 순서·header_policy·asset 차단은 templates.ts에 이미 구현(HARD_RULES 1/17/20행), 2채널·주체성 계약 표는 출력_템플릿 가이드에 기존, 선택지 2차 호출(백로그 ⑤)·상태 패치·다중 NPC는 충돌/C군
+- 실질 신규: asset_id 허용 목록 렌더러(UI 방향 전환), 상태 패널 읽기전용 주입 — 모두 착수 시 PRD 5.3 절차 필요
+- sha256 (append 후): 3df35503c4ac23ab3ca7f12eb5690dc23d8a4d083824981e6cd0f76fcd761c12
+
+## 2026-08-24T23:5x Track A–C by hermes (플랜 2026-08-24_232414-rpchat-next-work)
+
+- 한 일:
+  - Task 1 live facts 재검증: describe `v0.0.19-27-ge2de9c9`, health ok/db:ok, 플랜 스냅샷과 일치
+  - Task 2 (docs): HANDOFF.md v2.1 갱신(HEAD=describe, §2 표에 미태그 27커밋 행, §4 다음작업=Track A–C/F잠금, 마이그레이션 넘버링 규칙=Task 7) + OPERATOR-NOTE.md 전면 갱신(2026-08-24 기준). PRD 1.2 무수정
+  - Task 3 (docs): docs/GALAXY-CHECKLIST.md 신설 — P0-6 재접속/원본점프 firstId/상태·장면 카드/요약 배너/stale SW. 박스는 기기 증거 없이 체크 금지
+  - Task 4: bench/builderBudget.test.ts 신설(4케이스) → RED 확인(모듈 부재 exit 1) → apps/server/src/prompt/summaryBudget.ts 순수 헬퍼 추출(builder.ts 미변경, live 주입/SQL 불변) → passed 4 exit 0
+  - Task 5: bench/summarizeContract.test.ts 신설(3케이스) → RED → routes/summarizeContract.ts 헬퍼 추출(memory.ts 142/198–199/215–216행 로직 그대로, memory.ts 미변경) → passed 3 exit 0
+  - Task 6 episode live rollup: 모델 비용 사전승인 필요로 보류(플랜 전제 유지)
+- 게이트 raw: builderBudget passed 4 / summarizeContract passed 3 / loreMatch·rpEngineR1·cardImport·generation-orphan 전부 exit 0 / typecheck(web tsc) exit 0 / required_migrations 0001–0005 무변
+- 커밋: 사용자 승인으로 테스트+헬퍼 커밋 2건 (문서는 워킹트리 유지)
+- 미결: Galaxy 체크리스트 사용자 실측 대기 / Task 6 모델 비용 승인 시 별도 착수 / Track F 잠금(F1~F6)은 사용자 지정 필요
+
+### Correction — helper contracts are not live-path locks (2026-08-24, hermes)
+
+Previous reporting overstated the guarantees established by commits 99e86be and 35d0a01.
+
+Those commits add pure helpers and tests that verify only the helpers' shadow contracts. They do not yet wire the helpers into the live builder.ts or memory.ts paths. Therefore, live budget calculation, the 409 guard, and firstId behavior remain separately unimplemented or unverified.
+
+An additional semantic mismatch was identified in summaryBudget.ts: when an episode is excluded by recentGuard, the helper currently skips scene collection as well. The live builder evaluates scenes independently when sceneBudget > 0 and applies per-scene covers_until continuation. This mismatch must be corrected and locked with a RED-to-GREEN regression test before live wiring.
+
+HANDOFF and OPERATOR-NOTE values referring to HEAD v0.0.19-27-ge2de9c9 and candidate|6 are stale after the two commits and subsequent memory data changes. The current candidate|7 / pinned|9 / rejected|1 counts reflect user activity and are not treated as a code defect.
+
+Task 6, Track F, and Galaxy measurement remain paused.
+
+사용자 결정(2026-08-24): (1)안 승인 — 순서 고정: ①summaryBudget recentGuard/scene 분기를 라이브 시맨틱으로 정렬 ②회귀 테스트 RED ③GREEN ④builder.ts/memory.ts 실제 연결 ⑤differential 검증 ⑥실호출 경로 기준 검증 ⑦전체 테스트. 헬퍼 수정과 와이어링은 섞지 않음.
