@@ -125,17 +125,35 @@ export function conversationRoutes(ctx: Ctx) {
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
       const d = p.data;
       if (d.personaId && !one(db, 'SELECT 1 FROM personas WHERE id = ?', d.personaId)) return reply.code(404).send({ error: 'persona not found' });
+      // snapshot lock: personaId set → copy live row into snapshot columns in the same statement.
+      // "다시 적용" = PATCH the same personaId again. personaId:null → clear snapshot, back to live reference.
+      let snap: { n: string | null; a: string | null; ap: string | null; pe: string | null; pr: string | null; at: string | null } | null = null;
+      if (d.personaId) {
+        const src = one<any>(db, 'SELECT name, address_as, appearance, personality, relationship FROM personas WHERE id = ?', d.personaId)!;
+        snap = { n: src.name ?? null, a: src.address_as ?? null, ap: src.appearance ?? null, pe: src.personality ?? null, pr: src.relationship ?? null, at: nowIso() };
+      } else if (d.personaId === null) {
+        snap = { n: null, a: null, ap: null, pe: null, pr: null, at: null };
+      }
       const scene = d.scene ? { ...parseJson<Scene>(conv.scene_json, {}), ...d.scene } : null;
       run(
         db,
         `UPDATE conversations SET title = COALESCE(?, title), mode = COALESCE(?, mode), profile_name = COALESCE(?, profile_name),
            scene_json = COALESCE(?, scene_json), persona_id = CASE WHEN ? THEN ? ELSE persona_id END,
            favorite = COALESCE(?, favorite), archived = COALESCE(?, archived),
-           user_note = CASE WHEN ? THEN ? ELSE user_note END, updated_at = ? WHERE id = ?`,
+           user_note = CASE WHEN ? THEN ? ELSE user_note END,
+           persona_name_snapshot = COALESCE(?, persona_name_snapshot),
+           persona_address_snapshot = COALESCE(?, persona_address_snapshot),
+           persona_appearance_snapshot = COALESCE(?, persona_appearance_snapshot),
+           persona_personality_snapshot = COALESCE(?, persona_personality_snapshot),
+           persona_relationship_snapshot = COALESCE(?, persona_relationship_snapshot),
+           persona_applied_at = COALESCE(?, persona_applied_at),
+           updated_at = ? WHERE id = ?`,
         d.title ?? null, d.mode ?? null, d.profileName ?? null, scene ? JSON.stringify(scene) : null,
         d.personaId !== undefined ? 1 : 0, d.personaId ?? null,
         d.favorite === undefined ? null : d.favorite ? 1 : 0, d.archived === undefined ? null : d.archived ? 1 : 0,
-        d.userNote !== undefined ? 1 : 0, d.userNote ?? null, nowIso(), conv.id,
+        d.userNote !== undefined ? 1 : 0, d.userNote ?? null,
+        snap?.n ?? null, snap?.a ?? null, snap?.ap ?? null, snap?.pe ?? null, snap?.pr ?? null, snap?.at ?? null,
+        nowIso(), conv.id,
       );
       return conversationOut(loadConversation(ctx, conv.id)!);
     });

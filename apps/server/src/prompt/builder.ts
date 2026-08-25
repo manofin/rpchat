@@ -38,6 +38,20 @@ export function loadProfile(db: DB, name: string): ModelProfile {
 }
 
 export function resolvePersona(db: DB, conv: ConversationRow): PersonaRow | null {
+  // snapshot lock: applied_at non-null → frozen snapshot wins; live row is only the catalog pointer.
+  if ((conv as any).persona_applied_at) {
+    return {
+      id: conv.persona_id ?? '',
+      name: (conv as any).persona_name_snapshot ?? '나',
+      address_as: (conv as any).persona_address_snapshot,
+      appearance: (conv as any).persona_appearance_snapshot,
+      personality: (conv as any).persona_personality_snapshot,
+      relationship: (conv as any).persona_relationship_snapshot,
+      is_default: 0,
+      created_at: '',
+      updated_at: '',
+    } as PersonaRow;
+  }
   if (conv.persona_id) {
     const p = one<PersonaRow>(db, 'SELECT * FROM personas WHERE id = ?', conv.persona_id);
     if (p) return p;

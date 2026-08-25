@@ -114,4 +114,30 @@ t('F. persona swap leaves non-persona sections unchanged', () => {
   assert.ok(sysA.includes('외형-수정됨'));
 });
 
+// --- snapshot lock (2026-08-25): RED first ---
+
+t('SN-A. applied_at set + persona edited → prompt uses snapshot, not live', () => {
+  db.prepare(`UPDATE conversations SET persona_name_snapshot='유저', persona_address_snapshot='호칭1',
+    persona_appearance_snapshot='외형-스냅샷', persona_personality_snapshot='페르소나성격',
+    persona_relationship_snapshot='관계1', persona_applied_at='2026-08-25T00:00:00Z' WHERE id='conv1'`).run();
+  const b = buildPrompt(db, convRow(db), history(db), 16384, 'm', 'rp-balanced');
+  const sys = b.messages.map((m: any) => m.content).join('\n');
+  assert.ok(sys.includes('외형-스냅샷'), 'snapshot appearance injected');
+  assert.ok(!sys.includes('외형-수정됨'), 'live edit NOT visible after snapshot');
+});
+
+t('SN-B. re-apply (snapshot columns updated) → new values used', () => {
+  db.prepare(`UPDATE conversations SET persona_appearance_snapshot='외형-재적용' WHERE id='conv1'`).run();
+  const b = buildPrompt(db, convRow(db), history(db), 16384, 'm', 'rp-balanced');
+  const sys = b.messages.map((m: any) => m.content).join('\n');
+  assert.ok(sys.includes('외형-재적용'));
+});
+
+t('SN-C. applied_at null → live reference (backward compat)', () => {
+  db.prepare(`UPDATE conversations SET persona_applied_at=NULL WHERE id='conv1'`).run();
+  const b = buildPrompt(db, convRow(db), history(db), 16384, 'm', 'rp-balanced');
+  const sys = b.messages.map((m: any) => m.content).join('\n');
+  assert.ok(sys.includes('외형-수정됨'), 'falls back to live row');
+});
+
 console.log(`passed ${passed}`);

@@ -7,6 +7,7 @@
     "0003_lore_selective.sql",
     "0004_memory_scope.sql",
     "0005_summary_tiers.sql",
-    "0006_user_note.sql"
+    "0006_user_note.sql",
+    "0007_persona_snapshot.sql"
   ]
 }
