@@ -318,3 +318,12 @@ Task 6, Track F, and Galaxy measurement remain paused.
 - differential 테스트 과정에서 테스트 시드 결함 발견·수정(created_at 사전식 정렬로 guard 범위 왜곡 — 프로덕션 코드 결함 아님)
 - 게이트 raw: builderBudget passed6 / summarizeContract passed3 / differential passed1 / loreMatch·rpEngineR1·cardImport·generation-orphan exit0 / typecheck exit0 / health ok+db:ok
 - 커밋: 04a8f1e (HEAD = v0.0.19-30-g04a8f1e). Task 6 / Track F / Galaxy 실측은 계속 중단
+
+## 2026-08-25 완료 판정 기록 by hermes (사용자 승인)
+
+(1)안 완료. summary budget 및 summarize contract 헬퍼가 라이브 builder.ts/memory.ts 경로에 연결됐고, 라이브 시맨틱 정렬, RED→GREEN 회귀, differential characterization, 관련 회귀 테스트, typecheck 및 health gate를 통과했다. 기존 SQL·주입·렌더링 동작은 유지되며, 승인 episode ID 집합 조회 1건만 의도적으로 추가됐다. Task 6, Track F, Galaxy 실측은 계속 중단한다.
+
+보장 범위(테스트가 관찰하는 입력 공간·불변조건 내): builder.ts의 episode cap/채택판정, scene 개별 채택, episode 가드와 독립적 scene 평가, 개별 covers_until 처리, pathIds 오프경로 제외 / memory.ts의 summarize 409 가드, evidence firstId, scene cover range / 동일 픽스처에서 런타임-헬퍼 결정 일치.
+표준 문구: "기존 쿼리와 주입 순서·렌더링은 불변이며, 헬퍼 입력 구성을 위한 승인 episode ID 조회 1건만 추가됐다." — "SQL 불변" 단독 표현은 지양.
+
+현재 HEAD v0.0.19-31-g3a90f68에서 추가 수정 없이 정지.
