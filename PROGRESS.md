@@ -308,3 +308,13 @@ HANDOFF and OPERATOR-NOTE values referring to HEAD v0.0.19-27-ge2de9c9 and candi
 Task 6, Track F, and Galaxy measurement remain paused.
 
 사용자 결정(2026-08-24): (1)안 승인 — 순서 고정: ①summaryBudget recentGuard/scene 분기를 라이브 시맨틱으로 정렬 ②회귀 테스트 RED ③GREEN ④builder.ts/memory.ts 실제 연결 ⑤differential 검증 ⑥실호출 경로 기준 검증 ⑦전체 테스트. 헬퍼 수정과 와이어링은 섞지 않음.
+
+## 2026-08-25T00:45 와이어링 완료 by hermes ((1)안 실행, 사용자 결정문 이행)
+
+- 순서 준수: ①summaryBudget recentGuard/scene 분기 정렬 ②회귀테스트 RED(builderBudget 케이스5-6, exit 1) ③GREEN(passed 6) ④builder.ts/memory.ts 연결 ⑤differential(bench/builderDifferential.test.ts 신설) ⑥실호출경로 기준 검증(메모리 DB characterization — 모델 호출 없음) ⑦전체 테스트
+- summaryBudget 수정: scene 수집을 episode recentGuard와 독립으로 변경(sceneBudget>0 진입, 개별 covers_until 가드 + pathIds 오프경로 제외) — 라이브 builder 구시맨틱과 일치
+- builder.ts: episode cap/채택판정과 scene 개별채택을 allocateSummaryBudget으로 위임. SQL 문자열 diff 확인 결과 신규 SELECT 1건(승인 episode id 집합) 외 기존 쿼리 무변경, 주입 순서/렌더 불변
+- memory.ts: isSummarizeBlocked(409가드)/evidenceIdsForSlice(firstId)/sceneCoverRange(scene cover)로 교체 — 동작 등가
+- differential 테스트 과정에서 테스트 시드 결함 발견·수정(created_at 사전식 정렬로 guard 범위 왜곡 — 프로덕션 코드 결함 아님)
+- 게이트 raw: builderBudget passed6 / summarizeContract passed3 / differential passed1 / loreMatch·rpEngineR1·cardImport·generation-orphan exit0 / typecheck exit0 / health ok+db:ok
+- 커밋: 04a8f1e (HEAD = v0.0.19-30-g04a8f1e). Task 6 / Track F / Galaxy 실측은 계속 중단
