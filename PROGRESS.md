@@ -353,3 +353,12 @@ Task 6 / Track F / Galaxy 실측 계속 중단.
 
 후속 문서 슬라이스(미착수): HANDOFF 갱신 / OPERATOR-NOTE 갱신 / summarizeContract.ts 헤더 갱신. 갱신 전까지 이 문서들을 HEAD·보장 수준 기준 자료로 사용 금지 — PROGRESS.md 최신 정정 블록과 HEAD e9f8fdb 기준.
 정지선 유지: Task 6 중단 / Track F 중단 / Galaxy 실측 중단 / 후속 문서 슬라이스 미착수 / 추가 코드 변경 없음. HEAD v0.0.19-33-ge9f8fdb에서 정지.
+
+## 2026-08-25T02:25 unimplemented-plan Track A–C by hermes (플랜 2026-08-25_020352)
+
+- Task 1 live facts: HEAD 시작 시점 v0.0.19-34-gad24f91 / health ok+db:ok / required_migrations 0001–0005 / 프로세스 PID 157179(02:02:27) > dist mtime 02:02:23, dist builder.js allocateSummaryBudget 참조 3건, dist memory.js summarizeContract import 확인 → **런타임 잠금 유지, Task 2(재빌드) 스킵**
+- Task 3 문서 정합: HANDOFF.md v2.2 배너+§4(이전 플랜 실행완료·현재 플랜 명시), OPERATOR-NOTE.md HEAD/다음경로/잠금목록(D1/D2/E1/F1–F6)/memories count 드리프트 주석/raw체크에 dist grep 추가, docs/GALAXY-CHECKLIST.md §1 stale 해시 제거. summarizeContract.ts 헤더를 라이브 import 반영 문구로 교체 → 커밋 152a29c (untracked md는 커밋 안 함)
+- Task 4/5 진짜 differential: bench/builderDifferential.test.ts 전면 교체 — 같은 buildPrompt 두 번 호출과 하드코딩 헬퍼 입력을 제거하고, builder.ts@35d0a01의 episode/scene 결정 루프를 인라인 오라클(legacyDecide)로 이식. 진단 used + '### 최근 장면' 실제 주입 내용(scOld1/scOld2 포함, scRecent 부재) + 오라클 패리티 검증. 과정에서 테스트 자체 결함 2건 수정(state seed content 불일치, estimateTokensRaw cjk 범위 오타) — 프로덕션 코드 무변경
+- 게이트 raw: builderBudget passed6 / summarizeContract passed3 / differential passed1(오라클≠동일함수) / loreMatch OK / rpEngineR1 OK / cardImport OK / generation-orphan OK / typecheck(server) exit0 / health ok+db:ok
+- 커밋: 152a29c(헤더), 2b16094(differential 교체). 현재 HEAD = v0.0.19-36-g2b16094
+- 미착수 유지: D1/D2/E1/F1–F6 전부 잠금 대기, 후속 문서 슬라이스 없음, Galaxy 박스 UNCHECKED
