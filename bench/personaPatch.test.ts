@@ -5,7 +5,8 @@
  * Separates:
  *   SELECT  = PATCH a different personaId
  *   REAPPLY = PATCH the same personaId again
- *   CLEAR   = PATCH personaId: null
+ *   CLEAR   = PATCH personaId: null → persona_id, snapshot, applied_at all NULL
+ *   omitted personaId keeps persona_id, snapshot, applied_at
  *
  * Helper/bench PASS is not a product PASS (helper-vs-live-contract).
  * Does not start systemd or touch the live DB.
@@ -123,16 +124,17 @@ async function main() {
     assert.notEqual(r.persona_applied_at, appliedAfterReapply);
   });
 
-  await t('CLEAR: PATCH personaId null — record actual snapshot SQL behavior', async () => {
-    const before = row();
+  await t('CLEAR: PATCH personaId null nulls persona_id, snapshot, applied_at', async () => {
     const res = await patchPersona(null);
     assert.equal(res.statusCode, 200, res.body);
     const r = row();
-    assert.equal(r.persona_id, null, 'persona_id CASE writes null');
-    // COALESCE(NULL, old) cannot clear snapshot columns. Lock the live SQL, do not "fix" here.
-    assert.equal(r.persona_name_snapshot, before.persona_name_snapshot, 'COALESCE keeps name snapshot');
-    assert.equal(r.persona_appearance_snapshot, before.persona_appearance_snapshot, 'COALESCE keeps appearance snapshot');
-    assert.equal(r.persona_applied_at, before.persona_applied_at, 'COALESCE keeps applied_at');
+    assert.equal(r.persona_id, null);
+    assert.equal(r.persona_name_snapshot, null);
+    assert.equal(r.persona_address_snapshot, null);
+    assert.equal(r.persona_appearance_snapshot, null);
+    assert.equal(r.persona_personality_snapshot, null);
+    assert.equal(r.persona_relationship_snapshot, null);
+    assert.equal(r.persona_applied_at, null);
   });
 
   await t('unknown personaId → 404, row unchanged', async () => {
