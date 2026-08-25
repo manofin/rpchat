@@ -340,3 +340,16 @@ Task 6, Track F, and Galaxy measurement remain paused.
 조치: apps/server 재빌드(dist에 헬퍼 3건 확인) → systemctl restart rpchat → 신규 PID 157174, health ok/db:ok. 전체 테스트 재실행 전부 exit 0.
 정확한 상태 문구: 서버 재기동(신규 dist 로드) 완료로 4계층 예산 배분·summarize 409 가드·evidence firstId·scene cover 계산은 호출 경로에서 실제로 헬퍼를 사용한다. 기존 쿼리와 주입 순서·렌더링은 불변이며, 승인 episode ID 집합 조회 1건만 추가됐다.
 Task 6 / Track F / Galaxy 실측 계속 중단.
+
+## 2026-08-25 최종 판정 기록 by hermes (사용자 런타임 적용 완료 승인)
+
+최종 판정: 소스 → 테스트 → 빌드 산출물 → 서비스 재기동 → 헬스 확인까지 완료, 런타임 적용 완료로 승인.
+
+표준 문구(이후 문서·보고 준수):
+- allocateSummaryBudget = "episode/scene 용도별 예산 판정 위임" 정책 헬퍼. 전역 배분 allocator 표현 지양.
+- SQL: "기존 쿼리의 의미와 주입 순서·렌더링은 유지됐으며, 헬퍼 입력을 구성하기 위한 승인 episode ID 집합 조회 1건이 추가됐다."
+- differential 테스트 = live-path/helper decision parity(characterization parity). pre/post 커밋 비교 증명이 아님: "현재 buildPrompt 실행 결과에서 관찰되는 예산 판정과 동일 입력으로 호출한 헬퍼의 판정 결과가 일치함을 검증한다."
+- 런타임 보장: "서버 재빌드와 재기동을 완료했으며, 현재 구동 중인 런타임에서 4계층 예산 관련 판정, summarize 409 가드, evidence firstId, scene cover 계산이 실제 헬퍼를 사용한다."
+
+후속 문서 슬라이스(미착수): HANDOFF 갱신 / OPERATOR-NOTE 갱신 / summarizeContract.ts 헤더 갱신. 갱신 전까지 이 문서들을 HEAD·보장 수준 기준 자료로 사용 금지 — PROGRESS.md 최신 정정 블록과 HEAD e9f8fdb 기준.
+정지선 유지: Task 6 중단 / Track F 중단 / Galaxy 실측 중단 / 후속 문서 슬라이스 미착수 / 추가 코드 변경 없음. HEAD v0.0.19-33-ge9f8fdb에서 정지.
