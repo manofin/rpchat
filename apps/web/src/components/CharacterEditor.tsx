@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
-import { del, get, post, put } from '../lib/api';
+import { del, get, post, postBinary, put } from '../lib/api';
 import type { Character } from '../types';
 import { Modal, useUi } from './ui';
+
+const FROST_CHARACTER_ID = 'f89ace9b-8684-4d97-96dc-e00c4b25a819';
+const AVATAR_ACCEPT = 'image/jpeg,image/png,image/webp';
 
 type Draft = Omit<Character, 'id' | 'created_at' | 'updated_at' | 'archived' | 'conversation_count' | 'last_chat_at'>;
 
@@ -30,6 +33,7 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
   const [saving, setSaving] = useState(false);
   const [lore, setLore] = useState<LoreEntry[]>([]);
   const [tab, setTab] = useState<'card' | 'lore'>('card');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -71,7 +75,7 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
       open={open}
       title={character ? '캐릭터 편집' : '새 캐릭터'}
       onClose={onClose}
-      footer={<><button className="btn" onClick={onClose}>취소</button><button className="btn primary" disabled={saving} onClick={save}>{saving ? '저장 중…' : '저장'}</button></>}
+      footer={<><button className="btn" onClick={onClose}>취소</button><button className="btn primary" disabled={saving || uploading} onClick={save}>{saving ? '저장 중…' : '저장'}</button></>}
     >
       <div className="sheet tabs" style={{ padding: '0 0 10px' }}>
         <button className={tab === 'card' ? 'active' : ''} onClick={() => setTab('card')}>카드</button>
@@ -83,6 +87,32 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
           <div className="field"><label>이름 *</label><input value={d.name} onChange={(e) => set('name', e.target.value)} maxLength={80} /></div>
           <div className="field"><label>한 줄 소개</label><input value={d.tagline} onChange={(e) => set('tagline', e.target.value)} maxLength={200} /></div>
           <div className="field"><label>아바타 URL (선택)</label><input value={d.avatar ?? ''} onChange={(e) => set('avatar', e.target.value || null)} placeholder="비워두면 이니셜 표시" /></div>
+          {character && character.id !== FROST_CHARACTER_ID && (
+            <div className="field">
+              <label>아바타 파일</label>
+              <input
+                type="file"
+                accept={AVATAR_ACCEPT}
+                disabled={uploading}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  if (!file) return;
+                  setUploading(true);
+                  try {
+                    const saved = await postBinary<Character>(`/api/characters/${character.id}/avatar`, file, file.type || 'application/octet-stream');
+                    set('avatar', saved.avatar);
+                    ui.toast('아바타 업로드됨');
+                  } catch (err) {
+                    ui.toast((err as Error).message, 'err');
+                  } finally {
+                    setUploading(false);
+                  }
+                }}
+              />
+              <span className="hint">jpeg/png/webp · 최대 2MB. 변환 없음.</span>
+            </div>
+          )}
           <div className="field"><label>설명 / 배경</label><textarea value={d.description} onChange={(e) => set('description', e.target.value)} /></div>
           <div className="field"><label>성격</label><textarea value={d.personality} onChange={(e) => set('personality', e.target.value)} /></div>
           <div className="field"><label>말투</label><textarea value={d.speech_style} onChange={(e) => set('speech_style', e.target.value)} placeholder="예: 반말, 짧고 툭툭 던지는 말투. 문장 끝을 흐림." /></div>

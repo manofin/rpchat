@@ -1,9 +1,20 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../ctx.js';
+import { config } from '../config.js';
 import { many, nowIso, one, parseJson, run, uid } from '../db/index.js';
 import type { CharacterRow, LoreEntryRow, PersonaRow } from '../types.js';
 import { importCard } from '../cardImport.js';
+import {
+  AVATAR_EXT,
+  AVATAR_MAX_BYTES,
+  AvatarReject,
+  FROST_CHARACTER_ID,
+  inspectAvatar,
+  publicAvatarPath,
+} from '../media/avatar.js';
 
 export function characterOut(c: CharacterRow) {
   return { ...c, tags: parseJson<string[]>(c.tags_json, []), archived: !!c.archived };
@@ -153,6 +164,44 @@ export function characterRoutes(ctx: Ctx) {
       );
       return characterOut(one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', c.id)!);
     });
+
+    app.addContentTypeParser(
+      ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/octet-stream'],
+      { parseAs: 'buffer', bodyLimit: AVATAR_MAX_BYTES },
+      (_req, body, done) => {
+        done(null, body);
+      },
+    );
+
+    app.post<{ Params: { id: string }; Body: Buffer }>(
+      '/api/characters/:id/avatar',
+      { bodyLimit: AVATAR_MAX_BYTES },
+      async (req, reply) => {
+        const id = req.params.id;
+        if (id === FROST_CHARACTER_ID) return reply.code(403).send({ error: 'frost character' });
+        const c = one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', id);
+        if (!c) return reply.code(404).send({ error: 'not found' });
+        const buf = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+        let kind;
+        try {
+          kind = inspectAvatar(buf);
+        } catch (e) {
+          if (e instanceof AvatarReject) return reply.code(e.status).send({ error: e.message });
+          throw e;
+        }
+        const dir = path.join(config.dataDir, 'media', 'avatars');
+        fs.mkdirSync(dir, { recursive: true });
+        const dest = path.join(dir, `${id}.${AVATAR_EXT[kind]}`);
+        for (const ext of Object.values(AVATAR_EXT)) {
+          const prev = path.join(dir, `${id}.${ext}`);
+          if (prev !== dest && fs.existsSync(prev)) fs.unlinkSync(prev);
+        }
+        fs.writeFileSync(dest, buf);
+        const avatar = publicAvatarPath(id, kind);
+        run(db, 'UPDATE characters SET avatar = ?, updated_at = ? WHERE id = ?', avatar, nowIso(), id);
+        return characterOut(one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', id)!);
+      },
+    );
 
     app.delete<{ Params: { id: string } }>('/api/characters/:id', async (req, reply) => {
       const r = run(db, 'UPDATE characters SET archived = 1, updated_at = ? WHERE id = ?', nowIso(), req.params.id);

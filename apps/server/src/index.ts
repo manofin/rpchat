@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import Fastify from 'fastify';
 import fastifyCookie from '@fastify/cookie';
 import fastifyStatic from '@fastify/static';
@@ -79,6 +80,18 @@ async function main() {
   await app.register(memoryRoutes(ctx));
   await app.register(settingsRoutes(ctx));
   await app.register(searchRoutes(ctx));
+
+  const mediaRoot = path.join(config.dataDir, 'media');
+  fs.mkdirSync(path.join(mediaRoot, 'avatars'), { recursive: true });
+  const avatarMime: Record<string, string> = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
+  app.get<{ Params: { file: string } }>('/media/avatars/:file', async (req, reply) => {
+    const file = req.params.file;
+    const m = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.(jpg|png|webp)$/.exec(file);
+    if (!m) return reply.code(404).send({ error: 'not found' });
+    const p = path.join(mediaRoot, 'avatars', file);
+    if (!fs.existsSync(p)) return reply.code(404).send({ error: 'not found' });
+    return reply.type(avatarMime[m[2]]).send(fs.readFileSync(p));
+  });
 
   // 정적 SPA (빌드 결과가 있을 때만). /api 외 경로는 index.html 로 폴백.
   const hasWeb = fs.existsSync(config.webDist) && fs.existsSync(`${config.webDist}/index.html`);
