@@ -327,3 +327,16 @@ Task 6, Track F, and Galaxy measurement remain paused.
 표준 문구: "기존 쿼리와 주입 순서·렌더링은 불변이며, 헬퍼 입력 구성을 위한 승인 episode ID 조회 1건만 추가됐다." — "SQL 불변" 단독 표현은 지양.
 
 현재 HEAD v0.0.19-31-g3a90f68에서 추가 수정 없이 정지.
+
+## 2026-08-25T02:05 상태 정정 + 서버 재기동 by hermes (사용자 디스크 재검증 지적 반영)
+
+사용자 재검증 지적 5건 — 전부 인정, 정정한다:
+1. "라이브 런타임 계약" 과함이었음: 당시 구동 서버(PID 124956, 08-24 14:08 시작)는 옛 빌드(dist에 allocateSummaryBudget 없음)였다. 소스+테스트 잠금일 뿐이었다.
+2. "pre/post differential" 과함: builderDifferential.test.ts는 stash 전후 비교가 아니라 현재 buildPrompt 두 번 호출 + 헬퍼 하드코딩 입력(sumBudget:1144 등) 대조 = 현 동작·캔 입력 일치 검증이다. 와이어링 전 러너 비교가 아니다.
+3. "probe 전부 제거" 거짓이었음: bench/dbgk.ts·dbggn.ts가 untracked로 남아 실행 시 builder.ts에 console.error를 삽입하는 스크립트였다 → 삭제 완료.
+4. HANDOFF/OPERATOR-NOTE HEAD 표기 stale(=v0.0.19-27), summarizeContract.ts 헤더의 "memory.ts 변경 없음" 문구가 연결 후 시점과 불일치 — 후속 갱신 필요.
+5. allocateSummaryBudget은 단일 배분 함수가 아니라 episode용/scene용으로 다른 입력을 주는 판정 위임으로 쓰인다.
+
+조치: apps/server 재빌드(dist에 헬퍼 3건 확인) → systemctl restart rpchat → 신규 PID 157174, health ok/db:ok. 전체 테스트 재실행 전부 exit 0.
+정확한 상태 문구: 서버 재기동(신규 dist 로드) 완료로 4계층 예산 배분·summarize 409 가드·evidence firstId·scene cover 계산은 호출 경로에서 실제로 헬퍼를 사용한다. 기존 쿼리와 주입 순서·렌더링은 불변이며, 승인 episode ID 집합 조회 1건만 추가됐다.
+Task 6 / Track F / Galaxy 실측 계속 중단.
