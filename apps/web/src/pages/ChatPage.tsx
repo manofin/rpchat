@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { get, patch } from '../lib/api';
 import { back, navigate } from '../lib/router';
-import type { Message, ModelProfile, PromptPreview, Summary } from '../types';
+import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, PromptPreview, Summary } from '../types';
 import { Avatar, renderContent } from '../components/view';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { useChat } from './useChat';
@@ -229,7 +229,7 @@ export function ChatPage({ id }: { id: string }) {
       </div>
 
       <ChatDrawer open={drawer} conversationId={id} draft={draft} initialTab={drawerTab} onClose={() => { setDrawer(false); setDrawerTab(undefined); }} onApplied={() => { /* 미리보기는 열 때마다 재계산 */ }} />
-      <ConversationSettings open={settings} conversationId={id} onClose={() => setSettings(false)} onChanged={chat.reload} />
+      <ConversationSettings open={settings} conversationId={id} onClose={() => setSettings(false)} onChanged={chat.reload} onOpenMemory={() => { setSettings(false); setDrawerTab(undefined); setDrawer(true); }} />
     </div>
   );
 }
@@ -367,38 +367,127 @@ function MessageView(props: {
   );
 }
 
-function ConversationSettings({ open, conversationId, onClose, onChanged }: { open: boolean; conversationId: string; onClose: () => void; onChanged: () => void }) {
+function ConversationSettings({ open, conversationId, onClose, onChanged, onOpenMemory }: { open: boolean; conversationId: string; onClose: () => void; onChanged: () => void; onOpenMemory: () => void }) {
   const ui = useUi();
   const [profiles, setProfiles] = useState<ModelProfile[]>([]);
-  const [conv, setConv] = useState<{ title: string; profile_name: string; mode: 'chat' | 'story' } | null>(null);
+  const [conv, setConv] = useState<Conversation | null>(null);
+  const [character, setCharacter] = useState<Character | null>(null);
+  const [persona, setPersona] = useState<Persona | null>(null);
+  const [promptVersion, setPromptVersion] = useState('');
+  const [view, setView] = useState<'main' | 'guide' | 'profiles'>('main');
+  const [personaList, setPersonaList] = useState<Persona[]>([]);
 
   useEffect(() => {
     if (!open) return;
+    setView('main');
     get<ModelProfile[]>('/api/profiles').then(setProfiles);
-    get<{ conversation: { title: string; profile_name: string; mode: 'chat' | 'story' } }>(`/api/conversations/${conversationId}`).then((d) => setConv(d.conversation));
+    get<Health>('/api/health').then((h) => setPromptVersion(h.promptVersion)).catch(() => {});
+    get<ConversationDetail>(`/api/conversations/${conversationId}`).then((d) => { setConv(d.conversation); setCharacter(d.character); setPersona(d.persona); });
   }, [open, conversationId]);
+
+  useEffect(() => {
+    if (!open || view !== 'profiles') return;
+    get<Persona[]>('/api/personas').then(setPersonaList).catch(() => setPersonaList([]));
+  }, [open, view]);
 
   async function save(patchBody: Record<string, unknown>) {
     await patch(`/api/conversations/${conversationId}`, patchBody);
     onChanged();
   }
 
-  if (!conv) return <BottomSheet open={open} onClose={onClose}><div className="sheet-body"><div className="muted small">불러오는 중…</div></div></BottomSheet>;
+  async function pickPersona(p: Persona) {
+    if (!conv) return;
+    const current = conv.persona_id ?? personaList.find((x) => x.is_default)?.id;
+    if (p.id === current) return;
+    try {
+      await patch(`/api/conversations/${conversationId}`, { personaId: p.id });
+      setConv({ ...conv, persona_id: p.id });
+      onChanged();
+    } catch {
+      ui.toast('페르소나 선택 실패');
+      get<Persona[]>('/api/personas').then(setPersonaList).catch(() => {});
+    }
+  }
+
+  if (!conv || !character) return <BottomSheet open={open} onClose={onClose}><div className="sheet-body"><div className="muted small">불러오는 중…</div></div></BottomSheet>;
+
+  if (view === 'guide') {
+    const guide = [character.description, character.personality, character.speech_style, character.taboos]
+      .map((s) => (s ?? '').trim())
+      .filter(Boolean)
+      .join('\n\n') || '(작성된 가이드 없음)';
+    return (
+      <BottomSheet open={open} onClose={onClose}>
+        <div className="sheet-body">
+          <strong>플레이 가이드</strong>
+          <div style={{ maxHeight: 320, overflowY: 'auto', whiteSpace: 'pre-wrap', margin: '12px 0', fontSize: 14, lineHeight: 1.6 }}>{guide}</div>
+          <button className="btn primary block" onClick={() => setView('main')}>확인</button>
+        </div>
+      </BottomSheet>
+    );
+  }
+
+  if (view === 'profiles') {
+    return (
+      <BottomSheet open={open} onClose={onClose}>
+        <div className="sheet-body">
+          <strong>대화 프로필</strong>
+          <div className="small muted" style={{ marginTop: 4 }}>추가·수정·삭제는 설정 → 페르소나. 사용 중인 페르소나는 삭제 시 409.</div>
+          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {personaList.map((p) => {
+              const isCurrent = p.id === conv.persona_id || (conv.persona_id == null && p.is_default);
+              return (
+                <button
+                  key={p.id}
+                  className={`btn ${isCurrent ? 'primary' : ''} block`}
+                  style={{ textAlign: 'left', whiteSpace: 'normal' }}
+                  onClick={() => pickPersona(p)}
+                >
+                  {p.name}{isCurrent ? ' · 현재' : ''}
+                  {(p.relationship || p.personality) && (
+                    <span className="small muted" style={{ display: 'block', fontWeight: 400 }}>{(p.relationship || p.personality).slice(0, 60)}</span>
+                  )}
+                </button>
+              );
+            })}
+            {personaList.length === 0 && <div className="muted small">페르소나 없음</div>}
+          </div>
+          <button className="btn sm block" style={{ marginTop: 12 }} onClick={() => navigate('/settings')}>설정에서 편집</button>
+          <button className="btn ghost block" style={{ marginTop: 6 }} onClick={() => setView('main')}>뒤로</button>
+        </div>
+      </BottomSheet>
+    );
+  }
+
+  const sceneLine = Object.entries(conv.scene)
+    .filter(([, v]) => (v ?? '').trim())
+    .map(([k, v]) => `${k}:${v}`)
+    .join(' · ');
 
   return (
     <BottomSheet open={open} onClose={onClose}>
       <div className="sheet-body">
-        <strong>대화 설정</strong>
-        <div className="field" style={{ marginTop: 12 }}>
-          <label>제목</label>
-          <input defaultValue={conv.title} onBlur={(e) => e.target.value !== conv.title && save({ title: e.target.value })} placeholder="대화 제목" />
+        <div className="row" style={{ alignItems: 'center', gap: 10 }}>
+          <Avatar name={character.name} avatar={character.avatar} size="sm" />
+          <div>
+            <strong>{character.name}</strong>
+            {character.tagline && <div className="small muted">{character.tagline}</div>}
+          </div>
+        </div>
+
+        <div className="small muted" style={{ marginTop: 16 }}>채팅방 설정</div>
+        <button className="btn sm block" style={{ marginTop: 8 }} onClick={() => setView('guide')}>플레이 가이드</button>
+        <button className="btn sm block" style={{ marginTop: 6 }} onClick={() => setView('profiles')}>대화 프로필: {persona?.name ?? '나'}{!conv.persona_id ? ' (기본)' : ''}</button>
+        <div className="field" style={{ marginTop: 10 }}>
+          <label>유저노트</label>
+          <span className="hint">미구현 (별도 잠금)</span>
         </div>
         <div className="field">
-          <label>모델 프로필</label>
+          <label>최대 출력량</label>
           <select value={conv.profile_name} onChange={(e) => { setConv({ ...conv, profile_name: e.target.value }); save({ profileName: e.target.value }); }}>
-            {profiles.filter((p) => p.name.startsWith('rp-')).map((p) => <option key={p.name} value={p.name}>{p.name} · temp {p.temperature}</option>)}
+            {profiles.filter((p) => p.name.startsWith('rp-')).map((p) => <option key={p.name} value={p.name}>{p.name} · temp {p.temperature} · max {p.max_tokens}</option>)}
           </select>
-          <span className="hint">창의성/일관성 조절. summary·memory-extract 는 내부 전용입니다.</span>
+          <span className="hint">모델 프로필의 max_tokens 를 따릅니다. summary·memory-extract 는 내부 전용입니다.</span>
         </div>
         <div className="field">
           <label>모드</label>
@@ -407,7 +496,26 @@ function ConversationSettings({ open, conversationId, onClose, onChanged }: { op
             <button className={`btn ${conv.mode === 'story' ? 'primary' : ''} block`} onClick={() => { setConv({ ...conv, mode: 'story' }); save({ mode: 'story' }); }}>스토리</button>
           </div>
         </div>
-        <div className="row" style={{ gap: 8, marginTop: 8 }}>
+        <button className="btn sm block" style={{ marginTop: 6 }} onClick={onOpenMemory}>요약 메모리</button>
+
+        <div className="small muted" style={{ marginTop: 16 }}>전체 설정</div>
+        <div className="field">
+          <label>글꼴</label>
+          <span className="hint">전역 Kami (변경 없음)</span>
+        </div>
+        <div className="field">
+          <label>상황 이미지 보기</label>
+          <span className="hint">미구현 (E1/F3 잠금)</span>
+        </div>
+
+        <div className="small muted" style={{ marginTop: 16 }}>시작 설정</div>
+        <div className="small" style={{ marginTop: 6, whiteSpace: 'pre-wrap' }}>{character.scenario?.trim() || '(시나리오 없음)'}</div>
+        {sceneLine && <div className="small muted" style={{ marginTop: 4 }}>{sceneLine}</div>}
+
+        <div className="small muted" style={{ marginTop: 16 }}>업데이트 정보</div>
+        <div className="small" style={{ marginTop: 4 }}>프롬프트 {promptVersion || '…'}</div>
+
+        <div className="row" style={{ gap: 8, marginTop: 12 }}>
           <a className="btn sm block" href={`/api/conversations/${conversationId}/export?format=md`} target="_blank" rel="noreferrer">MD 내보내기</a>
           <a className="btn sm block" href={`/api/conversations/${conversationId}/export?format=json`} target="_blank" rel="noreferrer">JSON 내보내기</a>
         </div>
