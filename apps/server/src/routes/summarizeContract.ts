@@ -1,10 +1,8 @@
 /**
- * summarize 계약 순수 헬퍼 — routes/memory.ts 에서 로직을 그대로 추출한 것.
- * 대응 관계 (memory.ts, 변경 없음):
- *   isSummarizeBlocked   ← 142행: ctx.queue.activeList.some(g => g.conversationId === conv.id) → 409
- *   evidenceIdsForSlice  ← 199행+228행: firstId = slice[0].id → memories.evidence_message_ids_json = JSON.stringify([firstId])
- *   sceneCoverRange      ← 198–199행+216행: covers_until=lastId, covers_from=firstId(scene tier만)
- * 스키마 변경 없음. live DB 쓰기 없음.
+ * summarize 계약 헬퍼. memory.ts 가 import 한다 (04a8f1e+).
+ * isSummarizeBlocked / evidenceIdsForSlice / sceneCoverRange.
+ * 스키마 변경 없음. 이 파일만의 테스트가 라이브 잠금이 되려면
+ * memory.ts import + 재빌드된 dist + 재기동된 유닛이 필요하다.
  */
 
 export function isSummarizeBlocked(activeList: Array<{ conversationId: string }>, conversationId: string): boolean {
