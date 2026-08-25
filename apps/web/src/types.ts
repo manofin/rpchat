@@ -52,6 +52,7 @@ export interface Conversation {
   created_at: string;
   updated_at: string;
   last_message_at: string | null;
+  user_note?: string | null;
   character_name?: string;
   preview?: string;
 }

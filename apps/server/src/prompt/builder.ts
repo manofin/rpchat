@@ -5,6 +5,7 @@ import type {
 import { estimateTokens, estimateMessageTokens, getCalibration, truncateToTokens } from './tokens.js';
 import { loreEntryMatch } from './loreMatch.js';
 import { MIN_EPISODE_TOKENS, SCENE_RECENT_GUARD, allocateSummaryBudget } from './summaryBudget.js';
+import { allocateUserContextBudget } from './userContextBudget.js';
 import {
   OOC_INSTRUCTION, STORY_CHOICES_INSTRUCTION, renderCharacter, renderEpisode, renderLore, renderMemories, renderPersona, renderRules, renderScene, renderState, renderSummary, substitute,
 } from './templates.js';
@@ -74,25 +75,46 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   const sections: BudgetReport['sections'] = [];
   let used = 0;
 
-  // 1) 고정 블록: 규칙 + 캐릭터 + 페르소나 + 장면
+  // 1) 고정 블록: 규칙 + 캐릭터 + 페르소나 + 장면 + 유저노트
   const rules = renderRules(mode, contentPolicy, charName, userName);
   const personaText = renderPersona(persona, charName, userName);
   const sceneText = renderScene(parseJson<Scene>(conv.scene_json, {}));
+  // user_note: persona 다음 순위. 고정 블록 잔여분만 주입 (userContextBudget 정책, whole-or-nothing).
+  const noteRaw = (conv.user_note ?? '').trim();
+  const noteText = noteRaw ? `### 유저노트\n${noteRaw}` : null;
+  const estFixed = (char: string, note: boolean) =>
+    estimateTokens([rules, char, personaText, sceneText ?? '', note && noteText ? noteText : ''].join('\n\n'), cal);
   let charText = renderCharacter(character, charName, userName, true);
-  let fixedEst = estimateTokens([rules, charText, personaText, sceneText ?? ''].join('\n\n'), cal);
+  let noteIncluded = true;
+  let fixedEst = estFixed(charText, noteIncluded);
   let fixedNote: string | undefined;
   if (fixedEst > budgets.fixed) {
     const withoutEx = renderCharacter(character, charName, userName, false);
-    const base = estimateTokens([rules, withoutEx, personaText, sceneText ?? ''].join('\n\n'), cal);
-    const room = budgets.fixed - base;
+    const room = budgets.fixed - estFixed(withoutEx, true);
     if (room > 80) {
       charText = renderCharacter(character, charName, userName, true, truncateToTokens(character.example_dialogue, room - 20, cal));
       fixedNote = '예시 대화를 예산에 맞게 잘라 넣음';
     } else {
       charText = withoutEx;
-      fixedNote = base > budgets.fixed ? '예시 대화 제외 후에도 고정 블록이 예산 초과 (카드 본문 축약 권장)' : '예시 대화 제외';
+      if (noteText) {
+        const coreNoNote = estFixed(withoutEx, false);
+        const noteCost = estFixed(withoutEx, true) - coreNoNote;
+        const alloc = allocateUserContextBudget({
+          totalBudget: budgets.fixed,
+          profileTokens: coreNoNote,
+          noteTokens: noteCost,
+          profileCap: null,
+          noteCap: null,
+        });
+        // helper models truncation; a note must be whole-or-nothing
+        noteIncluded = alloc.noteIncluded && alloc.noteTokensUsed >= noteCost;
+      }
+      fixedEst = estFixed(withoutEx, noteIncluded);
+      if (fixedEst > budgets.fixed) fixedNote = '예시 대화 제외 후에도 고정 블록이 예산 초과 (카드 본문 축약 권장)';
+      else if (!noteIncluded && noteText) fixedNote = '유저노트 제외';
+      else fixedNote = '예시 대화 제외';
     }
-    fixedEst = estimateTokens([rules, charText, personaText, sceneText ?? ''].join('\n\n'), cal);
+    if (noteIncluded) fixedEst = estFixed(charText, true);
   }
   sections.push({ name: '시스템 규칙+카드+페르소나+장면', est_tokens: fixedEst, budget: budgets.fixed, note: fixedNote });
   used += fixedEst;
@@ -283,7 +305,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   used += recentEst;
 
   // 5) 시스템 메시지 합성
-  const systemParts = [rules, charText, personaText, sceneText, renderMemories(memItems), stateText, renderSummary(summaryText), episodeText, sceneTierText, loreText].filter((x): x is string => !!x);
+  const systemParts = [rules, charText, personaText, noteIncluded ? noteText : null, sceneText, renderMemories(memItems), stateText, renderSummary(summaryText), episodeText, sceneTierText, loreText].filter((x): x is string => !!x);
   if (isOoc) systemParts.push(OOC_INSTRUCTION);
   else if (mode === 'story') systemParts.push(substitute(STORY_CHOICES_INSTRUCTION, charName, userName));
   const systemText = systemParts.join('\n\n');

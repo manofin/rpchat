@@ -79,6 +79,7 @@ export interface ConversationRow {
   created_at: string;
   updated_at: string;
   last_message_at: string | null;
+  user_note: string | null;
 }
 
 export type MessageStatus = 'streaming' | 'complete' | 'interrupted' | 'error';

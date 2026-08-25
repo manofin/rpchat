@@ -36,6 +36,7 @@ const patchSchema = z.object({
   personaId: z.string().nullable().optional(),
   favorite: z.boolean().optional(),
   archived: z.boolean().optional(),
+  userNote: z.string().max(4000).nullable().optional(),
 });
 
 export function conversationOut(c: ConversationRow) {
@@ -129,10 +130,12 @@ export function conversationRoutes(ctx: Ctx) {
         db,
         `UPDATE conversations SET title = COALESCE(?, title), mode = COALESCE(?, mode), profile_name = COALESCE(?, profile_name),
            scene_json = COALESCE(?, scene_json), persona_id = CASE WHEN ? THEN ? ELSE persona_id END,
-           favorite = COALESCE(?, favorite), archived = COALESCE(?, archived), updated_at = ? WHERE id = ?`,
+           favorite = COALESCE(?, favorite), archived = COALESCE(?, archived),
+           user_note = CASE WHEN ? THEN ? ELSE user_note END, updated_at = ? WHERE id = ?`,
         d.title ?? null, d.mode ?? null, d.profileName ?? null, scene ? JSON.stringify(scene) : null,
         d.personaId !== undefined ? 1 : 0, d.personaId ?? null,
-        d.favorite === undefined ? null : d.favorite ? 1 : 0, d.archived === undefined ? null : d.archived ? 1 : 0, nowIso(), conv.id,
+        d.favorite === undefined ? null : d.favorite ? 1 : 0, d.archived === undefined ? null : d.archived ? 1 : 0,
+        d.userNote !== undefined ? 1 : 0, d.userNote ?? null, nowIso(), conv.id,
       );
       return conversationOut(loadConversation(ctx, conv.id)!);
     });
