@@ -164,3 +164,123 @@ textarea { resize: none; }
 /* ---- 로그인 ---- */
 .center { display: flex; flex-direction: column; align-items: center; justify-content: center; height: var(--app-height); padding: 24px; gap: 12px; }
 .center .card { width: 100%; max-width: 360px; }
+
+/* ---- conversation settings shell (Gate 2) ---- */
+.settings-screen {
+  display: flex;
+  flex-direction: column;
+  min-height: var(--app-height);
+  max-width: 720px;
+  margin: 0 auto;
+  background: var(--bg);
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+}
+.settings-header {
+  flex: 0 0 auto;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(8px + var(--safe-top)) 10px 8px;
+  border-bottom: 1px solid var(--kami-line);
+  min-height: 52px;
+  background: var(--kami-deep);
+}
+.settings-title {
+  font-size: 16px;
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  font-family: "Noto Serif KR", serif;
+  font-weight: 500;
+  color: var(--kami-text-strong);
+}
+.settings-header .title { flex: 1; min-width: 0; }
+.settings-header .title .sub {
+  font-size: 12px;
+  color: var(--kami-text-muted);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.settings-main {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  min-width: 0;
+  padding: 12px 12px calc(16px + var(--safe-bottom));
+}
+.settings-footer {
+  flex: 0 0 auto;
+  padding: 8px 12px calc(8px + var(--safe-bottom));
+}
+.settings-section { margin-bottom: 16px; }
+.settings-section-body { padding: 0; overflow: hidden; }
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  min-width: 0;
+  padding: 10px 14px;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--kami-line-soft);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.settings-row:last-child { border-bottom: 0; }
+.settings-row:focus-visible { outline: 2px solid var(--kami-ink); outline-offset: -2px; }
+.settings-row-disabled,
+.settings-row[aria-disabled="true"],
+.settings-row:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+.settings-row-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.settings-row-value {
+  flex: 0 1 auto;
+  max-width: 45%;
+  min-width: 0;
+  color: var(--kami-text-muted);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-align: right;
+}
+.settings-badge {
+  flex: 0 1 auto;
+  max-width: 45%;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--kami-text);
+  background: var(--bg-3);
+  border-radius: 999px;
+  padding: 2px 8px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.settings-chevron { flex: 0 0 auto; color: var(--fg-3); }
+.settings-row-status { flex: 0 0 auto; font-size: 12px; color: var(--fg-3); }
+.settings-switch {
+  width: 40px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--bg-3);
+  background: var(--bg-3);
+  flex: 0 0 auto;
+}
+.settings-switch:disabled { opacity: 0.55; cursor: default; }
+.settings-empty { color: var(--fg-2); padding: 24px 8px; text-align: center; }
+.settings-footer-action { display: flex; justify-content: center; }

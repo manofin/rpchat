@@ -362,3 +362,171 @@ Task 6 / Track F / Galaxy 실측 계속 중단.
 - 게이트 raw: builderBudget passed6 / summarizeContract passed3 / differential passed1(오라클≠동일함수) / loreMatch OK / rpEngineR1 OK / cardImport OK / generation-orphan OK / typecheck(server) exit0 / health ok+db:ok
 - 커밋: 152a29c(헤더), 2b16094(differential 교체). 현재 HEAD = v0.0.19-36-g2b16094
 - 미착수 유지: D1/D2/E1/F1–F6 전부 잠금 대기, 후속 문서 슬라이스 없음, Galaxy 박스 UNCHECKED
+
+## 2026-08-25T02:38 D1 isolated episode live rollup by hermes (플랜 2026-08-25_020352, 사용자 “D부터 착수”)
+
+- 제품 코드 무변경. 사전등록: bench/d1-episode-rollup-preregistration.md. 러너: bench/d1_live_rollup.py (untracked 측정).
+- 서리 가드: character f89ace9b-8684-4d97-96dc-e00c4b25a819 미사용. throwaway conv cc8222eb-430d-4057-b816-5fbf828adab6 on 카이 255f96a2-d78e-433d-9169-fb6da6e0963f.
+- 시드 raw: FROST_GUARD_OK / SEED_OK path_len=30 scenes=5 covers_until_in_guard=0 / A_PRE scene heading True, marker True, episode heading False, scene used True tokens 22
+- POST /api/conversations/cc8222eb-430d-4057-b816-5fbf828adab6/rollup-episode → 200. episode 6f8cfbec-1363-40da-b7f9-a2b47144c09a draft. rolledScenes 5건. 모델 1회.
+- B draft: B_DRAFT_SCENE_KEEP=True / B_DRAFT_EPISODE_HEADING=False / episode used False
+- PATCH approve 200. C: C_EPISODE_HEADING True / C_TEST_MARKER False / C_SCENE_HEADING False / C_APPROVED_FOLDED True / episode used True tokens 122 / scene used False
+- DELETE episode 200. D_ROLLED_NULL True / D_RETURN_SCENES True / scene used True tokens 22
+- 정화: probe DELETE changes=1×5 / leftover __test__=0 / conv DELETE 200 / CONV_GONE. 독립 재확인 d1_verify_cleanup.py: CONV/MSG/SUM left 0, TEST_SUM/MEM/TITLE 0, FROST_CONV_N=6, KAI_CONV_N=1, memories candidate|7 pinned|9 rejected|1, summaries 6행 동일
+- LIVE_UNTOUCHED_OK. HEAD 유지 v0.0.19-37-gd58f194. health ok+db:ok. PID 157179 그대로.
+- 정지: D2 / E1 / F1–F6 / Galaxy UNCHECKED. 추가 모델 호출 없음.
+
+## 2026-08-25T03:26 D2 long-rp v2 summary-on contrast by hermes (플랜 2026-08-25_030819, 사용자 “D2부터 진행”)
+
+- 제품 코드 무변경. HEAD 유지 v0.0.19-37-gd58f194. 커밋 없음. v1 키/픽스처/비트/러너 해시 불변.
+- 사전등록: bench/longRp/preregistration-v2.md sha256 2ab8f555c9cce759021d206af70786babcf7bb27cbe54a46aea0fd744c9d91ad
+- 러너: bench/longRp/run-long-rp-v2.ts sha256 80d6da036b6f68712c4dcd9b484b9e5485ac198c076b47e501f84c466ff5d4f3
+- 게이트: FIXTURE_OK long-rp=20 probes=9 / FROST_GUARD_OK convs=6 msgs=97 / health ok+db:ok generation.active=[] promptVersion 2026.08.22-r1
+- throwaway conv 6cc7754e-db7e-46c7-8c89-374c318ffa70 / char dfbd8394-e4c8-4f6c-b786-d71cde8fd02b (린-longrp-v2). 서리 f89ace9b-8684-4d97-96dc-e00c4b25a819 미사용.
+- 결과 파일: bench/longRp/results/long-rp-v2-1787628153825.json sha256 7b31a002722b02193acf9ad47f89efcf1c3ea4b501b292c7a8a3c6462d2f59c6
+- python 재추출: runLabel=VALID valid=True storyComplete=100 probeComplete=9 summarizeOk=3 story_fail=[] probes_http_ok=9
+- summarize@20/45/75 전부 status=200 tier=whole approved, ids 130250be / e06b6512 / 059345f0, attempts=1
+- hold (measurement, not θ): 30=0/6 (0) · 60=4/6 (0.6666666666666666) · 100=5/7 (0.7142857142857143)
+- probe PASS: P60-a, P60-c, P100-a, P100-c. fail(score): P30-a missing 등대지기 / P30-b 사흘 / P30-c 모르 / P60-b 모르 / P100-b 조수·당번
+- v1 first VALID 대조: 30 0/6=0 동일 · 60 4/6 동일 · 100 3/7→5/7 (P100-c 추가 PASS). 키 미수정.
+- 정화: CONV/MSG/SUM/MEM/GENLOG left 0. FROST_CONV_N=6 FROST_MSG_N=97. summaries 6행. memories candidate|7 pinned|9 rejected|1. KAI_CONV_N=1. 린-longrp-v2 archived=1 leftover (v1과 동일 패턴).
+- health 종료 후 ok+db:ok generation.active=[]. Galaxy UNCHECKED. E1/F1–F6 미착수.
+
+## 2026-08-25 — F5 World ADR (doc-only)
+
+- Path: /home/hermes/rpchat/planning_documents/ADR-F5-world.md
+- sha256: 6a83bb02d6aa03d88e32b17abfadebbdd5d399c326c8aaef44b0922245012fb9
+- Grade: ADR proposed — not a schema lock
+- apps/** / migrations / live DB: unchanged
+- Branch A/B/C: waiting
+
+## 2026-08-25 — docs inventory (doc-only)
+
+- Path: /home/hermes/rpchat/planning_documents/STATUS.md
+- sha256: 7a2c41a0f2c67d44d6b773b7375724774c3f2a88e1ccd613409a9d55dbc56423
+- HANDOFF/OPERATOR-NOTE: banner/HEAD refreshed to v0.0.19-37-gd58f194; still untracked; no git add
+- rpchat-pwa references/next-work.md: D1/D2 closed; F5 waits A/B/C
+- apps/** / migrations / live DB: unchanged
+- F5 A/B/C / E1 / Galaxy: UNCHECKED
+
+## 2026-08-25 — conversation settings shell (Slice A/B)
+
+- Inventory: /home/hermes/rpchat/planning_documents/chat-room-settings-inventory.md sha256=cd9d9023bd6ac1ecb7745ac5417e6ce066954479ec269cfc52f6c1917ccad5bc
+- Web: ConversationSettings sections; play-guide read-only from character fields
+- Persona pick: existing PATCH personaId; no new table
+- apps/server, migrations, builder.ts, summaryBudget: unchanged
+- Out: user_note, snapshot, scene-image store, currency, 0006, F5 A/B/C
+
+## 2026-08-25 — F5 accepted-A (doc-only)
+
+- ADR: /home/hermes/rpchat/planning_documents/ADR-F5-world.md Status proposed → accepted-A
+- memories world_id: 17|17|0 (SELECT only). No 0006. No worlds table.
+- apps/** / migrations / live DB: unchanged
+
+## 2026-08-25T08:14:45Z F3 avatar upload by hermes
+
+- Lock: 2MB (2097152) · image/jpeg · image/png · image/webp. Magic sniff. No convert. No GIF/HEIC/SVG. No new dep.
+- POST /api/characters/:id/avatar raw image body (not multipart plugin). Frost character 403.
+- GET /media/avatars/:uuid.(jpg|png|webp). SPA fallback was stealing /media/; explicit GET.
+- Web: CharacterEditor file input on existing non-frost character. postBinary.
+- Helper bench: npx tsx bench/avatarUpload.test.ts PASS 8/8
+- Live: throwaway 624ebd8c jpeg 200 + GET image/jpeg; frost POST 403; gif octet 415; frost conv/msg 6/97 unchanged. throwaway archived=1.
+- server/web typecheck+build EXIT 0. restart (active=[]). dist/index.html sha256=a2fd84f6a4f75b8b88957d89d12e2390a05d29ffd795a2dec9af4adc1c7d2432
+- 0006 none. builder.ts untouched. no commit. Galaxy UNCHECKED.
+
+## 2026-08-25 — user_note lock (0006, live)
+
+- 0006_user_note.sql applied live (backup rpchat-pre-0006-user-note.db). schema-compat.json +0006. user_version stays 0.
+- PATCH userNote (zod max 4000, CASE WHEN null-keeps-old), ConversationRow.user_note, web types.
+- ChatPage: 유저노트 textarea (onBlur save via existing PATCH).
+- builder.ts: note injected after persona block; whole-or-nothing on fixed-block overflow via allocateUserContextBudget; '유저노트 제외' diagnostic.
+- Benches rc=0 all: userContextBudget 11/11, userNoteInject 4/4, personaResolve 6/6, builderBudget 6 ok, differential 1/1, cardImport 25/25, avatarUpload 8/8, loreMatch 8/8, summarizeContract 3/3, generation-orphan 4/4.
+- typecheck OK, build OK, restart approved → active, health ok/db:ok.
+- Live smoke: throwaway char f8d9881a / conv 00c9d200 — userNote set→readback ok, null→cleared, re-set ok; prompt-preview contains '### 유저노트'+'다시세팅'. Conv deleted; char archived=1 (direct SQL; PUT lacks archived field).
+- FROST 6/97 unchanged. No commit.
+
+## 2026-08-25 — snapshot lock (0007, live)
+
+- Policy: PATCH personaId copies personas name/address_as/appearance/personality/relationship into conversation snapshot columns + applied_at. Later PUT /personas does NOT change in-flight chats. '이 프로필을 다시 적용' = re-PATCH same id. personaId:null clears snapshot → live reference. persona_id kept as catalog pointer.
+- 0007_persona_snapshot.sql applied live (backup rpchat-pre-0007-snapshot.db). schema-compat.json +0007.
+- builder.resolvePersona: applied_at non-null → frozen PersonaRow from snapshot columns; else live (backward compat).
+- routes/conversations: snapshot copy in the same UPDATE; create path unchanged.
+- Web: pickPersona(force) + '이 프로필을 다시 적용' button on profiles view (only when conv.persona_id).
+- Benches rc=0: personaResolve 9/9 (A–F + SN-A/B/C, RED→GREEN), userNoteInject 4/4, differential 1/1, builderBudget ok6.
+- typecheck OK, build OK, restart approved → active, health ok/db:ok. dist/index.html sha256=d154200d…b7bcc9
+- Live smoke: throwaway char e65a4651 / conv 5304c0ac — PATCH personaId(501056a1) set snapshots (여행자|applied). Live PUT appearance='외형-라이브수정' NOT in prompt-preview; snapshot name present → frozen confirmed. Cleanup: persona appearance restored '', conv deleted, char archived=1.
+- FROST 6/97 unchanged. No commit. Galaxy UNCHECKED — device needs PWA+site-data delete then revisit.
+
+## 2026-08-25 — E1 handoff (host-gated)
+
+- hostname=hermes (Ubuntu) → mac-smoke not run. Output: planning_documents/HANDOFF-E1-mac-drawthings.md (Mac Task 1 commands + pass/fail bar).
+- No stub evidence, no product illustration UI. apps/** unchanged. No commit.
+
+## 2026-08-25 — commit separation (4 commits, user-approved hunk split)
+
+- bfd03d4 settings: ChatPage shell + personaResolve A–F
+- fcc4056 f3: media/avatar.ts, characters avatar route, index.ts media GET, CharacterEditor, api postBinary, bench 8/8. 2MB cap kept.
+- 80f571a user_note: 0006, helper, builder injection, PATCH userNote, benches 11/11+4/4
+- c98cef8 snapshot: 0007, resolvePersona frozen, snapshot copy on PATCH, re-apply button, personaResolve 9/9 (SN block amended in)
+- Split method: intermediate file states staged per commit boundary; no logic rewrite; final tree == pre-split final tree (typecheck+benches rc=0 all).
+- cleanup (user-approved): F3 dummy jpg deleted after ref check. sha256 before delete: 3c4bae649b6c0fade21c149e6ee9773e734d620fda91248a44c58b11c71f3ba9 (12B). Throwaway chars un-note/snap/f3 kept archived=1.
+- Post-commit: health ok/db:ok/active=[], FROST 6/97. Remaining dirty: PROGRESS.md only (+untracked docs/bench results).
+
+## 2026-08-25 — Galaxy 실기기 검증 완료 (사용자 직접 증거)
+- 사전: 배포 해시 d154200d…b7bcc9 일치, PWA+사이트 데이터 삭제→재설치 완료.
+- 회귀 5항목(재접속/원본점프/카드/요약배너/stale SW) + 신규 4커밋(A셸/B아바타/C유저노트/D스냅샷) 모두 정상 작동 — 사용자 보고.
+- 계획 §14 조건 ③ 충족. 잔여: Mac E1(Task 1) → operations → docs-final.
+
+## 2026-08-25 — 화면기반 설정 UI 계획 조건부 채택 (사용자 검토 결론 반영)
+- 원문 Manus 계획 + 사용자 수정 10개 항목 → SoT: planning_documents/PLAN-settings-hub-adopted.md
+- 첫 릴리스(1A): 설정 허브 + persona snapshot 조회/선택/재적용 + 유저노트 UI 연결 + 플레이 가이드 읽기 projection
+- user_note_message_interval 제거, 재화 숨김, 시작 설정 읽기 전용, play_guide 테이블 보류(동적 projection)
+- 신규 migration/API는 Gate 0 기존 계약 확인 후 최소 범위로 확정. 다음 단계: Gate 0 기준선 조사
+
+## 2026-08-25 — Gate 0 기준선 조사 (읽기 전용 실측)
+
+### 라우트 인벤토리 (apps/server/src/routes)
+- conversations.ts: GET/POST /api/conversations, GET/PATCH/DELETE /:id, prompt-preview, export, messages CRUD+select+branch, regenerate
+- characters.ts: characters CRUD, import, avatar POST, lore CRUD, personas GET/POST/PUT/DELETE(전역)
+- memory.ts: GET /conversations/:id/memories(pinned|candidate 분리), POST /api/memories(source='user', status default pinned), PATCH/DELETE memories/:id(status: candidate|pinned|rejected|superseded), summaries GET/PATCH/DELETE/restore, summarize, rollup-episode
+- settings.ts: model_profiles CRUD(rp-balanced 400 / rp-creative 700 max_tokens), settings key-value(GET/PUT /api/settings — 현재 content_policy·token_calibration 2행뿐), generation-log
+- chat.ts: messages POST, branch, generations abort/active
+
+### 주요 발견
+1. **conversation_settings 테이블 없음.** 전역 settings(key-value)만 존재 → 대화별 설정은 신규 필요하나 매트릭스 확정 후 최소 범위로
+2. **play_guide 테이블 없음** → 결정문대로 동적 projection으로 구현(테이블 불요)
+3. **user_note**: PATCH userNote z.string().max(4000) 확인 — hard cap 4000 실측 일치
+4. **persona**: 전역 personas API 존재 + conversations.persona_id 보존됨(snapshot과 원본 연결 유지) → **reapply 가능**, 기존 계약 재사용 확정. select/reapply 모두 PATCH personaId로 충족(같은 id 재-PATCH=reapply)
+5. **memory**: source는 'user'만 존재(라이브 0행), status enum candidate|pinned|rejected|superseded, scope conversation|character, importance 1-5, replaces_memory_id 존재(supersede 지원), evidence_message_ids_json(원문 점프 포인터). relationship/objective 타입 필드 **없음** → 관계도·목표 탭은 정의 근거 없음, 1차 2탭(승인기억/요약) 확정
+6. **summaries**: tier 컬럼 존재(장기/단기 구분), covers_from/until_message_id(원문 점프), rolled_up_into, status draft|approved
+7. **출력량**: model_profiles에 rp-balanced(max_tokens 400)/rp-creative(700) 존재 → brief/medium/novella 별칭 = 기존 프로필 선택으로 충족(conversation.profile_name 이미 PATCH 지원). **신규 API 불요**
+8. **asset**: assets 테이블·승인 asset 경로 없음(E1 미착수) → scene_image_enabled 저장해도 렌더 대상 0개. 1차는 UI 토글+빈 상태만
+9. **라우터**: 자체 hash-less router(lib/router.ts, pushState+popstate), match() 패턴 매칭 → /chat/:id/settings/* nested route 추가 용이. back() 헬퍼 존재(Android back 호환)
+10. **PWA**: vite-plugin-pwa autoUpdate, workbox 앱셸 precache, API denylist → 빌드 시 자동 갱신, index.html 해시가 디플로이 체크(현행 유지)
+11. **소유권**: Tailscale 세션 쿠키 auth(authState) 전역 적용 — conversation 소유권은 단일 사용자 모델
+12. **settings 저장소 결론**: 글꼴/정렬 등 사용자 선호 → 전역 settings key-value 재사용 가능. 대화별 실행 설정(output/start)은 conversations 기존 컬럼(profile_name, scene_json) 또는 최소 신규 컬럼. **migration은 Gate 1 매트릭스 확정 후**
+
+### 매트릭스(Gate 1 초안, Gate 0 실측 반영)
+| 설정 | 범위 | 정본 | 생성영향 | 저장 |
+|---|---|---|---|---|
+| persona snapshot | 대화 | snapshot 컬럼 | 있음 | 기존 |
+| user_note | 대화 | conversations.user_note | 있음 | 기존 |
+| 출력 모드 | 대화 | profile_name→model_profiles | 있음 | 기존 |
+| 글꼴 | 사용자 | settings KV | 없음 | 기존 KV |
+| 이미지 표시 | 사용자×대화(1차 사용자) | settings KV | 없음 | 기존 KV |
+| 시작 장면 | 읽기 전용 | scene_json+첫 메시지 | 없음 | 기존(읽기만) |
+| 정렬 | 로컬 | localStorage | 없음 | 로컬 |
+
+**결론: 신규 migration 0개로 릴리스 1A 전체 구현 가능.**
+
+## 2026-08-25 Gate 2 conversation-settings-shell (소스만, 라이브 미적용)
+
+- 범위: 자체 라우터 설정 허브/리프 셸 + 공통 UI + 전용 레이아웃. 쓰기/migration/builder/memory/SSE/swipe 없음.
+- 신규 route: `/chat/:id/settings` 및 `/guide|/profile|/user-note|/output|/memory|/style|/start|/about`. `/scene-image` 없음.
+- 진입: 채팅 제목 클릭 → `navigate(/chat/:id/settings)`. 기존 ConversationSettings 시트는 유지(제목에서 더 이상 열지 않음).
+- 데이터: 기존 `GET /api/conversations/:id` + `WEB_APP_VERSION=0.1.0`. 신규 aggregate API 없음.
+- 벤치: `npx tsx bench/routerSettings.test.ts` 7 · `settingsHub` 6 · `settingsUi` 7 · `settingsRegression` 6 · `settingsViewport` 4.
+- typecheck: `npm run typecheck --workspace apps/web` exit 0.
+- web build: vite 6.4.3 exit 0, `dist/assets/index-BzOCzI_3.js` / `index-y_LN7CN5.css`. 재배포 안 함.
+- 뷰포트: `/tmp/gate2-viewport/hub-{360,390,412,430}.png` overflowX=0. 픽스처는 @font-face 제거로 한글 tofu. Galaxy 실측 유지 중단.
+- 서버 diff 공백. migrations 0001–0007 그대로. 라이브 적용 완료 아님.

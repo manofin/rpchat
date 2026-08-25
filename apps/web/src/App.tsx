@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { get } from './lib/api';
 import { UNAUTHORIZED_EVENT } from './lib/api';
 import { match, useRoute } from './lib/router';
+import { resolveSettingsRoute } from './lib/conversationSettings';
 import { SearchPage } from './pages/SearchPage';
 import { useVisualViewport } from './lib/viewport';
 import { Spinner, UiProvider } from './components/ui';
 import { HomePage } from './pages/HomePage';
 import { CharacterPage } from './pages/CharacterPage';
 import { ChatPage } from './pages/ChatPage';
+import { ConversationSettingsPage } from './pages/ConversationSettingsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
 
@@ -71,6 +73,8 @@ export default function App() {
 
 function Router() {
   const path = useRoute();
+  const conversationSettings = resolveSettingsRoute(path);
+  if (conversationSettings) return <ConversationSettingsPage route={conversationSettings} />;
   const chat = match(path, '/chat/:id');
   if (chat) return <ChatPage id={chat.id} />;
   const character = match(path, '/character/:id');

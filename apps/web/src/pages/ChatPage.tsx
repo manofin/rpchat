@@ -140,7 +140,7 @@ export function ChatPage({ id }: { id: string }) {
       <div className="topbar">
         <button className="btn ghost icon" onClick={() => back(`/character/${char.id}`)} aria-label="뒤로">‹</button>
         <Avatar name={char.name} avatar={char.avatar} size="sm" />
-        <div className="title" onClick={() => setSettings(true)} style={{ cursor: 'pointer' }}>
+        <div className="title" onClick={() => navigate(`/chat/${id}/settings`)} style={{ cursor: 'pointer' }}>
           <h1>{char.name}</h1>
           <div className="sub">{conv.mode === 'story' ? '스토리' : '채팅'} · {conv.profile_name} · {persona?.name ?? '나'}</div>
         </div>
