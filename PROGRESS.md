@@ -659,3 +659,40 @@ Gate 4 still requires separate authorized slices for:
    subsequent read, error preservation, and server boundary behavior;
 2. immediate duplicate-save prevention that does not rely only on a
    React rerendered pending state.
+
+#### Subsequent status
+
+The deferred list above is the 2026-08-26T09:41:57Z bind. A0 later
+landed as `b1552bc`. A1 live limited PATCH later completed 2026-08-26
+(next block). Do not read the deferred list as the later state.
+
+## 2026-08-26 Gate 4 A evidence (A0 isolated + A1 live)
+
+Bind 2026-08-26T14:21:36Z — pre-docs-commit. Do not substitute later
+HEAD/describe into this block after the docs commit.
+
+- HEAD at this bind: `38f8e2be2c5c095415213bfd0add0207dc8e59d0`
+- Git describe at this bind: `v0.0.19-53-g38f8e2b`
+- Tracked dirty at this bind: none (`PROGRESS.md` becomes dirty only
+  as this write)
+- Disk `apps/web/dist/index.html` SHA-256:
+  `3775e8bf77ad868f1caaf2ec2b5547c0278f374e9b79b9725a3783f257acd834`
+- Disk hashed assets: `index-CYsobGxs.js`, `index-BuqElmiR.css`
+- Serve was not rechecked in this documentation slice. Disk hashes are
+  not Serve evidence.
+
+### Recorded facts (this slice only)
+
+- A0 commit: `b1552bc` (`test: characterize user-note request roundtrip`)
+- A1 QA conversation ID: `69e0ad66-333c-4b1c-93c0-3b31e4cfecbe`
+- Initial `user_note`: SQL NULL / GET `null`
+- Limited-string PATCH succeeded
+- GET and SQL matched after that PATCH
+- NULL restore succeeded
+- Non-target data unchanged
+- Live 4,000 / 4,001 / empty-string cases were not executed
+- Gate 4 overall and generation are not complete
+
+This block is not handler SoT. It does not authorize browser UI
+roundtrip, builder injection, generation, web build, Serve, PWA, or
+Galaxy.
