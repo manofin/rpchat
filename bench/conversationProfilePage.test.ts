@@ -234,6 +234,100 @@ t('UI-P-08 pending disables every persona action', () => {
   assert.doesNotMatch(html, /<button(?![^>]*disabled)[^>]*>[^<]*(이 대화에 적용|최신 값 다시 적용)/);
 });
 
+t('UI-P-10 candidate CTA is stacked, not hub settings-row', () => {
+  const css = fs.readFileSync(path.join(ROOT, 'app.css'), 'utf8');
+  const html = renderToStaticMarkup(
+    createElement(CandidateProfileList, {
+      candidates: [catalogCurrent, catalogOther],
+      currentId: catalogCurrent.id,
+      pending: false,
+      disabled: false,
+      onApply: () => undefined,
+      onReapply: () => undefined,
+    }),
+  );
+  assert.equal((html.match(/profile-candidate-row/g) || []).length, 2);
+  assert.doesNotMatch(html, /settings-row/);
+  assert.doesNotMatch(html, /settings-row-value/);
+  assert.match(html, /이 대화에 적용/);
+  assert.match(html, /최신 값 다시 적용/);
+  assert.match(css, /\.profile-candidate-row\s*\{[^}]*flex-direction:\s*column/);
+  assert.match(css, /\.profile-candidate-action/);
+});
+
+t('UI-P-11 profile page keeps last candidate above system inset', () => {
+  const css = fs.readFileSync(path.join(ROOT, 'app.css'), 'utf8');
+  const html = renderToStaticMarkup(
+    createElement(ProfileView, {
+      conversationId: 'c-qa',
+      conversation: fixtureConversation(),
+      candidates: [catalogCurrent, catalogOther],
+      pendingPersonaId: null,
+      contractError: false,
+      catalogError: false,
+      conversationError: false,
+      statusMessage: null,
+      onBack: () => undefined,
+      onApply: () => undefined,
+      onReapply: () => undefined,
+      onRetry: () => undefined,
+    }),
+  );
+  assert.match(html, /profile-page-end/);
+  assert.match(css, /\.profile-page-end\s*\{[^}]*96px/);
+  assert.match(css, /\.profile-page-end\s*\{[^}]*safe-area-inset-bottom/);
+});
+
+t('UI-P-12 candidate list is first, full-width, clamped; snapshot card has no extra CTA', () => {
+  const css = fs.readFileSync(path.join(ROOT, 'app.css'), 'utf8');
+  const html = renderToStaticMarkup(
+    createElement(ProfileView, {
+      conversationId: 'c-qa',
+      conversation: fixtureConversation(),
+      candidates: [catalogCurrent, catalogOther],
+      pendingPersonaId: null,
+      contractError: false,
+      catalogError: false,
+      conversationError: false,
+      statusMessage: null,
+      onBack: () => undefined,
+      onApply: () => undefined,
+      onReapply: () => undefined,
+      onRetry: () => undefined,
+    }),
+  );
+  const iList = html.indexOf('선택 가능한 프로필');
+  const iCurrent = html.indexOf('현재 적용 중');
+  assert.ok(iList >= 0 && iCurrent >= 0 && iList < iCurrent);
+  const card = renderToStaticMarkup(
+    createElement(AppliedProfileCard, {
+      snapshot: deriveAppliedSnapshot(fixtureConversation())!,
+      pending: false,
+      onReapply: () => undefined,
+    }),
+  );
+  assert.match(card, /현재 적용 중/);
+  assert.match(card, /스냅샷이름/);
+  assert.doesNotMatch(card, /이 대화에 적용|최신 값 다시 적용/);
+  assert.match(css, /\.profile-candidate-action\s*\{[^}]*width:\s*100%/);
+  assert.match(css, /\.profile-candidate-summary\s*\{[^}]*-webkit-line-clamp:\s*2/);
+});
+
+t('UI-P-13 long applied snapshot scrolls inside profile page', () => {
+  const css = fs.readFileSync(path.join(ROOT, 'app.css'), 'utf8');
+  const card = renderToStaticMarkup(
+    createElement(AppliedProfileCard, {
+      snapshot: deriveAppliedSnapshot(fixtureConversation())!,
+    }),
+  );
+  assert.match(card, /profile-snapshot/);
+  assert.doesNotMatch(card, /settings-section-body/);
+  assert.match(css, /\.profile-page\s*\{[^}]*max-height/);
+  assert.match(css, /\.profile-page\s*\{[^}]*overflow-y:\s*auto/);
+  assert.match(css, /\.profile-snapshot\s*\{/);
+  assert.doesNotMatch(css, /\.profile-snapshot\s*\{[^}]*overflow:\s*hidden/);
+});
+
 t('UI-P-09 scope inventory: no user_note / profiles API / server edit / old-sheet delete', () => {
   assert.match(typesSrc, /persona_name_snapshot:\s*string\s*\|\s*null;/);
   assert.match(typesSrc, /persona_address_snapshot:\s*string\s*\|\s*null;/);

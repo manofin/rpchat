@@ -105,23 +105,20 @@ export function ProfileEmptyState() {
   return (
     <section className="card settings-section-body" style={{ padding: 16 }}>
       <h2 className="settings-title">적용된 대화 프로필 없음</h2>
-      <p className="sub">아래 프로필을 선택하면 이 대화에 복사됩니다.</p>
+      <p className="sub">목록에서 프로필을 선택하면 이 대화에 복사됩니다.</p>
     </section>
   );
 }
 
 export function AppliedProfileCard({
   snapshot,
-  pending,
-  onReapply,
 }: {
   snapshot: AppliedSnapshot;
-  pending: boolean;
-  onReapply: () => void;
+  pending?: boolean;
+  onReapply?: () => void;
 }) {
-  const describedBy = pending ? 'profile-action-reason' : undefined;
   return (
-    <section className="card settings-section-body" style={{ padding: 16 }}>
+    <section className="card profile-snapshot">
       <p className="settings-badge">현재 적용 중</p>
       <h2 className="settings-title">{snapshot.name}</h2>
       <p className="sub">이 대화에는 적용 당시의 프로필 정보가 고정됩니다.</p>
@@ -130,17 +127,6 @@ export function AppliedProfileCard({
       {snapshot.personality ? <p className="sub">{snapshot.personality}</p> : null}
       {snapshot.relationship ? <p className="sub">{snapshot.relationship}</p> : null}
       <p className="sub">{formatAppliedAt(snapshot.appliedAt)}</p>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-        <button
-          type="button"
-          className="btn"
-          disabled={pending}
-          aria-describedby={describedBy}
-          onClick={onReapply}
-        >
-          {pending ? '적용 중…' : '최신 값 다시 적용'}
-        </button>
-      </div>
     </section>
   );
 }
@@ -172,12 +158,20 @@ export function CandidateProfileList({
               ? '현재 snapshot과 catalog의 최신 값은 다를 수 있습니다.'
               : candidateSummary(persona);
           return (
-            <div key={persona.id} className="settings-row" style={{ flexWrap: 'wrap', minHeight: 44, gap: 8 }}>
-              <span className="settings-row-title">{persona.name}</span>
-              {summary ? <span className="settings-row-value">{summary}</span> : null}
+            <div
+              key={persona.id}
+              className={`profile-candidate-row${action === 'reapply' ? ' profile-candidate-current' : ''}`}
+            >
+              <div className="profile-candidate-copy">
+                <div className="profile-candidate-heading">
+                  <span className="profile-candidate-name">{persona.name}</span>
+                  {action === 'reapply' ? <span className="settings-badge">현재</span> : null}
+                </div>
+                {summary ? <span className="profile-candidate-summary">{summary}</span> : null}
+              </div>
               <button
                 type="button"
-                className="btn"
+                className="btn profile-candidate-action"
                 disabled={lock}
                 aria-describedby={lock ? 'profile-action-reason' : undefined}
                 onClick={() => (action === 'reapply' ? onReapply(persona.id) : onApply(persona.id))}
@@ -233,22 +227,13 @@ export function ProfileView({
 
   return (
     <SettingsPageLayout header={<ProfileHeader onBack={onBack} />}>
-      <div aria-busy={pending || undefined}>
+      <div className="profile-page" aria-busy={pending || undefined}>
         <p className="sub">선택 시 이 대화에 복사되며, 다시 적용할 때만 최신 값으로 갱신됨</p>
         {reason ? (
           <span id="profile-action-reason" hidden>
             {reason}
           </span>
         ) : null}
-        {conversationError ? (
-          <p role="alert">대화를 불러오지 못했습니다.</p>
-        ) : contractError ? (
-          <p role="alert">대화 프로필 데이터가 올바르지 않습니다.</p>
-        ) : snapshot ? (
-          <AppliedProfileCard snapshot={snapshot} pending={actionsBlocked} onReapply={onReapply} />
-        ) : (
-          <ProfileEmptyState />
-        )}
         {catalogError ? (
           <p role="status" aria-live="polite">
             프로필 목록을 불러오지 못했습니다.
@@ -263,6 +248,15 @@ export function ProfileView({
             onReapply={() => onReapply()}
           />
         )}
+        {conversationError ? (
+          <p role="alert">대화를 불러오지 못했습니다.</p>
+        ) : contractError ? (
+          <p role="alert">대화 프로필 데이터가 올바르지 않습니다.</p>
+        ) : snapshot ? (
+          <AppliedProfileCard snapshot={snapshot} />
+        ) : (
+          <ProfileEmptyState />
+        )}
         {statusMessage ? (
           <p role="status" aria-live="polite">
             {statusMessage}
@@ -274,6 +268,7 @@ export function ProfileView({
           </button>
         ) : null}
         <span hidden>{conversationId}</span>
+        <div className="profile-page-end" aria-hidden="true" />
       </div>
     </SettingsPageLayout>
   );
