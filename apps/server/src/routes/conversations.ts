@@ -28,12 +28,18 @@ const createSchema = z.object({
   scene: sceneSchema.default({}),
 });
 
+const nonBlankPersonaId = z
+  .string()
+  .refine((value) => value.trim().length > 0, {
+    message: 'personaId must not be blank',
+  });
+
 const patchSchema = z.object({
   title: z.string().max(120).optional(),
   mode: z.enum(['chat', 'story']).optional(),
   profileName: z.string().max(60).optional(),
   scene: sceneSchema.optional(),
-  personaId: z.string().nullable().optional(),
+  personaId: nonBlankPersonaId.nullable().optional(),
   favorite: z.boolean().optional(),
   archived: z.boolean().optional(),
   userNote: z.string().max(4000).nullable().optional(),
