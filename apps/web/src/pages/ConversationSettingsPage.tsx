@@ -22,6 +22,7 @@ import {
   type SettingsRoute,
 } from '../lib/conversationSettings';
 import { ConversationProfilePage } from './ConversationProfilePage';
+import { ConversationUserNotePage } from './ConversationUserNotePage';
 
 const LEAF_TITLE: Record<string, string> = {
   guide: '플레이 가이드',
@@ -83,6 +84,10 @@ export function ConversationSettingsPage({ route }: { route: SettingsRoute }) {
 
   if (route.kind === 'leaf' && route.leaf === 'profile') {
     return <ConversationProfilePage conversationId={route.conversationId} />;
+  }
+
+  if (route.kind === 'leaf' && route.leaf === 'user-note') {
+    return <ConversationUserNotePage conversationId={route.conversationId} />;
   }
 
   if (route.kind === 'leaf') {
