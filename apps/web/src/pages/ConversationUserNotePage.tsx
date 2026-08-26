@@ -31,16 +31,20 @@ export type UserNoteSaveLock = {
   isBusy(): boolean;
   shouldCommit(ticket: number): boolean;
   abort(): void;
+  beginLifecycle(): number;
+  endLifecycle(generation: number): void;
+  shouldApply(generation: number): boolean;
 };
 
 export function createUserNoteSaveLock(): UserNoteSaveLock {
   let busy = false;
   let seq = 0;
   let active = 0;
-  let aborted = false;
+  let generation = 0;
+  let liveGeneration = 1;
   return {
     tryBegin() {
-      if (busy || aborted) return null;
+      if (busy) return null;
       busy = true;
       seq += 1;
       active = seq;
@@ -53,10 +57,21 @@ export function createUserNoteSaveLock(): UserNoteSaveLock {
       return busy;
     },
     shouldCommit(ticket: number) {
-      return !aborted && ticket === active;
+      return liveGeneration !== 0 && ticket === active;
     },
     abort() {
-      aborted = true;
+      liveGeneration = 0;
+    },
+    beginLifecycle() {
+      generation += 1;
+      liveGeneration = generation;
+      return generation;
+    },
+    endLifecycle(g: number) {
+      if (liveGeneration === g) liveGeneration = 0;
+    },
+    shouldApply(g: number) {
+      return liveGeneration === g;
     },
   };
 }
@@ -170,25 +185,28 @@ export function ConversationUserNotePage({ conversationId }: { conversationId: s
 
   useEffect(() => {
     const ac = new AbortController();
+    const lock = saveLockRef.current;
+    const gen = lock.beginLifecycle();
     setConversationError(false);
     setConversation(null);
     setStatusMessage(null);
     get<ConversationDetail>(`/api/conversations/${conversationId}`)
       .then((detail) => {
         if (ac.signal.aborted) return;
+        if (!lock.shouldApply(gen)) return;
         setConversation(detail.conversation);
         setDraft(loadedUserNote(detail.conversation));
       })
       .catch(() => {
-        if (!ac.signal.aborted) setConversationError(true);
+        if (ac.signal.aborted) return;
+        if (!lock.shouldApply(gen)) return;
+        setConversationError(true);
       });
-    return () => ac.abort();
+    return () => {
+      ac.abort();
+      lock.endLifecycle(gen);
+    };
   }, [conversationId, loadTick]);
-
-  useEffect(() => {
-    const lock = saveLockRef.current;
-    return () => lock.abort();
-  }, []);
 
   const onBack = () => back(`/chat/${conversationId}/settings`);
 
