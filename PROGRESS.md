@@ -530,3 +530,132 @@ Task 6 / Track F / Galaxy 실측 계속 중단.
 - web build: vite 6.4.3 exit 0, `dist/assets/index-BzOCzI_3.js` / `index-y_LN7CN5.css`. 재배포 안 함.
 - 뷰포트: `/tmp/gate2-viewport/hub-{360,390,412,430}.png` overflowX=0. 픽스처는 @font-face 제거로 한글 tofu. Galaxy 실측 유지 중단.
 - 서버 diff 공백. migrations 0001–0007 그대로. 라이브 적용 완료 아님.
+
+## 2026-08-25 Gate 2 소스 잠금 승인 (ca51a32)
+
+최종 상태(당시):
+
+> Gate 2 conversation-settings-shell 소스 작업이 커밋 ca51a32에서 완료됐다. 설정 허브, 등록된 하위 경로, 공통 설정 컴포넌트, 설정 전용 모바일 레이아웃 및 뒤로 가기 fallback이 추가됐다. 기존 채팅 경로가 settings 경로를 삼키지 않는 계약과 hidden/disabled 항목 동작이 테스트로 잠겼다. 신규 migration·aggregate API·설정 PATCH·builder·memory·SSE·swipe 변경은 없다. 웹 typecheck와 로컬 production build는 통과했으나 운영 PWA 배포, service worker 갱신, 실제 한글 typography 및 Galaxy 실기기 검증은 수행하지 않았다.
+
+승인 범위: 소스·자동 테스트·로컬 웹 빌드만. 라이브 적용 완료 아님. G-Device 증거로 뷰포트 PNG 재사용 금지.
+
+당시 후속 잠금과 이후 닫힘(이 문서는 핸들러 SoT가 아님):
+
+1. 구 `ConversationSettings` 시트 orphan — 마운트 유지. Gate 3에서도 삭제하지 않음.
+2. `persona_applied_at` / snapshot 5: 당시 웹 타입 공백. **이후 `db58bf2`가 `ConversationRow`에 선언.** `SELECT *` 우연 필드를 계약으로 쓰지 말 것.
+3. 허브 `0.1.0`은 웹 package version. `git describe` / asset hash / 서버와 혼용 금지.
+4. worktree: tracked apps clean ≠ untracked 없음.
+
+T1 미커밋 문단(CLEAR=`COALESCE` 유지, “프로덕션 미변경”)은 **삭제함.** 소스 정본은 `17363f5`(null CLEAR) + `ea7f2c6`(blank 400). PROGRESS는 핸들러 SoT가 아니다.
+
+## 2026-08-26 Gate 3 대화 프로필 UI (사용자 close 토큰)
+
+Bind 2026-08-26T06:15:37Z:
+
+- HEAD `6c70eb2` (`v0.0.19-48-g6c70eb2-dirty`) — 커밋된 페이지는 snapshot+catalog 리프.
+- 이 슬라이스 uncommitted: `ConversationProfilePage.tsx` · `app.css` · `bench/conversationProfilePage.test.ts` (UI-P-10 스택 / UI-P-11 end spacer / UI-P-12 목록 선행+클램프+스냅샷 CTA 제거 / UI-P-13 `.profile-page` 스크롤포트).
+- 웹 dist만: `index.html` `f5d9cdd60cd1b1edeef933de9aafde4f2a7e4f94b4c141a6e234e757bc13b8db` / `index-BuqElmiR.css` / `index-DGFFRf2L.js`.
+- 런타임 PID **235333** 무재기동. 서버 소스·migration·`git add`·커밋 없음.
+- QA `de2047d1-3788-455a-9ace-0d0e034fb406` 복원·삭제 없음. 서리/카이 SELECT only.
+
+V1: 현재 id 행=`최신 값 다시 적용`, 비현재=`이 대화에 적용`. 스냅샷 카드 읽기 전용. CLEAR UI 없음.
+
+종료 기록:
+
+- Gate 3 (대화 프로필 UI) **사용자 close 토큰으로 종료.**
+- `U7_VIEWPORT`: 호스트 Chrome, UI-P-12 번들 측정. UI-P-13 이후 hermes 재측정 없음.
+- `U7_GALAXY_PWA=USER_PASS` (사용자 네 줄 자기 확인). hermes 실측 아님. `docs/GALAXY-CHECKLIST.md` 체크 안 함.
+- 운영 PWA 배포·라이브 적용 완료 **아님.**
+
+#### Subsequent status
+
+The three profile layout files recorded above as uncommitted at the
+2026-08-26T06:15:37Z bind were later committed separately as
+`d938514` (`style(web): refine conversation profile mobile layout`).
+
+This does not redefine the Gate 3 feature source baseline, which
+remains `6c70eb2`. The viewport, bundle, PID, and user-reported Galaxy
+evidence in the original close block remain evidence for that original
+bind only and must not be treated as verification of `d938514` or of
+the later mixed static bundle.
+
+## 2026-08-26 Source timeline rebind after profile layout and user-note leaf commits
+
+Bind 2026-08-26T09:41:57Z — values below are the bind immediately before
+this documentation rebind write. They must not be substituted after the
+docs commit.
+
+### Source baselines
+
+- Gate 2 settings shell: `ca51a32`
+- Persona PATCH evidence: `1a085d9`
+- Persona explicit-null CLEAR: `17363f5`
+- Adjacent blank-persona validation: `ea7f2c6`
+- Gate 3 conversation-profile feature source: `6c70eb2`
+- Gate 4 user-note leaf UI source: `b7444a7`
+- Gate 3 profile mobile-layout source: `d938514`
+- Current HEAD at this bind: `d938514`
+- Git describe at this bind: `v0.0.19-50-gd938514-dirty`
+
+### Scope and evidence boundaries
+
+`b7444a7` contains the user-note leaf UI source only. It does not prove
+a PATCH round trip, production build, static Serve deployment, Galaxy
+or PWA behavior, or generation-path application.
+
+`d938514` contains the profile mobile-layout source and UI-P-01 through
+UI-P-13 tests. It does not redefine the Gate 3 feature source baseline
+at `6c70eb2` and does not prove PATCH-then-GET behavior, production
+deployment, Galaxy behavior, or generation-path application.
+
+The only tracked dirty file at this bind is `PROGRESS.md`. Existing
+untracked P1 documents, `apps/web/dist.bak/`, `bench/d1_*`, and
+`bench/longRp/*` are outside this documentation slice and were neither
+modified nor committed.
+
+### Source, disk bundle, and Serve separation
+
+The current HEAD is `d938514`.
+
+The web bundle present on disk was produced earlier from a mixed dirty
+worktree containing Gate 3 and Gate 4 changes. Its observed identities
+were:
+
+- `index.html` SHA-256:
+  `3775e8bf77ad868f1caaf2ec2b5547c0278f374e9b79b9725a3783f257acd834`
+- JavaScript:
+  `index-CYsobGxs.js`
+- JavaScript SHA-256:
+  `47c01d8808d28d8fcba8f4b8fc02584a95e859d6fac6550f5e672fda752c283d`
+- CSS:
+  `index-BuqElmiR.css`
+
+No web rebuild was performed after `b7444a7` or `d938514`.
+Consequently, the mixed bundle is not release or deployment evidence
+for either commit.
+
+The disk hash identifies the file that was inspected. Serve was not
+rechecked during this documentation rebind, so no new claim is made
+about the currently served file.
+
+### Unperformed gates
+
+The following were not performed as part of this source-timeline
+rebind:
+
+- web rebuild
+- static Serve verification or swap
+- service-worker or PWA update verification
+- Galaxy verification
+- QA PATCH
+- PATCH-then-GET browser smoke
+- generation smoke
+- production deployment
+
+### Deferred Gate 4 locks
+
+Gate 4 still requires separate authorized slices for:
+1. a real user-note request round trip, including initial GET, PATCH,
+   subsequent read, error preservation, and server boundary behavior;
+2. immediate duplicate-save prevention that does not rely only on a
+   React rerendered pending state.
