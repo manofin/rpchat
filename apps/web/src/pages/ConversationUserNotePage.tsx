@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ApiError, get, patch } from '../lib/api';
 import { back } from '../lib/router';
 import type { Conversation, ConversationDetail } from '../types';
@@ -23,6 +23,80 @@ export function buildUserNotePatch(draft: string): { userNote: string } | null {
 
 export function userNoteSaveDisabled(draft: string, pending: boolean): boolean {
   return pending || buildUserNotePatch(draft) === null;
+}
+
+export type UserNoteSaveLock = {
+  tryBegin(): number | null;
+  end(ticket: number): void;
+  isBusy(): boolean;
+  shouldCommit(ticket: number): boolean;
+  abort(): void;
+};
+
+export function createUserNoteSaveLock(): UserNoteSaveLock {
+  let busy = false;
+  let seq = 0;
+  let active = 0;
+  let aborted = false;
+  return {
+    tryBegin() {
+      if (busy || aborted) return null;
+      busy = true;
+      seq += 1;
+      active = seq;
+      return seq;
+    },
+    end(ticket: number) {
+      if (ticket === active) busy = false;
+    },
+    isBusy() {
+      return busy;
+    },
+    shouldCommit(ticket: number) {
+      return !aborted && ticket === active;
+    },
+    abort() {
+      aborted = true;
+    },
+  };
+}
+
+export type UserNoteSaveResult = 'sent' | 'blocked' | 'omitted';
+
+export async function runUserNoteSave(args: {
+  lock: UserNoteSaveLock;
+  draft: string;
+  conversationId: string;
+  patch: (url: string, body: { userNote: string }) => Promise<unknown>;
+  get: (url: string) => Promise<{ conversation: { user_note?: string | null } }>;
+  onSuccess: (loaded: string) => void;
+  onFailure: (kind: 'patch' | 'reload', draftKept: string, err?: unknown) => void;
+  onBusyChange?: (busy: boolean) => void;
+}): Promise<UserNoteSaveResult> {
+  const body = buildUserNotePatch(args.draft);
+  if (!body) return 'omitted';
+  const ticket = args.lock.tryBegin();
+  if (ticket == null) return 'blocked';
+  args.onBusyChange?.(true);
+  const kept = args.draft;
+  let patched = false;
+  try {
+    await args.patch(`/api/conversations/${args.conversationId}`, body);
+    patched = true;
+    const detail = await args.get(`/api/conversations/${args.conversationId}`);
+    if (args.lock.shouldCommit(ticket)) {
+      args.onSuccess(loadedUserNote(detail.conversation));
+    }
+    return 'sent';
+  } catch (err) {
+    if (args.lock.shouldCommit(ticket)) {
+      args.onFailure(patched ? 'reload' : 'patch', kept, err);
+    }
+    return 'sent';
+  } finally {
+    args.lock.end(ticket);
+    args.onBusyChange?.(args.lock.isBusy());
+  }
 }
 
 export function UserNoteView({
@@ -70,7 +144,7 @@ export function UserNoteView({
             rows={10}
           />
           <p className="sub">{formatUserNoteCount(draft.length)}</p>
-          <button type="button" className="btn" disabled={disabled} onClick={onSave}>
+          <button type="button" className="btn" disabled={disabled} aria-busy={pending} onClick={onSave}>
             저장
           </button>
         </section>
@@ -92,6 +166,7 @@ export function ConversationUserNotePage({ conversationId }: { conversationId: s
   const [pending, setPending] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [loadTick, setLoadTick] = useState(0);
+  const saveLockRef = useRef(createUserNoteSaveLock());
 
   useEffect(() => {
     const ac = new AbortController();
@@ -110,33 +185,39 @@ export function ConversationUserNotePage({ conversationId }: { conversationId: s
     return () => ac.abort();
   }, [conversationId, loadTick]);
 
+  useEffect(() => {
+    const lock = saveLockRef.current;
+    return () => lock.abort();
+  }, []);
+
   const onBack = () => back(`/chat/${conversationId}/settings`);
 
   const save = async () => {
-    const body = buildUserNotePatch(draft);
-    if (!body || pending || !conversation) return;
-    setPending(true);
+    if (!conversation) return;
     setStatusMessage(null);
-    let patched = false;
-    try {
-      await patch(`/api/conversations/${conversationId}`, body);
-      patched = true;
-      const detail = await get<ConversationDetail>(`/api/conversations/${conversationId}`);
-      setConversation(detail.conversation);
-      setDraft(loadedUserNote(detail.conversation));
-    } catch (err) {
-      if (!patched) {
-        setStatusMessage(
-          err instanceof ApiError && err.status === 400
-            ? '요청을 저장할 수 없습니다.'
-            : '연결에 실패했습니다. 다시 시도해 주세요.',
-        );
-      } else {
-        setStatusMessage('저장 결과를 다시 확인할 수 없습니다');
-      }
-    } finally {
-      setPending(false);
-    }
+    await runUserNoteSave({
+      lock: saveLockRef.current,
+      draft,
+      conversationId,
+      patch,
+      get,
+      onBusyChange: setPending,
+      onSuccess: (loaded) => {
+        setDraft(loaded);
+        setConversation((prev) => (prev ? { ...prev, user_note: loaded } : prev));
+      },
+      onFailure: (kind, _draftKept, err) => {
+        if (kind === 'patch') {
+          setStatusMessage(
+            err instanceof ApiError && err.status === 400
+              ? '요청을 저장할 수 없습니다.'
+              : '연결에 실패했습니다. 다시 시도해 주세요.',
+          );
+        } else {
+          setStatusMessage('저장 결과를 다시 확인할 수 없습니다');
+        }
+      },
+    });
   };
 
   if (!conversation && !conversationError) {
