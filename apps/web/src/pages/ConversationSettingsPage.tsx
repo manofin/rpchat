@@ -21,6 +21,7 @@ import {
   type SettingsHubItem,
   type SettingsRoute,
 } from '../lib/conversationSettings';
+import { ConversationProfilePage } from './ConversationProfilePage';
 
 const LEAF_TITLE: Record<string, string> = {
   guide: '플레이 가이드',
@@ -78,6 +79,10 @@ export function ConversationSettingsPage({ route }: { route: SettingsRoute }) {
         <Spinner />
       </SettingsPageLayout>
     );
+  }
+
+  if (route.kind === 'leaf' && route.leaf === 'profile') {
+    return <ConversationProfilePage conversationId={route.conversationId} />;
   }
 
   if (route.kind === 'leaf') {

@@ -53,7 +53,12 @@ export interface Conversation {
   updated_at: string;
   last_message_at: string | null;
   user_note?: string | null;
-  persona_applied_at?: string | null;
+  persona_name_snapshot: string | null;
+  persona_address_snapshot: string | null;
+  persona_appearance_snapshot: string | null;
+  persona_personality_snapshot: string | null;
+  persona_relationship_snapshot: string | null;
+  persona_applied_at: string | null;
   character_name?: string;
   preview?: string;
 }
