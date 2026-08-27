@@ -7,6 +7,7 @@ import { interruptOrphanStreaming } from '../db/generation.js';
 import { getPath, insertMessage, messageOut, setHead, updateMessage } from '../db/tree.js';
 import { ModelError } from '../model/adapter.js';
 import { buildPrompt } from '../prompt/builder.js';
+import { dumpGenerationPrompt } from '../prompt/dump.js';
 import { extractChoices } from '../prompt/templates.js';
 import { estimateTokens, updateCalibration } from '../prompt/tokens.js';
 import type { ConversationRow, MessageRow } from '../types.js';
@@ -115,6 +116,14 @@ export function chatRoutes(ctx: Ctx) {
 
     try {
       await ctx.queue.run(async () => {
+        dumpGenerationPrompt({
+          dataDir: config.dataDir,
+          generationId,
+          conversationId: conv.id,
+          messageId: assistant.id,
+          createdAt: nowIso(),
+          messages: built.messages,
+        });
         const result = await ctx.model.stream(
           {
             model: built.model,
