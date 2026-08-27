@@ -696,3 +696,407 @@ HEAD/describe into this block after the docs commit.
 This block is not handler SoT. It does not authorize browser UI
 roundtrip, builder injection, generation, web build, Serve, PWA, or
 Galaxy.
+
+## 2026-08-27 Gate 4 close (E = plan B inference)
+
+Bind 2026-08-27T03:57:56Z — pre-docs-commit. Do not substitute later
+HEAD/describe into this block after any docs commit.
+
+- HEAD at this bind: `474ba8630c9aa0285d32ea080dee1696e3982a8a`
+- Git describe at this bind: `v0.0.19-55-g474ba86`
+- Tracked dirty at this bind: none (`PROGRESS.md` becomes dirty only
+  as this write)
+- Untracked at this bind (not this slice): BRIEF/DESIGN/HANDOFF docs,
+  `apps/web/dist.bak/`, `bench/**`
+- Disk `apps/web/dist/index.html` SHA-256:
+  `3775e8bf77ad868f1caaf2ec2b5547c0278f374e9b79b9725a3783f257acd834`
+- Disk hashed assets: `index-CYsobGxs.js`, `index-BuqElmiR.css`
+- Running server PID `1655` since `Wed Aug 26 22:20:46 2026` (no restart)
+- Serve was not rechecked in this documentation slice. Disk hashes are
+  not Serve evidence. This block is not handler SoT.
+
+### PASS range (locks)
+
+- A0 PASS (`b1552bc`)
+- A1 PASS
+- B PASS (`38f8e2b`)
+- B1 PASS (`474ba86`)
+- C-R1 PASS — HEAD `474ba8630c9aa0285d32ea080dee1696e3982a8a`
+- D PASS — Serve HTTPS preview insert+restore (`G4D-474ba86`)
+- E PASS (B: 추론)
+
+### E(B) exception
+
+Generation request messages 원문은 관측 채널 부재로 미검증.
+E는 buildPrompt 경로 일치성과 D PASS를 근거로
+추론 기반(B) PASS 처리.
+
+Original E item 4 (request `messages` / system original with
+`### 유저노트` + marker) remains **확인 안 함**. Plan A (smoke-only)
+and plan C (N/A) were not picked. Artifact `e_pass False` is the dump
+result, not user fail-A.
+
+E generate 1회: `7073082b-67db-43ae-9084-011756c59585`, SSE 200,
+`start` / 103 token / `done`, `complete`/`stop`. Token
+`[RP-Chat / Gate 4 E / generation-smoke]` spent. QA room
+`69e0ad66-333c-4b1c-93c0-3b31e4cfecbe` (+2 messages `e-smoke-1`);
+do not delete unless asked.
+
+### Not claimed
+
+- generation 반영 / request-bytes proof
+- 웹·PWA 배포
+- 운영 Serve 교체
+- Galaxy
+- product prompt-dump / logging slice
+- web rebuild (none this slice)
+
+### Subsequent (not this block)
+
+선택지 4 (배포 / 운영 Serve / 웹·PWA / generation 반영) is not opened
+in this write.
+
+## 2026-08-27 disk production build (선택지 배포)
+
+Bind 2026-08-27T04:03:00Z. Do not substitute later HEAD/describe
+into this block after any docs commit.
+
+- HEAD at this bind: `474ba8630c9aa0285d32ea080dee1696e3982a8a`
+- Git describe at this bind: `v0.0.19-55-g474ba86-dirty`
+- Tracked dirty: `PROGRESS.md` only (Gate 4 close block + this append)
+- `npm run build --workspace apps/server` EXIT:0 (`tsc`)
+- `npm run build --workspace apps/web` EXIT:0 (`tsc --noEmit` + vite)
+- Disk `apps/web/dist/index.html` SHA-256:
+  `e6f24dca58cf550d9fd0c7b295501d4fb651189d9373b61566a629f36786a520`
+- Disk hashed assets: `index-DsF6Brgb.js`, `index-BuqElmiR.css`
+- JS SHA-256:
+  `746e07eb078193656590cd51b51ce4ade9bccc11a437e8402cbd75735586dee1`
+- CSS SHA-256 (unchanged):
+  `11e7e77750331d1f87250619031cde557f1a15f5dc68164be18402db366690e7`
+- Prior disk (not this slice): `3775e8bf…` / `index-CYsobGxs.js`
+- Running server PID `1655` since `Wed Aug 26 22:20:46 2026` (no restart)
+- This block is not handler SoT.
+
+### Not claimed
+
+- 운영 Serve 교체 / Serve hash recheck
+- 웹·PWA / service worker / Galaxy
+- generation 반영
+- commit
+
+## 2026-08-27 운영 Serve restart
+
+Bind 2026-08-27T04:32:56Z. Do not substitute later HEAD/describe
+into this block after any docs commit.
+
+- HEAD at this bind: `474ba8630c9aa0285d32ea080dee1696e3982a8a`
+- Git describe at this bind: `v0.0.19-55-g474ba86-dirty`
+- Tracked dirty: `PROGRESS.md` only
+- `systemctl --user restart rpchat.service` EXIT:0
+- Old PID `1655` gone (started Wed Aug 26 22:20:46)
+- New PID `13916` started `Thu 2026-08-27 04:32:38 UTC` (`ExecMainStartTimestamp`)
+- ActiveState=active NRestarts=0
+- Local `GET /api/health` 200 `ok:true` `db:ok` `authMode:tailscale`
+- Serve `GET https://hermes.tailf2217c.ts.net/api/health` 200 same shape
+- Serve status: `https://hermes.tailf2217c.ts.net (tailnet only)` → `http://127.0.0.1:8787`
+- disk = localhost `/` = Serve `/` SHA-256
+  `e6f24dca58cf550d9fd0c7b295501d4fb651189d9373b61566a629f36786a520`
+- hashed: `index-DsF6Brgb.js` `index-BuqElmiR.css`
+- localhost `GET /api/characters` 401 (no Tailscale header forge)
+- Serve `GET /api/auth/me` 200 `authenticated:true` `login:manofin@github`
+- This block is not handler SoT.
+
+### Not claimed
+
+- 웹·PWA / service worker / Galaxy
+- generation 반영
+- commit
+
+## 2026-08-27 웹/PWA server proof
+
+Bind 2026-08-27T04:37:24Z. Do not substitute later HEAD/describe
+into this block after any docs commit.
+
+- HEAD at this bind: `474ba8630c9aa0285d32ea080dee1696e3982a8a`
+- Git describe at this bind: `v0.0.19-55-g474ba86-dirty`
+- PID `13916` unchanged (no restart this slice)
+- Four-proof (`pwa-bundle-cache.md`):
+  - disk `index.html` md5 `4ba5ca96647dbc159ce3007fea6f70c9`
+  - `sw.js` revision for `url:"index.html"` = same md5
+  - `sw.js` precache includes `assets/index-DsF6Brgb.js`
+  - localhost `GET /` md5 = same; hashed `index-DsF6Brgb.js` `index-BuqElmiR.css`
+- Serve HTTPS `GET /` hashed names match disk
+- disk = local = Serve SHA-256 for:
+  - `index.html` `e6f24dca58cf550d9fd0c7b295501d4fb651189d9373b61566a629f36786a520`
+  - `sw.js` `a89929ce5986af22715f3f66f662070dde88a25d86d0ccb1ee1d05fabe5d6633`
+  - `manifest.webmanifest` `f9fa2a85a98bc80b9307d83e256d709259aab4dc8bd7fe4c50090ba9676fceca`
+  - `workbox-9c191d2f.js` `04b086f1b2f4215ee4b659a7bc9c76162894abdb43fa876247bc7c0bd6fd1c37`
+  - `assets/index-DsF6Brgb.js` `746e07eb078193656590cd51b51ce4ade9bccc11a437e8402cbd75735586dee1`
+  - `assets/index-BuqElmiR.css` `11e7e77750331d1f87250619031cde557f1a15f5dc68164be18402db366690e7`
+- precache count 11
+- This block is not handler SoT.
+- Hermes did not observe Galaxy. Not Galaxy PASS.
+
+### Not claimed
+
+- Galaxy PWA reinstall / site-data clear (device)
+- U7 CDP SW bust / U7_GALAXY_PWA
+- generation 반영
+- commit
+
+## 2026-08-27 generation 반영 (live path bind)
+
+Bind 2026-08-27T04:48:54Z. Do not substitute later HEAD/describe
+into this block after any docs commit.
+
+- HEAD at this bind: `474ba8630c9aa0285d32ea080dee1696e3982a8a`
+- Git describe at this bind: `v0.0.19-55-g474ba86-dirty`
+- PID `13916` (started `2026-08-27T04:32:38Z`, no restart this slice)
+- cwd `/home/hermes/rpchat/app`; exe `.local/bin/node` → `.hermes/node/bin/node`
+- server dist `index.js` SHA-256
+  `4dd455346c4d157c054e956653c983e32d7b200d54d486b80864cdd4d228e400`
+  mtime `2026-08-27 04:02:40Z` (before this PID)
+- `dist/prompt/builder.js` SHA-256
+  `408798d8e19254c831d8ee2364c5e1519ecd33e39c50d333db571618cb3993b1`
+- src+dist both contain `### 유저노트` and `allocateUserContextBudget` and `noteText`
+- health 200 `generation.active=[]` `queued=0`
+- Read-only QA `69e0ad66-333c-4b1c-93c0-3b31e4cfecbe`: note leftover `한쪽 눈이 나쁘다. ` (len 11), msg_n 45; not restored this slice
+- Serve GET preview 200: system heading 1, excerpt `### 유저노트\n한쪽 눈이 나쁘다.\n` — D-class on new PID, not generate input
+- E-row `7073082b-…` unchanged: no `messages` column; `budget_json` heading false, exclude false, status `complete`; latest for room still this id
+- Generate POST this slice: 0. Dump API: not invented.
+- This block is not handler SoT.
+
+### Not claimed
+
+- original E item 4 / request-bytes proof
+- product prompt-dump / logging slice
+- new generate (E token spent)
+- Galaxy
+- commit
+
+## 2026-08-27 덤프 Path 1 종료 (없음)
+
+Bind 2026-08-27T05:22:53Z (pre-docs-commit). Do not substitute later
+HEAD/describe into this block after any docs commit.
+
+- HEAD at this bind: `474ba8630c9aa0285d32ea080dee1696e3982a8a`
+- Git describe at this bind: `v0.0.19-55-g474ba86-dirty`
+- Tracked dirty at this bind: `PROGRESS.md` only
+- PID `13916` (started `2026-08-27T04:32:38Z`, no restart this slice)
+- disk `apps/web/dist/index.html` SHA-256
+  `e6f24dca58cf550d9fd0c7b295501d4fb651189d9373b61566a629f36786a520`
+  (named; Serve not rechecked this slice)
+- User one-char `없음` = record Path 1 closed. Not `스펙`. Not `generate`.
+- Path 1 re-scan (prior dump turn, this PID): `LOG_LEVEL=info`, no
+  DUMP/PROMPT_TRACE env, `ModelClient.stream` in-memory only, journal
+  `_PID=13916` 46 lines, 0 hits `유저노트` / `G4D-474ba86` / `e-smoke-1` /
+  `prompt-dump`
+- Path 1 (existing dump that exposes generation request `messages` /
+  system original) = **none**. Closed as none.
+- Generate POST this slice: 0. Dump API: not invented. `apps/**`: 0.
+- E remains **PASS (plan B)** only. Original item 4 still unverified.
+- This block is not handler SoT.
+
+### Not claimed
+
+- original E item 4 / request-bytes proof
+- dump **implementation** / min spec (`스펙` not given)
+- new generate
+- Galaxy
+- commit
+
+## 2026-08-27 덤프 min spec (스펙)
+
+Bind 2026-08-27T05:56:16Z (pre-docs-commit). Do not substitute later
+HEAD/describe into this block after any docs commit.
+
+- HEAD at this bind: `474ba8630c9aa0285d32ea080dee1696e3982a8a`
+- Git describe at this bind: `v0.0.19-55-g474ba86-dirty`
+- Tracked dirty at this bind: `PROGRESS.md` only
+- PID `13916` (started `2026-08-27T04:32:38Z`, no restart this slice)
+- disk `apps/web/dist/index.html` SHA-256
+  `e6f24dca58cf550d9fd0c7b295501d4fb651189d9373b61566a629f36786a520`
+  (named; Serve not rechecked this slice)
+- User one-char `스펙` = min spec, code 0. Not `코드`. Not `generate`.
+- Spec file: `rpchat-pwa/references/prompt-dump-min-spec.md`
+- Boundary: `generate()` `built.messages` at `ctx.model.stream` (same object).
+- Defaults locked: no HTTP dump API, no new table, no SSE prompt, env
+  `RPCHAT_PROMPT_DUMP=1` default-off, sink `$DATA_DIR/prompt-dump/last.json`
+- Generate POST this slice: 0. `apps/**`: 0. Dump API: not invented.
+- E remains **PASS (plan B)** only. Original item 4 still unverified.
+- This block is not handler SoT.
+
+### Not claimed
+
+- original E item 4 / request-bytes proof
+- dump **implementation** (`코드` / `구현` not given)
+- new generate
+- Galaxy
+- commit
+
+## 2026-08-27 덤프 구현 (코드)
+
+Bind 2026-08-27T06:09:46Z (pre-docs-commit). Do not substitute later
+HEAD/describe into this block after any docs commit.
+
+- HEAD at this bind: `474ba8630c9aa0285d32ea080dee1696e3982a8a`
+- Git describe at this bind: `v0.0.19-55-g474ba86-dirty`
+- Tracked dirty at this bind: `PROGRESS.md` `apps/server/src/routes/chat.ts`; untracked `apps/server/src/prompt/dump.ts` `bench/promptDump.test.ts`
+- PID `13916` (started `2026-08-27T04:32:38Z`, no restart this slice)
+- User one-char `코드` = min spec implementation. Not `배포`. Not `재시작`. Not `generate`.
+- `dump.ts` SHA-256
+  `fb1ae183bb0501079004ed01f3ce2add1e04ebf4996cef9a8976099568d1e8ec`
+- Call site: `generate()` immediately before `ctx.model.stream`, `messages: built.messages`
+- Gate `RPCHAT_PROMPT_DUMP=1` only; sink `$DATA_DIR/prompt-dump/last.json` 0600 overwrite
+- HTTP dump API: none. New table: none. SSE: unchanged. `.env`: unchanged
+- Unit: `npx tsx bench/promptDump.test.ts` EXIT:0 `passed 4`
+- Live Serve still old dist (no rebuild). Env dump still off. Generate POST this slice: 0
+- E remains **PASS (plan B)** only. Original item 4 still unverified.
+- This block is not handler SoT.
+
+### Not claimed
+
+- original E item 4 / request-bytes proof
+- live dump (needs `배포` + `재시작` + env=1 + new generate token)
+- new generate
+- Galaxy
+- commit
+
+## 2026-08-27 덤프 배포 (디스크)
+
+Bind 2026-08-27T07:03:19Z (pre-docs-commit). Do not substitute later
+HEAD/describe into this block after any docs commit.
+
+- HEAD at this bind: `474ba8630c9aa0285d32ea080dee1696e3982a8a`
+- Git describe at this bind: `v0.0.19-55-g474ba86-dirty`
+- User one-char `배포` = disk server `tsc` only. Not `재시작`. Not env. Not `generate`.
+- `npm run build --workspace apps/server` EXIT:0 (`tsc -p tsconfig.json`)
+- disk `apps/server/dist/prompt/dump.js` SHA-256
+  `f42a833d842d3f48a0a4240122602fde8be415be2294acc80f377a80e3e6449d`
+- disk `apps/server/dist/routes/chat.js` SHA-256
+  `655632f8aea2f4e1596c1a747357036e1215d90f7288db08e2517cd47f654487`
+  (contains `dumpGenerationPrompt`)
+- disk `apps/server/dist/index.js` SHA-256 unchanged
+  `4dd455346c4d157c054e956653c983e32d7b200d54d486b80864cdd4d228e400`
+- disk `apps/server/dist/prompt/builder.js` SHA-256 unchanged
+  `408798d8e19254c831d8ee2364c5e1519ecd33e39c50d333db571618cb3993b1`
+- disk `apps/web/dist/index.html` SHA-256 unchanged
+  `e6f24dca58cf550d9fd0c7b295501d4fb651189d9373b61566a629f36786a520`
+  (web workspace not rebuilt)
+- PID `13916` (started `2026-08-27T04:32:38Z`, no restart this slice)
+- PID env: `LOG_LEVEL=info`, no `RPCHAT_PROMPT_DUMP`
+- Generate POST this slice: 0. HTTP dump API: none.
+- E remains **PASS (plan B)** only. Original item 4 still unverified.
+- This block is not handler SoT. Serve not rechecked this slice.
+
+### Not claimed
+
+- original E item 4 / request-bytes proof
+- live dump (needs `재시작` + `RPCHAT_PROMPT_DUMP=1` + new generate token)
+- new generate
+- Galaxy
+- commit
+
+## 2026-08-27 덤프 재시작
+
+Bind 2026-08-27T07:19:38Z (pre-docs-commit). Do not substitute later
+HEAD/describe into this block after any docs commit.
+
+- HEAD at this bind: `474ba8630c9aa0285d32ea080dee1696e3982a8a`
+- Git describe at this bind: `v0.0.19-55-g474ba86-dirty`
+- User one-char `재시작` = unit restart + `RPCHAT_PROMPT_DUMP=1`. Not `generate`.
+- `.env` append `RPCHAT_PROMPT_DUMP=1` (was absent). `LOG_LEVEL` unchanged (`info`).
+- `systemctl --user restart rpchat.service` EXIT:0
+- PID `13916` (start `2026-08-27T04:32:38Z`) → **`21601`** (start `2026-08-27T07:16:55Z`)
+- cwd `/home/hermes/rpchat/app`. DATA_DIR `/home/hermes/rpchat/data`. AUTH_MODE `tailscale`
+- PID env: `RPCHAT_PROMPT_DUMP=1`, `LOG_LEVEL=info`
+- health localhost 200 `{ok:true, db:ok, authMode:tailscale}`
+- localhost `/api/characters` 401
+- Serve `https://hermes.tailf2217c.ts.net` (tailnet only) → `http://127.0.0.1:8787`
+- Serve `/api/health` 200 `db:ok`; `/api/auth/me` 200 `authenticated:true`
+- Serve `/` SHA-256 matches disk
+  `e6f24dca58cf550d9fd0c7b295501d4fb651189d9373b61566a629f36786a520`
+- disk `dump.js` `f42a833d842d3f48a0a4240122602fde8be415be2294acc80f377a80e3e6449d`
+- disk `chat.js` `655632f8aea2f4e1596c1a747357036e1215d90f7288db08e2517cd47f654487`
+  (`import { dumpGenerationPrompt } from '../prompt/dump.js'`)
+- `/proc/21601/maps` + `lsof` did **not** list `dump.js` (Node ESM; not mmap proof)
+- `$DATA_DIR/prompt-dump` absent (`last.json` not written). Generate POST this slice: 0
+- HTTP dump API: none. Funnel: no. Header forge: no.
+- E remains **PASS (plan B)** only. Original item 4 still unverified.
+- This block is not handler SoT.
+
+### Not claimed
+
+- original E item 4 / request-bytes proof (`last.json` not yet written)
+- new generate
+- Galaxy
+- commit
+
+## 2026-08-27 덤프 generate (rebind, POST 0)
+
+Bind 2026-08-27T07:24:53Z (pre-docs-commit). Do not substitute later
+HEAD/describe into this block after any docs commit.
+
+- HEAD at this bind: `474ba8630c9aa0285d32ea080dee1696e3982a8a`
+- Git describe at this bind: `v0.0.19-55-g474ba86-dirty`
+- User one-char `Generate` received. **POST `/messages` 0. PATCH 0.**
+- Missing (need all in one message): named token (not spent E) + conversation UUID + 복구 + 이미 로그인된 세션
+- Spent E token `[RP-Chat / Gate 4 E / generation-smoke]` not reused. UUID not invented.
+- PID `21601` (start `2026-08-27T07:16:55Z`) still live. `RPCHAT_PROMPT_DUMP=1`. health 200 `db:ok`
+- `$DATA_DIR/prompt-dump` still absent
+- E remains **PASS (plan B)** only. Original item 4 still unverified.
+- This block is not handler SoT.
+
+### Not claimed
+
+- original E item 4 / request-bytes proof
+- live `last.json`
+- Galaxy
+- commit
+
+## 2026-08-27 덤프 generate (item 4)
+
+Bind 2026-08-27T07:35:44Z (pre-docs-commit). Do not substitute later
+HEAD/describe into this block after any docs commit.
+
+- HEAD at this bind: `474ba8630c9aa0285d32ea080dee1696e3982a8a`
+- Git describe at this bind: `v0.0.19-55-g474ba86`
+- Token `[새 토큰명]` + UUID `69e0ad66-333c-4b1c-93c0-3b31e4cfecbe` (임포트테스트 / Qatest; 서리/카이/황지명 아님) + 복구 허가 + 이미 로그인된 세션
+- Spent E token not reused. PID `21601`. `RPCHAT_PROMPT_DUMP=1`. Serve HTTPS, no `Tailscale-User-Login` forge.
+- Original SQL `user_note` `'한쪽 눈이 나쁘다. '`
+- PATCH `{ "userNote": "DUMP-474ba86" }` 200 + GET + SQL match. Preview heading 1 / marker 1 (`### 유저노트\nDUMP-474ba86`) — D, not item 4.
+- Generate 1회: POST `/api/conversations/:id/messages` body `dump-obs-1` (marker 없음). SSE 200 `start` → 102 token → `done` complete/`stop`. gen `def8bd17-6fa2-417a-a9e0-754ff219abcc` msg `3daef6fe-793e-4e8c-ba18-2651a33348f1`. `prompt_tokens` 2994. ttft 30935ms total 73559ms. Messages 45→47. Do not delete unless asked.
+- `$DATA_DIR/prompt-dump/last.json` mode `0600` sha256 `4bd41ea34a457f1edbd7738dac785db191fa9bf66e47e49e815d9a28c21c2385`. `conversationId` match. Some `role=system` has `### 유저노트` **and** `DUMP-474ba86`. No `role=user` has the marker. **원문 항목4 PASS.**
+- Restore PATCH original `'한쪽 눈이 나쁘다. '` 200 + GET + SQL match. Other rooms unchanged. `updated_at` not rewound.
+- HTTP dump API: none. E remains **PASS (plan B)** — not reopened. This is dump-file item 4, not E lock rewrite.
+- This block is not handler SoT.
+
+### Not claimed
+
+- Galaxy
+- commit
+- E request-bytes exception closed (E stays B)
+
+## 2026-08-27 Gate 4 최종 잠금 / Gate 5 범위
+
+Bind 2026-08-27T07:44:09Z (pre-docs-commit). Do not substitute later
+HEAD/describe into this block after any docs commit.
+
+- HEAD at this bind: `474ba8630c9aa0285d32ea080dee1696e3982a8a`
+- Git describe at this bind: `v0.0.19-55-g474ba86-dirty`
+- Tracked dirty at this bind: `PROGRESS.md`, `apps/server/src/routes/chat.ts`; untracked in-scope: `apps/server/src/prompt/dump.ts`, `bench/promptDump.test.ts`
+- Disk `apps/web/dist/index.html` sha256 `e6f24dca58cf550d9fd0c7b295501d4fb651189d9373b61566a629f36786a520`; assets `index-DsF6Brgb.js` / `index-BuqElmiR.css` (disk; Serve not rechecked this slice)
+- Historical dated blocks above kept. This block does not rewrite them.
+- Gate 4 **최종 잠금 확인** (not a new product event): A0 `b1552bc` · A1 · B `38f8e2b` · B1 `474ba86` · C-R1 PASS · D PASS (spent) · E **PASS (B)** only · dump Path1 none · dump 스펙/코드/배포/재시작 PID `21601` · dump 원문 항목4 PASS `last.json` `DUMP-474ba86` (`[새 토큰명]` spent)
+- Exception stays: request `messages` original on the wire/SSE. Dump-file item 4 ≠ E reopen. Galaxy not PASS.
+- `remaining-locks.md` “E not PASS” marked stale; `lock-state.md` wins.
+- Commit this message (split, no `git add -A`, no `.env`, no BRIEF/DESIGN/HANDOFF/`dist.bak`): (1) feat dump src+bench (2) docs this PROGRESS block. `[verified]` not used.
+- Gate 5 **defined, not opened**. Candidates (one named token later): Galaxy PWA observation · lorebook `secondary_keys` · (나) memory dup · (다) rolling summary · F2 apply · docs hygiene. Not auto-start.
+- This block is not handler SoT.
+
+### Not claimed
+
+- Galaxy PASS
+- E request-bytes exception closed
+- Gate 5 start / lorebook implementation
+- HTTP dump API
