@@ -1,0 +1,7 @@
+html[data-rpchat-font="system"],
+html[data-rpchat-font="system"] body,
+html[data-rpchat-font="system"] .msg.user .bubble,
+html[data-rpchat-font="system"] .msg.assistant .bubble,
+html[data-rpchat-font="system"] .topbar .title h1 {
+  font-family: system-ui, sans-serif;
+}

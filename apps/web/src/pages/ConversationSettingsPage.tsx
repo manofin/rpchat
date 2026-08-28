@@ -21,7 +21,11 @@ import {
   type SettingsHubItem,
   type SettingsRoute,
 } from '../lib/conversationSettings';
+import { ConversationGuidePage } from './ConversationGuidePage';
+import { ConversationMemoryPage } from './ConversationMemoryPage';
+import { ConversationOutputPage } from './ConversationOutputPage';
 import { ConversationProfilePage } from './ConversationProfilePage';
+import { ConversationStylePage } from './ConversationStylePage';
 import { ConversationUserNotePage } from './ConversationUserNotePage';
 
 const LEAF_TITLE: Record<string, string> = {
@@ -86,8 +90,24 @@ export function ConversationSettingsPage({ route }: { route: SettingsRoute }) {
     return <ConversationProfilePage conversationId={route.conversationId} />;
   }
 
+  if (route.kind === 'leaf' && route.leaf === 'guide') {
+    return <ConversationGuidePage conversationId={route.conversationId} />;
+  }
+
   if (route.kind === 'leaf' && route.leaf === 'user-note') {
     return <ConversationUserNotePage conversationId={route.conversationId} />;
+  }
+
+  if (route.kind === 'leaf' && route.leaf === 'memory') {
+    return <ConversationMemoryPage conversationId={route.conversationId} />;
+  }
+
+  if (route.kind === 'leaf' && route.leaf === 'output') {
+    return <ConversationOutputPage conversationId={route.conversationId} />;
+  }
+
+  if (route.kind === 'leaf' && route.leaf === 'style') {
+    return <ConversationStylePage conversationId={route.conversationId} />;
   }
 
   if (route.kind === 'leaf') {

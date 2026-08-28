@@ -146,7 +146,7 @@ function DebugList({ label, items, empty }: { label: string; items: string[]; em
   );
 }
 
-function MemoryTab({ conversationId, open, onApplied, onClose }: { conversationId: string; open: boolean; onApplied: () => void; onClose: () => void }) {
+export function MemoryTab({ conversationId, open, onApplied, onClose }: { conversationId: string; open: boolean; onApplied: () => void; onClose: () => void }) {
   const ui = useUi();
   const [pinned, setPinned] = useState<Memory[]>([]);
   const [candidates, setCandidates] = useState<Memory[]>([]);
@@ -265,7 +265,7 @@ function MemoryTab({ conversationId, open, onApplied, onClose }: { conversationI
   );
 }
 
-function SummaryTab({ conversationId, open, onApplied, onClose }: { conversationId: string; open: boolean; onApplied: () => void; onClose: () => void }) {
+export function SummaryTab({ conversationId, open, onApplied, onClose }: { conversationId: string; open: boolean; onApplied: () => void; onClose: () => void }) {
   const ui = useUi();
   const [summaries, setSummaries] = useState<Summary[]>([]);
   const [busy, setBusy] = useState(false);
