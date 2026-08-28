@@ -8,6 +8,7 @@ import { useVisualViewport } from './lib/viewport';
 import { Spinner, UiProvider } from './components/ui';
 import { HomePage } from './pages/HomePage';
 import { CharacterPage } from './pages/CharacterPage';
+import { StoryPage } from './pages/StoryPage';
 import { ChatPage } from './pages/ChatPage';
 import { ConversationSettingsPage } from './pages/ConversationSettingsPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -77,6 +78,8 @@ function Router() {
   if (conversationSettings) return <ConversationSettingsPage route={conversationSettings} />;
   const chat = match(path, '/chat/:id');
   if (chat) return <ChatPage id={chat.id} />;
+  const story = match(path, '/story/:id');
+  if (story) return <StoryPage id={story.id} />;
   const character = match(path, '/character/:id');
   if (character) return <CharacterPage id={character.id} />;
   if (match(path, '/search')) return <SearchPage />;

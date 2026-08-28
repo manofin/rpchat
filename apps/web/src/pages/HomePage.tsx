@@ -1,16 +1,22 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { get, post } from '../lib/api';
 import { navigate } from '../lib/router';
-import type { Character, Health } from '../types';
+import type { Character, Health, Story } from '../types';
 import { Avatar, relTime } from '../components/view';
 import { CharacterEditor } from '../components/CharacterEditor';
+import { StoryEditor } from '../components/StoryEditor';
 import { Spinner, useUi } from '../components/ui';
+
+type HomeTab = 'story' | 'character';
 
 export function HomePage() {
   const ui = useUi();
+  const [tab, setTab] = useState<HomeTab>('character');
   const [chars, setChars] = useState<Character[] | null>(null);
+  const [stories, setStories] = useState<Story[] | null>(null);
   const [health, setHealth] = useState<Health | null>(null);
   const [editor, setEditor] = useState<{ open: boolean; character: Character | null }>({ open: false, character: null });
+  const [storyEditor, setStoryEditor] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
 
@@ -22,10 +28,24 @@ export function HomePage() {
       setChars([]);
     }
   }
+
+  async function loadStories() {
+    try {
+      setStories(await get<Story[]>('/api/stories'));
+    } catch (e) {
+      ui.toast((e as Error).message, 'err');
+      setStories([]);
+    }
+  }
+
   useEffect(() => {
     load();
     get<Health>('/api/health').then(setHealth).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (tab === 'story' && stories === null) void loadStories();
+  }, [tab]);
 
   async function onPickFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -57,18 +77,49 @@ export function HomePage() {
   return (
     <div className="screen">
       <div className="topbar">
-        <div className="title"><h1>캐릭터</h1><div className="sub">{modelLine(health)}</div></div>
+        <div className="title"><h1>{tab === 'story' ? '스토리' : '캐릭터'}</h1><div className="sub">{modelLine(health)}</div></div>
         <button className="btn ghost icon" onClick={() => navigate('/search')} aria-label="검색">🔍</button>
         <button className="btn ghost icon" onClick={() => navigate('/settings')} aria-label="설정">⚙</button>
-        <button className="btn ghost icon" onClick={() => fileRef.current?.click()} disabled={importing} aria-label="카드 가져오기">{importing ? '…' : '📥'}</button>
-        <button className="btn primary icon" onClick={() => setEditor({ open: true, character: null })} aria-label="새 캐릭터">＋</button>
+        {tab === 'character' && (
+          <>
+            <button className="btn ghost icon" onClick={() => fileRef.current?.click()} disabled={importing} aria-label="카드 가져오기">{importing ? '…' : '📥'}</button>
+            <button className="btn primary icon" onClick={() => setEditor({ open: true, character: null })} aria-label="새 캐릭터">＋</button>
+          </>
+        )}
+        {tab === 'story' && (
+          <button className="btn primary icon" onClick={() => setStoryEditor(true)} aria-label="새 스토리">＋</button>
+        )}
+      </div>
+      <div className="home-tabs">
+        <button type="button" className={tab === 'story' ? 'active' : ''} onClick={() => setTab('story')}>스토리</button>
+        <button type="button" className={tab === 'character' ? 'active' : ''} onClick={() => setTab('character')}>캐릭터</button>
       </div>
       <input ref={fileRef} type="file" accept="image/png,.png,.json,application/json" onChange={onPickFile} style={{ display: 'none' }} />
       <div className="content">
         {health && !health.model.ok && (
           <div className="banner warn">모델 서버에 연결되지 않았습니다. 대화 전송이 비활성화됩니다. (설정에서 상태 확인)</div>
         )}
-        {chars === null ? (
+        {tab === 'story' ? (
+          stories === null ? (
+            <Spinner />
+          ) : stories.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: 28 }}>
+              <div style={{ fontSize: 40, marginBottom: 8 }}>📖</div>
+              <div style={{ marginBottom: 12 }}>첫 스토리를 만드세요</div>
+            <button className="btn primary" onClick={() => setStoryEditor(true)}>새 스토리 만들기</button>
+            </div>
+          ) : (
+            <div className="grid">
+              {stories.map((s) => (
+                <div key={s.id} className="card tap" onClick={() => navigate(`/story/${s.id}`)}>
+                  <div className="char-name">{s.name}</div>
+                  <div className="char-tag">{s.tagline || ' '}</div>
+                  <div className="small muted" style={{ marginTop: 6 }}>{s.character_count ? `캐릭터 ${s.character_count}명` : '캐릭터 없음'}</div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : chars === null ? (
           <Spinner />
         ) : chars.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: 28 }}>
@@ -94,6 +145,12 @@ export function HomePage() {
         character={editor.character}
         onClose={() => setEditor({ open: false, character: null })}
         onSaved={(c) => { setEditor({ open: false, character: null }); load(); navigate(`/character/${c.id}`); }}
+      />
+      <StoryEditor
+        open={storyEditor}
+        story={null}
+        onClose={() => setStoryEditor(false)}
+        onSaved={(s) => { setStoryEditor(false); void loadStories(); navigate(`/story/${s.id}`); }}
       />
     </div>
   );

@@ -61,6 +61,9 @@ textarea { resize: none; }
 .topbar .title { flex: 1; min-width: 0; }
 .topbar .title h1 { font-size: 16px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: "Noto Serif KR", serif; font-weight: 500; color: var(--kami-text-strong); }
 .topbar .title .sub { font-size: 12px; color: var(--kami-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: system-ui, sans-serif; }
+.home-tabs { display: flex; gap: 4px; padding: 6px 10px; overflow-x: auto; flex: 0 0 auto; border-bottom: 1px solid var(--kami-line); background: var(--kami-deep); }
+.home-tabs button { flex: 0 0 auto; border: none; background: transparent; color: var(--fg-2); padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+.home-tabs button.active { background: var(--bg-3); color: var(--fg); }
 .content { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px 12px calc(12px + var(--safe-bottom)); }
 .content.flush { padding: 0; }
 

@@ -1,3 +1,24 @@
+export interface StoryCharacter {
+  story_id: string;
+  character_id: string;
+  role: string;
+  sort_order: number;
+  name: string;
+}
+
+export interface Story {
+  id: string;
+  name: string;
+  tagline: string;
+  setting: string;
+  minor_cast: { name: string; note: string }[];
+  archived: boolean;
+  created_at: string;
+  updated_at: string;
+  character_count?: number;
+  characters?: StoryCharacter[];
+}
+
 export interface Character {
   id: string;
   name: string;
