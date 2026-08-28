@@ -85,12 +85,17 @@ t('11 미성년·동의 불명 친밀 묘사 금지', () => {
   assert.match(chat, /연령이나 동의가 불명확하면 친밀·성적 묘사를 하지 않는다/);
 });
 
-t('12 story 선택지는 자유 입력을 남기고 성공을 예고하지 않음', () => {
+t('12 story 선택지는 장면 행동+1인칭 대사이며 성공을 예고하지 않음', () => {
   const inst = substitute(STORY_CHOICES_INSTRUCTION, '카이', '지명');
-  assert.match(inst, /자유롭게 행동을 이어 간다/);
+  assert.match(inst, /입력 초안 3개/);
+  assert.match(inst, /별표\(\*\)로 감싼 상황·감정 묘사 1문장 이상으로 먼저 쓰고/);
+  assert.match(inst, /별표 밖에 지명 1인칭 대사를 3문장 이상 붙인다/);
+  assert.match(inst, /장면을 다음 국면으로 밀어붙이는 내용/);
+  assert.match(inst, /태도\(거절·회피·거래·맞대응 등\)가 뚜렷이 달라야 한다/);
+  assert.match(inst, /큰따옴표는 쓰지 않는다/);
   assert.match(inst, /특정 선택지의 성공을 예고하지 않는다/);
-  assert.match(inst, /자유 입력을 허용하는 표현/);
-  assert.match(inst, /지명가 다음에 취할 수 있는/);
+  assert.doesNotMatch(inst, /자유 입력을 허용하는 표현/);
+  assert.match(inst, /지명가 다음에 보낼/);
 });
 
 t('13 extractChoices: 화자 마크다운 본문을 보존하고 태그 제거', () => {
@@ -106,6 +111,34 @@ t('13 extractChoices: 화자 마크다운 본문을 보존하고 태그 제거',
   assert.equal(parsed.choices?.[2], '자유롭게 행동을 이어 간다');
   assert.match(parsed.content, /객잔주/);
   assert.doesNotMatch(parsed.content, /<choices>/);
+});
+
+t('13b extractChoices: 긴 1인칭 초안 3개, 본문 보존', () => {
+  const c1 = '제 이름은 그게 전부입니다. 천 년을 사신 분이 왜 굳이 제게서 특별함을 찾으시는 건지 모르겠네요. 그냥 평범한 민간인으로 살게 해주세요.';
+  const c2 = '질문은 무시하고 백도진을 향해 돌아보며 대장님, 밖으로 나갈 수 있게 도와주시겠습니까? 제 이름에 대해 더 할 말은 없습니다.';
+  const c3 = '설록의 눈을 빤히 마주하며 그렇게 궁금하면 직접 알아내 보시죠 하고 웃는다. 대신 오늘 하루는 제 마음대로 쓰겠습니다. 그때 생각해보죠.';
+  const raw = [
+    '*빗소리가 처마 끝을 따라 흘렀다.*',
+    '',
+    '**객잔주** — "손님, 여기서는 칼보다 말이 먼저입니다."',
+    '',
+    `<choices>${JSON.stringify([c1, c2, c3])}</choices>`,
+  ].join('\n');
+  const parsed = extractChoices(raw);
+  assert.equal(parsed.choices?.length, 3);
+  assert.equal(parsed.choices?.[0], c1);
+  assert.equal(parsed.choices?.[1], c2);
+  assert.equal(parsed.choices?.[2], c3);
+  assert.match(parsed.content, /객잔주/);
+  assert.doesNotMatch(parsed.content, /<choices>/);
+  assert.doesNotMatch(parsed.content, /민간인으로 살게/);
+});
+
+t('13c extractChoices: 초안 속 미이스케이프 큰따옴표면 본문만', () => {
+  const raw = '본문입니다.\n<choices>["말 한다 "안 돼" 하고","다른 초안 2","다른 초안 3"]</choices>';
+  const parsed = extractChoices(raw);
+  assert.equal(parsed.choices, null);
+  assert.equal(parsed.content, raw);
 });
 
 t('14 extractChoices: 선택지 없으면 본문 그대로', () => {
