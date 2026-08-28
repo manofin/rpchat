@@ -1100,3 +1100,386 @@ HEAD/describe into this block after any docs commit.
 - E request-bytes exception closed
 - Gate 5 start / lorebook implementation
 - HTTP dump API
+
+## 2026-08-27 Gate 5 opened (2-3-4-5-6-1)
+
+Bind 2026-08-27T08:15:38Z. Do not substitute later HEAD/describe into this block after any docs commit.
+
+- HEAD at this bind: `a9114b2cb82b94c00b317b3a36ecc6837f5a28ba`
+- Git describe at this bind: `v0.0.19-57-ga9114b2`
+- Tracked dirty at this bind: none. Untracked leftovers (BRIEF/DESIGN/HANDOFF/`apps/web/dist.bak`/d1 benches) left untracked.
+- Disk `apps/web/dist/index.html` sha256 `e6f24dca58cf550d9fd0c7b295501d4fb651189d9373b61566a629f36786a520`; assets `index-DsF6Brgb.js` / `index-BuqElmiR.css` (disk; Serve not rechecked this slice)
+- Historical dated blocks above kept. This block does not rewrite them.
+- User `Gate5` + order `2-3-4-5-6-1 순으로 진행`. Start token. No commit token in that message. No generate. No frost/Kai write.
+- **2** lore `secondary_keys`+selective: already shipped. `0003_lore_selective.sql` applied `2026-08-22T07:00:08.572Z`. `loreMatch.test.ts` PASS 8/8. Live `lore_entries` n=5, all `selective=0`, secondary `[]`.
+- **3** memory 중복: already shipped (`classify` + GET flag + ChatDrawer 병합). 모순/`conflict` remains suppressed (P1-2b-fix b). Embeddings non-adopt. Live `memories` n=0 / `summaries` n=0 at this bind (not a defect claim).
+- **4** rolling summary: already shipped as 4 tiers (`0005_summary_tiers.sql`). Summarize stays manual. (가) suggest locked.
+- **5** F2: authorized as next remaining, **not executed**. Min spec `references/gate5-f2-lore-apply-min-spec.md`. Default non-frost: 임포트테스트 `a5073af0-…` / room `69e0ad66-…`. First legal step = messages-only SHA A/B. Not frost selective.
+- **6** docs inventory: not started.
+- **1** Galaxy: last; Hermes cannot PASS.
+- Product `apps/**` unchanged this slice. Skills/lock-state outside app git.
+- This block is not handler SoT.
+
+### Not claimed
+
+- F2 A/B execute
+- live selective fixture
+- docs inventory execute
+- Galaxy PASS
+- E request-bytes / conflict unsuppress / F6
+
+## 2026-08-27 Gate 5 item 6 — docs inventory / remaining-locks (doc-only)
+
+Bind `2026-08-27T09:32:38Z` (pre-docs-commit). Do not substitute later
+HEAD/describe into this block after any docs commit.
+
+- HEAD at this bind: `a9114b2cb82b94c00b317b3a36ecc6837f5a28ba`
+- Git describe at this bind: `v0.0.19-57-ga9114b2-dirty` (tracked dirty: `PROGRESS.md` only; Task 0 `git describe --tags` = `v0.0.19-57-ga9114b2`)
+- Disk `apps/web/dist/index.html` sha256 `e6f24dca58cf550d9fd0c7b295501d4fb651189d9373b61566a629f36786a520`; assets not rehashed this slice. Serve HTTPS not rechecked this slice (localhost health only: `ok` / `db:ok`, `contextTokens:16384`)
+- Historical dated blocks above kept. This block does not rewrite them.
+- Living index: `/home/hermes/rpchat/planning_documents/STATUS.md` sha256 `0b8ed1b0e111a509de77cd5a647a5ac2c0cc9518b7509cd1e223f95f2ef0626e`
+- ADR-F5-world.md Status **accepted-A** (정의 4). sha256 `de683800addec0ce9135af686b329201e4567200a38105178b63a5fb3f161cf9`. Do not invent F5-B. Do not re-pick A/B/C.
+- HANDOFF/OPERATOR-NOTE: banner/HEAD → `v0.0.19-57-ga9114b2`. Still untracked. No `git add`
+- remaining-locks / lock-state / next-work / SKILL: Gate 5.2–5.6 closed as executed; remaining Gate 5 item = 1 Galaxy; live lore PATCH = `F2-live`
+- D2 results sha256 `7b31a002722b02193acf9ad47f89efcf1c3ea4b501b292c7a8a3c6462d2f59c6` (rehashed)
+- Galaxy checklist boxes: still empty (15 unchecked). Hermes cannot PASS
+- apps/** / migrations / live DB: unchanged this slice
+- This block is not handler SoT
+
+### Not claimed
+
+- Galaxy PASS
+- PRD header / §5.4 / §8 edit (`C-prd` still gated)
+- live lore PATCH / live selective row
+- F5-B / World table / empty `0006_*.sql`
+- commit / rebuild / restart / generate
+- leftover BRIEF/DESIGN/`dist.bak` snapshot (`git add` 금지)
+
+## 2026-08-27 인수인계 문서 정리 (doc-only)
+
+Bind `2026-08-27T10:13:32Z` (pre-docs-commit). Do not substitute later
+HEAD/describe into this block after any docs commit.
+
+- HEAD at this bind: `a9114b2cb82b94c00b317b3a36ecc6837f5a28ba`
+- Git describe at this bind: `v0.0.19-57-ga9114b2-dirty` (tracked dirty: `PROGRESS.md` only)
+- Unit PID `21601` `active`; health `ok`/`db:ok`/`authMode=tailscale`/`contextTokens=16384`
+- Disk `apps/web/dist/index.html` sha256 `e6f24dca58cf550d9fd0c7b295501d4fb651189d9373b61566a629f36786a520` (rehashed this bind)
+- Historical dated blocks above kept. This block does not rewrite them.
+- First-open restore: `/home/hermes/rpchat/planning_documents/HANDOFF-2026-08-27.md` sha256 `2de7c5f8d928effd07f286675b88cdf0c06d8ced5882d3394257d5f57ffd7a40`
+- 08-25 remaining-locks handoff marked STALE as current (HEAD `d58f194` snapshot)
+- OPERATOR-NOTE Galaxy box count corrected **15** (was 5). Pointer to 2026-08-27 인수인계
+- app/HANDOFF.md banner pointer only. Still untracked. No `git add`
+- STATUS.md how-to-read: first-open = HANDOFF-2026-08-27.md
+- migrations **this bind ls**: `0001_init.sql` `0002_search.sql` `0003_lore_selective.sql` `0004_memory_scope.sql` `0005_summary_tiers.sql` `0006_user_note.sql` `0007_persona_snapshot.sql`. next `0008_<slug>.sql`
+- Gate 5 2–6 remain closed. Remaining Gate 5 item = 1 Galaxy. No Galaxy PASS. No F5-B. No generate. No `apps/**`
+- This block is not handler SoT
+
+### Not claimed
+
+- Galaxy PASS
+- PRD header / §5.4 / §8 (`C-prd`)
+- live lore PATCH / `F2-live`
+- commit / rebuild / restart / generate
+- leftover BRIEF/DESIGN/`dist.bak` `git add`
+
+## [2026-08-27 PRD lock — C-prd bucket 정리 by Claude Code (Mac 세션)] 문서만 — 코드 0·git add 0·커밋 0
+- named lock: 사용자 `PRD` 승인(STATUS.md Bucket 2 C-prd 항목 대상: header/§5.4 D1 line/§8 Q3).
+- 헤더: 현재 운영 버전 `v0.0.19`(93dcd56)→`v0.0.19-57-ga9114b2`(a9114b2, git describe 그대로). 마지막 검증일·사실 기준일 2026-08-23→2026-08-27, 정본 포인터를 HANDOFF-2026-08-27.md·STATUS.md로 교체. 문서 버전은 1.2 유지(미승격, 포인터 정정만).
+- §5.4: D1(격리 episode rollup) 항목 닫힘 표기 — STATUS.md Bucket1 근거(PROGRESS 2026-08-25T02:38, 제품코드 무변경) 인용. builder/summarize 단위테스트 보강 항목도 닫힘 표기 — 직접 커밋 확인(99e86be/35d0a01/04a8f1e/2b16094, summaryBudget.ts/summarizeContract.ts 순수헬퍼+특성화테스트+라이브와이어링). 마이그레이션 번호 서술을 실측(0001–0007, next=0008)으로 갱신.
+- §8 Q3: 이미 「닫힘(2026-08-25) ADR-F5 accepted-A」로 정확히 닫혀있음 확인 — 수정 불필요, 그대로 둠.
+- 검증: 로컬 edit→scp 배포 후 diff로 정확히 일치 확인. PRD 파일은 git 저장소(app/) 밖이라 git 이력 대상 아님.
+- 캐치업(이 세션에서 직접 코드 diff 검증): v0.0.19→a9114b2(57커밋) 중 실제 프로덕트 변경 확인 — summaryBudget/userContextBudget 순수헬퍼 추출(동작 무변경, 특성화테스트로 검증됨), 유저노트(0006, whole-or-nothing 주입), 페르소나 스냅샷(0007, freeze+재적용), 아바타업로드(F3, 매직바이트+FROST guard+경로검증), 고아스트리밍 정리+PWA 재접속폴링, 프롬프트덤프(env게이트, HTTP라우트 없음). 전부 코드 직접 대조로 확인, 자가보고 미신뢰 원칙 유지.
+
+## [2026-08-27T13:28–13:29Z F2-live 종료 by Claude Code (Mac 세션)] `[RP-Chat / F2-live / real-selective-patch]`
+- named lock: 사용자 `f2 live`. min-spec(`references/gate5-f2-lore-apply-min-spec.md`) 확인 — 항목1/서리/카이 flip 금지, 새 엔트리로 실측.
+- 대상: 임포트테스트(`a5073af0-14b3-4c3f-8750-04d76b547504`) 기존 로어북(`8a48dde7...`)에 신규 엔트리 생성. 항목1(`6bce220c...`)·서리·카이 무접촉.
+- 착수 전 raw: HEAD `a9114b2` describe `v0.0.19-57-ga9114b2-dirty`(tracked dirty=PROGRESS.md만), health ok/db:ok. 로어 count=1(항목1)만.
+- 실행(전부 실 HTTP API, `generate` 0, Tailscale 헤더 정상 사용, 위조 없음):
+  1. `POST /api/characters/:id/lore` {title:F2-live-throwaway, keywords:[자몽], secondary:[], selective:false} → id `f677d9e9-a024-4950-b990-645a088a700c`
+  2. baseline(selective=0) draft=자몽 → `active_lore:["F2-live-throwaway"]`, 본문 주입 확인(정상)
+  3. `PUT /api/lore/:id` {selective:true, secondary:[노을]} (라이브 PATCH-등가, 실제 selective 행 최초)
+  4. draft=자몽(1차만) → `active_lore:[]` (미주입, 기대대로)
+  5. draft=노을(2차만) → `active_lore:[]` (미주입, 기대대로)
+  6. draft="자몽 노을"(1차+2차) → `active_lore:["F2-live-throwaway"]`, 본문 주입 확인(기대대로)
+  7. `PUT` 원복 {selective:false, secondary:[]}
+  8. draft=자몽 → 다시 `active_lore:["F2-live-throwaway"]` (왕복 가역성 확인 — 라이브 selective on/off가 완전히 되돌아감)
+  9. `DELETE /api/lore/:id` → 정화
+- 종료 확인: 로어 count=1(항목1만, 원상복구), `PRAGMA integrity_check` ok, HEAD/describe/tracked-dirty 착수 전과 동일(코드 0). generate 0(전부 GET prompt-preview로 관측, POST /messages 없음).
+- **자체 정정**: 종료 직후 "messages-only SHA" 2건을 캡처했으나 **엔트리 삭제 후에 계산**해서 로어 없는 상태의 해시였음 — F2-live 증거로 무효. 재실측(엔트리 재생성)은 불필요한 라이브 재접촉이라 하지 않음. 실제 증거는 위 4/5/6/8단계의 `active_lore` 배열 + 본문 주입 boolean(원 F2-1/F2-2/F2-3 격리테스트와 동일 증거 형식)으로 충분.
+- 결론: 라이브 selective+2차키워드 게이트가 실제 DB/실제 API에서 격리테스트와 동일하게 작동함을 확인. `F2-live` 닫힘.
+
+## [2026-08-27T13:37–13:46Z F1 threat-model+isolated test 종료 by Claude Code (Mac 세션)] `[RP-Chat / F1 / isolated-token-test]`
+- named lock: 사용자 `F1`(인증). STATUS.md Bucket 3 정의: 첫 합법 단계 = threat-model note + isolated token test. forbidden = silent AUTH_MODE 변경(라이브 미접촉).
+- 실측 발견: 토큰 세션 메커니즘(`apps/server/src/auth.ts`, `routes/health.ts` `/api/auth/*`, `sessions` 테이블, `validateConfig()`의 APP_TOKEN≥16/SESSION_SECRET≥32 검사)이 코드상 이미 전부 구현·등록돼 있음 — 다만 라이브는 `AUTH_MODE=tailscale`이라 미활성.
+- `/home/hermes/rpchat/planning_documents/F1-token-session-threat-model.md` 작성·배포: §0 실측(코드 완성/미활성), §1 현 tailscale 헤더신뢰 모델의 실증된 약점(셸 접근=API 인증 우회 — 이번 세션 내내 해온 `curl -H 'Tailscale-User-Login: ...'` 자체가 살아있는 사례, 다중 Claude Code 세션 동시 SSH 운영 현실과 직결), §2 토큰모델이 바꾸는 것/안 바꾸는 것(`secure` 쿠키가 사실상 Tailscale Serve HTTPS 경유 강제 — curl은 secure 플래그 미준수라 브라우저 재현과 다를 수 있음을 명시), §3 격리테스트 설계, §4 권고(전환 여부는 사용자 몫, §8 Q4와 함께 판단).
+- 격리 테스트: 별도 프로세스(`PORT=8788`, `DATA_DIR=/tmp/f1-token-test` 복사 DB, `AUTH_MODE=token` + 신규 생성 `APP_TOKEN`/`SESSION_SECRET`). 라이브 `rpchat.service`(tailscale 모드)는 무접촉.
+  1. 로그인 전 보호 라우트 401
+  2. 틀린 토큰 → 401 + 1초 지연 확인
+  3. 맞는 토큰 → 200 + 서명 쿠키 발급
+  4. 그 쿠키로 보호 라우트 접근 200
+  5. `logout` → 이후 그 쿠키 401
+  6. 두 세션 생성 후 `logout-all` → 둘 다 401
+  7. DB에서 세션 만료시각 강제 조작 → 401
+  8. (부가) health/me 상태 전이 확인
+  전부 기대대로 통과.
+- **셸 스코핑 버그(자체 발견·수정)**: `TOKEN=$(openssl rand -hex 16) && ... & echo $TOKEN > token.txt` 형태로 실행해 `&`가 전체 `&&` 체인을 백그라운드시켜 `$TOKEN`이 부모 셸에서 비어버림(로그인 "token 필요" 실패). `/proc/<pid>/environ`에서 실제 `APP_TOKEN` 값을 직접 읽어 복구, 서버 재시작 없이 테스트 지속.
+- **자체 발견·정정 (이번 턴)**: 위 버그를 고치기 위해 시크릿을 새로 생성해 재기동한 백그라운드 launch(토큰 `token_len=32 secret_len=48`, health=200 확인됨)의 노드 프로세스가, 이후 정리 단계에서 `/tmp/f1-token-test` 디렉터리는 삭제됐음에도 프로세스 자체는 안 죽고 `:8788`에서 계속 리스닝 중이던 것을 이번 세션 재검증(`lsof -iTCP:8788`)으로 발견. `kill`로 종료, 포트 리스닝 없음 재확인. DATA_DIR이 이미 지워진 상태로 열린 파일 핸들만 붙들고 있던 고아 프로세스였음 — 실제 라이브 DB/서비스는 무관.
+- 종료 확인: `cd ~/rpchat/app` 기준 HEAD `a9114b2` / describe `v0.0.19-57-ga9114b2-dirty` / tracked dirty=`PROGRESS.md`만 — 착수 전과 동일. health `{"ok":true,"db":"ok","authMode":"tailscale",...}`. `PRAGMA integrity_check` ok. `:8788` 포트 정리 확인.
+- 결론: F1 첫 합법 단계(threat-model note + isolated test) 완료. 라이브 `AUTH_MODE` 전환은 이번 잠금 범위 밖 — 별도 named lock 필요.
+
+## [2026-08-27T14:1x-14:21Z F4 사전등록 작성 by Claude Code (Mac 세션)] `[RP-Chat / F4 / preregistration]`
+- named lock: 사용자 `f4 tts`. STATUS.md Bucket 3 정의: 첫 합법 단계 = **new preregistration만**(F1과
+  달리 isolated test 불포함). forbidden = Gemma 옆 두 번째 모델(런타임/모델 다운로드·기동 금지).
+- `bench/ttsBench/preregistration.md` 작성(sketchBench와 동형 구조 — 같은 Mac Studio 96GB 자원공존
+  질문의 자매 사례): §0 미확정 4건(후보목록 확정/개인가치판단은 벤치 범위 밖임을 명시/숫자 플레이스홀더/
+  TTS 입력범위 안전선) — 사용자 확정 전 Task 1(실측) 착수 금지 명시. §1 신호(공존 가능한가만 답함,
+  "이미지냐 TTS냐" 가치판단과 독립). §2 대조군(sketchBench 기존 baseline
+  `chat-baseline-1787541510028.json` 재사용 가능하나 드리프트 확인 필수). §3 후보(1순위 Kokoro-82M,
+  대체 Piper, 무료기준선 macOS 시스템TTS, 후보2 XTTS-v2는 범위 밖 후속). §4 성공기준(4.1 채팅
+  비저하는 sketchBench와 동일 임계값 재사용 — 10%/20%/10%/0%p, 4.2 음성UX, 4.3 운영안정성, 4.4 Mac
+  자원 전용, 4.5 안전 unconditional 게이트 — TTS 입력을 확정 assistant 메시지로만 한정, voice_profile
+  화이트리스트 검증). §5 판정합산, §6 분기, §7 측정방법(N=20/20/10, `ps` RSS가 Metal 프로세스에서
+  과소표기됨을 이번 세션 실측으로 명시 — footprint/Activity Monitor 병행 필요), §8 경계(이번 잠금
+  범위는 문서까지, 모델 다운로드/기동 금지 — 이 Mac에 셸 접근 있다는 이유로 앞서가지 않음 명시).
+- 실측 그라운딩(로컬 Mac, 이 세션이 실제로 구동중인 llama-server 대상 직접 확인): unified memory
+  96GB, 모델 파일 18,687,065,600B(≈18.7GB), PID 1394 `llama-server -ngl 99 -c 16384`, tailnet IP
+  `100.97.170.121:8083` 바인딩 확인. Gemma 실행 자체는 무접촉(kill/재시작 없음).
+- git: `bench/ttsBench/preregistration.md`만 명시적으로 `git add`(leftover BRIEF/DESIGN/dist.bak
+  등 기존 untracked 파일 전부 무접촉 — `git add -A` 미사용), 커밋 `d46b6ee` "bench(f4-tts): task 0
+  preregistration". HEAD `a9114b2`→`d46b6ee`, describe `v0.0.19-58-gd46b6ee-dirty`(tracked
+  dirty=PROGRESS.md만 그대로). health/authMode(`tailscale`) 무변경 확인.
+- 결론: F4 첫 합법 단계(사전등록) 완료. 실측(Task 1)은 §0 사용자 확정 이후 별도 착수 — 이번
+  잠금으로 모델 다운로드/기동까지 자동 승인되지 않음.
+
+## [2026-08-28 F6 mis-approve cost model 작성 by Claude Code (Mac 세션)] `[RP-Chat / F6 / mis-approve-cost-model]`
+- named lock: 사용자 `f6`. STATUS.md Bucket 3 정의: 첫 합법 단계 = **mis-approve cost model만**.
+  forbidden = summarize insert as approved(생성 시점 자동승인 코드 일체).
+- `planning_documents/F6-mis-approve-cost-model.md` 작성(F1 threat-model note와 동일 위치·형식 —
+  정량 벤치 아닌 위험분석 노트라 `bench/`가 아닌 `planning_documents/`에 배치).
+- §0 실측: `routes/memory.ts` 직접 대조 — summarize의 4계층 INSERT 전부 `status='draft'` 하드코딩
+  (line 211/213/217/286), 자동승인 코드 경로 현재 전혀 없음. 유일 전이경로는 `PATCH
+  /api/summaries/:id`(사람 클릭). `restore`는 기존 행 내용을 새 approved 행으로 복제하는
+  append-only 복구 — 그 tier의 첫 draft라면 되돌릴 이전 approved 행 자체가 없어 복구 난이도가
+  가장 높음. **whole 계층이 롤링(자기참조) 구조**임을 코드로 확인 — 직전 approved whole(최대
+  600토큰)이 다음 whole 생성의 프롬프트 입력 그 자체로 재사용됨. episode는 승인된 scene을
+  소비하지만 approved 해제 시 자가치유(Approach X)로 scene이 자동 복귀. state/scene은
+  비-롤링(매번 원본 transcript+직전 whole에서 새로 생성, 자기재생산 없음). 현재 모순감지는
+  억제 상태(임베딩 비채택)라 auto-approve 도입 시 백스톱이 아예 없는 채로 얹히게 됨을 명시.
+- §1 계층별 비용 표: state(즉발성 최고·자기재생산 없음)/scene(중간)/episode(구조적으로 가장
+  잘 설계된 복구경로지만 발견에 의존)/whole(가장 위험 — 자기재생산+장기RP에서 이미 실증된
+  "모호해야 할 결말을 자신있게 조기확정" 실패패턴, `rpchat-state.md` P30-c/P60-b와 동일
+  실패모양이라고 명시). 핵심 비대칭 지적: 자동화는 확인빈도를 낮추는게 목적인데 whole처럼
+  발견지연이 곧 누적비용인 계층엔 최악의 조합.
+- §2 반대쪽 비용(수동유지의 번거로움)도 정직하게 기록 — "자동화=위험, 수동=안전" 이분법
+  아님을 명시.
+- §3 완화방향(구현 아님, 재료만): (1) diff 하이라이트로 승인 자체를 싸게 만들기(리스크
+  증가 없는 가장 보수적 대안으로 제시) (2) 계층별 차등 자동화 가능성(whole 제외, state/scene
+  후보이나 별도 사전등록 필요) (3) 조건부 자동승인 전제조건(모순감지 백스톱 부재 상태에서는
+  비권장).
+- §4 결론: whole 자동승인 비권장(구조적 근거 명시), state/scene/episode는 "배제 근거도 승인
+  근거도 이 문서만으론 없음"(별도 사전등록 필요), 번거로움엔 diff-하이라이트가 유망하나
+  구현은 이번 잠금 범위 밖. **이번 잠금으로 코드/마이그레이션/insert 로직 변경 0.**
+- 검증: HEAD/describe(`d46b6ee`/`v0.0.19-58-gd46b6ee-dirty`) 착수 전과 동일, tracked
+  dirty=PROGRESS.md만, health ok/authMode tailscale 무변경. git add/commit 없음(git-외부
+  planning_documents 문서, PRD-lock류와 동일 관례).
+- 결론: F6 첫 합법 단계(cost model) 완료. 자동승인 자체(state/scene/episode 부분자동화 포함)는
+  이번 잠금 범위 밖 — 별도 named lock 필요.
+
+## [2026-08-28 P3-v2 사전등록 작성 by Claude Code (Mac 세션)] `[RP-Chat / P3-v2 / preregistration]`
+- named lock: 사용자 `p3 v2`. STATUS.md Bucket 3 정의: 첫 합법 단계 = **new preregistration만**.
+  forbidden = 기존(v1) 벤치 raw를 새 수식으로 재해석해 통과로 취급(소급판정) 금지.
+- `bench/embeddingBench/preregistration-v2.md` 작성(같은 폴더에 버전분리 — `bench/longRp`의
+  preregistration.md+preregistration-v2.md 관례 계승). v1 REPORT.md의 "향후 실험 아이디어" 2건을
+  그대로 승계: (1) H1 과소발화 = 문체격차(entry 설명문체 vs RP 대화체) 가설 → H1-b 문체완화 전처리 후보,
+  (2) H2 과대발화 = 절대컷과 안 맞는 모델 스케일 문제 → 퍼센타일 상대컷(배경분포 대비 상위 α%) 후보.
+- 후보 구성: C1(H2+상대컷) / C2(H1+상대컷) / C3(H1+문체완화+상대컷, C2 실패시에만 의미있는 이차가설).
+  §4 성공기준은 v1과 동일 lore-v1.json 25케이스(라벨 재사용은 "결과 재해석" 아님, 객관적 정답지이므로) —
+  must_fire 10/10, false_trigger 0/10, ambiguous top-1≥50%, 신규 unconditional 게이트로 "배경코퍼스는
+  평가셋과 완전분리 + α는 코퍼스 구축 전 고정"(순환논증 방지) 추가.
+- **판정합산 규칙을 v1과 의도적으로 다르게 설계**: v1은 "H1·H2 둘 다 통과해야 채택"(기법 자체의
+  모델-불문 강건성 요구)이었으나, v2는 모델별 보정 도입이 목적이므로 "C1~C3 중 하나라도 전부 통과하면
+  그 조합만 채택 후보"로 완화 — 사후 규칙변경 금지 원칙과 충돌하지 않는 이유(실행 전 사전 고정이라
+  v1의 "결과 본 뒤 규칙 바꾸기" 금지와 다름)를 문서에 명시. 이 규칙변경 자체를 §0 미확정 항목으로
+  올려 사용자 확정 대기 처리.
+- §0 미확정 4건: 퍼센타일 α값(잠정 상위5%) / 판정합산 규칙변경 승인여부 / 배경코퍼스 출처(longRp·
+  sketchBench 합성텍스트 재사용 후보, 실 라이브 데이터 아님) / H1-b(문체완화) 이번 라운드 포함여부.
+  **사용자 확정 전 Task 0/1(엔진 재기동·배경코퍼스 구축·측정) 착수 안 함.**
+- v1 산출물(fixtures/results/engine.ts 등)은 참조만, 무수정. git commit `6e68138`
+  "bench(p3-v2): task 0 preregistration"(leftover 파일 무접촉, 새 파일만 명시적 add). HEAD
+  `d46b6ee`→`6e68138`, describe `v0.0.19-59-g6e68138-dirty`(tracked dirty=PROGRESS.md만). health/
+  authMode 무변경 확인.
+- 결론: P3-v2 첫 합법 단계(사전등록) 완료. 엔진 재기동·배경코퍼스 구축·실측(Task 0/1)은 §0 사용자
+  확정 이후 별도 착수 — `loreMatch.ts`/`conflict.ts` 수정은 이번 잠금으로 승인되지 않음.
+
+## [2026-08-28 E-bytes 관측 min-spec 작성 by Claude Code (Mac 세션)] `[RP-Chat / E-bytes / observability-min-spec]`
+- named lock: 사용자 `e-bytes`. STATUS.md Bucket 3 정의: 첫 합법 단계 = **new observability
+  lock만**(문서). forbidden = Gate 4 E(B) 재열기, 이미 쓴 토큰 `[새 토큰명]` 재발사.
+- `references/e-bytes-request-dump-min-spec.md` 작성 — 기존 `prompt-dump-min-spec.md`와 같은
+  디렉터리, 같은 5단계 관례(스펙→코드→배포→재시작→generate) 계승, 이번엔 스펙 단계만 연다.
+- 실측 근거(이번 세션에 `apps/server/src/model/adapter.ts` 직접 확인): 기존 dump.ts는
+  `chat.ts`의 `generate()` 안, `ctx.model.stream()` 호출 **직전**의 `built.messages`를
+  캡처 — 그 min-spec 자신이 "`GenParams.messages`와 같은 객체일 것"이라고 **코드를 읽고
+  주장**만 했을 뿐 실측 증명은 안 했음(Gate 4 E(B) 스스로 명시한 예외 그대로). `adapter.ts`의
+  `ModelClient.stream()`을 읽어보니 실제 wire body는 `messages` 외에도 `chat_template_kwargs:
+  {enable_thinking:false}`/`stop`/`stream_options` 등 **dump.ts가 한 번도 캡처한 적 없는
+  필드**를 포함 — E-bytes는 이 전체를 새로 관측 가능하게 만드는 게 목적.
+- 새 관측 지점: `adapter.ts`의 `stream()` 내부, `body` 구성 직후·`fetch()` 직전(dump.ts와는
+  다른, 파이프라인상 더 아래쪽 지점 — 그래서 이건 E(B) 재열기가 아니라 새 지점).
+- 경계(기존 관례 계승): OS 패킷캡처/TLS감청 범위 밖(위협모델 근거 없음), HTTP 덤프 API 없음,
+  응답측(SSE) 범위 밖, `complete()`(summarize) 범위 밖 — `stream()`만.
+- §3 갈림길(사용자 확정 대기, 코드 착수 전): 새 파일 `requestDump.ts` 위치, 새 게이트 env
+  `RPCHAT_REQUEST_DUMP=1`(기존 `RPCHAT_PROMPT_DUMP` 재활용 안 함), 싱크
+  `last-request.json`(기존 `last.json` 안 건드림), 페이로드 `{generationId?, createdAt, url,
+  body}`. **작은 코드 필요성 지적**: 현재 `GenParams`엔 `generationId` 필드가 없음(실측 확인)
+  — 두 덤프파일을 정확히 짝지으려면 선택적 필드 추가가 필요할 수 있음, 이 결정 자체를
+  사용자 확정 대기로 올림.
+- PASS 판정 기준(구현 이후 별도 토큰에서만 적용): 두 덤프파일의 messages deep-equal +
+  기존에 안 보이던 필드(chat_template_kwargs 등)가 실제로 관측됨.
+- 검증: HEAD/describe(`6e68138`/`v0.0.19-59-g6e68138-dirty`) 착수 전과 동일, tracked
+  dirty=PROGRESS.md만, health ok/authMode tailscale 무변경. git-외부 문서(`~/.hermes/skills/...
+  /references/`)라 git add/commit 없음(prompt-dump-min-spec.md와 동일 관례).
+- 결론: E-bytes 첫 합법 단계(관측 min-spec) 완료. `requestDump.ts` 코드/env/생성 호출은
+  이번 잠금 범위 밖 — §3 확정 + 별도 named lock(코드→배포→재시작→generate) 필요.
+
+## [2026-08-28 스토리 선택지 풍성화 구현 by Claude Code (Mac 세션)] `[RP-Chat / choices-enrich / instruction+bench+css]`
+- 근거: hermes 플랜 `/home/hermes/.hermes/plans/2026-08-27_222243-rpchat-choices-enrich.md`
+  ("For Hermes" 문서, 서브에이전트 금지·named-lock 게이트 명시). 사용자가 이 플랜을 Claude
+  Code 세션에 직접 전달, "Claude code가 직접 하되"로 실행 주체를 hermes에서 이쪽으로 전환.
+- 플랜 자체를 실측 대조(코드 읽기)로 검증 후 착수: `templates.ts`의 `STORY_CHOICES_INSTRUCTION`/
+  `extractChoices`, `app.css`의 `.chip`/`.chips` 라인이 플랜 인용과 정확히 일치, HEAD도
+  플랜 작성 시점 이후 무변경(`6e68138`) 확인.
+- **플랜의 두 갈래(A/B) 중 A를 사용자가 명시적으로 뒤집음**: 플랜 기본값은 "마지막 칩=자유
+  입력 유지"였으나, 사용자가 "자유행동이 필요하면 직접 키보드로 입력하면 되니까... 선택권을
+  3개 주는 식으로... 각각 다른 결과를 내도록 말투·어조·분위기를 다르게"로 명시 지시 —
+  플랜의 `choices-no-free-chip` 후속 잠금에 해당하는 결정을 이 자리에서 바로 승인받은 것.
+  B(칩 wrap만, 하이퍼챗 UI 복제 안 함)는 플랜 기본값 그대로 채택.
+- 구현(플랜 Task 1~5, src+bench만, Task 6 이후 잠금은 착수 안 함):
+  1. `STORY_CHOICES_INSTRUCTION` 교체: "행동 선택지 2~3개(마지막=자유입력)" →
+     "입력 초안 3개, 전부 1인칭 대사+짧은 행동 2~4문장, 서로 태도(거절·회피·거래·맞대응 등)
+     뚜렷이 다름". 포맷 줄(`<choices>[...]</choices>`)·파서·HARD_RULES 무변경.
+  2. `rpEngineR1.test.ts` test 12 마커 갱신(자유입력 마커 제거, 3개/1인칭/2~4문장/태도분기
+     마커로 교체) + 신규 13b(긴 1인칭 초안 3개 파싱, 본문 보존)/13c(미이스케이프 큰따옴표
+     시 본문 폴백) — 기존 `extractChoices` 정규식 **무수정**으로 둘 다 PASS(플랜의 YAGNI
+     예측 그대로 적중, 파서 코드는 안 건드림). 기존 test 13(짧은 라벨 fixture)도 무삭제.
+  3. `app.css` `.chips`/`.chip`: `flex-wrap` pill → `flex-direction: column` + `width:100%`
+     + `overflow-wrap: anywhere` (긴 문장 wrap, 하이퍼챗 버블/연필아이콘 등은 추가 안 함).
+  4. `ChatPage.tsx` 확인 결과 마지막 칩 특별취급 코드 자체가 원래 없었음(`.map`으로 전부
+     동일 렌더, `onChoice`→`setDraft`)—UI 쪽 수정 불필요했던 것도 확인.
+- 검증: `rpEngineR1.test.ts` 18/18 PASS, `cardImport.test.ts`(R1 계약 회귀용) 25/25 PASS,
+  server/web typecheck 둘 다 EXIT 0, `git diff --stat`이 `templates.ts`/`app.css`/
+  `rpEngineR1.test.ts` 3개뿐임을 확인(`builder.ts`/`chat.ts`/`config.ts`/HARD_RULES/
+  PROMPT_VERSION 무변경).
+- `references/r1-output-contract.md` 갱신: "last item must allow free input" 락 문구를
+  "3개 전부 초안, 서로 다른 태도"로 정정 + Append 섹션에 이번 결정 근거·범위 기록 — 문서가
+  코드와 갈라진 채 방치되지 않도록. PROMPT_VERSION(`2026.08.22-r1`)은 이번에도 bump
+  안 함(사용자 요청 없었음, 플랜의 별도 named-lock 유보 존중) — 다만 계약 내용이 그 버전
+  문자열이 가리키는 것과 갈라진 상태라는 점은 문서에 명시해 둠(bump 여부는 열린 판단).
+- **git add/commit 없음**(플랜 자체 규칙: "이 메시지에 '커밋'이 없으면 하지 말 것" — 사용자가
+  이번엔 구현만 지시, 커밋은 안 함). 우드 dirty 그대로: `templates.ts`/`app.css`/
+  `rpEngineR1.test.ts`/`PROGRESS.md`. generate/배포/재시작 전혀 안 함, HEAD·health·authMode
+  착수 전과 동일 확인.
+- 결론: choices-enrich 슬라이스(src+bench+CSS) 완료, 사용자 확인/커밋 대기.
+- **오타 정정**: 위 항목의 "우드 dirty 그대로"는 "워킹트리 dirty 그대로"의 오타.
+
+## [2026-08-28 "서브에이전트 금지" 원문 정정 — HANDOFF-2026-08-27.md by Claude Code (Mac 세션)]
+- 계기: hermes가 자체 포렌식 분석을 사용자에게 전달(사용자가 이 세션에 그대로 전달) —
+  2026-08-25 계획작성 세션에서 hermes가 `requesting-code-review` Step 8(`git add -A` +
+  `[verified]` + 리뷰어 서브에이전트 묶음)을 거부하면서 "서브에이전트 쓰지 않음"이라고
+  스스로 적었고, 이게 2026-08-27 HANDOFF에 사용자 발언인 것처럼 정본화됨 → 이어서
+  choices-enrich 플랜에도 "For Hermes: ... 서브에이전트 금지"로 재생산됨.
+- 직접 검증(grep): `rpchat-pwa` `SKILL.md`(L96)/`docs-inventory.md`(L29-30)/`lock-state.md`
+  (Workflow 절)는 **이미 정정된 상태**("no blanket ban", "user 2026-08-27: never said 금지")
+  — 그러나 **`planning_documents/HANDOFF-2026-08-27.md` L164만 원래의 과잉일반화된 문구가
+  그대로 남아 있었음**을 직접 확인. `requesting-code-review/SKILL.md` Step 8 원문
+  (`git add -A && git commit -m "[verified] ..."`)도 직접 대조해 hermes의 진단이 정확함을
+  확인 — 사용자가 실제로 막은 건 `git add -A`와 무증거 `[verified]` 커밋 두 가지뿐, 서브
+  에이전트 자체를 막은 적 없음.
+- `planning_documents/HANDOFF-2026-08-27.md` L164 교정: "서브에이전트 금지" → "parent
+  session이 커맨드 실행+stdout 전문 붙임(자식 요약=자가보고라 지명 게이트 근거로는 이
+  자리에서 재실행 필요), 탐색·초안·병렬조사엔 서브에이전트 사용 가능, `git add -A`/무증거
+  `[verified]`만 금지"로 정정 + 2026-08-28 정정 근거 명시. sha256 대조로 배포 확인.
+- `references/lock-state.md` Workflow 절에 이번 정정 사실 추가(4개 문서 전부 이제 같은
+  정정 반영됐음을 기록, 향후 플랜에 "서브에이전트 금지" 재복사 금지 재확인).
+- **자체 확인**: 이 세션(Claude Code)이 이번 대화에서 서브에이전트를 한 번도 안 쓴 건
+  이 잘못된 규칙을 믿어서가 아니라 순전히 각 작업(F1~E-bytes, choices-enrich)이 순차·
+  단일스레드 검증 작업이라 서브에이전트가 불필요했기 때문 — choices-enrich 보고 시 플랜
+  머리말의 "서브에이전트 금지" 문구를 그대로 인용했었는데, 그건 플랜 문서 자체의 문구를
+  전달한 것이었지 이걸 사용자 규칙으로 단정한 건 아니었음. 그래도 이제 그 문구 자체가
+  철회된 것으로 확인됐으니 향후 인용 시 주의.
+- 라이브 무접촉(git-외부 문서 전부), git repo(`app/`) HEAD/status 무변경 확인.
+- 결론: 4개 문서(SKILL.md/lock-state.md/docs-inventory.md/HANDOFF-2026-08-27.md) 전부
+  같은 정정 상태로 일치. 서브에이전트 사용 자체는 원래도 지금도 금지된 적 없음 — 지명
+  raw-verification 게이트(커맨드 실행+stdout 원문)만 parent session 몫.
+
+## [2026-08-28 채팅/스토리 통합 (unify-chat-story) — COIN_MANAGER 구현 독립검증 by Claude Code (Mac 세션)]
+- 배경: 확정본 플랜 `~/.hermes/plans/2026-08-27_232628-rpchat-unify-chat-story-detailed.md`
+  (COIN_MANAGER 초안을 Claude Code가 라이브 코드 대조로 검증·상세화, `renderRules` mode
+  배관 완전 제거로 사용자 확정) 기준, COIN_MANAGER가 Task 0-4(src+bench) 수행 보고.
+  generate/배포/재시작/커밋 안 함이라고 자가보고 — **자가보고를 그대로 믿지 않고 전부 직접
+  재검증**.
+- git 직접 확인: HEAD `6e68138` 무변경, describe `v0.0.19-59-g6e68138-dirty`, `git diff
+  --stat -- apps bench` = 9파일(확정본 8개 + choices-enrich 선존재 `app.css`) — 정확히
+  일치. `builderDifferential.test.ts`는 diff에 없음(계획대로 무접촉).
+- 각 파일 diff를 직접 읽어 확정본과 라인 단위 대조 — 전부 일치:
+  - `builder.ts`: L76 `const mode=…` 삭제, L93 `renderRules(mode,…)`→`renderRules(…)`,
+    L324 `else if (mode==='story')`→`else`.
+  - `chat.ts:146`: `convNow.mode==='story' && !built.isOoc`→`!built.isOoc`.
+  - `templates.ts`: `LENGTH_HINT` Record→단일 상수(4~10문장), `renderRules` 첫 인자 `mode`
+    삭제. `STORY_CHOICES_INSTRUCTION`은 재작성 안 됨(choices-enrich 기존 내용 그대로 —
+    diff에 보인건 HEAD 대비 전체 워킹트리 diff라 이전 슬라이스분이 섞여 보인 것).
+  - `conversations.ts`: L26 default `'chat'`→`'story'`, L86 profileName 분기 삭제
+    (`?? 'rp-balanced'` 고정).
+  - `CharacterPage.tsx`: 목록 태그/제목분기 삭제, `useState mode` 제거, POST
+    `mode:'story'` 고정, 장르 필드 가드 제거(항상 노출).
+  - `ChatPage.tsx`: 헤더 sub 모드 접두 삭제, 고아 시트 모드 필드 블록만 삭제(시트 마운트·
+    나머지 필드 존치 확인).
+  - `rpEngineR1.test.ts`: `renderRules` 호출 3곳 새 시그니처, test10 단일화, test12/13b/13c
+    (choices-enrich 기존분, 무변경 확인).
+  - `settingsSheetInventory.test.ts`: mode 단언 2개 삭제, 제목 갱신, 나머지 5개 무변경.
+- 벤치·typecheck 전부 **직접 재실행**(자가보고 수치 대체):
+  `rpEngineR1.test.ts` 18/18 PASS, `settingsSheetInventory.test.ts` 7/7 PASS,
+  `builderDifferential.test.ts` 1/1 PASS(**주의**: SSH 기본 node v20으로 첫 시도 시
+  `better-sqlite3` NODE_MODULE_VERSION 불일치로 실패 — `rpchat-node-version-trap` 그대로
+  재현, `PATH=/home/hermes/.local/bin:$PATH`로 재실행해 정상 확인. COIN_MANAGER 쪽 결과엔
+  영향 없음, 내 환경 문제였음), server/web typecheck 둘 다 EXIT 0(직접 재실행).
+- 불변 항목 직접 확인: `ls apps/server/migrations/` 7개 그대로(신규 파일 0),
+  `PROMPT_VERSION`(`config.ts:18`) `'2026.08.22-r1'` 그대로, `grep "mode === 'story'"`가
+  생성경로+체크한 UI 파일 전체에서 0건(GREP_EXIT=1로 재확인).
+- 결론: COIN_MANAGER의 Task 0-4 구현이 확정본 스펙과 **완전히 일치**, 자가보고 수치도
+  전부 독립 재현됨. 라이브 generate/배포/재시작/커밋 없음(git status 그대로 dirty, HEAD
+  무변경). 이 방(채팅·Qatest)의 칩은 계획대로 재생성/다음 턴 전까지는 안 보임 — 결함 아님.
+  다음은 사용자의 `Generate`(새 토큰) 또는 `배포`/`재시작`/`커밋` 판단.
+
+## [2026-08-28 00:20:10Z unify 배포/재시작/커밋 — pre-docs-commit bind]
+
+- 사용자 같은 메시지: `Generate` + `배포` + `재시작` + `커밋`.
+- **Generate 0.** 레시피 4항 중 named token / conversation UUID / restore 없음.
+  괄호 `새 토큰`은 락 설명이지 `[새 토큰명]`이 아님. POST 0, PATCH 0. UUID 발명 없음.
+- **배포** 2026-08-28T00:16:45Z `npm run build` EXIT 0 (web vite + server tsc).
+  이전 disk: `index.html` `e6f24dca…`, `index-DsF6Brgb.js`.
+  새 disk: `index.html` sha256
+  `823df9b8f87f5c33aa8f47f900fc573dfa45f2f128fdac6a57ed1f26969eefc6`,
+  `index-aLKUL5_B.js` sha256
+  `f5c84438eb6d38e7e813c68b4b939af53c6589650d70376a03d7e2b869a0c099`,
+  `index-DiMi-Lil.css` sha256
+  `2a94a3fe667405d0572e34b301108568d8c13fa6bae5ef620833ed2f57fc7b17`.
+  server dist `builder.js`/`chat.js` `mode === 'story'` 0 (`GREP_EXIT=1`);
+  `chat.js` `!built.isOoc ? extractChoices`; `LENGTH_HINT` 단일 4~10문장.
+  이 빌드는 **워킹트리(unify + 미커밋 choices-enrich)** 기준. Serve HTTPS GET은
+  이 턴 도구 승인 타임아웃으로 미재확인.
+- **재시작** 2026-08-28T00:17:12Z `systemctl --user restart rpchat.service` EXIT 0.
+  PID `21601` → `67682`. localhost `:8787/api/health` `ok` `db:ok`
+  `promptVersion=2026.08.22-r1` `CHARS:401`. `tailscale serve status`:
+  `https://hermes.tailf2217c.ts.net (tailnet only)` `/ proxy http://127.0.0.1:8787`.
+  dump 파이프라인 아님 — `.env` 미변경, `RPCHAT_PROMPT_DUMP` 미추가.
+- **커밋 1** `6f00edc` `feat: unify chat/story generate path` (8 files, +18/−41).
+  named paths only. mixed hunk (`templates.ts` `STORY_CHOICES_INSTRUCTION`,
+  `rpEngineR1` 12/13b/13c) 는 커밋 전 HEAD 문구로 내린 뒤 커밋, 직후 backup 복원.
+  `app.css` / untracked BRIEF·DESIGN·HANDOFF·`dist.bak` / `git add -A` / `[verified]`
+  없음. unify-only tree에서 `rpEngineR1` 16 passed (13b/13c 제외).
+- 커밋 후 dirty 복원: `templates.ts` `app.css` `rpEngineR1.test.ts` = choices-enrich.
+- **HEAD ≠ disk dist on enrich:** HEAD `STORY_CHOICES` 는 자유입력 칩 문구.
+  00:16Z dist/`templates.js` 는 배포 당시 워킹트리(초안 3개) + wrap CSS.
+  이 블록 describe `v0.0.19-60-g6f00edc-dirty` (docs 커밋 전). docs HEAD는
+  채팅에만 보고하고 이 값을 고쳐 쓰지 않음.
+
