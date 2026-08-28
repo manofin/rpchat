@@ -73,7 +73,6 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   const contentPolicy = getSetting(db, 'content_policy', '');
   const charName = character.name;
   const userName = persona?.name || '나';
-  const mode = conv.mode === 'story' ? 'story' : 'chat';
   const last = history[history.length - 1];
   const isOoc = !!last && isOocMessage(last);
   // 브랜치 스코프 가드: 스와이프/재생성으로 갈라진 다른 가지에서 만든 요약이 현재 경로로 새지 않도록,
@@ -90,7 +89,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   let used = 0;
 
   // 1) 고정 블록: 규칙 + 캐릭터 + 페르소나 + 장면 + 유저노트
-  const rules = renderRules(mode, contentPolicy, charName, userName);
+  const rules = renderRules(contentPolicy, charName, userName);
   const personaText = renderPersona(persona, charName, userName);
   const sceneText = renderScene(parseJson<Scene>(conv.scene_json, {}));
   // user_note: persona 다음 순위. 고정 블록 잔여분만 주입 (userContextBudget 정책, whole-or-nothing).
@@ -321,7 +320,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   // 5) 시스템 메시지 합성
   const systemParts = [rules, charText, personaText, noteIncluded ? noteText : null, sceneText, renderMemories(memItems), stateText, renderSummary(summaryText), episodeText, sceneTierText, loreText].filter((x): x is string => !!x);
   if (isOoc) systemParts.push(OOC_INSTRUCTION);
-  else if (mode === 'story') systemParts.push(substitute(STORY_CHOICES_INSTRUCTION, charName, userName));
+  else systemParts.push(substitute(STORY_CHOICES_INSTRUCTION, charName, userName));
   const systemText = systemParts.join('\n\n');
 
   let turns: ChatMessage[] = recent.map((m) => ({ role: m.role, content: m.content }));

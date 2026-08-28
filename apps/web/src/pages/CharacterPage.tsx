@@ -87,7 +87,7 @@ function ConversationRow({ conv, onChanged }: { conv: Conversation; onChanged: (
   return (
     <div className="list-item" onClick={() => navigate(`/chat/${conv.id}`)}>
       <div className="body">
-        <div className="t">{conv.favorite ? '★ ' : ''}{conv.title || (conv.mode === 'story' ? '스토리' : '대화')} <span className="tag">{conv.mode === 'story' ? '스토리' : '채팅'}</span></div>
+        <div className="t">{conv.favorite ? '★ ' : ''}{conv.title || '대화'}</div>
         <div className="p">{conv.preview || '메시지 없음'}</div>
         <div className="p muted">{relTime(conv.last_message_at || conv.created_at)}</div>
       </div>
@@ -101,14 +101,13 @@ function NewConversationSheet({ open, character, onClose }: { open: boolean; cha
   const ui = useUi();
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [personaId, setPersonaId] = useState<string | null>(null);
-  const [mode, setMode] = useState<'chat' | 'story'>('chat');
   const [title, setTitle] = useState('');
   const [scene, setScene] = useState<Scene>({});
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setMode('chat'); setTitle(''); setScene({});
+    setTitle(''); setScene({});
     get<Persona[]>('/api/personas').then((ps) => {
       setPersonas(ps);
       setPersonaId(ps.find((p) => p.is_default)?.id ?? ps[0]?.id ?? null);
@@ -118,7 +117,7 @@ function NewConversationSheet({ open, character, onClose }: { open: boolean; cha
   async function create() {
     setBusy(true);
     try {
-      const conv = await post<Conversation>('/api/conversations', { characterId: character.id, personaId, mode, title: title.trim() || undefined, scene });
+      const conv = await post<Conversation>('/api/conversations', { characterId: character.id, personaId, mode: 'story', title: title.trim() || undefined, scene });
       onClose();
       navigate(`/chat/${conv.id}`);
     } catch (e) {
@@ -135,13 +134,6 @@ function NewConversationSheet({ open, character, onClose }: { open: boolean; cha
       <div className="sheet-body">
         <strong>새 대화 · {character.name}</strong>
         <div className="field" style={{ marginTop: 12 }}>
-          <label>모드</label>
-          <div className="row">
-            <button className={`btn ${mode === 'chat' ? 'primary' : ''} block`} onClick={() => setMode('chat')}>채팅</button>
-            <button className={`btn ${mode === 'story' ? 'primary' : ''} block`} onClick={() => setMode('story')}>스토리(선택지)</button>
-          </div>
-        </div>
-        <div className="field">
           <label>내 페르소나</label>
           <select value={personaId ?? ''} onChange={(e) => setPersonaId(e.target.value || null)}>
             <option value="">(익명 · '나')</option>
@@ -156,7 +148,7 @@ function NewConversationSheet({ open, character, onClose }: { open: boolean; cha
             <div className="field"><label>장소</label><input value={scene.place ?? ''} onChange={(e) => setScn('place', e.target.value)} /></div>
             <div className="field"><label>시간/상황</label><input value={scene.time ?? ''} onChange={(e) => setScn('time', e.target.value)} /></div>
             <div className="field"><label>목표/훅</label><input value={scene.goal ?? ''} onChange={(e) => setScn('goal', e.target.value)} /></div>
-            {mode === 'story' && <div className="field"><label>장르/톤</label><input value={scene.genre ?? ''} onChange={(e) => setScn('genre', e.target.value)} /></div>}
+            <div className="field"><label>장르/톤</label><input value={scene.genre ?? ''} onChange={(e) => setScn('genre', e.target.value)} /></div>
           </div>
         </details>
         <button className="btn primary block" disabled={busy} onClick={create}>{busy ? '생성 중…' : '시작'}</button>

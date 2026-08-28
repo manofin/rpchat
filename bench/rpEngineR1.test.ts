@@ -22,9 +22,9 @@ function t(name: string, fn: () => void) {
   console.log(`ok ${passed} ${name}`);
 }
 
-const chat = renderRules('chat', '', '서리', '지명');
-const story = renderRules('story', '성인 이용자 대상이다.', '카이', '지명');
-const every = renderRules('chat', '', '서리', '지명', 'every_turn');
+const chat = renderRules('', '서리', '지명');
+const story = renderRules('성인 이용자 대상이다.', '카이', '지명');
+const every = renderRules('', '서리', '지명', 'every_turn');
 
 t('1 PC 대리 금지: 다음 행동·감정·동의를 확정하지 않음', () => {
   assert.match(chat, /다음 행동·대사·생각·감정·동의·신체 반응을 만들어 내거나 확정하지 않는다/);
@@ -74,9 +74,8 @@ t('9 서사 밀도: 감각 → 변화 → NPC 반응', () => {
   assert.match(chat, /감각 단서 → 관찰 가능한 변화 → NPC 반응/);
 });
 
-t('10 chat/story 길이 힌트가 갈라지고 content_policy 가 뒤에 붙음', () => {
-  assert.match(chat, /보통 2~5문장/);
-  assert.doesNotMatch(chat, /4~10문장/);
+t('10 길이 힌트 단일화 + content_policy 뒤붙음', () => {
+  assert.match(chat, /4~10문장/);
   assert.match(story, /4~10문장/);
   assert.match(story, /성인 이용자 대상이다/);
 });

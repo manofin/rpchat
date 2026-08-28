@@ -143,7 +143,7 @@ export function chatRoutes(ctx: Ctx) {
             }
           },
         );
-        const parsed = convNow.mode === 'story' && !built.isOoc ? extractChoices(result.text) : { content: result.text, choices: null };
+        const parsed = !built.isOoc ? extractChoices(result.text) : { content: result.text, choices: null };
         updateMessage(db, assistant.id, {
           content: parsed.content.trim(),
           status: 'complete',

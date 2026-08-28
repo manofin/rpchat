@@ -142,7 +142,7 @@ export function ChatPage({ id }: { id: string }) {
         <Avatar name={char.name} avatar={char.avatar} size="sm" />
         <div className="title" onClick={() => navigate(`/chat/${id}/settings`)} style={{ cursor: 'pointer' }}>
           <h1>{char.name}</h1>
-          <div className="sub">{conv.mode === 'story' ? '스토리' : '채팅'} · {conv.profile_name} · {persona?.name ?? '나'}</div>
+          <div className="sub">{conv.profile_name} · {persona?.name ?? '나'}</div>
         </div>
         <button className="btn ghost icon" onClick={() => { setDrawerTab(undefined); setDrawer(true); }} aria-label="컨텍스트/기억">▤</button>
       </div>
@@ -488,13 +488,6 @@ function ConversationSettings({ open, conversationId, onClose, onChanged, onOpen
             {profiles.filter((p) => p.name.startsWith('rp-')).map((p) => <option key={p.name} value={p.name}>{p.name} · temp {p.temperature} · max {p.max_tokens}</option>)}
           </select>
           <span className="hint">모델 프로필의 max_tokens 를 따릅니다. summary·memory-extract 는 내부 전용입니다.</span>
-        </div>
-        <div className="field">
-          <label>모드</label>
-          <div className="row">
-            <button className={`btn ${conv.mode === 'chat' ? 'primary' : ''} block`} onClick={() => { setConv({ ...conv, mode: 'chat' }); save({ mode: 'chat' }); }}>채팅</button>
-            <button className={`btn ${conv.mode === 'story' ? 'primary' : ''} block`} onClick={() => { setConv({ ...conv, mode: 'story' }); save({ mode: 'story' }); }}>스토리</button>
-          </div>
         </div>
         <button className="btn sm block" style={{ marginTop: 6 }} onClick={onOpenMemory}>요약 메모리</button>
 

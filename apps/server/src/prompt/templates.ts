@@ -28,10 +28,7 @@ function headerRule(policy: HeaderPolicy): string {
   return '장면 머리말(시간·장소·분위기)은 장면이 바뀌거나 시간이 흐르거나 사용자 요청이 있을 때만 한두 줄로 쓴다. 매 턴마다 붙이지 않는다. 머리말 값은 ### 현재 장면에 있는 것만 쓰고 없는 값을 만들지 않는다.';
 }
 
-const LENGTH_HINT: Record<'chat' | 'story', string> = {
-  chat: '응답 길이는 보통 2~5문장. 대사 중심, 묘사는 짧게.',
-  story: '응답 길이는 4~10문장. 장면·감각·감정 묘사를 포함해 서사적으로 쓴다.',
-};
+const LENGTH_HINT = '응답 길이는 4~10문장. 장면·감각·감정 묘사를 포함해 서사적으로 쓴다.';
 
 export const STORY_CHOICES_INSTRUCTION =
   '응답의 맨 마지막 줄에 {{user}}가 다음에 취할 수 있는 행동 선택지 2~3개를 정확히 다음 형식으로만 출력한다: <choices>["선택지 1","선택지 2","자유롭게 행동을 이어 간다"]</choices>. 선택지는 제안일 뿐이며 특정 선택지의 성공을 예고하지 않는다. 마지막 항목은 반드시 자유 입력을 허용하는 표현이어야 한다.';
@@ -40,7 +37,6 @@ export const OOC_INSTRUCTION =
   '이번 메시지는 (OOC)로 시작하는 설정 확인 요청이다. 캐릭터 연기를 멈추고, 작가/진행자로서 사실 위주로 3문장 이내로 답한다. 서사 본문을 쓰지 않는다.';
 
 export function renderRules(
-  mode: 'chat' | 'story',
   contentPolicy: string,
   charName: string,
   userName: string,
@@ -49,7 +45,7 @@ export function renderRules(
   const lines = HARD_RULES.map((r, i) => `${i + 1}. ${r}`);
   lines.push(`${lines.length + 1}. ${headerRule(headerPolicy)}`);
   if (contentPolicy.trim()) lines.push(`${lines.length + 1}. ${contentPolicy.trim()}`);
-  lines.push(`${lines.length + 1}. ${LENGTH_HINT[mode]}`);
+  lines.push(`${lines.length + 1}. ${LENGTH_HINT}`);
   return substitute(`당신은 역할극(RP) 파트너로서 오직 '{{char}}' 역할만 연기한다. 상대는 '{{user}}'다.\n규칙:\n${lines.join('\n')}`, charName, userName);
 }
 

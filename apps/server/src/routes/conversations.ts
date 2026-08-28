@@ -23,7 +23,7 @@ const createSchema = z.object({
   characterId: z.string().min(1),
   personaId: z.string().nullable().optional(),
   title: z.string().max(120).optional(),
-  mode: z.enum(['chat', 'story']).default('chat'),
+  mode: z.enum(['chat', 'story']).default('story'),
   profileName: z.string().max(60).optional(),
   scene: sceneSchema.default({}),
 });
@@ -83,7 +83,7 @@ export function conversationRoutes(ctx: Ctx) {
       const character = one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ? AND archived = 0', d.characterId);
       if (!character) return reply.code(404).send({ error: 'character not found' });
       if (d.personaId && !one(db, 'SELECT 1 FROM personas WHERE id = ?', d.personaId)) return reply.code(404).send({ error: 'persona not found' });
-      const profileName = d.profileName ?? (d.mode === 'story' ? 'rp-creative' : 'rp-balanced');
+      const profileName = d.profileName ?? 'rp-balanced';
       const id = uid();
       const t = nowIso();
       db.transaction(() => {

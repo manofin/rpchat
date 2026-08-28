@@ -36,10 +36,8 @@ t('old sheet still PATCHes personaId on a different pick', () => {
   assert.match(chat, /patch\(`\/api\/conversations\/\$\{conversationId\}`, \{ personaId: p\.id \}\)/);
 });
 
-t('old sheet still writes profileName and mode', () => {
+t('old sheet still writes profileName', () => {
   assert.match(chat, /save\(\{ profileName: e\.target\.value \}\)/);
-  assert.match(chat, /save\(\{ mode: 'chat' \}\)/);
-  assert.match(chat, /save\(\{ mode: 'story' \}\)/);
 });
 
 t('new hub page does not PATCH persona or profile', () => {
