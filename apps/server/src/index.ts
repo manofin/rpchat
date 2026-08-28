@@ -13,6 +13,7 @@ import { registerAuthHook } from './auth.js';
 import type { Ctx, ModelHealth } from './ctx.js';
 import { healthRoutes } from './routes/health.js';
 import { characterRoutes } from './routes/characters.js';
+import { storyRoutes } from './routes/stories.js';
 import { conversationRoutes } from './routes/conversations.js';
 import { chatRoutes } from './routes/chat.js';
 import { memoryRoutes } from './routes/memory.js';
@@ -75,6 +76,7 @@ async function main() {
 
   await app.register(healthRoutes(ctx));
   await app.register(characterRoutes(ctx));
+  await app.register(storyRoutes(ctx));
   await app.register(conversationRoutes(ctx));
   await app.register(chatRoutes(ctx));
   await app.register(memoryRoutes(ctx));

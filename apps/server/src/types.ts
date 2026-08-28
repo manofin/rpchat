@@ -29,6 +29,24 @@ export interface CharacterRow {
   updated_at: string;
 }
 
+export interface StoryRow {
+  id: string;
+  name: string;
+  tagline: string;
+  setting: string;
+  minor_cast: string;
+  archived: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StoryCharacterRow {
+  story_id: string;
+  character_id: string;
+  role: string;
+  sort_order: number;
+}
+
 export interface PersonaRow {
   id: string;
   name: string;
