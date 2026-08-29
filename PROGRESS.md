@@ -1483,3 +1483,659 @@ HEAD/describe into this block after any docs commit.
   이 블록 describe `v0.0.19-60-g6f00edc-dirty` (docs 커밋 전). docs HEAD는
   채팅에만 보고하고 이 값을 고쳐 쓰지 않음.
 
+
+## [2026-08-28T00:42Z unify 배포/재시작/커밋 — Claude Code 독립검증]
+- COIN_MANAGER 보고(Generate 0 · 배포 · 재시작 · 커밋 2건)를 자가보고로 두지 않고 전부 직접 재확인.
+- **Generate**: 보고대로 0. 레시피 4항(named token·대화 UUID·restore 허가) 중 실제로 제공된
+  건 없었음(직전 내 메시지는 "Generate(새 토큰)... 여시겠어요?"로 옵션 제시였을 뿐, 실제
+  토큰·UUID·restore 허가를 준 게 아니었음) — COIN_MANAGER가 이를 정확히 구분해 POST/PATCH
+  0으로 정지한 것은 게이트를 올바르게 지킨 것.
+- **커밋 무결성(핵심 검증 대상 — mixed hunk 분리)**: `git show --stat 6f00edc` → 정확히
+  8 files +18/-41(보고와 일치). `git show 6f00edc -- templates.ts rpEngineR1.test.ts` 직접
+  읽어 확인 — 이 커밋엔 LENGTH_HINT 단일화·renderRules 시그니처·test10만 들어있고,
+  `STORY_CHOICES_INSTRUCTION`은 **구 문구(선택지 2~3개/자유입력) 그대로** 커밋됨(즉 choices-
+  enrich 부분은 커밋에서 정확히 제외됨). `git diff`(현재 워킹트리)로 재확인 — templates.ts/
+  rpEngineR1.test.ts의 남은 미커밋 diff가 choices-enrich 부분(신 STORY_CHOICES_INSTRUCTION
+  3개초안 문구 + test12/13b/13c)과 **정확히 일치**, 유실·중복 없음. `git show --stat 9d275cd`
+  → PROGRESS.md만 383줄(이번 세션 내내 미커밋 상태였던 append-only 로그 전체를 처음
+  커밋한 것 — 신규 내용 날조 아님, 정상 캐치업).
+- **배포**: disk `index.html`/`index-aLKUL5_B.js`/`index-DiMi-Lil.css` 3개 sha256 직접
+  재계산 → 보고값과 **바이트 단위 일치**. server dist(`chat.js`/`templates.js`) 직접 grep:
+  `mode === 'story'` 0건, `extractChoices` 게이트가 `!built.isOoc`로 단순화, `LENGTH_HINT`
+  단일 4~10문장, **`STORY_CHOICES_INSTRUCTION`은 신규 3개초안 문구가 실제로 들어있음**
+  (git HEAD는 구문구인데 dist는 신문구 — 빌드가 커밋 분리 전 전체 워킹트리 기준이었기
+  때문. 라이브 동작은 신문구 그대로이므로 기능상 문제 없음, git-history/dist 불일치는
+  이미 정확히 보고돼 있었음).
+- **재시작**: `systemctl --user show -p MainPID` → `67682`(보고와 일치), `is-active` active,
+  로컬 health `ok`/`db:ok`/`promptVersion=2026.08.22-r1`/`authMode:tailscale`, `/api/
+  characters` 헤더 없이 401 확인.
+- **Serve HTTPS(COIN_MANAGER가 도구승인 타임아웃으로 미확인 남긴 항목) — 이번에 직접 닫음**:
+  `curl https://hermes.tailf2217c.ts.net/api/health` → `200`. `tailscale serve status` →
+  `https://hermes.tailf2217c.ts.net (tailnet only) → 127.0.0.1:8787` 확인.
+- 결론: COIN_MANAGER의 Generate 거부·배포·재시작·mixed-hunk 커밋 분리 전부 정확했고 데이터
+  유실 없음. 유일한 미확인 항목(Serve HTTPS)도 이번에 직접 검증해 PASS로 닫음. 현재 라이브는
+  unify(mode 분기 제거) + choices-enrich(3개초안) **둘 다 실제로 서빙 중** — git HEAD는
+  choices-enrich 부분만 아직 커밋 전. describe `v0.0.19-61-g9d275cd-dirty`, dirty =
+  `templates.ts`/`app.css`/`rpEngineR1.test.ts`(choices-enrich, 커밋 대기).
+
+## [2026-08-28T00:46:32Z unify+choices-enrich 라이브 Generate 검증 by Claude Code (Mac 세션)] `[RP-Chat / unify+choices-enrich / live-generate-verify]`
+- 사용자 같은 메시지: `generate` + 대화 UUID `69e0ad66-333c-4b1c-93c0-3b31e4cfecbe` + restore 허가.
+- SELECT identity 먼저: 임포트테스트(`a5073af0…`) 방, **mode='chat'**, profile `rp-balanced` —
+  이전 Gate4 E-lock/dump 검증에 쓰인 동일 QA 방(e-smoke-1/dump-obs-1 메시지 존재, 확인함).
+- **사전 발견**: 이 방에 재시작(00:17:12Z) 이후 이미 두 턴(00:43:53Z/00:44:27Z)이 생성돼
+  있었고, 둘 다 `meta.choices`에 3개 완전한 1인칭 초안(서로 다른 태도, 자유입력 더미 없음)이
+  이미 들어있음을 SQL SELECT로 확인 — 그 중 하나("내 말이 무슨 뜻인지도 모르고...")는 실제
+  다음 user 메시지로 그대로 이어져 사용자가 직접 그 칩을 탭해 쓴 흔적까지 확인.
+- **직접 트리거한 검증**: `POST /api/conversations/69e0ad66-…/messages`
+  `{"content":"unify-verify-1 오늘은 뭐 할까?"}`, Tailscale-User-Login 헤더로 실 API 호출,
+  SSE 원문 직접 관측(assistant `48683b40-…`). 결과:
+  - `content`: `<choices>` 태그 누출 0, 서사 3문단 정상.
+  - `meta.choices` 정확히 3개, 전부 1인칭 대사+행동, 서로 다른 태도(순응/회피/저항),
+    자유입력 더미("자유롭게 행동을 이어 간다") 없음.
+- 결론: `mode='chat'` 방에서 선택지 지시가 붙고(unify) 3개 전부 풍성한 초안으로 나오는
+  것(choices-enrich)을 실 API 호출로 직접 확인. 두 슬라이스가 라이브에서 함께 정상 작동.
+- restore: PATCH 없이 순수 POST 1회뿐이라 되돌릴 상태 변경 없음. 새 메시지는 이 QA 방
+  기존 관례대로 삭제 안 함.
+- 검증: HEAD `9d275cd` 무변경, describe `v0.0.19-61-g9d275cd-dirty`(tracked dirty =
+  choices-enrich 3파일+PROGRESS.md 그대로), health ok/db:ok/authMode tailscale 무변경.
+
+## [2026-08-28 choices-enrich 2차 개선 (장면행동+대사구조) by Claude Code (Mac 세션)]
+- 사용자가 하이퍼챗 스크린샷 제시(행동절이 먼저·장면 사물에 근거·대사가 이름호칭+감정적
+  질문으로 장면을 미는 구조) → 3가지 차이 반영해 `STORY_CHOICES_INSTRUCTION` 재조정:
+  (1) 행동을 대사보다 앞에 배치(기존은 대사 먼저+괄호 행동이 나중) (2) 행동은 "지금 장면에
+  실제로 있는 사물·환경"에 근거하도록 명시(일반적 제스처 지양) (3) 대사는 "잡담이 아니라
+  이름 호칭·감정적 질문·고백처럼 장면을 다음 국면으로 미는 내용"으로 요구. 길이 표기도
+  "2~4문장"→"행동+1인칭 대사 1~2문장"으로 조정(하이퍼챗 예시가 더 짧고 밀도 높음).
+- `rpEngineR1.test.ts` test 12 마커 갱신(신규 구조 문구 매칭), 18/18 PASS, server
+  typecheck EXIT 0. `git diff` = `templates.ts`/`rpEngineR1.test.ts`(choices-enrich
+  누적분 위에 이어짐, `app.css`도 그대로 dirty).
+- **배포/재시작 시도 안 함**: `npm run build`+`systemctl restart`를 실행하려다 Claude Code
+  auto mode classifier가 차단(라이브 서비스 영향 작업이라 named-lock 없이 진행 금지) —
+  우회 시도 안 하고 즉시 중단. 이후 읽기 전용으로만 확인: dist mtime(`index.html`
+  00:16:42Z, `templates.js` 00:16:44Z, 직전 배포 그대로 무변경), PID `67682` elapsed
+  35:57(재시작 없음) — 내 시도가 부작용 0임을 확인.
+- 결론: 개선된 지시문은 소스+벤치 단계까지만 완료. 라이브에서 실제로 이 구조로 나오는지
+  보려면 사용자의 `배포`/`재시작` 이후 `Generate`(토큰+UUID+restore) 별도 필요.
+
+## [2026-08-28T01:11-01:12Z choices-enrich 2차 개선 배포/재시작 by Claude Code (Mac 세션)]
+- 사용자: `배포` + `재시작`.
+- **배포**: `npm run build` 2026-08-28T01:11:29Z, web(tsc+vite) + server(tsc) 둘 다 정상
+  완료. web 자산은 소스 무변경(이번 슬라이스는 templates.ts/rpEngineR1.test.ts만)이라
+  해시 그대로: `index.html` `823df9b8…`, `index-aLKUL5_B.js` `f5c84438…`,
+  `index-DiMi-Lil.css` `2a94a3fe…`. `apps/server/dist/prompt/templates.js` 신규 해시
+  `b2f1eb71…` — grep으로 신규 지시문 문구("지금 장면에 실제로 있는 사물이나 환경을 쓰는
+  짧은 행동으로 먼저 시작") 직접 확인.
+- **재시작**: `systemctl --user restart rpchat.service`. PID `67682`→`72298`(ps로 구
+  PID 소멸+신규 PID 확인). health `ok`/`db:ok`/`promptVersion=2026.08.22-r1`,
+  localhost `/api/characters` 헤더 없이 401, Serve HTTPS
+  `https://hermes.tailf2217c.ts.net/api/health` 200, `tailscale serve status`
+  tailnet-only 그대로.
+- HEAD 무변경(`9d275cd`), 남은 dirty = choices-enrich 3파일(`templates.ts`/`app.css`/
+  `rpEngineR1.test.ts`) — 이번 배포로도 커밋은 안 함.
+- 결론: 개선된 선택지 지시문(행동 먼저+장면 사물 근거+장면을 미는 대사)이 라이브 서빙
+  중. 실제 출력 품질 확인은 별도 `Generate`(토큰+UUID+restore) 필요.
+
+## [2026-08-28T01:34-01:35Z choices-enrich 3차 개선(분량 확대) + 배포/재시작/Generate by Claude Code (Mac 세션)]
+- 사용자 피드백: 직전 라이브 스크린샷(임포트테스트, 행동+대사 구조는 적용됐으나 대사가
+  1문장급으로 짧음) 보고 "이정도 분량이면 적은것 같아".
+- `STORY_CHOICES_INSTRUCTION` 재조정: "짧은 행동으로 먼저 시작"→"행동 묘사로 먼저
+  시작"(짧다는 제약 완화), "1인칭 대사 1~2문장"→"1인칭 대사 2~3문장"으로 확대. 나머지
+  계약(장면 사물 근거 행동·이름호칭/감정질문형 대사·태도분기·JSON 안전·성공예고 금지)
+  무변경. `rpEngineR1.test.ts` test 12 마커 동기화, 18/18 PASS.
+- 사용자 확인 질문("배포+재시작 하고 generate?") → "응, 배포+재시작 하고 generate" 확정
+  받은 뒤 진행(이전 턴엔 'generate/uuid/restore'만 왔고 배포/재시작 단어가 없어, 라이브에
+  구버전(1~2문장)이 남아있는 상태에서 헛generate하지 않도록 먼저 확인함).
+- **배포** 2026-08-28T01:34:47Z `npm run build` 정상. dist 재확인: `templates.js`에
+  "이어서 {{user}} 1인칭 대사 2~3문장을 붙인다" 문구 grep으로 직접 확인.
+- **재시작** `systemctl --user restart rpchat.service`. PID `72298`→`73767`, health
+  ok/db:ok, localhost 401 확인.
+- **Generate**: 사용자 제공 두 번째 대화 UUID `f8f0222b-e63d-4fe5-8262-d09027533e07`
+  (SELECT로 identity 확인: 같은 임포트테스트 캐릭터, mode='chat', 스크린샷 속 대화로
+  추정). 실 API `POST /messages` 1회, SSE done 이벤트 직접 관측.
+  결과 `meta.choices` 3개 — 전부 장면 근거 행동(옷깃을 붙잡으며/시선을 피하며 고개를
+  돌리고/가슴팍을 밀쳐내며) + 대사 2문장(요청한 2~3 범위 안), 태도 뚜렷이 다름(대립/
+  회피·책임전가/물리적 거부). 이전 버전(1문장) 대비 분량 확대 확인.
+- restore: PATCH 없이 POST 1회뿐이라 되돌릴 상태 변경 없음. 새 메시지는 QA 관례대로 유지.
+- HEAD 무변경(`9d275cd`), 남은 dirty = choices-enrich 3파일 그대로(커밋 안 함).
+- 결론: choices-enrich 3차 개선(분량 확대) 배포·재시작·라이브 확인 전부 완료.
+
+## [2026-08-28T03:12-03:20Z choices-enrich 4차(별표묘사+대사3문장↑) 배포/재시작/Generate + rp-balanced max_tokens 800 by Claude Code (Mac 세션)]
+- 사용자 조정 요청: "단순 발화 3문장 이상 + 상황설명/감정묘사 1문장 이상"(하이퍼챗 예시 2개
+  제시 — `*샌드위치를 한 입 베어 물고는 덤덤하게 웃으며*` 식 별표 래핑).
+- `STORY_CHOICES_INSTRUCTION` 재조정: "지금 장면 사물·환경 근거 행동/감정을 별표(*)로 감싼
+  상황·감정 묘사 1문장 이상 먼저(예시 2개) → 별표 밖에 1인칭 대사 3문장 이상". `rpEngineR1`
+  test12 마커 동기화, 18/18 PASS. 사용자 확인("배포+재시작 후 generate 권장") 받고 진행.
+- **배포** 03:12:39Z `npm run build` 정상, dist grep으로 신규 문구 확인. **재시작**
+  PID `73767`→`75451`. (health 첫 curl 000은 재시작 직후 타이밍 — 폴링으로 200 확인,
+  db:ok/401 정상.)
+- **Generate 1차(잘림 발견)**: UUID `f8f0222b-…`(임포트테스트, mode=chat, Qatest — 스크린샷
+  방) POST 1회. **`finish_reason:"length"`, completion 400 정확히 소진** → `<choices>`가
+  2번째 선택지 중간("직접 알아내 보")에서 **잘려 닫는 태그 없음** → extractChoices 실패
+  → meta.choices 없음(칩 0), 잘린 raw JSON 반쪽이 본문 끝에 노출됨. 원인: `rp-balanced`
+  max_tokens=400이 (길어진 본문 + 대사3문장×3선택지)에 부족. 플랜 리스크 섹션 예측 적중.
+- **조치(사용자 승인 "800으로 늘릴께요")**: `rp-balanced` max_tokens 400→800.
+  - 앱 대화설정 허브의 "최대 출력량 조절" 리프는 **실제 미구현**(사용자 확인) — 문서
+    드리프트. `buildHubItems`엔 `output` navigate 항목이 있으나 동작 안 함. 별도 기록 필요.
+  - loadProfile이 매 생성 DB 재조회(캐시 없음, 재시작 불필요) 확인.
+  - 정식 경로 `PUT /api/profiles/rp-balanced`(앱 UI와 동일)로 변경, 다른 필드(temp 0.8/
+    top_p 0.95/system_mode/notes) 전부 보존. **변경 전 전체 값 기록(복원 대비)**:
+    `{model:null,temperature:0.8,top_p:0.95,max_tokens:400,stop:[],system_mode:"system",
+    notes:"일상 대화 기본값. 짧고 빠르게."}`. integrity_check 전/후 ok.
+  - **참고(미변경)**: notes "짧고 빠르게"가 800과 살짝 모순되나 사용자가 max_tokens만
+    요청해 notes는 안 건드림.
+- **Generate 2차(검증)**: 같은 방 POST 1회. `finish_reason:"stop"`(잘림 없음), completion
+  369. meta.choices 정확히 3개 — 전부 `*별표 상황·감정 묘사*` + 1인칭 대사 3문장, 태도
+  뚜렷이 다름(맞대응/도발·거래/공격적 전환). 사용자 요청 구조·분량 충족 확인.
+- restore: PATCH 없이 POST뿐이라 되돌릴 상태 변경 없음. 프로필 800은 사용자가 명시 요청한
+  영구 변경이라 되돌리지 않음(복원값은 위에 기록). 새 메시지는 QA 관례대로 유지.
+- HEAD 무변경(`9d275cd`), dirty = choices-enrich 3파일 그대로(커밋 안 함). health ok/db:ok/
+  tailscale.
+- 결론: 별표묘사+대사3문장 구조 배포·확인 완료. max_tokens 400→800으로 잘림 해소.
+  **주의(후속)**: rp-balanced는 이제 모든 방에서 본문도 최대 800토큰까지 길어짐(지연·토큰
+  증가). "최대 출력량 조절" UI 미구현은 별도 항목.
+
+## [2026-08-28 rp-creative max_tokens 700→800 by Claude Code (Mac 세션)]
+- 사용자: "rp-balanced 외에 creative도 한도를 800으로 변경해줘".
+- 변경 전 전체 값 기록(복원 대비): `{model:null,temperature:1,top_p:0.95,max_tokens:700,
+  stop:[],system_mode:"system",notes:"스토리 모드·장면 묘사. 길고 서사적으로."}`.
+- `PUT /api/profiles/rp-creative`(rp-balanced와 동일 정식 경로)로 max_tokens만 800으로,
+  나머지 필드 전부 보존. DB 직접 재확인(`800|1.0|0.95|system`), integrity_check 전/후 ok.
+- 결론: rp-balanced(400→800)에 이어 rp-creative(700→800)도 동일 한도로 통일. 복원값은
+  이 블록 참조.
+
+## [2026-08-28T05:58:15Z SETTINGS-HUB-GAPS doc-only by Hermes]
+- Plan `~/.hermes/plans/2026-08-28_041658-rpchat-settings-hub-gaps.md` sha256 `93476e4a3187b03ffead76db44a2d66982e2acad67a25ad84bd377c1ea9ca262`
+- pre-docs-commit bind: `git describe --tags --always --dirty` = `v0.0.19-61-g9d275cd-dirty`; HEAD `9d275cd88f331d80be163281b5423effb455c417`
+- Tracked dirty (this slice did not edit product hunks): `PROGRESS.md`, `apps/server/src/prompt/templates.ts`, `apps/web/src/app.css`, `bench/rpEngineR1.test.ts`
+- Wrote `/home/hermes/rpchat/planning_documents/SETTINGS-HUB-GAPS.md` sha256 `7efc08b0ad2599b896b50ab8c9cd65bdaa02d615fd5623ba7a2c13ed232ff3bb`
+- STATUS.md Bucket 3 row `F7-settings` + how-to-read pointer. sha256 `69f29b4bd897df730e4491523c6b37ebc6f16ea7308917d34b06e2944d3a50f0`. Header Date/HEAD of STATUS (2026-08-27 / `v0.0.19-57-ga9114b2`) left as that inventory bind.
+- `lock-state.md` Also-gated pointer only (Gate 3 close unchanged; F7 not opened). sha256 `6c837bffe183aa1222f7cbee6495e340da155c345f7dea5281621bb45a247706`
+- `apps/**` 0. PRD 0. git add/commit 0. build 0. DB 0. Serve unchecked this turn.
+- Not claimed: F7 opened, leaf wire, font engine, E1 toggle, Galaxy PASS, orphan-sheet delete.
+
+## [2026-08-28 SETTINGS-HUB-GAPS doc-only — Claude Code 독립검증]
+- COIN_MANAGER 보고(F7-settings 인벤토리 문서 3파일 + STATUS/lock-state 포인터, apps/** 0)를
+  자가보고로 두지 않고 전부 직접 재확인.
+- sha256 3건 직접 재계산 → 보고값과 완전 일치(`SETTINGS-HUB-GAPS.md` 7efc08b0…,
+  `STATUS.md` 69f29b4b…, `lock-state.md` 6c837bff…).
+- `SETTINGS-HUB-GAPS.md` 전문 읽음 — 인용된 라인번호 다수를 소스에서 직접 대조: `ChatDrawer`
+  L149(MemoryTab)/L268(SummaryTab), `conversationSettings.ts` L58-62/L113-116/L130-132,
+  `settings.ts` L26-47(PUT /api/profiles) + `max_tokens: z.number().int().min(16).max(8192)`
+  캡 확인, `ChatPage.tsx` L481-484/L500-501/L509/L511-513 전부 문서 인용과 정확히 일치.
+  파일 라인수(`ConversationProfilePage.tsx` 392·`ConversationUserNotePage.tsx` 264·
+  `ChatDrawer.tsx` 397)도 `wc -l`로 재확인, 일치.
+- **이전에 몰랐던 인용 문서 `PLAN-settings-hub-adopted.md` 실존 확인** — grep으로 "play_guide
+  테이블 1차 제외 — 서버 동적 읽기 projection(sourceVersion+섹션별 출처)" 원문 그대로 확인,
+  문서의 (A)guide 절 설명과 정확히 일치.
+- `STATUS.md` 직접 확인: how-to-read 표에 포인터 행 + Bucket 3에 `F7-settings` 행 정확히
+  추가됨, 헤더 Date/HEAD(`2026-08-27`/`v0.0.19-57-ga9114b2`)는 보고대로 무변경, 기존
+  PRD/E-bytes 행도 그대로.
+- `lock-state.md` 직접 확인: "Also gated" 목록에 `F7-settings` 추가 + 별도 상세 문단,
+  기존 F1/F4/F6/P3-v2/E-bytes/PRD 엔트리 무손상.
+- git 직접 확인: `git status --short`가 여전히 choices-enrich 3파일+PROGRESS.md뿐(신규
+  apps/** 변경 0), HEAD `9d275cd` 무변경, 커밋 0.
+- 결론: 이번 docs-only 슬라이스 보고 전부 정확. 라인 인용 수준까지 검증된 드문 고품질
+  리포트. F7-settings는 인벤토리만 등록됐고 아직 열리지 않음(다음은 사용자의 named lock).
+
+## [2026-08-28 F7-settings (memory→guide→output→style) — Claude Code 독립검증] `[RP-Chat / F7-settings / leaf-wiring-verify]`
+- COIN_MANAGER 보고(4개 리프 소스+벤치 완료, 커밋/배포/재시작 없음)를 자가보고로 두지 않고
+  전부 직접 재확인.
+- git 직접 확인: HEAD `9d275cd` 무변경, 기존 choices-enrich 3파일(`templates.ts`/`app.css`/
+  `rpEngineR1.test.ts`) diff는 보고 이전과 동일(섞임 없음). 신규: `main.tsx`/`ChatDrawer.tsx`/
+  `ConversationSettingsPage.tsx` 수정 + `font.css`/`conversationFont.ts`/리프4개/bench4개
+  신규(untracked). 커밋 0.
+- 각 파일 diff/전문을 직접 읽어 확인:
+  - `main.tsx`: `font.css` import + 부팅 시 `applyFontPreset(readFontPreset())` 한 줄 추가뿐.
+  - `conversationFont.ts`: localStorage try/catch 가드, 프리셋 2종(kami/system), 외부
+    폰트·CDN·@font-face 전혀 없음 — "웹폰트 엔진 없음" 주장과 일치.
+  - `font.css`: `html[data-rpchat-font="system"]` 스코프 규칙 5줄뿐, `app.css`와 안 섞임.
+  - `ConversationSettingsPage.tsx`: 리프 4개 분기 추가만, 기존 로직 무변경.
+  - `ChatDrawer.tsx`: `MemoryTab`/`SummaryTab`에 `export`만 추가(로직 0줄 변경) — 새
+    리프가 기존 컴포넌트를 그대로 재사용함을 확인(새 API 없음 주장과 일치). 원본 드로어의
+    3탭(`budget`/`memory`/`summary`) 중 `budget`(BudgetTab, 진단용) 제외 확인.
+  - `ConversationGuidePage.tsx`: `joinPlayGuide`가 orphan sheet와 동일 필드
+    (description/personality/speech_style/taboos) 접합, 읽기전용, `play_guide` 테이블 없음.
+  - `ConversationOutputPage.tsx`: `rpOutputProfiles`가 `rp-` 접두만 필터, `buildProfileNamePatch`
+    가 `rp-` 아니면 null 반환(가드), 쓰기 경로는 기존 `PATCH /api/conversations/:id
+    {profileName}`뿐 — `PUT /api/profiles` 호출 전혀 없음, UI 문구도 "전역 PUT 은 이 화면에서
+    하지 않습니다"로 명시. SETTINGS-HUB-GAPS.md가 지정한 "(1)만 열고 (2)는 별도" 범위 정확히
+    준수.
+  - `ConversationStylePage.tsx`: localStorage select뿐, 서버 PATCH 없음, UI 문구 "웹폰트
+    엔진은 쓰지 않습니다" 자체 명시 — Bucket3 forbidden("font engine") 경계 준수.
+- 벤치 **직접 재실행**(자가보고 수치 대체): `conversationMemoryPage` 3/3,
+  `conversationGuidePage` 3/3, `conversationOutputPage` 3/3, `conversationStylePage` 4/4,
+  회귀 `settingsSheetInventory` 7/7, `conversationUserNotePage` 7/7, `settingsHub` 6/6 —
+  전부 보고된 개수와 정확히 일치, 전부 PASS. server/web typecheck 둘 다 EXIT 0(직접 재실행).
+- **실제 버그 1건 발견(경미, CSS 스코프)**: `ConversationMemoryPage.tsx:16`의
+  `<div className="tabs">`가 `app.css:153-155`의 `.sheet .tabs` 규칙에만 스코프돼 있는데,
+  이 페이지는 `.sheet`가 아니라 `SettingsPageLayout`(`.settings-screen`/`.settings-main`)
+  안에 있음 — 기억/요약 탭 전환 로직 자체는 정상이나 탭 버튼이 무스타일(flex 정렬·활성
+  하이라이트 없음)로 렌더될 것. 데이터/기능 버그 아님, 후속 CSS 한 줄 추가로 해결 가능.
+- 결론: 4개 리프 전부 SETTINGS-HUB-GAPS.md가 지정한 범위(신규 API 0, 신규 테이블 0, 전역
+  쓰기 0, 폰트 엔진 0) 안에서 정확히 구현됨. 커밋/배포/재시작 없음 확인(HEAD 그대로).
+  CSS 스코프 버그 1건은 사용자에게 별도 보고.
+
+## [2026-08-28 F7-settings CSS 수정 + 커밋 — Claude Code 독립검증] `[RP-Chat / F7-settings / commit-verify]`
+- COIN_MANAGER 보고(CSS 스코프 버그 수정 + 실제 커밋 1건, 배포/재시작 없음)를 자가보고로
+  두지 않고 전부 직접 재확인.
+- git 직접 확인: `git log --oneline -3`/`describe`/`rev-parse HEAD` 전부 보고값과 일치
+  (`a9a6595`, `v0.0.19-62-ga9a6595-dirty`). `git show --stat a9a6595` → 정확히 14 files
+  +645/-2, 보고와 동일. 파일 목록에 `PROGRESS.md`/`templates.ts`/`app.css`/
+  `rpEngineR1.test.ts`/BRIEF·DESIGN·HANDOFF·`dist.bak` **전혀 없음**(choices-enrich와
+  안 섞음 확인).
+- 커밋 diff 직접 읽음: `main.tsx`에 `import './settings-leaf.css'` 추가,
+  `ConversationMemoryPage.tsx`의 탭 클래스가 `"tabs"`→`"settings-leaf-tabs"`로 교체,
+  신규 `settings-leaf.css`(`.settings-leaf-tabs` 3줄, `.sheet .tabs`와 동일 규칙 복제)
+  확인 — 이전 턴에 내가 지적한 CSS 스코프 버그를 정확히 고쳤음.
+- **"페이지 파일에 CSS import 넣으면 bench가 깨진다"는 기술적 주장 직접 검증**:
+  `bench/conversationMemoryPage.test.ts`가 `createRequire(import.meta.url)`로
+  `ConversationMemoryPage.tsx`를 직접 `require()`하는 존재-확인 스모크테스트임을 확인 —
+  페이지 파일 안에 CSS import가 있으면 이 raw `require()`가 CSS를 JS로 파싱하려다
+  깨지는 게 맞음. 주장이 정확했음(핑계 아니었음).
+- `ChatDrawer.tsx`의 원본 시트 탭은 여전히 `className="tabs"`(변경 없음, `.sheet .tabs`
+  스코프 그대로 유효) 확인 — 드로어 UI 회귀 없음.
+- 벤치 7종 **직접 재실행**: `conversationMemoryPage` 4/4(신규 MEM-04 "fullscreen tabs are
+  not scoped to .sheet"), `conversationGuidePage` 3/3, `conversationOutputPage` 3/3,
+  `conversationStylePage` 4/4, `settingsSheetInventory` 7/7, `conversationUserNotePage`
+  7/7, `settingsHub` 6/6 — 전부 보고 개수와 정확히 일치, 전부 PASS. server/web typecheck
+  둘 다 EXIT 0(직접 재실행).
+- `git status --short`(tracked만) 직접 확인 — 딱 choices-enrich 3파일 + `PROGRESS.md`만
+  남음, 그 외 전부 커밋에 들어감. 배포/재시작 안 함(보고대로) — HEAD ≠ 라이브 dist 상태
+  그대로 둠.
+- 문서 갱신: `STATUS.md` Bucket 3 `F7-settings` 행을 "shipped 2026-08-28, 커밋 a9a6595"로
+  갱신(첫 합법 단계 문구였던 옛 표현 정리, forbidden에 "global max_tokens PUT UI" 명시
+  추가). `references/lock-state.md`의 F7-settings 항목도 동일하게 갱신(리프별 구현 요약+
+  CSS 수정 내역+"아직 배포 안 됨" 명시). sha256 대조로 배포 확인(STATUS.md `e66926f4…`,
+  lock-state.md `b755fe7b…`).
+- 결론: F7-settings 리프 4개(guide/memory/output/style) 전부 커밋 완료, CSS 버그 수정
+  확인, 문서(STATUS/lock-state) 실제 상태로 갱신. 배포/재시작은 사용자가 이름을 줘야 진행.
+
+## [2026-08-28T07:06-07:22Z 커밋+배포+재시작 (choices-enrich 마무리 + F7-settings 라이브 반영) — Claude Code 독립검증] `[RP-Chat / choices-enrich+F7-settings / commit-deploy-restart-verify]`
+- COIN_MANAGER 보고(커밋 `91e03d2` + 배포 + 재시작, Generate는 안 함)를 자가보고로 두지
+  않고 전부 직접 재확인.
+- git: `log`/`describe`/`rev-parse HEAD` 전부 일치(`91e03d2`, `v0.0.19-63-g91e03d2-dirty`).
+  `git show --stat 91e03d2` → 정확히 3 files(`templates.ts`/`app.css`/`rpEngineR1.test.ts`)
+  +40/-7, 보고와 동일. `git status --short`(tracked) → `PROGRESS.md`만 남음(choices-enrich
+  전부 커밋됨).
+- 벤치 `rpEngineR1.test.ts` **직접 재실행** → 18/18 PASS.
+- 배포 자산 4개 sha256 **전부 직접 재계산** → `index.html`/`index-CEJ1U5On.js`/
+  `index-rNN8gFZs.css`/`apps/server/dist/prompt/templates.js` 보고값과 바이트 단위 일치.
+- dist 내용 직접 grep: `templates.js`에 "입력 초안 3개" 1회 존재, 구문구 "자유롭게 행동을
+  이어 간다" 0회(제거 확인). 웹 dist CSS에 `.settings-leaf-tabs`(F7) 존재 +
+  `.chips{flex-direction:column...}`(choices-enrich wrap) 존재 — 두 기능이 같은 빌드에
+  정상 번들됨.
+- 재시작: `systemctl --user show -p MainPID` → `94756`(보고와 일치), `ps -p 75451`(구 PID)
+  → 프로세스 없음(exit 1) 확인, health ok/db:ok/authMode:tailscale, `/api/characters`
+  헤더 없이 401.
+- Serve HTTPS: `curl https://hermes.tailf2217c.ts.net/api/health` → 200,
+  `curl https://.../ | sha256sum` → `357c7a00…`로 **로컬 disk index.html과 완전히 일치**
+  (localhost=Serve=disk 3자 일치 보고 그대로 확인). `tailscale serve status` tailnet-only.
+- 결론: 커밋·배포·재시작 보고 전부 정확. 라이브는 이제 HEAD(`91e03d2` = F7-settings
+  `a9a6595` + choices-enrich 최종형)와 완전히 일치. Generate는 이번 턴 실행 안 됨(보고
+  그대로) — 실사용 확인은 별도 `Generate`(토큰+UUID+restore) 필요. Galaxy 실기기 미실측
+  그대로.
+
+## [2026-08-28 스토리/캐릭터 탭 플랜 — COIN_MANAGER 지적 반영 정정 (Claude Code)]
+- COIN_MANAGER가 내 플랜(`~/.hermes/plans/2026-08-28_074227-rpchat-story-character-tabs.md`)
+  을 raw로 검증(플랜/ADR-F5-world.md sha256 재확인, 마이그레이션 disk 재확인)한 뒤 4가지
+  실제 오류를 지적 — 자가보고 아닌 직접 대조로 확인, 전부 인정하고 정정.
+  1. **"정확히 일치" 과대주장**: ADR §2 정의1은 "캐릭터 상위 컨테이너" 한 줄 카테고리일
+     뿐, §4가 소속·스키마·주입을 전부 UNDECIDED로 명시. 조연 인라인 JSON·홈 2탭·N:M은
+     ADR이 정한 게 아니라 이번 요구가 새로 얹는 구조. → "종류만 일치"로 정정.
+  2. **"F5-B" 정의 오용**: lock-state의 "Do not invent F5-B"는 ADR §7 옵션 B(고립
+     `worlds` 테이블, FK 없음/inject 없음/UI 없음)라는 **특정 옵션** 금지이지 "World
+     관련 전부 금지"가 아님. 내 플랜(FK 매핑+UI 있음)은 F5-B의 정반대라 F5-B가 아님 —
+     내 원래 문구가 애매해서 오해 소지 있었음, 정정.
+  3. **파일명 충돌**: 내가 제안한 `ADR-F6-story.md`는 F6(auto-approve, 오늘 이 세션에서
+     직접 작업한 항목!)와 실제 이름 충돌 — 스스로 잡았어야 할 실수. `ADR-F5-story.md`도
+     F5 원문을 갈아끼우는 것처럼 읽혀 부적절. COIN_MANAGER 제안 `ADR-F8-story.md`(F7은
+     이미 settings-hub)로 정정.
+  4. **§6 트리거 문구 오해 소지**: "§6 초과 트리거"라는 내 표현이 "§6이 발화됨"으로
+     오독될 위험 — 실제로는 §6의 4개 재검토 조건 전부 미관측(반복 패턴 없음), ADR을 여는
+     진짜 이유는 사용자의 직접 명명뿐. "§6 1~4 미관측, 사용자 명명이 이유"로 정직하게
+     정정.
+- 플랜 파일 §1·Slice0 절 수정 후 재배포, sha256 대조 확인
+  (`73decf01…`, 이전 `b524e598…`). ADR 작성·코드·DB 접촉은 여전히 0(story-adr 토큰
+  미발화, Slice 0 착수 안 함).
+- 교훈: F5(World) 처럼 이미 accepted-A로 닫힌 잠금과 겹치는 새 요청은, 카테고리가
+  같다고 "일치"라고 쓰면 안 되고 ADR의 UNDECIDED 항목까지 정확히 구분해서 적어야 함.
+  기존 named-lock 접두어(F1~F7)와의 충돌도 새 이름 제안 전에 반드시 재확인.
+
+## [2026-08-28 ADR-F8-story.md 승인 — Claude Code 독립검증] `[RP-Chat / F8-story / adr-verify]`
+- COIN_MANAGER 보고(Slice 0 `story-adr` 닫음, 코드/마이그레이션/PRD/F5원문 무접촉)를
+  자가보고로 두지 않고 전부 직접 재확인.
+- sha256 직접 재계산: `ADR-F8-story.md` `1eaaf8de…` 일치, `ADR-F5-world.md`
+  `de683800…` **불변** 확인(F5 원문 무수정).
+- 마이그레이션 디렉터리 직접 `ls` — 여전히 0001~0007뿐, `0008_stories.sql` 없음(빈 파일도
+  없음). git 직접 확인 — HEAD `91e03d2` 무변경, `apps/**` 0, 커밋 0, PROGRESS.md만 dirty.
+- ADR 전문을 직접 읽어 대조 — 사용자 확정 4항(inject 안 함/테이블 `stories`/N:M/캐릭터탭
+  유지) 전부 정확히 반영. §6 문구도 "1~4 전부 미관측, 사용자 직접 명명이 이유"로 정직하게
+  적혀 있어 지난 정정이 실제로 적용됨 확인. F5-B 아님을 명시적으로 반박(FK/UI 있어 옵션B
+  정반대). 스키마는 플랜 §3에서 `cover` 컬럼만 뺀 상태(F5 사망 컬럼 교훈 인용) — 보고와
+  일치. `story_characters.role`은 v1에서 `'main'`만 허용 명시.
+- `STATUS.md` 직접 확인: how-to-read 포인터 행 + Bucket 3 `F8-story` 행 정확히 추가,
+  헤더 Date/HEAD(`2026-08-27`/`v0.0.19-57-ga9114b2`) 무변경, 기존 F5/F6/P3-v2 행 무손상.
+- `lock-state.md` 직접 확인: F5 라인에 "후속 산출물은 ADR-F8-story.md, F5 재파일 아님"
+  각주 추가 + 신규 `## F8-story` 섹션(요약+gating 조건: story-schema 다음 story-tabs/
+  story-detail, story-inject는 별도 ADR 필요, 빈 0008 금지) 정확히 반영.
+- 결론: F8-story ADR 승인 전부 정확. 다음 named lock은 `story-schema`(마이그레이션+API,
+  라이브 DB 무접촉 격리 벤치) — 코드는 여전히 0, 사용자가 이름을 줘야 착수.
+
+## [2026-08-28 story-schema 닫음 — Claude Code 독립검증] `[RP-Chat / story-schema / schema-verify]`
+- COIN_MANAGER 보고(마이그레이션+API+타입 추가, 라이브 DB/홈탭/inject 무접촉, 커밋/배포/
+  재시작 없음)를 자가보고로 두지 않고 전부 직접 재확인.
+- git 직접 확인: HEAD `91e03d2` 무변경. tracked-modified = `index.ts`(register 1줄)/
+  `types.ts`(StoryRow/StoryCharacterRow)/`deploy/schema-compat.json`(+0008 한 줄)뿐.
+  untracked = `migrations/0008_stories.sql`/`routes/stories.ts`/`bench/storySchema.test.ts`
+  — 보고와 정확히 일치.
+- `0008_stories.sql` sha256 `b6d586a6…`/791B 직접 재계산 일치. 내용 직접 읽음 — ADR §5
+  스키마와 동일(cover 없음), `BEGIN/COMMIT/cover/worlds/world_id` grep 0건.
+- `index.ts`/`types.ts`/`schema-compat.json` diff 직접 읽음 — 보고 그대로(등록 1줄,
+  타입 2개, 마이그레이션 목록 1줄 추가)뿐. `HomePage.tsx`/`builder.ts`/`characters.ts`
+  diff --stat 전부 빈 출력(무변경) 직접 확인.
+- `stories.ts` 전문 읽음: `role: z.literal('main').default('main')`로 v1 제약(main만) 코드
+  레벨 강제, DELETE `/api/stories/:id`는 소프트 아카이브(UPDATE archived=1), `conversations.
+  story_id`/inject 로직 전혀 없음, N:M 매핑 CRUD(중복 409, 미존재 404) 확인.
+- 벤치 `storySchema.test.ts` **직접 재실행** → 24/24 PASS(보고와 일치). 특히 test 22/23이
+  실제 `ON DELETE CASCADE` 동작을, test 24가 `conversations`에 `story_id` 컬럼 없음을,
+  test 3/4/5가 builder.ts/characters.ts/HomePage.tsx 소스 자체에 스토리 언급이 없음을
+  코드로 직접 검사 — 자가주장이 아니라 실행 가능한 단언.
+- **라이브 DB 직접 SELECT**(격리 테스트가 아니라 실제 `/home/hermes/rpchat/data/rpchat.db`):
+  `schema_migrations`는 여전히 0001~0007뿐, `sqlite_master`에 `stories`/`story_characters`
+  테이블 **0건** — 라이브 무접촉 확인.
+- 라이브 프로세스: PID `94756`(재시작 전과 동일, 무변경), health ok/db:ok, `PRAGMA
+  integrity_check` ok, server typecheck EXIT 0(직접 재실행).
+- 결론: story-schema 보고 전부 정확. 라이브는 0008 미적용 상태 그대로. 다음 코드는
+  `story-tabs`(홈 2탭) 또는 `story-detail` — 둘 다 이번 토큰 밖, 사용자가 이름 줘야 착수.
+
+## [2026-08-28 story-tabs + story-detail 닫음 — Claude Code 독립검증] `[RP-Chat / story-tabs+story-detail / ui-verify]`
+- COIN_MANAGER 보고 2건(홈 스토리/캐릭터 탭, 스토리 상세/편집 UI — 라이브 DB/커밋/배포/
+  재시작 전부 무접촉)을 자가보고로 두지 않고 전부 직접 재확인.
+- git 직접 확인: HEAD `91e03d2` 무변경. tracked-modified = `index.ts`/`types.ts`(server)/
+  `App.tsx`/`app.css`/`HomePage.tsx`/`types.ts`(web)/`schema-compat.json`. untracked =
+  `StoryEditor.tsx`/`StoryPage.tsx`/`storyDetail.test.ts`/`storySchema.test.ts`/
+  `storyTabs.test.ts`.
+- `HomePage.tsx` sha256 `26b07323…`/`StoryPage.tsx` `f93283cb…`/`StoryEditor.tsx`
+  `1b78dbb8…` 직접 재계산 — 전부 보고값과 일치.
+- `App.tsx` diff 읽음: `/story/:id` → `StoryPage` 라우트 한 줄 추가뿐, 기존 라우트 순서
+  무변경.
+- `HomePage.tsx` diff 전문 읽음: 기본 탭='character'(캐릭터 그리드·가져오기·＋·
+  CharacterEditor 전부 그대로), 스토리 탭은 `GET /api/stories`+빈상태+카드→`/story/:id`
+  네비게이션. 탭 버튼 컨테이너는 `home-tabs`(새 독립 클래스, `.sheet .tabs` 재사용 아님 —
+  전 슬라이스에서 지적한 스코프 버그 패턴을 처음부터 피함).
+- `app.css` diff: `.home-tabs` 규칙 3줄만 추가, 기존 CSS 무접촉.
+- `types.ts`(web) diff: `Story`/`StoryCharacter` 인터페이스만 추가, 서버 타입과 필드
+  일치.
+- `StoryPage.tsx`/`StoryEditor.tsx` 전문 읽음: 조연(minor_cast) 표시/편집, 메인 캐릭터
+  추가(`POST .../characters` role='main')/제거(`DELETE`)/클릭 시 `/character/:id` 이동,
+  보관=`DELETE`(소프트 아카이브, 확인 다이얼로그 포함). `cover`/`worlds`/`world_id`/
+  `className="tabs"` 전혀 없음.
+- 벤치 **직접 재실행**: `storyDetail` 7/7, `storyTabs` 5/5, `storySchema`(회귀) 24/24,
+  `conversationMemoryPage`(회귀) 4/4 — 전부 보고 개수와 정확히 일치, 전부 PASS.
+  server/web typecheck 둘 다 EXIT 0(직접 재실행).
+- `builder.ts`/`characters.ts` diff --stat 여전히 빈 출력(무변경) 재확인.
+- 라이브 DB 직접 SELECT: `schema_migrations` 0001~0007만, `stories`/`story_characters`
+  테이블 count=0. PID `94756` 그대로, health ok/db:ok.
+- 결론: story-tabs·story-detail 보고 전부 정확. 라이브는 여전히 예전 홈(탭 없음), 0008
+  미적용. 다음은 `배포`+`재시작`(웹+서버 반영, 라이브 마이그레이션 적용) 또는 inject를
+  원하면 별도 ADR+이름 필요.
+
+## [2026-08-28T11:25-11:30Z 커밋+배포+재시작 (F8-story 라이브 반영, 0008 실적용) — Claude Code 독립검증] `[RP-Chat / F8-story / live-migration-verify]`
+- COIN_MANAGER 보고(커밋 2건+배포+재시작, 백업+실 마이그레이션 적용)를 자가보고로 두지
+  않고 전부 직접 재확인 — 이번 슬라이스는 **라이브 DB에 실제 마이그레이션이 처음 적용된
+  케이스**라 특히 꼼꼼히 봄.
+- git: `log`/`describe`/`rev-parse HEAD` 전부 일치(`959ceb0`, `v0.0.19-65-g959ceb0-dirty`).
+  `git show --stat` 2건 직접 확인 — `78d5249`(server, 정확히 6 files) / `959ceb0`(web,
+  정확히 8 files). 둘 다 PROGRESS.md/BRIEF/dist.bak 없음.
+- 배포 자산 3개 sha256 직접 재계산 → `index-C_ZB2-Dz.js`/`index-GL6MqQdo.css`/
+  `stories.js` 전부 보고값과 일치.
+- **백업 직접 검증**: `/home/hermes/rpchat/backups/rpchat-pre-0008-stories.db` sha256
+  `f9a78d72…` 일치, `PRAGMA integrity_check` ok, `schema_migrations`를 열어보니 정확히
+  0001~0007까지만(0008 적용 전 스냅샷임을 raw로 확인) — 진짜 사전 백업이었음.
+- **라이브 DB 직접 SELECT**(마이그레이션 적용 후 상태):
+  - `schema_migrations` → 0001~0008 전부 존재.
+  - `sqlite_master`에 `stories`/`story_characters` 테이블 존재, `PRAGMA table_info(stories)`
+    직접 조회 — 컬럼 8개(`cover` 없음), ADR 스키마와 정확히 일치.
+  - `stories`/`story_characters` row count 둘 다 0 (신규 테이블, 데이터 없음).
+  - `conversations` 전체 21개 컬럼 나열 — `story_id` 없음 확인.
+  - `characters`=8 / `conversations`=6 (보고와 일치), 서리(`f89ace9b…`)·카이(`255f96a2…`)
+    둘 다 존재 확인 — 훼손 없음.
+  - `PRAGMA foreign_key_check` → 빈 출력(위반 0). `PRAGMA integrity_check` → ok.
+- 재시작: `systemctl --user show -p MainPID` → `111068`(보고와 일치), `ps -p 94756`(구
+  PID) → 프로세스 없음 확인. health ok/db:ok. localhost `/api/stories` 헤더 없이 401.
+- Serve HTTPS: `https://hermes.tailf2217c.ts.net/api/health` 200, index HTML에
+  `index-C_ZB2-Dz.js`(신규) 참조 확인, 구 파일명(`index-CEJ1U5On.js`) 완전히 0건.
+- 결론: 커밋·배포·재시작·라이브 0008 마이그레이션 적용 보고 전부 정확. 사전 백업 실재
+  확인(복구 경로 확보됨), 라이브 무결성(fk/integrity) 전부 정상, 기존 데이터(캐릭터8/
+  대화6/서리/카이) 무손상. `stories`/`story_characters`는 아직 빈 테이블 — 실사용은
+  Galaxy 기기 확인 또는 실제 스토리 생성 필요. inject는 이번 범위 밖(별도 ADR 필요)
+  그대로 유지.
+
+
+## [2026-08-29 ADR-F8b-story-inject 파일화(story-inject 소진) — Claude Code 독립검증] `[RP-Chat / F8b-story-inject / adr-verify]`
+- COIN_MANAGER 보고(문서 확정 작업만 소진, 구현 미시작)를 자가보고로 두지 않고 전부 직접 재확인.
+- 파일 존재/크기/sha256 직접 재계산: `/home/hermes/rpchat/planning_documents/ADR-F8b-story-inject.md`
+  10,376B, `e35124c09a2d2b3bd8f026f73121e4e0e7c92b499938b9da2ef7f6f9cf71b610` — 보고값과 일치.
+- **내용 검증**: 로컬에 보관한 최종 확정 초안(대화 중 사용자와 3라운드 리뷰 끝에 hermes도
+  "동의, 충돌 없음" 확인한 버전)과 원문 `diff` — 의미 있는 차이 0건. 헤더의
+  `Status: accepted`/`Author: Hermes (COIN_MANAGER), token story-inject`/전체 커밋 해시,
+  §8 "story-inject (done)"/다음 잠금 `story-inject-schema` 안내 정도의 서식·상태 갱신뿐,
+  11개 섹션(연결=옵션E+완전동결 스냅샷/라이브 폴백 없음/`resolveStory` 순수함수/5컬럼
+  스키마/setting+minor_cast 주입·name 제외/배치(scene 뒤·memories 앞)/예산(setting 우선·
+  조연 prefix whole-or-drop)/게이팅(OOC 제외·`story_applied_at` 유일 판정·archived는
+  생성UI만)/재적용 v1 제외→`story-reapply`/슬라이스 목록/테스트/리스크) 전부 그대로.
+- git 직접 확인: HEAD `959ceb0` 무변경(신규 커밋 없음, "커밋 없음" 보고와 일치).
+- `apps/**` git status 직접 확인: 깨끗함. `PROGRESS.md`의 `M` 표시는 mtime
+  `2026-08-28 11:31`(어제, 이번 액션 이전) 기존 dirt — 오늘 신규 수정 아님.
+- 마이그레이션 디렉터리 직접 ls: `0009_*.sql` 없음(0008까지). 라이브 DB 직접 SELECT:
+  `schema_migrations` 여전히 0001~0008만, `conversations` 컬럼 정확히 21개(story 관련
+  컬럼 0개) — 라이브 DB 무접촉 확인.
+- 서비스: `MainPID=111068`(재시작 전과 동일, 무변경).
+- `STATUS.md` mtime 직접 확인: 어제(2026-08-28) 그대로 — hermes가 리바인드 안 건드림
+  확인(보고와 일치).
+- 결론: 문서 확정 보고 전부 정확. 구현(schema/build/UI) 미착수 그대로.
+- 이 검증 후 `STATUS.md`에 `Story-inject ADR` 포인터 행 + Bucket 3 `F8b-story-inject`
+  행(ADR accepted, 다음 잠금 `story-inject-schema`, forbidden 목록: 라이브 stories 조회/
+  applied_at 없이 주입/archived를 build 시점 체크/v1 재적용 버튼/empty 0009) 직접 추가,
+  업로드 후 sha256 재확인 일치. `F8-story` 행의 "Inject still not opened" 문구도
+  "F8b-story-inject로 게이트됨"으로 갱신(문서 표류 방지).
+- 다음 코드는 `story-inject-schema`. 침묵은 그 잠금이 아님.
+
+
+## [2026-08-29 story-inject-schema 닫음 — Claude Code 독립검증] `[RP-Chat / F8b-story-inject / schema-verify]`
+- COIN_MANAGER 보고(격리 스키마만, 라이브 0, 커밋/배포/재시작/PROGRESS.md 없음)를
+  자가보고로 두지 않고 전부 직접 재확인.
+- git 직접 확인: HEAD `959ceb0` 무변경(신규 커밋 없음). tracked-modified =
+  `apps/server/src/routes/conversations.ts`/`apps/server/src/types.ts`/
+  `bench/storySchema.test.ts`/`deploy/schema-compat.json`. untracked =
+  `apps/server/migrations/0009_conversation_story.sql`/
+  `apps/server/src/prompt/resolveStory.ts`/`bench/storyInjectSchema.test.ts` — 보고와
+  정확히 일치.
+- `0009_conversation_story.sql` sha256 `b4560a34e4bc5510fce4b982f8c295e285c2a8f8c2b8697a9cec497002c58df9`/
+  478B 직접 재계산 일치. 내용 직접 읽음 — ADR §3 스키마와 동일한 5컬럼(`story_id` FK
+  `stories(id)` ON DELETE SET NULL / `story_applied_at` / `story_name_snapshot` /
+  `story_setting_snapshot` / `story_minor_cast_snapshot`), `BEGIN/COMMIT` 없음.
+- `conversations.ts` diff 전문 읽음: `createSchema`에 `storyId` optional 추가,
+  `d.storyId` 있으면 라이브 `stories` 조회(404 가드) 후 단일 `INSERT`문에 5컬럼 전부
+  동시 기록(`storyMinorCastSnapshot = story.minor_cast` — 재직렬화 없이 원문 그대로 복사,
+  ADR 요구사항과 정확히 일치). `types.ts` diff: `ConversationRow`에 5필드만 추가.
+  `resolveStory.ts` 전문 읽음: `if (!conv.story_applied_at) return null` 외 DB 쿼리 0,
+  손상된 JSON은 `catch`로 빈 배열+`console.warn` — ADR pseudocode와 동일.
+  `schema-compat.json` diff: `0009_conversation_story.sql` 한 줄 추가뿐.
+  `storySchema.test.ts` diff: 기존 "conversations엔 story_id 없음" 단언이 F8b로 인해
+  뒤집혀야 하므로 "character_id NOT NULL 유지 + story_id 있음 + memories엔 여전히 없음"으로
+  갱신됨 — 정확한 의도적 수정(회귀 약화 아님).
+- 벤치 **직접 재실행**(tsx, node v22 확인): `storyInjectSchema.test.ts` **22/22 PASS**
+  (보고와 일치 — FK ON DELETE SET NULL 실제 동작(test 15/22), resolveStory 3종
+  게이팅(test 16-18), POST 단일-INSERT 5컬럼 검증(test 11/19-21) 등 자가주장이 아니라
+  실행 가능한 단언). 회귀 `storySchema.test.ts` **24/24 PASS**, `conversationRowPersonaFields.test.ts`
+  **6/6 PASS** — 전부 보고 개수와 정확히 일치. server typecheck **EXIT 0**(직접 재실행).
+- `builder.ts`/`templates.ts`/`config.ts`/`apps/web/` diff --stat 전부 빈 출력(무접촉)
+  직접 확인 — buildPrompt/renderStory/PROMPT_VERSION/UI 손대지 않음 보고와 일치.
+- **라이브 DB 직접 SELECT**: `schema_migrations` 여전히 0001~0008만(0009 없음),
+  `conversations` 컬럼 정확히 21개(story 관련 컬럼 0개) — 라이브 무접촉 확인.
+- 서비스: `MainPID=111068`(무변경). `PROGRESS.md` mtime 확인: 이 슬라이스 파일들
+  (04:43)보다 이전(04:29, 직전 ADR 검증 때 내가 직접 append한 시각) — 오늘 이 슬라이스로
+  인한 추가 수정 없음 확인.
+- 결론: story-inject-schema 보고 전부 정확. 라이브는 여전히 0009 미적용 상태 그대로.
+  `lock-state.md`는 hermes가 이미 정확히 갱신해둠(추가 수정 불필요). `STATUS.md` Bucket 3
+  `F8b-story-inject` 행을 이 검증 내용으로 갱신, `F8-story` 행의 forbidden 목록에서
+  `conversations.story_id`는 F8b로 명시적으로 뒤집혔으므로 제거.
+- 다음 코드는 `story-inject-build`. 침묵은 그 잠금이 아님.
+
+
+## [2026-08-29 story-inject-build 닫음 — Claude Code 독립검증] `[RP-Chat / F8b-story-inject / build-verify]`
+- COIN_MANAGER 보고(격리 벤치만, 라이브 0, UI/커밋/배포/재시작/PROGRESS.md 없음, RED→GREEN
+  진행)를 자가보고로 두지 않고 전부 직접 재확인.
+- git 직접 확인: HEAD `959ceb0` 무변경(신규 커밋 없음). 이번 슬라이스로 추가 수정된 파일 =
+  `apps/server/src/config.ts`(PROMPT_VERSION)/`apps/server/src/prompt/builder.ts`/
+  `apps/server/src/prompt/templates.ts`/`bench/rpEngineR1.test.ts`/`bench/storyDetail.test.ts`/
+  `bench/storyTabs.test.ts` + 신규 `bench/storyInjectBuild.test.ts`. `conversations.ts`/
+  `types.ts`/`schema-compat.json`는 diff 라인수 대조로 schema 슬라이스 이후 무변경(carry-over)
+  확인.
+- `config.ts` diff: `PROMPT_VERSION` `'2026.08.22-r1'` → `'2026.08.22-r1+story'` 한 줄뿐.
+  `rpEngineR1.test.ts` diff: 하드코딩된 구버전 문자열 단언 1곳만 신버전으로 갱신(다른 곳
+  손대지 않음).
+- `storyDetail.test.ts`/`storyTabs.test.ts` diff: "builderSrc가 'stories'/'minor_cast'
+  문자열을 포함하지 않음" 단언이 이제 inject가 실제로 존재하므로 필연적으로 깨지는 것을
+  "builder.ts가 라이브 `FROM stories` 쿼리를 하지 않는다"는 더 정밀한 불변식으로 교체 —
+  약화가 아니라 이 ADR이 정확히 보장해야 하는 것(라이브 미조회)으로 재타겟팅된 것 확인.
+- `builder.ts` diff 전문 읽음: `resolveStory`/`renderStory` import 추가, `STORY_SETTING_SHARE=0.7`/
+  `STORY_CAST_SHARE=0.3` 상수 추가, `storyCastLine` 헬퍼, `isOoc ? null : resolveStory(conv)`로
+  OOC 게이팅, `storyRoom = fixed 잔여`, setting은 `truncateToTokens`로 0.7 상한 절단, 조연은
+  snapshot 배열 순서대로 prefix whole-or-drop(하나 초과 시 이후 전부 제외, `dropping` 플래그로
+  구현 확인) + cast room이 reserved 30%와 "setting 미사용 잔여" 중 큰 쪽을 취하도록(설정이
+  짧으면 조연이 여유를 더 흡수) 방어적으로 구현 — ADR이 위임한 "정확한 배분은 build 슬라이스
+  에서 벤치로 확정"을 정확히 이행. `systemParts` 배열에서 `storyText`가 `sceneText` 바로 뒤,
+  `renderMemories(memItems)` 바로 앞에 삽입된 것 직접 확인(ADR §5 배치와 정확히 일치).
+  `resolveStory(conv)` 호출 외 `builder.ts` 전체에 `FROM stories` 쿼리 0건(grep 확인).
+- `templates.ts`의 `renderStory` 전문 읽음: 타입 시그니처 자체에 `name` 필드가 없음(구조적으로
+  주입 불가), setting/조연 각각 비면 헤더 생략, 둘 다 비면 `null` 반환, `substitute`로
+  `{{char}}`/`{{user}}` 치환 — ADR §4 그대로.
+- **벤치 직접 재실행**(tsx): 신규 `storyInjectBuild.test.ts` **14/14 PASS**(재현성 테스트13
+  "라이브 stories.setting 변경이 build에 영향 없음", 테스트14 "archived=1이어도 build 불변"
+  포함 — ADR의 핵심 보장 2가지가 실행 가능한 단언으로 검증됨). 회귀 전부 직접 재실행 —
+  `storyInjectSchema` 22/22, `storySchema` 24/24, `storyTabs` 5/5, `storyDetail` 7/7,
+  `rpEngineR1` 18/18, `userNoteInject` 4/4, `personaResolve` 9/9,
+  `conversationRowPersonaFields` 6/6, `builderDifferential` 1/1(캐릭터라이제이션 — 기존
+  buildPrompt 결정 로직이 이번 변경으로 안 흔들렸음을 확인) — 보고 개수와 전부 정확히 일치.
+  server typecheck **EXIT 0**.
+- `apps/web` diff --stat 빈 출력(UI 무접촉) 직접 확인.
+- **부수 발견(이 슬라이스와 무관)**: 정규 회귀 목록 밖의 `bench/userNoteRequestRoundtrip.test.ts`를
+  전수 확인 차 같이 돌려보니 A-06이 실패 — stale 소스패턴 단언(`/if \(!patched\) \{/`)이
+  `ConversationUserNotePage.tsx`의 현재 삼항연산자 스타일과 안 맞음. 이 테스트파일과
+  `apps/web` 둘 다 오늘 git status상 무변경(HEAD 그대로) — story-inject 작업 이전부터
+  있던 사전 결함, 이번 슬라이스가 만든 회귀 아님. STATUS.md에 기록해 표류 방지.
+- 라이브 DB 직접 SELECT: `schema_migrations` 여전히 0001~0008만, `conversations` 21컬럼
+  그대로 — 0009 미적용 확인. 서비스 `MainPID=111068` 무변경. `PROGRESS.md` tail이 여전히
+  직전 schema-슬라이스 검증 블록 그대로(이 슬라이스로 인한 추가 수정 없음) 확인.
+- 결론: story-inject-build 보고 전부 정확. 다음 코드는 `story-inject-ui`. 침묵은 그
+  잠금이 아님.
+
+
+## [2026-08-29 story-inject-ui 닫음 — Claude Code 독립검증] `[RP-Chat / F8b-story-inject / ui-verify]`
+- COIN_MANAGER 보고(격리 벤치만, 라이브 0, 커밋/배포/재시작/PROGRESS.md/CharacterPage/
+  재적용 없음, RED→GREEN)를 자가보고로 두지 않고 전부 직접 재확인.
+- git 직접 확인: HEAD `959ceb0` 무변경. 이번 슬라이스로 추가된 것은 `apps/web/src/pages/
+  StoryPage.tsx`(수정)와 신규 `bench/storyInjectUi.test.ts`뿐 — `CharacterPage.tsx`,
+  `apps/server/src/routes/stories.ts` 둘 다 git status에 없음(무변경) 직접 확인.
+- 파일 sha256 직접 재계산: `StoryPage.tsx` `4c4e417f8e9cc79e657844d2f47fd08df06bfccc4db6d256102b57fe5fd4abec`,
+  `storyInjectUi.test.ts` `ec146b81b19ffbaf4c5b86d4bb1d6b2de7e0d34e41b88ff677eb047344142e80` —
+  둘 다 보고값과 일치.
+- `StoryPage.tsx` diff 전문 읽음: CTA 버튼 "이 스토리로 대화 시작"이
+  `{!story.archived && (...)}`로 통째로 감싸져 보관 스토리는 버튼 자체가 안 뜸(숨김이지
+  disabled 아님), `disabled={hosted.length === 0}`로 호스팅 0명이면 비활성. hosted===1이면
+  자동 프리셀렉트하되 "시작" 버튼은 별도로 눌러야 함(자동 네비게이션 없음). `BottomSheet`로
+  호스팅 메인 `<select>` 택1 → `startChat()`이 `post('/api/conversations', {characterId,
+  storyId: id, mode: 'story'})` 호출 후 `navigate('/chat/'+conv.id)` — 보고와 정확히 일치.
+  재적용 관련 UI/버튼 전혀 없음(grep으로 diff 전체에 'reapply'/'재적용' 0건 확인).
+- `apps/server/src/routes/stories.ts`가 이번 슬라이스에서 무변경임을 git status로 직접
+  확인하고, 그 안의 `GET /api/stories`가 여전히 `WHERE s.archived = 0`(기존 그대로)임을
+  직접 grep — "목록은 기존 필터 그대로" 보고와 일치.
+- 벤치 **직접 재실행**(tsx): 신규 `storyInjectUi.test.ts` **7/7 PASS**(archived 시작옵션
+  제외, 재적용 컨트롤 없음, 캐릭터탭 시작은 여전히 storyId 없음 등 실행 가능한 단언으로
+  검증됨). 회귀 9종 전부 직접 재실행 — `storyDetail` 7/7, `storyTabs` 5/5,
+  `storyInjectSchema` 22/22, `storySchema` 24/24, `storyInjectBuild` 14/14, `rpEngineR1`
+  18/18, `userNoteInject` 4/4, `personaResolve` 9/9, `conversationRowPersonaFields` 6/6,
+  `builderDifferential` 1/1 — 전부 보고 개수와 정확히 일치. web typecheck **EXIT 0**,
+  server typecheck **EXIT 0**(둘 다 직접 재실행 — UI 슬라이스라 web도 재확인).
+- 라이브 DB 직접 SELECT: `schema_migrations` 여전히 0001~0008만, `conversations` 21컬럼
+  그대로 — 0009 미적용 확인. 서비스 `MainPID=111068` 무변경. `PROGRESS.md` tail이 여전히
+  직전 build-슬라이스 검증 블록 그대로(이 슬라이스로 인한 추가 수정 없음) 확인.
+- 결론: story-inject-ui 보고 전부 정확. F8b-story-inject의 코드 슬라이스(schema→build→ui)
+  전부 디스크상 완결. 라이브는 여전히 0008까지만.
+- 다음은 **라이브 배포 단계**(0009 마이그레이션 최초 적용 + 서버/웹 배포 + 재시작).
+  0008과 동일하게 conversations 테이블 실컬럼 추가가 걸린 첫 F8b 라이브 마이그레이션이므로
+  사전백업+전후 정합성검증 의례 적용 예정. 사용자의 명시적 `배포`+`재시작` 대기 중 —
+  침묵/보고만으로는 진행하지 않음.
+
+
+## [2026-08-29 bench-stale-01 닫음 — Claude Code 직접 수행] `[RP-Chat / bench-hygiene / test-fix]`
+- 배경: story-inject-build 검증 중 발견한 무관 사전결함(`bench/userNoteRequestRoundtrip.test.ts`
+  A-06 실패)을 별도 백그라운드 task로 분리했었음. 사용자가 그 task를 다른 실행환경에서
+  시도했으나 그쪽엔 `rpchat` SSH 접속·`rpchat-pwa` 스킬이 없어 착수 불가 보고를 받고 회수함
+  (task_060b0283 dismiss) — 이 세션엔 둘 다 있으므로 여기서 직접 수행.
+- Bucket 분류: **Bucket 2**(문서/테스트 부채, `apps/**` 코드 동작 변경 없음) — 별도 명명
+  잠금 없이 진행 가능. 다만 착수 전 실제 동작이 맞는지부터 직접 확인.
+- **원인 재확인**: `ConversationUserNotePage.tsx`의 `runUserNoteSave()` 읽음 — 에러 시
+  `args.onFailure(patched ? 'reload' : 'patch', kept, err)` 호출뿐, 소비자(`save()`)의
+  `onFailure`는 `_draftKept`를 안 쓰고 `setStatusMessage`만 호출 — `draft` state를 건드리는
+  코드 자체가 실패경로에 없음. 즉 "에러 시 draft 안 지움" 실제 동작은 **정상**(호출 자체가
+  없어서 보존됨, 방어적으로도 안전). 옛 `if (!patched) {` 블록 문구가 사라진 건 순수 리팩터
+  (삼항연산자로 스타일만 변경, 로직 동일) — 실제 회귀 아님.
+- **수정**: `bench/userNoteRequestRoundtrip.test.ts` A-06 한 줄만 변경 —
+  `assert.match(page, /if \(!patched\) \{/);` → `assert.match(page, /patched \? 'reload' : 'patch'/);`
+  나머지 3개 negative assertion(`doesNotMatch(/setDraft\(''\)/)` 등)은 무변경 — 여전히
+  올바르게 "draft 안 지움/거짓 성공메시지 없음"을 지킴. fetch→로컬편집→scp 후 sha256
+  일치 확인(`6c591b6f…`).
+- **재검증**: `userNoteRequestRoundtrip.test.ts` 직접 재실행 **8/8 PASS**(이전 7 passed/
+  1 failed → 전부 통과). 인접 회귀 직접 재실행: `userNoteInject` 4/4, `conversationUserNoteSaveLock`
+  8/8, `conversationUserNoteSaveLockLifecycle` 8/8, `conversationUserNotePage` 7/7,
+  web typecheck EXIT 0. `git status`/`git diff --stat`로 이 수정이 정확히 그 테스트파일
+  한 개뿐임을 확인(다른 apps/** diff는 전부 기존 F8b-story-inject 작업, 오늘 이 수정과 무관).
+- 커밋/배포/재시작/라이브 DB 전부 무접촉.
+- `STATUS.md` Bucket 2에 `bench-stale-01` 행 추가(closed), Bucket 3 `F8b-story-inject`
+  행의 "부수 발견" 문구를 이 항목 참조로 갱신.
+
+
+## [2026-08-29T07:09Z 커밋+백업+배포+재시작 (F8b-story-inject 라이브 반영, 0009 실적용) — Claude Code 독립검증] `[RP-Chat / F8b-story-inject / live-migration-verify]`
+- COIN_MANAGER 보고(순서대로 커밋→백업→배포→재시작, 라이브 0009 실적용)를 자가보고로 두지
+  않고 전부 직접 재확인 — F8b의 첫(그리고 유일한) 라이브 마이그레이션이라 0008 때와
+  동일한 수준으로 꼼꼼히 봄.
+- **커밋**: `git log`/`describe --tags --dirty` 확인 — `b66635e`, `v0.0.19-66-gb66635e-dirty`.
+  `git show --stat b66635e` 직접 확인 — 정확히 16파일(migration/config/builder/
+  resolveStory/templates/conversations.ts/types.ts/StoryPage.tsx + 벤치 5개 + schema-compat),
+  `PROGRESS.md`/`bench/userNoteRequestRoundtrip.test.ts`(A-06 수정) 둘 다 커밋에 없음
+  (grep으로 확인) — "PROGRESS.md는 diff검사가 막혀 미커밋" 보고와 일치. 현재 워킹트리
+  dirty 파일이 정확히 이 두 개뿐임도 `git status`로 확인.
+- **백업 직접 검증**: `rpchat-pre-0009-conversation-story.db` 크기 1,368,064B/sha256
+  `142ed40fa806aad69348b5f189dcdd45d60494da21d867fc9e5746009305c6ec` 직접 재계산 일치.
+  열어서 확인 — `schema_migrations`는 0001~0008까지만, `conversations` 21컬럼,
+  `integrity_check` ok, 서리(`f89ace9b…`)·카이(`255f96a2…`) 존재 — 진짜 사전 스냅샷.
+- **배포 자산 직접 확인**: `index-Bygnza2t.js`/`index-GL6MqQdo.css` 디스크에 존재,
+  `index.html` sha256 `417402972ea62145549b67c6de412cfec5a334a825fa4bd6120343fd6afae3c3`
+  재계산 일치. server dist grep: `PROMPT_VERSION = '2026.08.22-r1+story'`,
+  `resolveStory.js` 컴파일 존재, `renderStory` 참조가 `templates.js`/`builder.js` 둘 다에
+  있음 확인.
+- **재시작**: `systemctl --user show -p MainPID` → `140536`(보고와 일치), `ps -p 111068`
+  (구 PID) → 프로세스 없음 확인. `/api/health` → `ok:true, db:ok,
+  promptVersion:"2026.08.22-r1+story"`. `/api/characters` 헤더 없이 401.
+- **Serve HTTPS**: `https://hermes.tailf2217c.ts.net/` 응답 sha256이 디스크
+  `index.html`과 완전 일치, 구 번들명(`index-C_ZB2-Dz.js`) 0건.
+- **라이브 DB 직접 SELECT**(마이그레이션 적용 후 상태): `schema_migrations`에 0009 포함.
+  `conversations` 정확히 26컬럼(`character_id` notnull=1 유지 — 기존 불변식 안 깨짐),
+  신규 5개 story 컬럼 존재. `PRAGMA foreign_key_check` 빈 배열(위반 0). `PRAGMA
+  integrity_check` ok. 행수 전부 직접 카운트 — conversations=6/characters=8/stories=0/
+  story_characters=0/messages=104/memories=0/personas=4, 보고와 정확히 일치(배포
+  전후 불변). **기존 6개 대화 전부 SELECT해서 story_id/story_applied_at/3 snapshot
+  필드가 전부 NULL임을 직접 확인** — 소급 프레이밍/의도치 않은 스토리 연결 0건.
+  서리·카이 둘 다 무손상 재확인.
+- 결론: 커밋·백업·배포·재시작·라이브 0009 마이그레이션 보고 전부 정확. 사전백업 실재
+  확인(복구 경로 확보), 라이브 무결성(fk/integrity) 정상, 기존 데이터(대화6/캐릭터8/
+  메시지104/서리/카이) 완전 무손상, 신규 컬럼은 전부 NULL(순수 additive, 소급 없음).
+  `stories`/`story_characters`는 여전히 0행 — 실사용(스토리 생성 후 그걸로 대화 시작)은
+  아직 아무도 안 해봄. 그 순간이 실제 첫 story_id 값 생성 시점이 될 것.
+- `PROGRESS.md`/A-06 bench 수정 여전히 의도적 미커밋(워킹트리 dirty). `bench-stale-01`은
+  이미 별도로 닫혀 있음(Bucket 2, 이 배포와 무관).
+- F8b-story-inject 전체(ADR→schema→build→ui→라이브배포) 완결. STATUS.md 해당 행을
+  "shipped+live"로 압축 갱신.
