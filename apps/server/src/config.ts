@@ -15,7 +15,7 @@ function num(name: string, def: number): number {
 
 export type AuthMode = 'tailscale' | 'token' | 'none';
 
-export const PROMPT_VERSION = '2026.08.22-r1';
+export const PROMPT_VERSION = '2026.08.22-r1+story';
 
 export const config = {
   port: num('PORT', 8787),

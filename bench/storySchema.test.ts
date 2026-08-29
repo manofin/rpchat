@@ -57,9 +57,8 @@ async function main() {
     assert.equal(compat.required_migrations.includes('0007_persona_snapshot.sql'), true);
   });
 
-  await t('builder.ts does not mention stories / minor_cast / story_characters', () => {
-    assert.equal(builderSrc.includes('stories'), false);
-    assert.equal(builderSrc.includes('minor_cast'), false);
+  await t('builder.ts does not query live stories table', () => {
+    assert.equal(/\bFROM\s+stories\b/i.test(builderSrc), false);
     assert.equal(builderSrc.includes('story_characters'), false);
   });
 
@@ -331,8 +330,10 @@ async function main() {
     assert.equal(n.n, 0);
   });
 
-  await t('conversations still have no story_id column', () => {
-    assert.equal(cols(db, 'conversations').includes('story_id'), false);
+  await t('conversations.character_id NOT NULL; memories still have no story_id', () => {
+    const info = db.prepare('PRAGMA table_info(conversations)').all() as Array<{ name: string; notnull: number }>;
+    assert.equal(info.find((c) => c.name === 'character_id')?.notnull, 1);
+    assert.equal(info.some((c) => c.name === 'story_id'), true);
     assert.equal(cols(db, 'memories').includes('story_id'), false);
   });
 

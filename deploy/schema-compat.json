@@ -9,6 +9,7 @@
     "0005_summary_tiers.sql",
     "0006_user_note.sql",
     "0007_persona_snapshot.sql",
-    "0008_stories.sql"
+    "0008_stories.sql",
+    "0009_conversation_story.sql"
   ]
 }

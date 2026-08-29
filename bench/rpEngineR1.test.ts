@@ -161,7 +161,7 @@ t('15 renderScene: 빈 장면은 null, 있는 필드만 정본 헤더로', () =>
 t('16 OOC 는 서사 본문 금지, 프롬프트 버전은 R1', () => {
   assert.match(OOC_INSTRUCTION, /서사 본문을 쓰지 않는다/);
   assert.match(OOC_INSTRUCTION, /작가\/진행자로서/);
-  assert.equal(PROMPT_VERSION, '2026.08.22-r1');
+  assert.equal(PROMPT_VERSION, '2026.08.22-r1+story');
 });
 
 console.log(`\n${passed} passed`);

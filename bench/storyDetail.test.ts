@@ -89,9 +89,8 @@ t('DET-06 types include StoryCharacter; no worlds', () => {
   assert.equal(homeSrc.includes('worlds'), false);
 });
 
-t('DET-07 no inject, no story_id on conversations, characters list unfiltered', () => {
-  assert.equal(builderSrc.includes('stories'), false);
-  assert.equal(builderSrc.includes('minor_cast'), false);
+t('DET-07 UI has no inject; characters list unfiltered', () => {
+  assert.equal(/\bFROM\s+stories\b/i.test(builderSrc), false);
   assert.equal(builderSrc.includes('story_characters'), false);
   assert.equal(pageSrc.includes('buildPrompt'), false);
   assert.equal(pageSrc.includes('PROMPT_VERSION'), false);

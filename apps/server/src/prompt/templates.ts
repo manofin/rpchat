@@ -129,6 +129,33 @@ export function renderEpisode(text: string | null): string | null {
   return text && text.trim() ? `### 지난 에피소드\n${text.trim()}` : null;
 }
 
+function storyCastLine(item: unknown): string | null {
+  if (!item || typeof item !== 'object') return null;
+  const rec = item as { name?: unknown; note?: unknown };
+  const name = String(rec.name ?? '').trim();
+  const note = String(rec.note ?? '').trim();
+  if (!name && !note) return null;
+  return `- ${name}: ${note}`;
+}
+
+/** setting + minorCast only. story name is not injected. Empty parts omit their header. */
+export function renderStory(
+  story: { setting: string; minorCast: unknown[] } | null,
+  charName: string,
+  userName: string,
+): string | null {
+  if (!story) return null;
+  const parts: string[] = [];
+  const setting = (story.setting ?? '').trim();
+  if (setting) parts.push(`### 스토리 설정\n${setting}`);
+  const lines = (Array.isArray(story.minorCast) ? story.minorCast : [])
+    .map(storyCastLine)
+    .filter((x): x is string => !!x);
+  if (lines.length) parts.push(`### 조연\n${lines.join('\n')}`);
+  if (!parts.length) return null;
+  return substitute(parts.join('\n\n'), charName, userName);
+}
+
 /** 요약 + 후보 기억 추출 프롬프트 (JSON 만 출력하도록 요구) */
 export function renderSummaryPrompt(charName: string, userName: string, previousSummary: string | null, transcript: string): string {
   return [

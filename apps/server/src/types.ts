@@ -104,6 +104,11 @@ export interface ConversationRow {
   persona_personality_snapshot: string | null;
   persona_relationship_snapshot: string | null;
   persona_applied_at: string | null;
+  story_id: string | null;
+  story_applied_at: string | null;
+  story_name_snapshot: string | null;
+  story_setting_snapshot: string | null;
+  story_minor_cast_snapshot: string | null;
 }
 
 export type MessageStatus = 'streaming' | 'complete' | 'interrupted' | 'error';

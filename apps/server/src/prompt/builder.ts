@@ -7,8 +7,9 @@ import { loreEntryMatch } from './loreMatch.js';
 import { MIN_EPISODE_TOKENS, SCENE_RECENT_GUARD, allocateSummaryBudget } from './summaryBudget.js';
 import { allocateUserContextBudget } from './userContextBudget.js';
 import {
-  OOC_INSTRUCTION, STORY_CHOICES_INSTRUCTION, renderCharacter, renderEpisode, renderLore, renderMemories, renderPersona, renderRules, renderScene, renderState, renderSummary, substitute,
+  OOC_INSTRUCTION, STORY_CHOICES_INSTRUCTION, renderCharacter, renderEpisode, renderLore, renderMemories, renderPersona, renderRules, renderScene, renderState, renderStory, renderSummary, substitute,
 } from './templates.js';
+import { resolveStory } from './resolveStory.js';
 
 export interface BuiltPrompt {
   messages: ChatMessage[];
@@ -22,8 +23,19 @@ export interface BuiltPrompt {
 }
 
 const SHARE = { fixed: 0.25, lore: 0.15, memory: 0.15 }; // 나머지(45%+여분)는 최근 대화
+export const STORY_SETTING_SHARE = 0.7;
+export const STORY_CAST_SHARE = 0.3;
 const REPLY_MARGIN = 64;
 const LORE_SCAN_MESSAGES = 6;
+
+function storyCastLine(item: unknown): string | null {
+  if (!item || typeof item !== 'object') return null;
+  const rec = item as { name?: unknown; note?: unknown };
+  const name = String(rec.name ?? '').trim();
+  const note = String(rec.note ?? '').trim();
+  if (!name && !note) return null;
+  return `- ${name}: ${note}`;
+}
 
 export function isOocMessage(m: MessageRow): boolean {
   return m.role === 'user' && /^\s*[\(\[]\s*ooc\s*[\)\]]/i.test(m.content);
@@ -131,6 +143,62 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   }
   sections.push({ name: '시스템 규칙+카드+페르소나+장면', est_tokens: fixedEst, budget: budgets.fixed, note: fixedNote });
   used += fixedEst;
+
+  // 1b) 스토리 스냅샷: fixed 잔여. setting 0.7 truncate → 조연 잔여 prefix whole-or-drop. 라이브 stories 조회 없음.
+  let storyText: string | null = null;
+  const resolvedStory = isOoc ? null : resolveStory(conv);
+  if (resolvedStory) {
+    const settingRaw = (resolvedStory.setting ?? '').trim();
+    const castItems = Array.isArray(resolvedStory.minorCast) ? resolvedStory.minorCast : [];
+    const hasSetting = !!settingRaw;
+    const hasCast = castItems.some((it) => storyCastLine(it));
+    const storyRoom = Math.max(0, budgets.fixed - fixedEst);
+    const settingCap = hasSetting && hasCast
+      ? Math.floor(storyRoom * STORY_SETTING_SHARE)
+      : hasSetting ? storyRoom : 0;
+    const reservedCast = hasSetting && hasCast
+      ? Math.floor(storyRoom * STORY_CAST_SHARE)
+      : hasCast ? storyRoom : 0;
+    let settingUsed = '';
+    let settingTruncated = false;
+    if (hasSetting) {
+      if (settingCap <= 0) settingTruncated = true;
+      else {
+        settingUsed = truncateToTokens(settingRaw, settingCap, cal);
+        settingTruncated = settingUsed !== settingRaw;
+      }
+    }
+    const settingTokens = settingUsed ? estimateTokens(`### 스토리 설정\n${settingUsed}`, cal) : 0;
+    const castRoom = hasCast ? Math.max(reservedCast, Math.max(0, storyRoom - settingTokens)) : 0;
+    const includedCast: unknown[] = [];
+    let droppedCast = 0;
+    if (hasCast) {
+      let usedCast = 0;
+      let dropping = false;
+      for (const item of castItems) {
+        const line = storyCastLine(item);
+        if (!line) continue;
+        if (dropping) { droppedCast++; continue; }
+        const t = estimateTokens(line, cal);
+        if (usedCast + t > castRoom) {
+          dropping = true;
+          droppedCast++;
+          continue;
+        }
+        includedCast.push(item);
+        usedCast += t;
+      }
+    }
+    storyText = renderStory({ setting: settingUsed, minorCast: includedCast }, charName, userName);
+    const storyEst = storyText ? estimateTokens(storyText, cal) : 0;
+    if (storyText) {
+      const notes: string[] = [];
+      if (settingTruncated) notes.push('절단');
+      if (droppedCast) notes.push(`조연 ${droppedCast}건 제외`);
+      sections.push({ name: '스토리 설정', est_tokens: storyEst, budget: storyRoom, note: notes.length ? notes.join(', ') : undefined });
+      used += storyEst;
+    }
+  }
 
   // 2) 활성 로어: 최근 발화 키워드 매칭 (결정론적)
   const scanText = history.slice(-LORE_SCAN_MESSAGES).map((m) => m.content).join('\n').toLowerCase();
@@ -318,7 +386,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   used += recentEst;
 
   // 5) 시스템 메시지 합성
-  const systemParts = [rules, charText, personaText, noteIncluded ? noteText : null, sceneText, renderMemories(memItems), stateText, renderSummary(summaryText), episodeText, sceneTierText, loreText].filter((x): x is string => !!x);
+  const systemParts = [rules, charText, personaText, noteIncluded ? noteText : null, sceneText, storyText, renderMemories(memItems), stateText, renderSummary(summaryText), episodeText, sceneTierText, loreText].filter((x): x is string => !!x);
   if (isOoc) systemParts.push(OOC_INSTRUCTION);
   else systemParts.push(substitute(STORY_CHOICES_INSTRUCTION, charName, userName));
   const systemText = systemParts.join('\n\n');

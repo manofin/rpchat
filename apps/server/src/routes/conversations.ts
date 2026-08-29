@@ -7,7 +7,7 @@ import { interruptOrphanStreaming } from '../db/generation.js';
 import { deepestLeaf, getPath, insertMessage, messageOut, setHead, updateMessage } from '../db/tree.js';
 import { buildPrompt, resolvePersona } from '../prompt/builder.js';
 import { substitute } from '../prompt/templates.js';
-import type { CharacterRow, ConversationRow, MessageRow, PersonaRow, Scene } from '../types.js';
+import type { CharacterRow, ConversationRow, MessageRow, PersonaRow, Scene, StoryRow } from '../types.js';
 import { characterOut, personaOut } from './characters.js';
 
 const sceneSchema = z.object({
@@ -21,6 +21,7 @@ const sceneSchema = z.object({
 
 const createSchema = z.object({
   characterId: z.string().min(1),
+  storyId: z.string().min(1).optional(),
   personaId: z.string().nullable().optional(),
   title: z.string().max(120).optional(),
   mode: z.enum(['chat', 'story']).default('story'),
@@ -86,12 +87,27 @@ export function conversationRoutes(ctx: Ctx) {
       const profileName = d.profileName ?? 'rp-balanced';
       const id = uid();
       const t = nowIso();
+      let storyId: string | null = null;
+      let storyAppliedAt: string | null = null;
+      let storyNameSnapshot: string | null = null;
+      let storySettingSnapshot: string | null = null;
+      let storyMinorCastSnapshot: string | null = null;
+      if (d.storyId) {
+        const story = one<StoryRow>(db, 'SELECT * FROM stories WHERE id = ?', d.storyId);
+        if (!story) return reply.code(404).send({ error: 'story not found' });
+        storyId = story.id;
+        storyAppliedAt = t;
+        storyNameSnapshot = story.name;
+        storySettingSnapshot = story.setting;
+        storyMinorCastSnapshot = story.minor_cast;
+      }
       db.transaction(() => {
         run(
           db,
-          `INSERT INTO conversations (id, character_id, persona_id, title, mode, profile_name, scene_json, head_message_id, prompt_version, created_at, updated_at, last_message_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, NULL)`,
+          `INSERT INTO conversations (id, character_id, persona_id, title, mode, profile_name, scene_json, head_message_id, prompt_version, created_at, updated_at, last_message_at, story_id, story_applied_at, story_name_snapshot, story_setting_snapshot, story_minor_cast_snapshot)
+           VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, NULL, ?, ?, ?, ?, ?)`,
           id, character.id, d.personaId ?? null, d.title ?? '', d.mode, profileName, JSON.stringify(d.scene), PROMPT_VERSION, t, t,
+          storyId, storyAppliedAt, storyNameSnapshot, storySettingSnapshot, storyMinorCastSnapshot,
         );
         const conv = loadConversation(ctx, id)!;
         const persona = resolvePersona(db, conv);

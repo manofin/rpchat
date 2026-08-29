@@ -65,8 +65,7 @@ t('TAB-04 character tab keeps GET /api/characters grid + CharacterEditor', () =>
 t('TAB-05 home tabs stay inject-free; worlds unused; characters unfiltered', () => {
   assert.ok(appSrc.includes('StoryPage'));
   assert.ok(appSrc.includes('/story/:id'));
-  assert.equal(builderSrc.includes('stories'), false);
-  assert.equal(builderSrc.includes('minor_cast'), false);
+  assert.equal(/\bFROM\s+stories\b/i.test(builderSrc), false);
   assert.equal(homeSrc.includes('worlds'), false);
   assert.equal(homeSrc.includes('world_id'), false);
   assert.equal(charSrc.includes('story_characters'), false);

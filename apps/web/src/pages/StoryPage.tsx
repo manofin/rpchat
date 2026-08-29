@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { del, get, post } from '../lib/api';
 import { back, navigate } from '../lib/router';
-import type { Character, Story, StoryCharacter } from '../types';
+import type { Character, Conversation, Story, StoryCharacter } from '../types';
 import { StoryEditor } from '../components/StoryEditor';
-import { Spinner, useUi } from '../components/ui';
+import { BottomSheet, Spinner, useUi } from '../components/ui';
 
 export function StoryPage({ id }: { id: string }) {
   const ui = useUi();
@@ -12,6 +12,8 @@ export function StoryPage({ id }: { id: string }) {
   const [loading, setLoading] = useState(true);
   const [editorOpen, setEditorOpen] = useState(false);
   const [pickId, setPickId] = useState('');
+  const [starter, setStarter] = useState(false);
+  const [startPick, setStartPick] = useState('');
 
   async function load() {
     setLoading(true);
@@ -49,6 +51,21 @@ export function StoryPage({ id }: { id: string }) {
     try {
       await del(`/api/stories/${id}/characters/${characterId}`);
       await load();
+    } catch (e) {
+      ui.toast((e as Error).message, 'err');
+    }
+  }
+
+  async function startChat() {
+    if (!startPick) return;
+    try {
+      const conv = await post<Conversation>('/api/conversations', {
+        characterId: startPick,
+        storyId: id,
+        mode: 'story',
+      });
+      setStarter(false);
+      navigate(`/chat/${conv.id}`);
     } catch (e) {
       ui.toast((e as Error).message, 'err');
     }
@@ -114,9 +131,37 @@ export function StoryPage({ id }: { id: string }) {
           </div>
         )}
 
+        {!story.archived && (
+          <button
+            className="btn primary block"
+            disabled={hosted.length === 0}
+            onClick={() => {
+              setStartPick(hosted.length === 1 ? hosted[0].character_id : '');
+              setStarter(true);
+            }}
+            style={{ marginTop: 18 }}
+          >
+            이 스토리로 대화 시작
+          </button>
+        )}
         <button className="btn danger block sm" onClick={() => void archiveStory()} style={{ marginTop: 18 }}>스토리 보관</button>
       </div>
       <StoryEditor open={editorOpen} story={story} onClose={() => setEditorOpen(false)} onSaved={() => { setEditorOpen(false); load(); }} />
+      <BottomSheet open={starter} onClose={() => setStarter(false)}>
+        <div className="sheet-body">
+          <strong>이 스토리로 대화 시작</strong>
+          <div className="field" style={{ marginTop: 12 }}>
+            <label>메인 캐릭터</label>
+            <select value={startPick} onChange={(e) => setStartPick(e.target.value)}>
+              <option value="">선택</option>
+              {hosted.map((c) => (
+                <option key={c.character_id} value={c.character_id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          <button className="btn primary block" disabled={!startPick} onClick={() => void startChat()}>시작</button>
+        </div>
+      </BottomSheet>
     </div>
   );
 }
