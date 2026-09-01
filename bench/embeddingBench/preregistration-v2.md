@@ -189,3 +189,28 @@ stdout/stderr·종료 코드·생성된 부분 산출물·자원 상태·C1 판�
   재시도 정책)을 직접 설계해 응답 → §5-1 신설로 본문 반영, §7 Task 1/2 절차를 그
   트리에 맞게 수정. 이 append 시점까지는 여전히 **문서 편집만** — 엔진 재기동·배경
   코퍼스 구축·raw 측정 등 Task 0/1 실착수는 아직 안 함(사용자의 다음 확인 대기).
+- **Task 0 완료(같은 날, §0 확정 직후 사용자가 "지금 착수" 승인)**:
+  1) **엔진 sha256 재확인**: `~/.cache/rpchat-embed/`의 H1(`paraphrase-multilingual-
+     MiniLM-L12-v2`)·H2(`multilingual-e5-small`) ONNX 파일 모두 Aug 23 23:32(engine.ts
+     최초 작성 시각과 동일) mtime으로 캐시 그대로 존재 — v1 이후 무접촉, 드리프트 없음.
+     v1 문서엔 sha256이 실제로 기록된 적이 없었음(§0-1 배경 설명이 언급한 "다운로드
+     직후 기록" 약속이 지켜지지 않았던 사전 결함 발견) → 이번이 최초 기록:
+     H1=`66fc00f5f29afcaff34092e1bdd20008ca3918265a82fb9695a551e510cc4ebc`,
+     H2=`f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193`
+     (둘 다 118,308,1xx bytes). 이후 재실행 시 이 값과 다르면 드리프트로 간주해 §6
+     "엔진 재현 실패" 분기.
+  2) **배경 코퍼스 구축**: `bench/longRp` 안에서 실제 재사용 가능한 텍스트를 조사한
+     결과, probe 결과 텍스트(9~19개)·fixture facts(20개)는 합쳐도 86개로 N≥100 미달
+     — 대신 `bench/longRp/beats-v1.json`(`_meta.note`: "User lines only... No product
+     path", 정확히 n=100으로 설계된 합성 사용자 발화 세트)을 찾아 그대로 채택. 추가
+     문장분리 없이 raw 100개 그대로 사용(새 분절 휴리스틱을 자유도로 추가하지 않기
+     위함 — loreMatch 실사용도 메시지 단위 임베딩이라 granularity 일치). 신규 파일
+     `bench/embeddingBench/fixtures/background-corpus-v2.json` 작성, `_meta`에 출처
+     경로·소스파일 sha256(`9d115f3b…`)·코퍼스 sha256(`26829ecf…`)·N=100·구축방법·
+     구축일 전부 기록. **평가셋(lore-v1.json) 완전분리 프로그램 확인**: 100개 beat
+     문자열 중 lore-v1.json JSON 전체에 리터럴로 나타나는 것 0건(§4-4 무결성 게이트
+     충족).
+  3) α=0.95는 §0-1에 이미 값으로 고정돼 있어 추가 기록 없음.
+  **아직 안 한 것**: Task 1(C1 실제 실행, raw 코사인 측정) — 사용자가 승인한 범위는
+  Task 0까지. `bench/embeddingBench/fixtures/background-corpus-v2.json`은 아직
+  git 미커밋(Task 0 산출물, 사용자 검토 대기). 라이브 코드/DB/서비스 전부 무접촉.
