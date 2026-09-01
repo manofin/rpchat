@@ -49,8 +49,10 @@ const characterSchema = z.object({
   voice_profile: z.string().max(100).nullable().optional(),
 });
 
+const LORE_TITLE_MAX = 120;
+
 const loreSchema = z.object({
-  title: z.string().min(1).max(120),
+  title: z.string().min(1).max(LORE_TITLE_MAX),
   keywords: z.array(z.string().min(1).max(40)).max(30).default([]),
   secondary_keys: z.array(z.string().min(1).max(40)).max(30).optional(),
   content: z.string().min(1).max(4000),
@@ -255,6 +257,22 @@ export function characterRoutes(ctx: Ctx) {
         d.title, JSON.stringify(d.keywords), JSON.stringify(secondary), d.content, d.priority, d.always_on ? 1 : 0, d.token_cap, d.enabled ? 1 : 0, selective ? 1 : 0, req.params.id,
       );
       return loreOut(one<LoreEntryRow>(db, 'SELECT * FROM lore_entries WHERE id = ?', req.params.id)!);
+    });
+
+    // G5-7(minimal): 비슷한 항목을 손으로 다시 치지 않게 하는 1클릭 복제. 같은 로어북, 같은 값, 새 id.
+    app.post<{ Params: { id: string } }>('/api/lore/:id/clone', async (req, reply) => {
+      const src = one<LoreEntryRow>(db, 'SELECT * FROM lore_entries WHERE id = ?', req.params.id);
+      if (!src) return reply.code(404).send({ error: 'not found' });
+      // loreSchema.title 상한(120)을 넘기면 복제본을 PUT 으로 다시 저장할 수 없게 된다 → 접미사를 남기고 앞을 자른다.
+      const suffix = ' (복제)';
+      const base = src.title.length + suffix.length > LORE_TITLE_MAX ? src.title.slice(0, LORE_TITLE_MAX - suffix.length) : src.title;
+      const id = uid();
+      run(
+        db,
+        'INSERT INTO lore_entries (id, lorebook_id, title, keywords_json, secondary_keys_json, content, priority, always_on, token_cap, enabled, selective) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        id, src.lorebook_id, `${base}${suffix}`, src.keywords_json, src.secondary_keys_json, src.content, src.priority, src.always_on, src.token_cap, src.enabled, src.selective,
+      );
+      return reply.code(201).send(loreOut(one<LoreEntryRow>(db, 'SELECT * FROM lore_entries WHERE id = ?', id)!));
     });
 
     app.delete<{ Params: { id: string } }>('/api/lore/:id', async (req, reply) => {

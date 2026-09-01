@@ -151,6 +151,16 @@ function LorePanel({ characterId, lore, setLore }: { characterId: string; lore: 
     }
   }
 
+  async function clone(id: string) {
+    try {
+      const copy = await post<LoreEntry>(`/api/lore/${id}/clone`, {});
+      setLore([...lore, copy]);
+      ui.toast('로어가 복제됨');
+    } catch (err) {
+      ui.toast((err as Error).message, 'err');
+    }
+  }
+
   async function remove(id: string) {
     if (!(await ui.confirm('이 로어 항목을 삭제할까요?', { danger: true, okLabel: '삭제' }))) return;
     await del(`/api/lore/${id}`);
@@ -189,6 +199,7 @@ function LorePanel({ characterId, lore, setLore }: { characterId: string; lore: 
               <div className="t">{e.enabled ? '' : '⏸ '}{e.title} {e.always_on && <span className="tag">항상</span>} {e.selective && <span className="tag">선택</span>}</div>
               <div className="p">{e.keywords.join(', ') || '키워드 없음'}{(e.secondary_keys ?? []).length ? ` · 2차 ${(e.secondary_keys ?? []).join(', ')}` : ''} · {e.token_cap}t</div>
             </div>
+            <button className="btn ghost sm" onClick={(ev) => { ev.stopPropagation(); clone(e.id); }} aria-label="복제">복사</button>
             <button className="btn ghost icon" onClick={(ev) => { ev.stopPropagation(); remove(e.id); }} aria-label="삭제">🗑</button>
           </div>
         ))}
