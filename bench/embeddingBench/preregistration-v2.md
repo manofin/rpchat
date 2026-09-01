@@ -214,3 +214,37 @@ stdout/stderr·종료 코드·생성된 부분 산출물·자원 상태·C1 판�
   **아직 안 한 것**: Task 1(C1 실제 실행, raw 코사인 측정) — 사용자가 승인한 범위는
   Task 0까지. `bench/embeddingBench/fixtures/background-corpus-v2.json`은 아직
   git 미커밋(Task 0 산출물, 사용자 검토 대기). 라이브 코드/DB/서비스 전부 무접촉.
+- **Task 0 산출물 커밋(같은 날)**: `82d7ce0` "bench(p3-v2): task0 engine sha256 +
+  background corpus" — `preregistration-v2.md`(이 append)+`background-corpus-v2.json`.
+- **Task 1 — C1(H2-relative) 실행 완료, 판정 = FAIL(같은 날, 사용자 "지금 착수, C1만
+  먼저" 승인 하)**: 신규 파일 `bench/embeddingBench/run-lore-v2.ts`(v1 `run-lore.ts`
+  무수정, SNAPSHOT 5행을 새 파일에 복제·sha256 재확인 후에만 진행하도록 방어코드
+  포함). 게이트 설계: entry별 배경 코사인 분포(100개) 상위 5%(α=0.95)를 그 entry의
+  컷으로 삼는 **entry별 percentile**(전역 pooled 아님 — entry마다 임베딩 공간상
+  기저 유사도 스케일이 다를 수 있어 entry 단위로 일관되게 스케일 문제를 해소하려는
+  설계, case 결과를 보기 전에 스크립트에 고정). 실행 결과(`results/lore-v2-c1-
+  1788244095933.json`, HEAD `82d7ce0`, node v22.23.2):
+  - must_fire_recall **10/10** PASS, ambiguous top-1 **4/5** PASS, 성능(encode 100문장
+    452ms, idle RSS 730.8MB) 둘 다 PASS
+  - false_trigger **2/10 FAIL**(기준 0/10) — `L17`("산맥처럼 높게 쌓인 서류 더미를
+    정리했다" → 협곡과 산맥 오발동, percentile_rank 100%), `L18`("경찰이 용의자를
+    추격했지만 놓쳤다는 뉴스" → 쫓아오는 것 오발동, percentile_rank 96%). 두 건
+    전부 keyword_hit도 true(표면 키워드 "산맥"/"추격"가 문자 그대로 일치)이면서
+    코사인 자체가 배경분포 상위 0~4%에 들 만큼 실제로 높음 — 즉 이번 실패는
+    "모델 코사인 스케일이 안 맞아서"가 아니라 **표면 어휘 중복이 관용구/무관 맥락에서도
+    임베딩 유사도를 실제로 끌어올리는 별개의 실패모드**로 보임(§1 신호가 겨냥한
+    스케일 가설과는 다른 현상 — 해석일 뿐 재해석에 의한 판정 변경 아님, 판정은
+    §4 기준 그대로 기계적 적용).
+  - **판정: C1_FAIL, 분류=A(진짜 가설 실패 — 하네스 정상 완주, 전 기준 계산 가능,
+    §4 채택기준 미달)**. §5-1 트리 그대로 적용: **C2_NOT_RUN, C3_NOT_RUN,
+    H1_B_NOT_REACHED**. 증거 동결: 실행커맨드(`npx tsx bench/embeddingBench/
+    run-lore-v2.ts`, PATH override node v22)·시작~종료 1479ms·HEAD `82d7ce0`·
+    입력 fixture sha256(lore snapshot `c35e103d…`, 배경코퍼스 `26829ecf…`)·종료코드
+    0(크래시 아님, 정상완주 후 FAIL 판정)·결과파일 전체(partial 아님) 전부 결과
+    JSON 안에 보존. C2 실제 실행 코드 자체가 스크립트에 없음(H2만 import) — 미실행의
+    구조적 증거.
+  - **v2 전체 결론은 아직 미확정**(§5: "C1~C3 중 하나라도 전부 통과" 규칙 — C1만
+    실패했을 뿐 C2/C3는 아직 시도 안 됨. §5-1의 "C1 FAIL → 전체 분기 판단 불성립"은
+    이 순차 게이트 하에서 C2/C3를 자동 재개하지 않는다는 뜻이지 v2 전체를 비채택
+    확정한다는 뜻이 아님 — 재개하려면 사용자의 별도 결정 필요). REPORT-v2.md는
+    아직 작성 안 함(전체 결론이 아직 없어 조기 작성 시 §6 "전부 불통과" 오기 위험).

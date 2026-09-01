@@ -1,0 +1,317 @@
+{
+  "run": "run-lore-v2-C1",
+  "candidate": "C1 (H2-relative)",
+  "engine": "H2 multilingual-e5-small",
+  "alpha": 0.95,
+  "background_corpus": {
+    "source": "bench/longRp/beats-v1.json via background-corpus-v2.json",
+    "n": 100,
+    "corpus_sha256": "26829ecf5ee5d8d66cd75bfbe70b2c6f07ec655c7f3ec01dc9917a9cbc7ec8de"
+  },
+  "snapshot_sha256_of_lines": "c35e103de58dd62330b516faf290e5da10969fd44d8a8ba28453561a68bce1af",
+  "per_entry_threshold": {
+    "1870f500-673f-4706-ba3c-15ec5a7238bc": 0.8184,
+    "1be5ac19-0932-418c-b8e6-1ba6f74a3196": 0.8232,
+    "7b60162c-bee3-4e66-bb7e-6e9249272dc5": 0.8232,
+    "810e7ed3-31a7-4b9a-9038-bcaf44e4b5f5": 0.8345
+  },
+  "rows": [
+    {
+      "id": "L01",
+      "label": "must_fire",
+      "cos": 0.8456,
+      "threshold": 0.8232,
+      "percentile_rank_pct": 100,
+      "keyword_hit": true,
+      "fired": true,
+      "top1_entry": "7b60162c-bee3-4e66-bb7e-6e9249272dc5",
+      "top1_cos": 0.8456
+    },
+    {
+      "id": "L02",
+      "label": "must_fire",
+      "cos": 0.8395,
+      "threshold": 0.8232,
+      "percentile_rank_pct": 100,
+      "keyword_hit": true,
+      "fired": true,
+      "top1_entry": "7b60162c-bee3-4e66-bb7e-6e9249272dc5",
+      "top1_cos": 0.8395
+    },
+    {
+      "id": "L03",
+      "label": "must_fire",
+      "cos": 0.8484,
+      "threshold": 0.8345,
+      "percentile_rank_pct": 100,
+      "keyword_hit": true,
+      "fired": true,
+      "top1_entry": "810e7ed3-31a7-4b9a-9038-bcaf44e4b5f5",
+      "top1_cos": 0.8484
+    },
+    {
+      "id": "L04",
+      "label": "must_fire",
+      "cos": 0.8733,
+      "threshold": 0.8345,
+      "percentile_rank_pct": 100,
+      "keyword_hit": true,
+      "fired": true,
+      "top1_entry": "810e7ed3-31a7-4b9a-9038-bcaf44e4b5f5",
+      "top1_cos": 0.8733
+    },
+    {
+      "id": "L05",
+      "label": "must_fire",
+      "cos": 0.8433,
+      "threshold": 0.8184,
+      "percentile_rank_pct": 100,
+      "keyword_hit": true,
+      "fired": true,
+      "top1_entry": "1be5ac19-0932-418c-b8e6-1ba6f74a3196",
+      "top1_cos": 0.8533
+    },
+    {
+      "id": "L06",
+      "label": "must_fire",
+      "cos": 0.875,
+      "threshold": 0.8184,
+      "percentile_rank_pct": 100,
+      "keyword_hit": true,
+      "fired": true,
+      "top1_entry": "1870f500-673f-4706-ba3c-15ec5a7238bc",
+      "top1_cos": 0.875
+    },
+    {
+      "id": "L07",
+      "label": "must_fire",
+      "cos": 0.9025,
+      "threshold": 0.8232,
+      "percentile_rank_pct": 100,
+      "keyword_hit": true,
+      "fired": true,
+      "top1_entry": "1be5ac19-0932-418c-b8e6-1ba6f74a3196",
+      "top1_cos": 0.9025
+    },
+    {
+      "id": "L08",
+      "label": "must_fire",
+      "cos": 0.8254,
+      "threshold": 0.8232,
+      "percentile_rank_pct": 96,
+      "keyword_hit": true,
+      "fired": true,
+      "top1_entry": "1be5ac19-0932-418c-b8e6-1ba6f74a3196",
+      "top1_cos": 0.8254
+    },
+    {
+      "id": "L09",
+      "label": "must_fire",
+      "cos": 0.8552,
+      "threshold": 0.8232,
+      "percentile_rank_pct": 100,
+      "keyword_hit": true,
+      "fired": true,
+      "top1_entry": "7b60162c-bee3-4e66-bb7e-6e9249272dc5",
+      "top1_cos": 0.8552
+    },
+    {
+      "id": "L10",
+      "label": "must_fire",
+      "cos": 0.8672,
+      "threshold": 0.8184,
+      "percentile_rank_pct": 100,
+      "keyword_hit": true,
+      "fired": true,
+      "top1_entry": "1870f500-673f-4706-ba3c-15ec5a7238bc",
+      "top1_cos": 0.8672
+    },
+    {
+      "id": "L11",
+      "label": "must_not_fire",
+      "cos": 0.8131,
+      "threshold": 0.8232,
+      "percentile_rank_pct": 81,
+      "keyword_hit": true,
+      "fired": false,
+      "top1_entry": "7b60162c-bee3-4e66-bb7e-6e9249272dc5",
+      "top1_cos": 0.8131
+    },
+    {
+      "id": "L12",
+      "label": "must_not_fire",
+      "cos": 0.8084,
+      "threshold": 0.8232,
+      "percentile_rank_pct": 79,
+      "keyword_hit": true,
+      "fired": false,
+      "top1_entry": "7b60162c-bee3-4e66-bb7e-6e9249272dc5",
+      "top1_cos": 0.8084
+    },
+    {
+      "id": "L13",
+      "label": "must_not_fire",
+      "cos": 0.7957,
+      "threshold": 0.8345,
+      "percentile_rank_pct": 26,
+      "keyword_hit": true,
+      "fired": false,
+      "top1_entry": "7b60162c-bee3-4e66-bb7e-6e9249272dc5",
+      "top1_cos": 0.8101
+    },
+    {
+      "id": "L14",
+      "label": "must_not_fire",
+      "cos": 0.7977,
+      "threshold": 0.8345,
+      "percentile_rank_pct": 32,
+      "keyword_hit": true,
+      "fired": false,
+      "top1_entry": "1870f500-673f-4706-ba3c-15ec5a7238bc",
+      "top1_cos": 0.8106
+    },
+    {
+      "id": "L15",
+      "label": "must_not_fire",
+      "cos": 0.8005,
+      "threshold": 0.8232,
+      "percentile_rank_pct": 43,
+      "keyword_hit": true,
+      "fired": false,
+      "top1_entry": "1be5ac19-0932-418c-b8e6-1ba6f74a3196",
+      "top1_cos": 0.8005
+    },
+    {
+      "id": "L16",
+      "label": "must_not_fire",
+      "cos": 0.7956,
+      "threshold": 0.8184,
+      "percentile_rank_pct": 60,
+      "keyword_hit": true,
+      "fired": false,
+      "top1_entry": "1870f500-673f-4706-ba3c-15ec5a7238bc",
+      "top1_cos": 0.7956
+    },
+    {
+      "id": "L17",
+      "label": "must_not_fire",
+      "cos": 0.833,
+      "threshold": 0.8232,
+      "percentile_rank_pct": 100,
+      "keyword_hit": true,
+      "fired": true,
+      "top1_entry": "1be5ac19-0932-418c-b8e6-1ba6f74a3196",
+      "top1_cos": 0.836
+    },
+    {
+      "id": "L18",
+      "label": "must_not_fire",
+      "cos": 0.8378,
+      "threshold": 0.8345,
+      "percentile_rank_pct": 96,
+      "keyword_hit": true,
+      "fired": true,
+      "top1_entry": "810e7ed3-31a7-4b9a-9038-bcaf44e4b5f5",
+      "top1_cos": 0.8378
+    },
+    {
+      "id": "L19",
+      "label": "must_not_fire",
+      "cos": 0.8063,
+      "threshold": 0.8232,
+      "percentile_rank_pct": 62,
+      "keyword_hit": true,
+      "fired": false,
+      "top1_entry": "1be5ac19-0932-418c-b8e6-1ba6f74a3196",
+      "top1_cos": 0.8063
+    },
+    {
+      "id": "L20",
+      "label": "must_not_fire",
+      "cos": 0.8095,
+      "threshold": 0.8184,
+      "percentile_rank_pct": 85,
+      "keyword_hit": true,
+      "fired": false,
+      "top1_entry": "1be5ac19-0932-418c-b8e6-1ba6f74a3196",
+      "top1_cos": 0.8181
+    },
+    {
+      "id": "L21",
+      "label": "ambiguous",
+      "cos": 0.887,
+      "threshold": 0.8184,
+      "percentile_rank_pct": 100,
+      "keyword_hit": false,
+      "fired": false,
+      "top1_entry": "1870f500-673f-4706-ba3c-15ec5a7238bc",
+      "top1_cos": 0.887
+    },
+    {
+      "id": "L22",
+      "label": "ambiguous",
+      "cos": 0.8572,
+      "threshold": 0.8345,
+      "percentile_rank_pct": 100,
+      "keyword_hit": false,
+      "fired": false,
+      "top1_entry": "810e7ed3-31a7-4b9a-9038-bcaf44e4b5f5",
+      "top1_cos": 0.8572
+    },
+    {
+      "id": "L23",
+      "label": "ambiguous",
+      "cos": 0.8135,
+      "threshold": 0.8232,
+      "percentile_rank_pct": 81,
+      "keyword_hit": false,
+      "fired": false,
+      "top1_entry": "810e7ed3-31a7-4b9a-9038-bcaf44e4b5f5",
+      "top1_cos": 0.8164
+    },
+    {
+      "id": "L24",
+      "label": "ambiguous",
+      "cos": 0.8671,
+      "threshold": 0.8232,
+      "percentile_rank_pct": 100,
+      "keyword_hit": false,
+      "fired": false,
+      "top1_entry": "1be5ac19-0932-418c-b8e6-1ba6f74a3196",
+      "top1_cos": 0.8671
+    },
+    {
+      "id": "L25",
+      "label": "ambiguous",
+      "cos": 0.8565,
+      "threshold": 0.8184,
+      "percentile_rank_pct": 100,
+      "keyword_hit": false,
+      "fired": false,
+      "top1_entry": "1870f500-673f-4706-ba3c-15ec5a7238bc",
+      "top1_cos": 0.8565
+    }
+  ],
+  "gate_summary": {
+    "must_fire_recall": "10/10",
+    "false_triggers": 2,
+    "false_trigger_ids": [
+      "L17",
+      "L18"
+    ]
+  },
+  "ambiguous_top1_correct": "4/5",
+  "perf": {
+    "encode_100_bg_ms": 452,
+    "idle_rss_mb": 730.8,
+    "total_ms": 1479
+  },
+  "criteria": {
+    "must_fire_recall_10/10": true,
+    "false_trigger_0/10": false,
+    "ambiguous_top1_>=3/5": true,
+    "encode_100_bg_sentences_<=30s": true,
+    "idle_rss_<=8GB": true
+  },
+  "verdict": "FAIL"
+}
