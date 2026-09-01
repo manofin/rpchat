@@ -37,6 +37,77 @@ function storyCastLine(item: unknown): string | null {
   return `- ${name}: ${note}`;
 }
 
+export interface StoryInjection {
+  text: string;
+  estTokens: number;
+  storyRoom: number;
+  note?: string;
+}
+
+/**
+ * 스토리 스냅샷 → 주입 텍스트/예산 계산 (순수 함수, DB 접근 0).
+ * fixed 잔여(fixedBudget - fixedEst) 안에서: setting 0.7 truncate → 조연 잔여 prefix whole-or-drop.
+ * buildPrompt §1b에서 추출 — story-inject-refactor, 로직/상수/순서 불변.
+ */
+export function computeStoryInjection(
+  resolvedStory: { name: string; setting: string; minorCast: unknown[] } | null,
+  fixedBudget: number,
+  fixedEst: number,
+  cal: number,
+  charName: string,
+  userName: string,
+): StoryInjection | null {
+  if (!resolvedStory) return null;
+  const settingRaw = (resolvedStory.setting ?? '').trim();
+  const castItems = Array.isArray(resolvedStory.minorCast) ? resolvedStory.minorCast : [];
+  const hasSetting = !!settingRaw;
+  const hasCast = castItems.some((it) => storyCastLine(it));
+  const storyRoom = Math.max(0, fixedBudget - fixedEst);
+  const settingCap = hasSetting && hasCast
+    ? Math.floor(storyRoom * STORY_SETTING_SHARE)
+    : hasSetting ? storyRoom : 0;
+  const reservedCast = hasSetting && hasCast
+    ? Math.floor(storyRoom * STORY_CAST_SHARE)
+    : hasCast ? storyRoom : 0;
+  let settingUsed = '';
+  let settingTruncated = false;
+  if (hasSetting) {
+    if (settingCap <= 0) settingTruncated = true;
+    else {
+      settingUsed = truncateToTokens(settingRaw, settingCap, cal);
+      settingTruncated = settingUsed !== settingRaw;
+    }
+  }
+  const settingTokens = settingUsed ? estimateTokens(`### 스토리 설정\n${settingUsed}`, cal) : 0;
+  const castRoom = hasCast ? Math.max(reservedCast, Math.max(0, storyRoom - settingTokens)) : 0;
+  const includedCast: unknown[] = [];
+  let droppedCast = 0;
+  if (hasCast) {
+    let usedCast = 0;
+    let dropping = false;
+    for (const item of castItems) {
+      const line = storyCastLine(item);
+      if (!line) continue;
+      if (dropping) { droppedCast++; continue; }
+      const t = estimateTokens(line, cal);
+      if (usedCast + t > castRoom) {
+        dropping = true;
+        droppedCast++;
+        continue;
+      }
+      includedCast.push(item);
+      usedCast += t;
+    }
+  }
+  const storyText = renderStory({ setting: settingUsed, minorCast: includedCast }, charName, userName);
+  if (!storyText) return null;
+  const storyEst = estimateTokens(storyText, cal);
+  const notes: string[] = [];
+  if (settingTruncated) notes.push('절단');
+  if (droppedCast) notes.push(`조연 ${droppedCast}건 제외`);
+  return { text: storyText, estTokens: storyEst, storyRoom, note: notes.length ? notes.join(', ') : undefined };
+}
+
 export function isOocMessage(m: MessageRow): boolean {
   return m.role === 'user' && /^\s*[\(\[]\s*ooc\s*[\)\]]/i.test(m.content);
 }
@@ -145,59 +216,12 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   used += fixedEst;
 
   // 1b) 스토리 스냅샷: fixed 잔여. setting 0.7 truncate → 조연 잔여 prefix whole-or-drop. 라이브 stories 조회 없음.
-  let storyText: string | null = null;
   const resolvedStory = isOoc ? null : resolveStory(conv);
-  if (resolvedStory) {
-    const settingRaw = (resolvedStory.setting ?? '').trim();
-    const castItems = Array.isArray(resolvedStory.minorCast) ? resolvedStory.minorCast : [];
-    const hasSetting = !!settingRaw;
-    const hasCast = castItems.some((it) => storyCastLine(it));
-    const storyRoom = Math.max(0, budgets.fixed - fixedEst);
-    const settingCap = hasSetting && hasCast
-      ? Math.floor(storyRoom * STORY_SETTING_SHARE)
-      : hasSetting ? storyRoom : 0;
-    const reservedCast = hasSetting && hasCast
-      ? Math.floor(storyRoom * STORY_CAST_SHARE)
-      : hasCast ? storyRoom : 0;
-    let settingUsed = '';
-    let settingTruncated = false;
-    if (hasSetting) {
-      if (settingCap <= 0) settingTruncated = true;
-      else {
-        settingUsed = truncateToTokens(settingRaw, settingCap, cal);
-        settingTruncated = settingUsed !== settingRaw;
-      }
-    }
-    const settingTokens = settingUsed ? estimateTokens(`### 스토리 설정\n${settingUsed}`, cal) : 0;
-    const castRoom = hasCast ? Math.max(reservedCast, Math.max(0, storyRoom - settingTokens)) : 0;
-    const includedCast: unknown[] = [];
-    let droppedCast = 0;
-    if (hasCast) {
-      let usedCast = 0;
-      let dropping = false;
-      for (const item of castItems) {
-        const line = storyCastLine(item);
-        if (!line) continue;
-        if (dropping) { droppedCast++; continue; }
-        const t = estimateTokens(line, cal);
-        if (usedCast + t > castRoom) {
-          dropping = true;
-          droppedCast++;
-          continue;
-        }
-        includedCast.push(item);
-        usedCast += t;
-      }
-    }
-    storyText = renderStory({ setting: settingUsed, minorCast: includedCast }, charName, userName);
-    const storyEst = storyText ? estimateTokens(storyText, cal) : 0;
-    if (storyText) {
-      const notes: string[] = [];
-      if (settingTruncated) notes.push('절단');
-      if (droppedCast) notes.push(`조연 ${droppedCast}건 제외`);
-      sections.push({ name: '스토리 설정', est_tokens: storyEst, budget: storyRoom, note: notes.length ? notes.join(', ') : undefined });
-      used += storyEst;
-    }
+  const storyInjection = computeStoryInjection(resolvedStory, budgets.fixed, fixedEst, cal, charName, userName);
+  const storyText: string | null = storyInjection ? storyInjection.text : null;
+  if (storyInjection) {
+    sections.push({ name: '스토리 설정', est_tokens: storyInjection.estTokens, budget: storyInjection.storyRoom, note: storyInjection.note });
+    used += storyInjection.estTokens;
   }
 
   // 2) 활성 로어: 최근 발화 키워드 매칭 (결정론적)
