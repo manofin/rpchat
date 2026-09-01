@@ -173,7 +173,8 @@ export interface BudgetReport {
   reply_reserve: number;
   available: number;
   calibration: number;
-  sections: Array<{ name: string; est_tokens: number; budget: number; note?: string }>;
+  // kind: 출처 라벨(선택). 인스펙터 표시 전용 메타 — 프롬프트 바이트에는 들어가지 않는다.
+  sections: Array<{ name: string; est_tokens: number; budget: number; note?: string; kind?: 'system' | 'story' | 'lore' | 'memory' | 'summary' | 'recent' }>;
   est_total: number;
   dropped_messages: number;
   included_messages: number;

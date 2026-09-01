@@ -116,13 +116,26 @@ function BudgetTab({ conversationId, draft, open }: { conversationId: string; dr
   );
 }
 
+/** P5-R1: 섹션의 출처 라벨. kind 는 선택 필드라 없으면 태그 없이 기존 그대로 그린다. */
+const KIND_LABEL: Record<NonNullable<BudgetReport['sections'][number]['kind']>, string> = {
+  system: '시스템',
+  story: '스토리',
+  lore: '로어',
+  memory: '기억',
+  summary: '요약',
+  recent: '최근',
+};
+
 export function BudgetBars({ budget }: { budget: BudgetReport }) {
   return (
     <div>
       {budget.sections.map((s) => (
         <div className="budget-row" key={s.name} style={{ flexDirection: 'column', alignItems: 'stretch' }}>
           <div className="row" style={{ justifyContent: 'space-between' }}>
-            <span>{s.name}</span>
+            <span className="row" style={{ gap: 6, minWidth: 0 }}>
+              {s.kind && <span className="tag" style={{ background: 'var(--bg-3)', color: 'var(--fg-2)' }}>{KIND_LABEL[s.kind]}</span>}
+              <span>{s.name}</span>
+            </span>
             <span className="muted">{s.est_tokens}/{s.budget}t</span>
           </div>
           <div className="bar"><i style={{ width: `${Math.min(100, s.budget ? (s.est_tokens / s.budget) * 100 : 0)}%`, background: s.est_tokens > s.budget ? 'var(--danger)' : 'var(--accent)' }} /></div>

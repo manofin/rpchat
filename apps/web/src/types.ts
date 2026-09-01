@@ -171,7 +171,8 @@ export interface BudgetReport {
   reply_reserve: number;
   available: number;
   calibration: number;
-  sections: Array<{ name: string; est_tokens: number; budget: number; note?: string }>;
+  // kind: 서버 BudgetReport 미러. 선택 필드이므로 kind 없는 기존 응답도 그대로 유효하다.
+  sections: Array<{ name: string; est_tokens: number; budget: number; note?: string; kind?: 'system' | 'story' | 'lore' | 'memory' | 'summary' | 'recent' }>;
   est_total: number;
   dropped_messages: number;
   included_messages: number;

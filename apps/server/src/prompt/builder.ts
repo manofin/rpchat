@@ -212,7 +212,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
     }
     if (noteIncluded) fixedEst = estFixed(charText, true);
   }
-  sections.push({ name: '시스템 규칙+카드+페르소나+장면', est_tokens: fixedEst, budget: budgets.fixed, note: fixedNote });
+  sections.push({ name: '시스템 규칙+카드+페르소나+장면', est_tokens: fixedEst, budget: budgets.fixed, note: fixedNote, kind: 'system' });
   used += fixedEst;
 
   // 1b) 스토리 스냅샷: fixed 잔여. setting 0.7 truncate → 조연 잔여 prefix whole-or-drop. 라이브 stories 조회 없음.
@@ -220,7 +220,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   const storyInjection = computeStoryInjection(resolvedStory, budgets.fixed, fixedEst, cal, charName, userName);
   const storyText: string | null = storyInjection ? storyInjection.text : null;
   if (storyInjection) {
-    sections.push({ name: '스토리 설정', est_tokens: storyInjection.estTokens, budget: storyInjection.storyRoom, note: storyInjection.note });
+    sections.push({ name: '스토리 설정', est_tokens: storyInjection.estTokens, budget: storyInjection.storyRoom, note: storyInjection.note, kind: 'story' });
     used += storyInjection.estTokens;
   }
 
@@ -261,7 +261,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
     loreEst += t;
   }
   const loreText = renderLore(activeLore);
-  sections.push({ name: '활성 로어', est_tokens: loreEst, budget: budgets.lore, note: droppedLore.length ? `예산 초과로 제외: ${droppedLore.join(', ')}` : undefined });
+  sections.push({ name: '활성 로어', est_tokens: loreEst, budget: budgets.lore, note: droppedLore.length ? `예산 초과로 제외: ${droppedLore.join(', ')}` : undefined, kind: 'lore' });
   used += loreEst;
 
   // 3) 고정 기억 + 요약
@@ -378,6 +378,8 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
     est_tokens: memEst + sumEst,
     budget: budgets.memory,
     note: [droppedMemItems.length ? `기억 ${droppedMemItems.length}건 예산 초과로 제외` : '', stateText ? 'state 포함' : (stateRow ? 'state 예산 부족' : '승인된 상태 없음'), summaryRow ? '' : '승인된 요약 없음', episodeText ? 'episode 포함' : '', sceneParts.length ? `장면 ${sceneParts.length}` : ''].filter(Boolean).join('; ') || undefined,
+    // 기억과 4계층 요약이 한 예산(budgets.memory)을 나눠 쓰는 단일 섹션 — 'summary' 는 아직 별도로 나오지 않는다.
+    kind: 'memory',
   });
   used += memEst + sumEst;
 
@@ -406,7 +408,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
     recent.unshift(m);
     recentEst += t;
   }
-  sections.push({ name: '최근 대화', est_tokens: recentEst, budget: recentBudget, note: dropped ? `오래된 메시지 ${dropped}건 제외` : undefined });
+  sections.push({ name: '최근 대화', est_tokens: recentEst, budget: recentBudget, note: dropped ? `오래된 메시지 ${dropped}건 제외` : undefined, kind: 'recent' });
   used += recentEst;
 
   // 5) 시스템 메시지 합성
