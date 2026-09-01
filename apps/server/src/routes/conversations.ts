@@ -95,6 +95,7 @@ export function conversationRoutes(ctx: Ctx) {
       if (d.storyId) {
         const story = one<StoryRow>(db, 'SELECT * FROM stories WHERE id = ?', d.storyId);
         if (!story) return reply.code(404).send({ error: 'story not found' });
+        if (story.archived) return reply.code(409).send({ error: 'archived' });
         storyId = story.id;
         storyAppliedAt = t;
         storyNameSnapshot = story.name;
