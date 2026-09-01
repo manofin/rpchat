@@ -144,7 +144,13 @@ export function ChatPage({ id }: { id: string }) {
           <h1>{char.name}</h1>
           <div className="sub">{conv.profile_name} · {persona?.name ?? '나'}</div>
         </div>
-        <button className="btn ghost icon" onClick={() => { setDrawerTab(undefined); setDrawer(true); }} aria-label="컨텍스트/기억">▤</button>
+        {/* P5-R1: 인스펙터는 이미 드로어에 있다 — 없던 것은 '여기로 들어간다'는 표시. 새 표면 추가 금지. */}
+        <button
+          className="btn ghost sm"
+          data-test="context-inspector"
+          aria-label="컨텍스트 인스펙터 열기"
+          onClick={() => { setDrawerTab('budget'); setDrawer(true); }}
+        >▤ 컨텍스트</button>
       </div>
 
       <div className="chat-scroll" ref={scrollRef} onScroll={onScroll}>
