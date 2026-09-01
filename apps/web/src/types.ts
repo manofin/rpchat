@@ -19,6 +19,14 @@ export interface Story {
   characters?: StoryCharacter[];
 }
 
+/** GET /api/stories/:id/inject-preview — user-facing fields only. */
+export interface StoryInjectPreview {
+  settingExcerpt: string;
+  settingTruncated: boolean;
+  cast: { name: string; included: boolean }[];
+  estTokens: number;
+}
+
 export interface Character {
   id: string;
   name: string;
