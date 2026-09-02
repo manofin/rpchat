@@ -3118,3 +3118,30 @@ HEAD/describe into this block after any docs commit.
   `26614525`의 저장된 catalog는 여전히 5키(`arcs/flags/places/stagesByArc/weathers`)다 —
   보존이란 다시 쓰지 않는다는 뜻이고, 없는 키는 `catalogFromStory`가 기본값으로 채운다.
 - 이로써 **웹 UI 저장 시 catalog가 지워지던 결함이 라이브에서 닫혔다.**
+
+## [2026-09-02 S2 `f9-school-fixture`] `[RP-Chat / F9-beat / catalog-school S2]`
+- **소스 변경 0.** 산출물은 `bench/schoolFixture/school.json`(seed가 POST할 문서 그대로) +
+  `bench/schoolFixture.test.ts`(26) 둘뿐이다. 라이브 DB·모델 콜·이미지 파일 0.
+- 벤치가 **그 JSON 하나만 입력으로** 실제 엔진(`catalogFromStory` → `castFromCharacters` →
+  `resolveFocus` → `eligibleExtras` → `approveExtras` → `ambientPicks` → `assetPathFor`)을 돌려
+  §7 표 전체를 어설션한다: 이름·별칭으로 포커스=나리 · eligible {세라,하연,유라,루나,미르} ·
+  한소연·유키 장소 컷 · 학생들은 서술만 · 조용한 턴 `k_opened=0` · **교칙 위반 + 수업 개시 → 세라와 하연 K=2**.
+- **픽스처 오류 두 개를 쓰면서 잡았다.**
+  1. **미르는 잠금이 아니다.** `focusResolve.test.ts:43`이 미르에게 `locked:true`를 주는 것은
+     「복도의 default_focus가 잠금이면 선택 불가」를 보려는 다른 목적이고, 노트 §7 line 140의
+     eligible 결과에는 미르가 들어 있다. 🔒 증인은 장소 밖인 한소연·유키가 맡는다.
+  2. **교칙과 수업을 같은 duty 슬롯에 두면 §7이 불가능해진다.** `approveExtras.slotOf()`는
+     슬롯을 **연 duty**로 판정한다(세라=교칙, 하연=수업). 둘을 `질서` 하나로 묶으면 하연이
+     `dup_slot`으로 잘려 K=2가 **구조적으로 나올 수 없다**. 초안이 그렇게 되어 있었다.
+     §4.3의 「둘 다 '조용히 해'면 1명만」 증인은 **교칙 vs 담임**으로 분리했다 —
+     `rulebreak`가 세라를, 신규 `noise` flag가 하연을 같은 `질서`로 열고 한 줄만 나온다.
+- **id는 서버가 만든다**(`characters.ts:93` `uid()`). 그래서 `school.json`의 캐릭터 id는 **상징 id**이고,
+  seed가 치환해야 하는 곳은 정확히 세 군데 — `places[].default_focus` · `scene.present_ids` ·
+  `scene.last_beat`. 벤치의 id 치환 테스트가 §7 결과의 **id 독립성**을 증명하므로 seed는 안전하다.
+  계획서의 「seed 후 `school.json`과 바이트 동일」 조항은 성립할 수 없어 정정했다.
+- `assetPathFor`는 URL 세그먼트를 **퍼센트 인코딩**한다(`/media/assets/nari/%EA%B5%90%EB%B3%B5/1.webp`).
+  기대값을 그렇게 고쳤다. webp는 시드하지 않았고 `data/media/assets`는 없다 — null이 성공 판독.
+- **게이트**: 신규 벤치 26/26 · 전체 벤치 **68/68 PASS** · typecheck EXIT 0 ·
+  1:1 system 블록 **6/6 바이트 동일** · `git status`상 소스 0(벤치 파일만) ·
+  라이브 DB 행수 불변(stories 2 / characters 10 / conversations 8).
+- 다음은 라이브 토큰 — `f9-school-backup` → `f9-school-seed` → `f9-school-turn`. **전부 미실행.**
