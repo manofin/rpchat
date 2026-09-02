@@ -3070,3 +3070,31 @@ HEAD/describe into this block after any docs commit.
 - `catalogFromCharacters`는 라이브 경로에서 **호출되지 않는다**(`chat.ts:281`이 `catalogFromStory` 하나뿐).
   catalog의 출처는 스토리 행 하나이며, 캐릭터 태그로 우회 주입할 수 없다.
 - 이 계획에 **마이그레이션 0** — 0012로 충분해서 `migrate` 계열 토큰이 필요 없다.
+
+## [2026-09-02 S1 `f9-catalog-write`] `[RP-Chat / F9-beat / catalog-school S1]`
+- **쓰기 스키마를 파서와 맞췄다.** `stories.ts`의 `sceneCatalogSchema`가 이제 여섯 키를 받는다 —
+  `places[].default_focus` · `flags[].owner_duty` · `outfits[]` · `emotions{}`(음이 아닌 정수만) ·
+  `stages{closer_duty}` · `duties{slot}`. 상한은 기존 관례(places 200, 나머지 50, id 60자)를 따랐다.
+- **생략 = 보존, `{}` = 비우기.** `scene_catalog`를 `.optional()`로 바꾸고 default를 없앴다.
+  `undefined`면 `UPDATE`의 SET 목록에서 아예 뺀다. 클라이언트가 아니라 **서버에서** 막았으므로
+  catalog를 모르는 모든 클라이언트가 함께 보호된다. `StoryEditor.tsx`는 **0바이트 수정**.
+- **계획서에 없던 두 번째 소실 경로를 구현 중 발견했다.** `storyOut`은 *파싱된* catalog를 돌려주는데
+  그 duty 맵 이름이 `duties`가 아니라 **`dutySlots`**다(`sceneCatalog.ts:137-143`이 입력 `duties`를
+  읽어 `dutySlots`로 낸다). 따라서 GET한 객체를 그대로 PUT하면 duty 슬롯이 사라진다 —
+  「생략=보존」만으로는 안 막히는 경로다. 쓰기 스키마가 `dutySlots` 별칭을 받아 **저장 직전에
+  `duties`로 접는다**(둘 다 오면 `duties` 우선). 저장 철자는 여전히 하나다.
+- **신규 벤치** `bench/storyCatalogWrite.test.ts` (12): 여섯 키 POST 생존 · approveExtras가 기대하는
+  형태와 동일 · `StoryEditor` body 그대로인 PUT이 catalog를 **바이트 동일**하게 보존 · 명시적 `{}`는 비움 ·
+  **GET→PUT 무손실**(별칭 왕복) · 손상 입력 7종은 전부 400이고 **부분 저장 0** · 손상된 *저장본*은
+  throw가 아니라 빈 catalog로 degrade · 라이브 375바이트 catalog의 의미 불변 · catalog 없는 POST는
+  여전히 빈 catalog · `stories.ts`에 두 번째 파서 없음 · 엔진 7개 파일 무변경.
+- **벤치가 결함을 실제로 잡는지 확인했다**: `stories.ts`만 HEAD로 되돌려 실행하면
+  `default_focus: undefined`로 **실패**한다. 옛 코드·새 코드 양쪽에서 통과하는 벤치가 아니다.
+- **게이트**: 인접 회귀 17/17(story* 8 · scene* 3 · 엔진 6) · server+web typecheck EXIT 0 ·
+  1:1 system 블록 **6/6 바이트 동일**(`e8f22706…` 전후 일치) · 엔진 7개 + `builder`/`templates`/`config`
+  **diff 0** · `settingsRegression`은 커밋 전 FAIL(예상) → 커밋 `6e79818` 후 **6/6 PASS** ·
+  전체 벤치 **67/67 PASS**.
+- **미배포**: 빌드·재시작을 하지 않았다. 라이브 dist는 14:53 빌드 그대로이고 새 코드가 들어 있지 않다
+  (`grep dutySlots dist/routes/stories.js` = 0). health/promptVersion 불변. 라이브 DB 쓰기 0.
+- 다음은 **S2 `f9-school-fixture`** — 소스 0, `school.json` + 격리 벤치로 §7 표를 먼저 증명한다.
+  라이브 DB·손 SQL·seed/turn 토큰은 계속 미실행.
