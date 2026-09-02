@@ -3145,3 +3145,25 @@ HEAD/describe into this block after any docs commit.
   1:1 system 블록 **6/6 바이트 동일** · `git status`상 소스 0(벤치 파일만) ·
   라이브 DB 행수 불변(stories 2 / characters 10 / conversations 8).
 - 다음은 라이브 토큰 — `f9-school-backup` → `f9-school-seed` → `f9-school-turn`. **전부 미실행.**
+
+## [2026-09-02 `f9-catalog-write` 사후 명명 잠금] `[RP-Chat / f9-catalog-write / lock]`
+- 사용자가 S1 유지를 결정하고 사후 봉인을 지시하여 잠금을 발행했다.
+  잠금 문서 `planning_documents/f9-catalog-write-lock.md`, STATUS 잠금 행 신설 + How-to-read 포인터.
+- **덮는 범위**: 커밋 `6e79818`(부모 `27ab879`) — `routes/stories.ts` `8cc86b3d…` +
+  `bench/storyCatalogWrite.test.ts` `b480626c…`, 2 files / +343 / -30. 그 이상은 덮지 않는다.
+- **구멍의 위치를 문서에 못박았다.** F9 플랜 risk register의 「`sceneSchema` strip이 `last_beat`를 지움」
+  대응이 `conversations`(전 키 optional · `conversations.ts:197` 병합 · `COALESCE`)에만 이행되고
+  `stories`의 쌍둥이에는 이행되지 않았다. 플랜 Storage 표가 catalog의 거처를 `stories.scene_catalog`로
+  지정했으므로 이는 **F9 플랜이 남긴 구멍**이지 옛 계획서의 잔재가 아니다.
+- **절차 위반을 숨기지 않고 기록했다**(잠금 문서 §5): 구현·배포가 잠금보다 **먼저** 일어났고
+  당시 유효한 명명 토큰이 없었다(F9 배포 토큰 4개는 소진 상태). 플랜대로라면
+  「기록하고 새 명명 잠금을 연다」가 정답이었고 인라인 수정 후 배포가 아니었다.
+  이 문서는 순서를 사후에 맞추는 것이지 순서가 지켜졌다고 주장하지 않는다.
+- **잠금 이후 금지**: `scene_catalog`에 default 되돌리기 · `stories.ts`에 두 번째 catalog 해석기 ·
+  `dutySlots`를 저장 철자로 쓰기 · `StoryEditor.tsx`에 catalog 편집 UI(새 잠금 필요) ·
+  비트 엔진 7개 모듈 수정 · `settingsRegression` 펜스 수정 · 교실 캐스트를 라이브 DB에 삽입.
+- **이 잠금에 딸리지 않은 것 — 동결 유지**(§6): `bench/schoolFixture/*`(커밋 `e503806`)는
+  `focusResolve`·`eligibleExtras`·`approveExtras`·`ambient`가 이미 같은 §7 픽스처를 담고 있어 **중복**이며
+  처분 미정. `f9-school-backup`/`seed`/`turn`은 **전부 미실행**이고, F9 플랜 하지 않는 것의
+  「교실 캐스트를 라이브 DB에 삽입」에 정면으로 걸린다.
+- 라이브 무접촉 재확인: stories 2 / characters 10 / conversations 8, school 스토리 0행, 교실 캐스트 0행.
