@@ -26,6 +26,74 @@ function extractSettingExcerpt(text: string): string {
   return castIdx === -1 ? after : after.slice(0, castIdx);
 }
 
+/**
+ * f9-catalog-write — the writable shape of `stories.scene_catalog`.
+ *
+ * This must mirror what `parseSceneCatalog` reads. It did not: the parser has
+ * read `default_focus`, `owner_duty`, `outfits`, `emotions`, `stages` and
+ * `duties` since f9-beat-render, while this schema listed none of them, and a
+ * Zod object strips what it does not list. The six keys were therefore
+ * unreachable through the API — the catalog could be parsed but never authored.
+ *
+ * Ranges follow the existing convention here: 200 places, 50 of everything else,
+ * 60-character ids.
+ */
+const sceneCatalogSchema = z.object({
+  places: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(60),
+        name: z.string().max(80).optional(),
+        tags: z.array(z.string().max(40)).max(20).optional(),
+        /** §4.1 focus priority 3: who speaks here when nobody is named. */
+        default_focus: z.string().max(60).optional(),
+      }),
+    )
+    .max(200)
+    .default([]),
+  weathers: z.array(z.string().max(40)).max(50).default([]),
+  arcs: z.array(z.string().max(60)).max(50).default([]),
+  stagesByArc: z.record(z.array(z.string().max(60)).max(50)).default({}),
+  flags: z
+    .record(
+      z.object({
+        owner_stage: z.string().max(60).optional(),
+        /** §4.3 hard_event: the duty whose holder this flag transition opens a slot for. */
+        owner_duty: z.string().max(60).optional(),
+      }),
+    )
+    .default({}),
+  /** Allowed outfit tokens. An outfit outside this list yields no image, never a broken path. */
+  outfits: z.array(z.string().max(40)).max(50).default([]),
+  /** emotion → asset index n. Non-integer or negative is rejected, not silently coerced. */
+  emotions: z.record(z.number().int().min(0)).default({}),
+  /** stage id → the duty that closes it (the other half of hard_event). */
+  stages: z.record(z.object({ closer_duty: z.string().max(60).optional() })).default({}),
+  /** duty → function slot, so two duties that do the same job share one line (§4.3). */
+  duties: z.record(z.object({ slot: z.string().max(60).optional() })).default({}),
+  /**
+   * `storyOut` returns the *parsed* catalog, whose duty-slot map is flattened and
+   * renamed to `dutySlots`. Accepting that name back keeps a GET → PUT round-trip
+   * lossless; it is normalised to `duties` before storage, so there is still one
+   * stored spelling. `duties` wins if a client sends both.
+   */
+  dutySlots: z.record(z.string().max(60)).optional(),
+});
+
+type SceneCatalogInput = z.infer<typeof sceneCatalogSchema>;
+
+/** The stored JSON. One spelling (`duties`); the `dutySlots` alias is folded in here and nowhere else. */
+function storedCatalog(c: SceneCatalogInput): string {
+  const { dutySlots, ...rest } = c;
+  const duties = { ...rest.duties };
+  for (const [duty, slot] of Object.entries(dutySlots ?? {})) {
+    if (!(duty in duties)) duties[duty] = { slot };
+  }
+  return JSON.stringify({ ...rest, duties });
+}
+
+const EMPTY_CATALOG_JSON = storedCatalog(sceneCatalogSchema.parse({}));
+
 const storySchema = z.object({
   name: z.string().min(1).max(80),
   tagline: z.string().max(200).default(''),
@@ -41,24 +109,11 @@ const storySchema = z.object({
     .default([]),
   // f9-place-catalog: the Story layer of the scene model. Ids only; the server
   // validates every proposed delta against this list (applySceneDelta).
-  scene_catalog: z
-    .object({
-      places: z
-        .array(
-          z.object({
-            id: z.string().min(1).max(60),
-            name: z.string().max(80).optional(),
-            tags: z.array(z.string().max(40)).max(20).optional(),
-          }),
-        )
-        .max(200)
-        .default([]),
-      weathers: z.array(z.string().max(40)).max(50).default([]),
-      arcs: z.array(z.string().max(60)).max(50).default([]),
-      stagesByArc: z.record(z.array(z.string().max(60)).max(50)).default({}),
-      flags: z.record(z.object({ owner_stage: z.string().max(60).optional() })).default({}),
-    })
-    .default({ places: [], weathers: [], arcs: [], stagesByArc: {}, flags: {} }),
+  //
+  // f9-catalog-write: optional, NOT defaulted. An absent key means "leave the
+  // stored catalog alone" — see the PUT handler. Defaulting here is what made a
+  // save from a client that does not know about catalogs erase one.
+  scene_catalog: sceneCatalogSchema.optional(),
 });
 
 const mappingSchema = z.object({
@@ -108,7 +163,8 @@ export function storyRoutes(ctx: Ctx) {
         d.tagline,
         d.setting,
         JSON.stringify(d.minor_cast),
-        JSON.stringify(d.scene_catalog),
+        // A new story with no catalog gets the empty one, as before.
+        d.scene_catalog === undefined ? EMPTY_CATALOG_JSON : storedCatalog(d.scene_catalog),
         t,
         t,
       );
@@ -127,17 +183,20 @@ export function storyRoutes(ctx: Ctx) {
       const p = storySchema.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
       const d = p.data;
-      run(
-        db,
-        `UPDATE stories SET name=?, tagline=?, setting=?, minor_cast=?, scene_catalog=?, updated_at=? WHERE id=?`,
-        d.name,
-        d.tagline,
-        d.setting,
-        JSON.stringify(d.minor_cast),
-        JSON.stringify(d.scene_catalog),
-        nowIso(),
-        s.id,
-      );
+      // f9-catalog-write: omitting `scene_catalog` preserves the stored one; sending
+      // `{}` clears it. Those are different requests. This PUT is a full replace and
+      // the field used to carry an empty-catalog default, so a client that does not
+      // model catalogs — StoryEditor sends {name, tagline, setting, minor_cast} —
+      // erased the catalog on every save. Preserving here covers every such client.
+      const sets = ['name=?', 'tagline=?', 'setting=?', 'minor_cast=?'];
+      const args: unknown[] = [d.name, d.tagline, d.setting, JSON.stringify(d.minor_cast)];
+      if (d.scene_catalog !== undefined) {
+        sets.push('scene_catalog=?');
+        args.push(storedCatalog(d.scene_catalog));
+      }
+      sets.push('updated_at=?');
+      args.push(nowIso());
+      run(db, `UPDATE stories SET ${sets.join(', ')} WHERE id=?`, ...args, s.id);
       return storyOut(one<StoryRow>(db, 'SELECT * FROM stories WHERE id = ?', s.id)!);
     });
 
