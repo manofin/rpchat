@@ -3167,3 +3167,20 @@ HEAD/describe into this block after any docs commit.
   처분 미정. `f9-school-backup`/`seed`/`turn`은 **전부 미실행**이고, F9 플랜 하지 않는 것의
   「교실 캐스트를 라이브 DB에 삽입」에 정면으로 걸린다.
 - 라이브 무접촉 재확인: stories 2 / characters 10 / conversations 8, school 스토리 0행, 교실 캐스트 0행.
+
+## [2026-09-02 school fixture 폐기 + 메모리 정정] `[RP-Chat / f9-catalog-write / cleanup]`
+- **`bench/schoolFixture/*` 폐기** — revert 커밋 `d78d887`(대상 `e503806`, 2파일 −433줄).
+  §7 교실은 **이미** 벤치 픽스처였다: `focusResolve`(29) · `eligibleExtras`(20) · `approveExtras`(24) ·
+  `ambient`(22) = **어설션 95개**가 나리·세라·하연·유라·루나·미르를 담고 있다.
+  `school.json`은 같은 표의 두 번째 사본이었고, 사본은 갈라진다 — 실제로 그걸 쓰면서 교칙과 수업을
+  한 duty 슬롯에 넣어 **§7의 K=2를 구조적으로 불가능하게** 만들었다가 되잡았다.
+  원본 픽스처를 썼으면 생기지 않았을 오류다. 전체 벤치 68 → **67/67 PASS**, 실패 0.
+- PROGRESS의 S2 기록은 **지우지 않는다** — 이 로그는 append-only이고 역사다(STATUS 「How to read」).
+  잠금 문서 §6과 STATUS 잠금 행의 「처분 미정」만 「폐기됨」으로 갱신했다.
+- **메모리 정정** `~/.claude/projects/-home-hermes-rpchat/memory/rpchat-f9-beat-engine.md`:
+  「다음에 열 수 있는 슬라이스는 `f9-beat-catalog-school`」 줄이 **틀렸고 이번 세션의 오해를 만든 출발점**이었다.
+  교실을 라이브에 세우는 것은 교실 캐스트를 라이브 DB에 삽입하는 일이고, F9 플랜 하지 않는 것과
+  STATUS F9 금지 열이 둘 다 금지한다. 「닫힘」으로 바꾸고 **「어떤 planning_documents/*.md도 큐로 읽기 전에
+  STATUS.md의 F9 행을 먼저 확인할 것 — 그쪽이 정본이고, 계획서는 낡아도 '승인됨'으로 읽힌다」**를 추가했다.
+  `f9-catalog-write` 잠금 사실도 함께 넣었다. `MEMORY.md` 인덱스 한 줄도 같이 고쳤다.
+- 라이브 무접촉: stories 2 / characters 10 / conversations 8, school 스토리 0행, 교실 캐스트 0행.
