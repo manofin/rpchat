@@ -3098,3 +3098,23 @@ HEAD/describe into this block after any docs commit.
   (`grep dutySlots dist/routes/stories.js` = 0). health/promptVersion 불변. 라이브 DB 쓰기 0.
 - 다음은 **S2 `f9-school-fixture`** — 소스 0, `school.json` + 격리 벤치로 §7 표를 먼저 증명한다.
   라이브 DB·손 SQL·seed/turn 토큰은 계속 미실행.
+
+## [2026-09-02 S1 배포] `[RP-Chat / F9-beat / catalog-school S1-deploy]`
+- **재시작 전 증거**: PID `117656` · health `ok`/`db:ok`/`tailscale`/`2026.08.22-r1+story` ·
+  백업 `backups/rpchat-pre-s1-deploy.db` sha256 `74bc7b1f…` · `integrity_check ok` ·
+  `foreign_key_check` 0 violations · 행수 conv 8 / char 10 / msg 147 / story 2 / sc 3 / mig 12 ·
+  스토리 catalog sha `44136fa3…`(빈 것) · `39acdf25…`(375바이트).
+- **빌드 EXIT 0**. 웹 `index.html` sha256 `0c45d23f…` — **F9 봉인 때와 같은 값**이다.
+  S1이 웹 소스를 안 건드렸다는 증거이며, 바뀐 것은 서버 dist뿐이다
+  (`dist/routes/stories.js`에 `dutySlots` 5건 = S1이 실제로 들어갔다).
+  번들 `index-Ci-eDnF1.js` `b7cdfc21…` · `index-CmymjmAt.css` `20d75910…`.
+- **재시작**: PID `117656` → **`130631`**, 구 PID 소멸, 유닛 `active`.
+- **재시작 후 대조**: `integrity`·`foreign_key`·행수·마이그레이션 목록이 전과 **완전 동일**(diff 0).
+  스토리 catalog 해시와 `updated_at`도 **불변** — 배포가 데이터를 건드리지 않았다.
+  서빙 index sha256 = 디스크 `0c45d23f…`. localhost 보호경로 `/api/conversations`·`/api/stories` **401**,
+  `/api/health` 200.
+- **라이브 PUT은 실행하지 않았다.** 보존 동작의 증인은 `storyCatalogWrite.test.ts`(12)이고,
+  라이브에서는 배포된 코드에 그 경로가 들어 있다는 것까지만 확인했다. 라이브 스토리 쓰기 0.
+  `26614525`의 저장된 catalog는 여전히 5키(`arcs/flags/places/stagesByArc/weathers`)다 —
+  보존이란 다시 쓰지 않는다는 뜻이고, 없는 키는 `catalogFromStory`가 기본값으로 채운다.
+- 이로써 **웹 UI 저장 시 catalog가 지워지던 결함이 라이브에서 닫혔다.**
