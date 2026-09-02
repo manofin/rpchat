@@ -1,0 +1,119 @@
+{
+  "_contract": {
+    "what": "f9-school-fixture (S2) — the Notes §7 classroom, as the documents a seed would POST.",
+    "ids": "Character ids here are SYMBOLIC (nari, sera, …). POST /api/characters mints its own id (characters.ts:93 uid()), so a client cannot choose them. The seed token must substitute real ids into three places and nowhere else: scene_catalog.places[].default_focus, scene.present_ids, and scene.last_beat. bench/schoolFixture.test.ts proves the §7 outcomes do not depend on which ids are used.",
+    "catalog_source": "The story row is the only catalog source on the live path (chat.ts:281 catalogFromStory). Character party: tags carry the character layer only — role/duty/alias/place/talkative/outfit. No catalog-only tags here, so there is one source and not two.",
+    "duty_slots": "§7 needs 세라(교칙) and 하연(수업) to BOTH take a slot in one beat, so those two duties must NOT share one. slotOf() keys on the duty that opened the slot, so mapping 교칙 and 수업 to one slot would make §7 K=2 structurally impossible. The dedupe witness is instead 교칙 vs 담임, both mapped to 질서 — the rulebreak and noise flags open 세라 and 하연 for the same function, and only one line comes out.",
+    "images": "outfits/emotions are declared, but no webp is seeded. assetPathFor returning null is the success reading."
+  },
+
+  "story": {
+    "name": "F9-SCHOOL-교실",
+    "tagline": "노트 §7 교실 비트",
+    "setting": "학교. 1학년 3반 교실. 담임은 하연, 학급 질서는 세라가 본다.",
+    "minor_cast": [],
+    "scene_catalog": {
+      "places": [
+        { "id": "교실", "name": "1-3 교실", "tags": ["indoor"], "default_focus": "hayeon" },
+        { "id": "복도", "name": "복도", "tags": ["indoor"] },
+        { "id": "사무실", "name": "교무실" },
+        { "id": "경비실", "name": "경비실" }
+      ],
+      "weathers": ["맑음", "흐림"],
+      "arcs": ["entry"],
+      "stagesByArc": { "entry": ["reg", "class"] },
+      "flags": {
+        "rulebreak": { "owner_stage": "reg", "owner_duty": "교칙" },
+        "noise": { "owner_stage": "reg", "owner_duty": "담임" }
+      },
+      "stages": {
+        "class": { "closer_duty": "수업" }
+      },
+      "duties": {
+        "교칙": { "slot": "질서" },
+        "담임": { "slot": "질서" }
+      },
+      "outfits": ["교복", "체육복"],
+      "emotions": { "평온": 0, "화남": 1, "놀람": 2 }
+    }
+  },
+
+  "characters": [
+    {
+      "_id": "nari",
+      "name": "나리",
+      "tagline": "말수 적고 날이 서 있다",
+      "tags": ["party:role=secondary", "party:duty=이야기", "party:alias=나리쨩", "party:place=교실", "party:outfit=교복"]
+    },
+    {
+      "_id": "sera",
+      "name": "세라",
+      "tagline": "학급 질서 담당",
+      "tags": ["party:role=secondary", "party:duty=교칙", "party:place=교실", "party:outfit=교복"]
+    },
+    {
+      "_id": "hayeon",
+      "name": "하연",
+      "tagline": "1-3 담임",
+      "tags": ["party:role=main", "party:duty=수업", "party:duty=담임", "party:place=교실", "party:outfit=교복"]
+    },
+    {
+      "_id": "yura",
+      "name": "유라",
+      "tagline": "구경하고 조소한다",
+      "tags": ["party:role=secondary", "party:talkative=0.4", "party:place=교실", "party:outfit=교복"]
+    },
+    {
+      "_id": "luna",
+      "name": "루나",
+      "tagline": "제일 잘 반응한다",
+      "tags": ["party:role=secondary", "party:talkative=0.8", "party:place=교실", "party:outfit=교복"]
+    },
+    {
+      "_id": "mir",
+      "name": "미르",
+      "tagline": "헤드폰을 쓰고 있다",
+      "tags": ["party:role=secondary", "party:talkative=0.1", "party:place=교실", "party:outfit=교복"]
+    },
+    {
+      "_id": "soyeon",
+      "name": "한소연",
+      "tagline": "교무실 서류 담당",
+      "tags": ["party:role=secondary", "party:duty=서류", "party:place=사무실"]
+    },
+    {
+      "_id": "yuki",
+      "name": "유키",
+      "tagline": "경비실 상주",
+      "tags": ["party:role=secondary", "party:duty=경비", "party:place=경비실"]
+    },
+    {
+      "_id": "crowd",
+      "name": "학생들",
+      "tagline": "이름 없는 급우들",
+      "tags": ["party:role=background", "party:place=교실"]
+    }
+  ],
+
+  "main_character": "hayeon",
+
+  "scene": {
+    "location": "교실",
+    "weather": "맑음",
+    "arc": "entry",
+    "stage": "reg",
+    "clock_minutes": 577,
+    "scene_version": 1,
+    "present_ids": ["nari", "sera", "hayeon", "yura", "luna", "mir", "crowd"]
+  },
+
+  "turn": {
+    "user_text": "나리, 네 이야기 말인데.",
+    "expected": {
+      "focus": "nari",
+      "eligible": ["sera", "hayeon", "yura", "luna", "mir"],
+      "k_opened": 0,
+      "ambient_candidates": ["sera", "hayeon", "yura", "luna", "mir", "crowd"]
+    }
+  }
+}
