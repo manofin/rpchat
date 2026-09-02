@@ -3013,3 +3013,60 @@ HEAD/describe into this block after any docs commit.
 - **다음에 열어도 되는 슬라이스는 하나뿐**: catalog에 `places/flags/stages/duties/outfits/emotions`를
   채운 학교 스토리 1개 + 그 대화 1턴. 이름은 `f9-beat-catalog-school`. **엔진 코드는 잠근다.**
   열면 안 되는 것: `score() ON` · `K=1` · 1콜 폴백 · 1:1 HARD_RULES · relationship 자동 적용 · 외부 이미지.
+
+## [2026-09-02 워킹트리 커밋] `[RP-Chat / F9-beat / commit]`
+- 봉인만 되어 있던 워킹트리를 **커밋했다**. 브랜치 `f9-beat-seal`, 커밋 `c1a0c5b`,
+  부모 `1e827f1`(master는 미이동). **127 files changed, 61673 insertions(+), 12 deletions(-)**.
+  이전까지 롤백 계약은 「워킹트리 복구」였고 유일본이 디스크에만 있었다 — 이제 커밋이 그 사본이다.
+- **`apps/web/dist.bak/` 제외**: `.gitignore`가 `dist/`만 막고 있어 1.4M 빌드 백업이 미추적으로
+  올라오고 있었다. `dist.bak/` 한 줄을 `dist/` 옆에 추가(그 줄은 커밋에 포함). 디스크 파일은 보존.
+  스테이징 전 `.env`/`*.db`/`*.log`/키·토큰 스캔 **0건**. 커밋 안 된 ignore 항목은
+  `.env` · `dist/` · `dist.bak/` · `content/` — 전부 런타임·아티팩트.
+- **봉인 문서 B덩어리의 「F9 범위 밖」은 시각의 문제였지 범위의 문제가 아니었다.**
+  `stories.ts`는 `scene_catalog` 스키마 + `parseSceneCatalog` import(주석도 `f9-place-catalog`),
+  `adapter.ts`는 `requestDump.js` import다. 두 대상 파일이 모두 이번 미추적 산출물이라
+  **B를 분리해 먼저 커밋하면 컴파일이 깨진다.** 분리하지 않고 한 커밋으로 묶었고, 그 사유를
+  커밋 메시지 본문에 남겼다.
+- **`settingsRegression`이 65/66 → 66/66으로 뒤집혔다.** 그 벤치의 펜스는
+  `git diff HEAD -- apps/server`가 비어야 한다는 것이고, 커밋이 그 조건을 충족시켰다.
+  펜스 파일은 **한 글자도 고치지 않았다** — 남의 락의 증거를 수정한 것이 아니라 조건이 참이 된 것이다.
+  6/6: WEB_APP_VERSION · CSS 계약 · SSE generate 경로 불변 · swipe sibling 유지 ·
+  `conversation_settings`/`play_guide` 미추가 · **「no new migration files vs HEAD」**(0012가 HEAD에 있으므로 통과).
+  봉인 문서 C덩어리는 이로써 닫힌다.
+- 재검증(커밋 후, 재빌드·재시작 없음): 전체 벤치 **66/66 PASS**, server+web typecheck **EXIT 0**,
+  health `ok`/`db:ok`/`tailscale`/`promptVersion:2026.08.22-r1+story` 불변,
+  `schema_migrations` 최신 = `0012_scene_beat.sql`, 행수 conversations 8 · characters 10 ·
+  messages 147 · stories 2 · story_characters 3.
+  product 불변 재확인: `EXTRA_SCORE_ENABLED = false`(`approveExtras.ts:41`) ·
+  `apps/server/src`의 `secondary_triggers` 1건은 **제거 사유 주석**(`sceneDeltaPrompt.ts:14`) ·
+  `silu.uk` 0건 · `PROMPT_VERSION` 불변.
+- PROGRESS.md·STATUS.md 편집은 `settingsRegression` 펜스를 다시 깨지 않는다 — 그 펜스는
+  `apps/server` 경로에만 걸려 있다. `planning_documents/`는 git 리포 **밖**이다(리포는 `app/`).
+- **다음 슬라이스는 여전히 `f9-beat-catalog-school` 하나뿐.** 커밋은 엔진을 열지 않았다.
+
+## [2026-09-02 catalog-school 계획] `[RP-Chat / F9-beat / plan]`
+- 다음 슬라이스 계획서를 `planning_documents/f9-beat-catalog-school.md`에 작성(미승인 상태로 제출 → 승인됨).
+  노트 §7 교실을 라이브에 세우는 일이고, 목적은 「격리 벤치만 증인인 §7 표」를 라이브 경로에서 재현하는 것.
+- **지형 실측에서 계획을 무효화할 뻔한 사실 두 개가 나왔다.**
+  1. **쓰기 스키마가 파서와 어긋나 있다.** `sceneCatalog.ts:19-40`의 파서는 여섯 키
+     (`places[].default_focus` · `flags[].owner_duty` · `outfits[]` · `emotions{}` · `stages{closer_duty}` ·
+     `duties{slot}`)를 읽지만 `stories.ts:44-61`의 Zod는 그 여섯을 **전부 strip** 한다.
+     API로 채울 방법이 없다 — 「엔진은 잠근 채 데이터만」이라는 원래 범위로는 **실행 불가능**하다.
+     방증: 라이브 catalog 375바이트의 내용이 정확히 그 「쓰기 가능한 부분집합」이다.
+  2. **웹에서 스토리를 저장하면 `scene_catalog`가 지워진다.** `StoryEditor.save()`의 body는
+     `{name,tagline,setting,minor_cast}`뿐인데 `PUT /api/stories/:id`(`stories.ts:124-141`)는 전체 치환이고
+     `scene_catalog`에 빈 catalog `.default(...)`가 걸려 있다(`:61`). **이 작업이 만든 결함이 아니라
+     오늘 라이브에 있는 결함이다.** 지금 catalog 375바이트도 저장 클릭 한 번이면 사라진다.
+- 그래서 (A) 쓰기 스키마를 넓히고 **생략=보존**을 서버에서 강제하는 안을 택했다.
+  (B) 손 SQL로 `scene_catalog`를 쓰는 안은 **채택하지 않는다** — 2번 때문에 저장 한 번에 증발한다.
+  `stories.ts`는 라우트이지 잠금 대상 엔진 7개 파일이 아니다.
+- **펜스 줄번호 정정**: 봉인 문서가 `settingsRegression.test.ts:53`을 F7-settings 펜스로 적어 두었으나
+  그 줄은 swipe 어설션이다. 실제 펜스는 **`:57`** (`const serverDiff = git("diff HEAD -- apps/server")`)이고,
+  그 위 `:54`는 `apps/server apps/web` 양쪽의 파일명을 본다. 계획서와 봉인 문서 양쪽을 고쳤다.
+- **계획서 초안의 모순도 고쳤다**: 미르에게 `party:locked=1`을 주면서 eligible에 미르를 넣었는데,
+  노트 §7(line 140)의 결과가 `{세라, 하연, 유라, 루나, 미르}`라 **미르는 잠금이 아니다**.
+  `focusResolve.test.ts:43`의 `locked:true`는 「복도의 default_focus가 잠금이면 선택 불가」를 보려는
+  다른 목적이다. 🔒의 증인은 장소 밖인 한소연·유키가 맡는다.
+- `catalogFromCharacters`는 라이브 경로에서 **호출되지 않는다**(`chat.ts:281`이 `catalogFromStory` 하나뿐).
+  catalog의 출처는 스토리 행 하나이며, 캐릭터 태그로 우회 주입할 수 없다.
+- 이 계획에 **마이그레이션 0** — 0012로 충분해서 `migrate` 계열 토큰이 필요 없다.
