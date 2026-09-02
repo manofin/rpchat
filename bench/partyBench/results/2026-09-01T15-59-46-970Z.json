@@ -1,0 +1,5281 @@
+{
+  "token": "f9-bench-a-router",
+  "bench": "Bench-A",
+  "live_db": 0,
+  "live_generate": 0,
+  "apps_product_code": 0,
+  "pickSpeaker_product_path": 0,
+  "llm_invoked": 0,
+  "accuracy": {
+    "A": {
+      "n": 50,
+      "correct": 50,
+      "pct": 1
+    },
+    "B": {
+      "n": 50,
+      "correct": 50,
+      "pct": 1
+    },
+    "C": {
+      "n": 50,
+      "correct": 50,
+      "pct": 1
+    },
+    "D": {
+      "n": 50,
+      "correct": 0,
+      "pct": 0
+    },
+    "D_stage_only": {
+      "n": 50,
+      "stage_ok": 50
+    },
+    "N": 200,
+    "verdict": true,
+    "note": "D is report-only. Stage-4 does not call a model; speaker match vs npc_mina is expected to fail when main_speaker_id is null."
+  },
+  "reach": {
+    "input": {
+      "n": 100,
+      "explicit_name": 50,
+      "duty_fit": 30,
+      "scene_position": 10,
+      "ambiguous": 10
+    },
+    "output": {
+      "n": 100,
+      "stage1": 50,
+      "stage2": 30,
+      "stage3": 10,
+      "stage4": 10,
+      "pct1": 0.5,
+      "pct2": 0.3,
+      "pct3": 0.1,
+      "pct4": 0.1
+    },
+    "verdict": true,
+    "llm_redesign_trigger": false
+  },
+  "fallback_rate": {
+    "note": "report field, not a cut",
+    "accuracy_corpus": {
+      "n": 200,
+      "stages_1_3": 150,
+      "llm": 50,
+      "stages_1_3_pct": 0.75,
+      "llm_pct": 0.25
+    },
+    "reach_corpus": {
+      "n": 100,
+      "stages_1_3": 90,
+      "llm": 10,
+      "stages_1_3_pct": 0.9,
+      "llm_pct": 0.1
+    }
+  },
+  "cases_accuracy": [
+    {
+      "id": "A01",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A02",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A03",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A04",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A05",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A06",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A07",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A08",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A09",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A10",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A11",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A12",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A13",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A14",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A15",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A16",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A17",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A18",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A19",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A20",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A21",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A22",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A23",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A24",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A25",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A26",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A27",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A28",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A29",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A30",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A31",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A32",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A33",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A34",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A35",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A36",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A37",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A38",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A39",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A40",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A41",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A42",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A43",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A44",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A45",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A46",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A47",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A48",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A49",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "A50",
+      "bucket": "explicit_name",
+      "expected_stage": 1,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B01",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B02",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B03",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B04",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B05",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B06",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B07",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B08",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B09",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B10",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B11",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B12",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B13",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B14",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B15",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B16",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B17",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B18",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B19",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B20",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B21",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B22",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B23",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B24",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B25",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B26",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B27",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B28",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B29",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B30",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B31",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B32",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B33",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B34",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B35",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B36",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B37",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B38",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B39",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B40",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B41",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B42",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B43",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B44",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B45",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B46",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B47",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B48",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B49",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "B50",
+      "bucket": "duty_fit",
+      "expected_stage": 2,
+      "expected_main_speaker_id": "npc_jiu",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C01",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C02",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C03",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C04",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C05",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C06",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C07",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C08",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C09",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C10",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C11",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C12",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C13",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C14",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C15",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C16",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C17",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C18",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C19",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C20",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C21",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C22",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C23",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C24",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C25",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C26",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C27",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C28",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C29",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C30",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C31",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C32",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C33",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C34",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C35",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C36",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C37",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C38",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C39",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C40",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C41",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C42",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C43",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C44",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C45",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C46",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C47",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C48",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C49",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_harin",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "C50",
+      "bucket": "scene_position",
+      "expected_stage": 3,
+      "expected_main_speaker_id": "npc_doyun",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "stage_ok": true,
+      "speaker_ok": true,
+      "correct": true,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D01",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D02",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D03",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D04",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D05",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D06",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D07",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D08",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D09",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D10",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D11",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D12",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D13",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D14",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D15",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D16",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D17",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D18",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D19",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D20",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D21",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D22",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D23",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D24",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D25",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D26",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D27",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D28",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D29",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D30",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D31",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D32",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D33",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D34",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D35",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D36",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D37",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D38",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D39",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D40",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D41",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D42",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D43",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D44",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D45",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D46",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D47",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D48",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D49",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "D50",
+      "bucket": "ambiguous",
+      "expected_stage": 4,
+      "expected_main_speaker_id": "npc_mina",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "stage_ok": true,
+      "speaker_ok": false,
+      "correct": false,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    }
+  ],
+  "cases_reach": [
+    {
+      "id": "R-E01",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E02",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E03",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E04",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E05",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E06",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E07",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E08",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E09",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E10",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E11",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E12",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E13",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E14",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E15",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E16",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E17",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E18",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E19",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E20",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E21",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E22",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E23",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E24",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E25",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E26",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E27",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E28",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E29",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E30",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E31",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E32",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E33",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E34",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E35",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E36",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E37",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E38",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E39",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E40",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E41",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E42",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E43",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E44",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E45",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E46",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E47",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E48",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E49",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-E50",
+      "bucket": "explicit_name",
+      "decided_stage": 1,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U01",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U02",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U03",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U04",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U05",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U06",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U07",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U08",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U09",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U10",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U11",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U12",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U13",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U14",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U15",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U16",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U17",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U18",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U19",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U20",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U21",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U22",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U23",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U24",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U25",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U26",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U27",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U28",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U29",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_mina",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 95,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-U30",
+      "bucket": "duty_fit",
+      "decided_stage": 2,
+      "main_speaker_id": "npc_jiu",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 95,
+        "npc_harin": 20,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-L01",
+      "bucket": "scene_position",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-L02",
+      "bucket": "scene_position",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-L03",
+      "bucket": "scene_position",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-L04",
+      "bucket": "scene_position",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-L05",
+      "bucket": "scene_position",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-L06",
+      "bucket": "scene_position",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-L07",
+      "bucket": "scene_position",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-L08",
+      "bucket": "scene_position",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-L09",
+      "bucket": "scene_position",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_harin",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 95,
+        "npc_doyun": 20,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-L10",
+      "bucket": "scene_position",
+      "decided_stage": 3,
+      "main_speaker_id": "npc_doyun",
+      "llm_reached": false,
+      "scores": {
+        "npc_mina": 20,
+        "npc_jiu": 20,
+        "npc_harin": 20,
+        "npc_doyun": 95,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-M01",
+      "bucket": "ambiguous",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-M02",
+      "bucket": "ambiguous",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-M03",
+      "bucket": "ambiguous",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-M04",
+      "bucket": "ambiguous",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-M05",
+      "bucket": "ambiguous",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-M06",
+      "bucket": "ambiguous",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-M07",
+      "bucket": "ambiguous",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-M08",
+      "bucket": "ambiguous",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-M09",
+      "bucket": "ambiguous",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    },
+    {
+      "id": "R-M10",
+      "bucket": "ambiguous",
+      "decided_stage": 4,
+      "main_speaker_id": null,
+      "llm_reached": true,
+      "scores": {
+        "npc_mina": 0,
+        "npc_jiu": 0,
+        "npc_harin": 0,
+        "npc_doyun": 0,
+        "npc_bg": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,936 @@
+{
+  "run": "run-long-rp-v2",
+  "valid": true,
+  "runLabel": "VALID",
+  "convId": "6cc7754e-db7e-46c7-8c89-374c318ffa70",
+  "characterId": "dfbd8394-e4c8-4f6c-b786-d71cde8fd02b",
+  "startedHealth": {
+    "promptVersion": "2026.08.22-r1",
+    "resolvedModel": "/Users/llm/models/Gemma-4-Dark-Thoughts-V2-31B.i1-Q4_K_M.gguf",
+    "contextTokens": 16384,
+    "modelOk": true
+  },
+  "storyComplete": 100,
+  "probeComplete": 9,
+  "summarizeOk": 3,
+  "story": [
+    {
+      "turn": 1,
+      "ok": true,
+      "type": "done",
+      "ms": 6172,
+      "chars": 66
+    },
+    {
+      "turn": 2,
+      "ok": true,
+      "type": "done",
+      "ms": 1983,
+      "chars": 48
+    },
+    {
+      "turn": 3,
+      "ok": true,
+      "type": "done",
+      "ms": 1868,
+      "chars": 40
+    },
+    {
+      "turn": 4,
+      "ok": true,
+      "type": "done",
+      "ms": 1779,
+      "chars": 50
+    },
+    {
+      "turn": 5,
+      "ok": true,
+      "type": "done",
+      "ms": 1900,
+      "chars": 50
+    },
+    {
+      "turn": 6,
+      "ok": true,
+      "type": "done",
+      "ms": 2737,
+      "chars": 77
+    },
+    {
+      "turn": 7,
+      "ok": true,
+      "type": "done",
+      "ms": 2296,
+      "chars": 56
+    },
+    {
+      "turn": 8,
+      "ok": true,
+      "type": "done",
+      "ms": 2536,
+      "chars": 67
+    },
+    {
+      "turn": 9,
+      "ok": true,
+      "type": "done",
+      "ms": 2719,
+      "chars": 79
+    },
+    {
+      "turn": 10,
+      "ok": true,
+      "type": "done",
+      "ms": 1885,
+      "chars": 42
+    },
+    {
+      "turn": 11,
+      "ok": true,
+      "type": "done",
+      "ms": 2553,
+      "chars": 66
+    },
+    {
+      "turn": 12,
+      "ok": true,
+      "type": "done",
+      "ms": 3479,
+      "chars": 111
+    },
+    {
+      "turn": 13,
+      "ok": true,
+      "type": "done",
+      "ms": 2703,
+      "chars": 74
+    },
+    {
+      "turn": 14,
+      "ok": true,
+      "type": "done",
+      "ms": 2599,
+      "chars": 76
+    },
+    {
+      "turn": 15,
+      "ok": true,
+      "type": "done",
+      "ms": 2978,
+      "chars": 85
+    },
+    {
+      "turn": 16,
+      "ok": true,
+      "type": "done",
+      "ms": 2795,
+      "chars": 69
+    },
+    {
+      "turn": 17,
+      "ok": true,
+      "type": "done",
+      "ms": 3059,
+      "chars": 80
+    },
+    {
+      "turn": 18,
+      "ok": true,
+      "type": "done",
+      "ms": 2882,
+      "chars": 81
+    },
+    {
+      "turn": 19,
+      "ok": true,
+      "type": "done",
+      "ms": 2949,
+      "chars": 80
+    },
+    {
+      "turn": 20,
+      "ok": true,
+      "type": "done",
+      "ms": 2959,
+      "chars": 81
+    },
+    {
+      "turn": 21,
+      "ok": true,
+      "type": "done",
+      "ms": 11140,
+      "chars": 67
+    },
+    {
+      "turn": 22,
+      "ok": true,
+      "type": "done",
+      "ms": 3209,
+      "chars": 93
+    },
+    {
+      "turn": 23,
+      "ok": true,
+      "type": "done",
+      "ms": 3438,
+      "chars": 97
+    },
+    {
+      "turn": 24,
+      "ok": true,
+      "type": "done",
+      "ms": 3178,
+      "chars": 92
+    },
+    {
+      "turn": 25,
+      "ok": true,
+      "type": "done",
+      "ms": 3155,
+      "chars": 101
+    },
+    {
+      "turn": 26,
+      "ok": true,
+      "type": "done",
+      "ms": 2978,
+      "chars": 87
+    },
+    {
+      "turn": 27,
+      "ok": true,
+      "type": "done",
+      "ms": 3431,
+      "chars": 95
+    },
+    {
+      "turn": 28,
+      "ok": true,
+      "type": "done",
+      "ms": 2912,
+      "chars": 76
+    },
+    {
+      "turn": 29,
+      "ok": true,
+      "type": "done",
+      "ms": 2662,
+      "chars": 70
+    },
+    {
+      "turn": 30,
+      "ok": true,
+      "type": "done",
+      "ms": 2493,
+      "chars": 65
+    },
+    {
+      "turn": 31,
+      "ok": true,
+      "type": "done",
+      "ms": 3338,
+      "chars": 96
+    },
+    {
+      "turn": 32,
+      "ok": true,
+      "type": "done",
+      "ms": 3243,
+      "chars": 86
+    },
+    {
+      "turn": 33,
+      "ok": true,
+      "type": "done",
+      "ms": 2683,
+      "chars": 69
+    },
+    {
+      "turn": 34,
+      "ok": true,
+      "type": "done",
+      "ms": 2969,
+      "chars": 83
+    },
+    {
+      "turn": 35,
+      "ok": true,
+      "type": "done",
+      "ms": 3728,
+      "chars": 104
+    },
+    {
+      "turn": 36,
+      "ok": true,
+      "type": "done",
+      "ms": 3204,
+      "chars": 87
+    },
+    {
+      "turn": 37,
+      "ok": true,
+      "type": "done",
+      "ms": 2858,
+      "chars": 77
+    },
+    {
+      "turn": 38,
+      "ok": true,
+      "type": "done",
+      "ms": 2831,
+      "chars": 73
+    },
+    {
+      "turn": 39,
+      "ok": true,
+      "type": "done",
+      "ms": 2831,
+      "chars": 75
+    },
+    {
+      "turn": 40,
+      "ok": true,
+      "type": "done",
+      "ms": 3261,
+      "chars": 95
+    },
+    {
+      "turn": 41,
+      "ok": true,
+      "type": "done",
+      "ms": 3546,
+      "chars": 106
+    },
+    {
+      "turn": 42,
+      "ok": true,
+      "type": "done",
+      "ms": 3342,
+      "chars": 93
+    },
+    {
+      "turn": 43,
+      "ok": true,
+      "type": "done",
+      "ms": 2916,
+      "chars": 77
+    },
+    {
+      "turn": 44,
+      "ok": true,
+      "type": "done",
+      "ms": 3068,
+      "chars": 83
+    },
+    {
+      "turn": 45,
+      "ok": true,
+      "type": "done",
+      "ms": 3147,
+      "chars": 78
+    },
+    {
+      "turn": 46,
+      "ok": true,
+      "type": "done",
+      "ms": 19807,
+      "chars": 74
+    },
+    {
+      "turn": 47,
+      "ok": true,
+      "type": "done",
+      "ms": 2934,
+      "chars": 78
+    },
+    {
+      "turn": 48,
+      "ok": true,
+      "type": "done",
+      "ms": 3678,
+      "chars": 98
+    },
+    {
+      "turn": 49,
+      "ok": true,
+      "type": "done",
+      "ms": 3391,
+      "chars": 89
+    },
+    {
+      "turn": 50,
+      "ok": true,
+      "type": "done",
+      "ms": 3655,
+      "chars": 108
+    },
+    {
+      "turn": 51,
+      "ok": true,
+      "type": "done",
+      "ms": 3440,
+      "chars": 89
+    },
+    {
+      "turn": 52,
+      "ok": true,
+      "type": "done",
+      "ms": 3733,
+      "chars": 109
+    },
+    {
+      "turn": 53,
+      "ok": true,
+      "type": "done",
+      "ms": 2845,
+      "chars": 70
+    },
+    {
+      "turn": 54,
+      "ok": true,
+      "type": "done",
+      "ms": 3778,
+      "chars": 102
+    },
+    {
+      "turn": 55,
+      "ok": true,
+      "type": "done",
+      "ms": 3199,
+      "chars": 82
+    },
+    {
+      "turn": 56,
+      "ok": true,
+      "type": "done",
+      "ms": 2782,
+      "chars": 67
+    },
+    {
+      "turn": 57,
+      "ok": true,
+      "type": "done",
+      "ms": 3269,
+      "chars": 92
+    },
+    {
+      "turn": 58,
+      "ok": true,
+      "type": "done",
+      "ms": 3913,
+      "chars": 106
+    },
+    {
+      "turn": 59,
+      "ok": true,
+      "type": "done",
+      "ms": 3347,
+      "chars": 85
+    },
+    {
+      "turn": 60,
+      "ok": true,
+      "type": "done",
+      "ms": 3315,
+      "chars": 87
+    },
+    {
+      "turn": 61,
+      "ok": true,
+      "type": "done",
+      "ms": 3285,
+      "chars": 81
+    },
+    {
+      "turn": 62,
+      "ok": true,
+      "type": "done",
+      "ms": 3350,
+      "chars": 89
+    },
+    {
+      "turn": 63,
+      "ok": true,
+      "type": "done",
+      "ms": 3013,
+      "chars": 74
+    },
+    {
+      "turn": 64,
+      "ok": true,
+      "type": "done",
+      "ms": 3297,
+      "chars": 83
+    },
+    {
+      "turn": 65,
+      "ok": true,
+      "type": "done",
+      "ms": 4163,
+      "chars": 120
+    },
+    {
+      "turn": 66,
+      "ok": true,
+      "type": "done",
+      "ms": 3494,
+      "chars": 97
+    },
+    {
+      "turn": 67,
+      "ok": true,
+      "type": "done",
+      "ms": 2869,
+      "chars": 83
+    },
+    {
+      "turn": 68,
+      "ok": true,
+      "type": "done",
+      "ms": 3185,
+      "chars": 82
+    },
+    {
+      "turn": 69,
+      "ok": true,
+      "type": "done",
+      "ms": 2967,
+      "chars": 73
+    },
+    {
+      "turn": 70,
+      "ok": true,
+      "type": "done",
+      "ms": 3596,
+      "chars": 92
+    },
+    {
+      "turn": 71,
+      "ok": true,
+      "type": "done",
+      "ms": 3811,
+      "chars": 102
+    },
+    {
+      "turn": 72,
+      "ok": true,
+      "type": "done",
+      "ms": 3473,
+      "chars": 83
+    },
+    {
+      "turn": 73,
+      "ok": true,
+      "type": "done",
+      "ms": 3999,
+      "chars": 104
+    },
+    {
+      "turn": 74,
+      "ok": true,
+      "type": "done",
+      "ms": 3836,
+      "chars": 99
+    },
+    {
+      "turn": 75,
+      "ok": true,
+      "type": "done",
+      "ms": 3260,
+      "chars": 79
+    },
+    {
+      "turn": 76,
+      "ok": true,
+      "type": "done",
+      "ms": 33088,
+      "chars": 86
+    },
+    {
+      "turn": 77,
+      "ok": true,
+      "type": "done",
+      "ms": 4015,
+      "chars": 114
+    },
+    {
+      "turn": 78,
+      "ok": true,
+      "type": "done",
+      "ms": 4443,
+      "chars": 120
+    },
+    {
+      "turn": 79,
+      "ok": true,
+      "type": "done",
+      "ms": 4089,
+      "chars": 108
+    },
+    {
+      "turn": 80,
+      "ok": true,
+      "type": "done",
+      "ms": 3808,
+      "chars": 100
+    },
+    {
+      "turn": 81,
+      "ok": true,
+      "type": "done",
+      "ms": 3708,
+      "chars": 90
+    },
+    {
+      "turn": 82,
+      "ok": true,
+      "type": "done",
+      "ms": 3842,
+      "chars": 106
+    },
+    {
+      "turn": 83,
+      "ok": true,
+      "type": "done",
+      "ms": 3621,
+      "chars": 100
+    },
+    {
+      "turn": 84,
+      "ok": true,
+      "type": "done",
+      "ms": 3739,
+      "chars": 94
+    },
+    {
+      "turn": 85,
+      "ok": true,
+      "type": "done",
+      "ms": 3708,
+      "chars": 95
+    },
+    {
+      "turn": 86,
+      "ok": true,
+      "type": "done",
+      "ms": 3837,
+      "chars": 103
+    },
+    {
+      "turn": 87,
+      "ok": true,
+      "type": "done",
+      "ms": 4330,
+      "chars": 110
+    },
+    {
+      "turn": 88,
+      "ok": true,
+      "type": "done",
+      "ms": 4240,
+      "chars": 112
+    },
+    {
+      "turn": 89,
+      "ok": true,
+      "type": "done",
+      "ms": 3925,
+      "chars": 92
+    },
+    {
+      "turn": 90,
+      "ok": true,
+      "type": "done",
+      "ms": 4334,
+      "chars": 99
+    },
+    {
+      "turn": 91,
+      "ok": true,
+      "type": "done",
+      "ms": 3727,
+      "chars": 87
+    },
+    {
+      "turn": 92,
+      "ok": true,
+      "type": "done",
+      "ms": 3575,
+      "chars": 89
+    },
+    {
+      "turn": 93,
+      "ok": true,
+      "type": "done",
+      "ms": 4098,
+      "chars": 111
+    },
+    {
+      "turn": 94,
+      "ok": true,
+      "type": "done",
+      "ms": 4422,
+      "chars": 104
+    },
+    {
+      "turn": 95,
+      "ok": true,
+      "type": "done",
+      "ms": 4441,
+      "chars": 107
+    },
+    {
+      "turn": 96,
+      "ok": true,
+      "type": "done",
+      "ms": 3772,
+      "chars": 80
+    },
+    {
+      "turn": 97,
+      "ok": true,
+      "type": "done",
+      "ms": 4297,
+      "chars": 111
+    },
+    {
+      "turn": 98,
+      "ok": true,
+      "type": "done",
+      "ms": 3855,
+      "chars": 94
+    },
+    {
+      "turn": 99,
+      "ok": true,
+      "type": "done",
+      "ms": 4067,
+      "chars": 106
+    },
+    {
+      "turn": 100,
+      "ok": true,
+      "type": "done",
+      "ms": 4556,
+      "chars": 111
+    }
+  ],
+  "probes": [
+    {
+      "id": "P30-a",
+      "horizon": 30,
+      "ok": true,
+      "text": "린의 일과는 등불 유지보수, 물때 확인, 보급품 관리 및 등대 주변 정비입니다. 현재 린의 소지품 중 없어진 물건은 등실로 올라가는 열쇠입니다.",
+      "pass": false,
+      "missing": [
+        "등대지기"
+      ],
+      "hitForbid": []
+    },
+    {
+      "id": "P30-b",
+      "horizon": 30,
+      "ok": true,
+      "text": "폭풍으로 배가 파손되어 절벽에 표류한 상태로 등대에 들어왔습니다. 현재 왼손목에 바위로 인한 찢어진 상처가 있으며, 린이 천으로 응급처치를 해준 상태입니다. 전체적으로 젖어 있고 추운 상태이며 육체적으로 지쳐 있습니다.",
+      "pass": false,
+      "missing": [
+        "사흘"
+      ],
+      "hitForbid": []
+    },
+    {
+      "id": "P30-c",
+      "horizon": 30,
+      "ok": true,
+      "text": "린의 허리춤에 있던 등실 열쇠는 여행자가 등대에 들어와 몸을 녹이는 과정에서 은연중에 린의 주머니나 소지품 사이로 옮겨졌습니다. 여행자 본인은 인식하지 못했거나 무의식중에 행한 일이며, 현재 열쇠는 여행자의 소지품 속에 숨겨져 있습니다.",
+      "pass": false,
+      "missing": [
+        "모르"
+      ],
+      "hitForbid": []
+    },
+    {
+      "id": "P60-a",
+      "horizon": 60,
+      "ok": true,
+      "text": "열쇠는 여행자의 외투 안주머니에서 발견되었습니다. 미나는 린의 언니로, 2년 전 등대를 떠나 항구 도시로 간 인물입니다.",
+      "pass": true,
+      "missing": [],
+      "hitForbid": []
+    },
+    {
+      "id": "P60-b",
+      "horizon": 60,
+      "ok": true,
+      "text": "린의 빚은 보급선이 폭풍으로 지연되면서 항구 관리인에게 등유를 외상으로 가져다 쓴 것입니다. 등불이 꺼진 원인은 노후된 심지의 마모와 강한 돌풍으로 인해 환기구 틈으로 들어온 찬 공기가 불꽃을 일시적으로 꺼뜨렸기 때문입니다.",
+      "pass": false,
+      "missing": [
+        "모르"
+      ],
+      "hitForbid": []
+    },
+    {
+      "id": "P60-c",
+      "horizon": 60,
+      "ok": true,
+      "text": "네, 사용자의 거주 범위는 처음 약속한 대로 부엌과 침실 옆 골방으로 제한되어 있습니다. 린은 다른 구역, 특히 등실에 혼자 올라가는 것을 엄격히 금지하고 있습니다.",
+      "pass": true,
+      "missing": [],
+      "hitForbid": []
+    },
+    {
+      "id": "P100-a",
+      "horizon": 100,
+      "ok": true,
+      "text": "미나의 편지는 린이 주머니에 넣은 상태이며, 그 내용은 '불을 끄지 말라'는 짧은 경고뿐입니다. 등불 사건은 원인이 밝혀지지 않은 미스터리한 상태로 남아 있으며, 현재 두 사람은 이를 단순 사고로 치부하며 지켜보고 있습니다.",
+      "pass": true,
+      "missing": [],
+      "hitForbid": []
+    },
+    {
+      "id": "P100-b",
+      "horizon": 100,
+      "ok": true,
+      "text": "사용자는 현재 등대 1층 거실 혹은 부엌 인근에 있습니다. 방금 창문을 닫고 린과 함께 램프 불꽃을 바라보며 대화를 나누고 있는 상태입니다.",
+      "pass": false,
+      "missing": [
+        "조수",
+        "당번"
+      ],
+      "hitForbid": []
+    },
+    {
+      "id": "P100-c",
+      "horizon": 100,
+      "ok": true,
+      "text": "왼손목의 상처는 린이 약초를 바르고 붕대를 다시 감아주어 출혈은 멈췄고 회복 중인 상태입니다. 식량은 줄어들었지만 버틸 만한 수준이며, 등유는 한 시즌분 정도 남아 있어 당분간은 충분한 상태입니다.",
+      "pass": true,
+      "missing": [],
+      "hitForbid": []
+    }
+  ],
+  "summaries": [
+    {
+      "at": 20,
+      "ok": true,
+      "status": 200,
+      "summaryId": "130250be-4906-4f7b-851b-ee6dcbc674b4",
+      "approvedStatus": "approved",
+      "tier": "whole",
+      "attempts": 1
+    },
+    {
+      "at": 45,
+      "ok": true,
+      "status": 200,
+      "summaryId": "e06b6512-0cba-4573-855d-71d6d8362b75",
+      "approvedStatus": "approved",
+      "tier": "whole",
+      "attempts": 1
+    },
+    {
+      "at": 75,
+      "ok": true,
+      "status": 200,
+      "summaryId": "059345f0-08f2-4d1a-939b-573a4048ce30",
+      "approvedStatus": "approved",
+      "tier": "whole",
+      "attempts": 1
+    }
+  ],
+  "hold": {
+    "30": {
+      "scored": [
+        "F01",
+        "F02",
+        "F03",
+        "F05",
+        "F06",
+        "F07"
+      ],
+      "held": [],
+      "missed": [
+        "F01",
+        "F02",
+        "F03",
+        "F05",
+        "F06",
+        "F07"
+      ],
+      "unscored": [
+        "F04",
+        "F08"
+      ],
+      "hold_rate": 0
+    },
+    "60": {
+      "scored": [
+        "F01",
+        "F09",
+        "F10",
+        "F11",
+        "F12",
+        "F13"
+      ],
+      "held": [
+        "F01",
+        "F09",
+        "F10",
+        "F13"
+      ],
+      "missed": [
+        "F11",
+        "F12"
+      ],
+      "unscored": [
+        "F02",
+        "F03",
+        "F04",
+        "F05",
+        "F06",
+        "F07",
+        "F08",
+        "F14"
+      ],
+      "hold_rate": 0.6666666666666666
+    },
+    "100": {
+      "scored": [
+        "F03",
+        "F15",
+        "F16",
+        "F17",
+        "F18",
+        "F19",
+        "F20"
+      ],
+      "held": [
+        "F03",
+        "F15",
+        "F17",
+        "F18",
+        "F19"
+      ],
+      "missed": [
+        "F16",
+        "F20"
+      ],
+      "unscored": [
+        "F01",
+        "F02",
+        "F04",
+        "F05",
+        "F06",
+        "F07",
+        "F08",
+        "F09",
+        "F10",
+        "F11",
+        "F12",
+        "F13",
+        "F14"
+      ],
+      "hold_rate": 0.7142857142857143
+    }
+  }
+}

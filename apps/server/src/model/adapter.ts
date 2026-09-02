@@ -1,4 +1,5 @@
 import type { ChatMessage } from '../types.js';
+import { dumpRequestBody } from './requestDump.js';
 
 export interface GenParams {
   model: string;
@@ -8,6 +9,7 @@ export interface GenParams {
   max_tokens?: number;
   stop?: string[];
   signal?: AbortSignal;
+  generationId?: string;
 }
 
 export interface Usage {
@@ -39,6 +41,7 @@ export class ModelClient {
     private readonly baseUrl: string,
     private readonly apiKey: string,
     private readonly timeoutMs: number,
+    private readonly dataDir: string,
   ) {}
 
   private headers(): Record<string, string> {
@@ -73,6 +76,16 @@ export class ModelClient {
       chat_template_kwargs: { enable_thinking: false },
     };
     if (p.stop && p.stop.length > 0) body.stop = p.stop;
+
+    if (p.generationId) {
+      dumpRequestBody({
+        dataDir: this.dataDir,
+        generationId: p.generationId,
+        createdAt: new Date().toISOString(),
+        url: `${this.baseUrl}/chat/completions`,
+        body,
+      });
+    }
 
     const res = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',

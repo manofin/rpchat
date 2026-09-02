@@ -35,6 +35,8 @@ export interface StoryRow {
   tagline: string;
   setting: string;
   minor_cast: string;
+  /** f9-place-catalog: JSON SceneCatalog. '{}' = no catalog (every delta key rejected). */
+  scene_catalog: string;
   archived: number;
   created_at: string;
   updated_at: string;
@@ -80,6 +82,32 @@ export interface Scene {
   genre?: string;
   conflict?: string;
   mood?: string;
+  clock_minutes?: number;
+  weather?: string;
+  location?: string;
+  stage?: string;
+  arc?: string;
+  flags?: Array<{ key: string; owner_stage?: string }>;
+  /** f9-presence-model: who is actually in the scene. Scene-owned, not character-owned. */
+  present_ids?: string[];
+  scene_version?: number;
+  /**
+   * f9-beat-render (0012): server-owned beat state. Every key is optional, so a
+   * conversation that has never run a beat keeps byte-identical scene_json.
+   * None of these is in applySceneDelta's APPLY_KEYS — the model cannot propose them.
+   */
+  day_index?: number;
+  weekday?: string;
+  beat_goal?: string;
+  roster?: Record<string, { emotion?: string; outfit?: string }>;
+  user_sheet?: {
+    hp?: number | null;
+    money?: number | null;
+    gear?: string[];
+    inventory?: string[];
+    traits?: string[];
+  };
+  last_beat?: { focus_id: string | null; extra_ids: string[]; unresolved: string[] };
 }
 
 export interface ConversationRow {
@@ -122,6 +150,19 @@ export interface MessageMeta {
   prompt_version?: string;
   generation_id?: string;
   error?: string;
+  speaker_character_id?: string;
+  speaker_name?: string;
+  speaker_avatar?: string | null;
+  /**
+   * f9-swap-passes: which §6 slot this row is. Absent on every 1:1 message and on
+   * every row written before the beat engine, so the client keeps rendering those
+   * as ordinary bubbles.
+   */
+  block_kind?: 'header' | 'narration' | 'line' | 'thought' | 'ui';
+  /** Position within the beat. The client sorts on this, not on arrival order. */
+  beat_seq?: number;
+  /** Server-chosen local asset path, or absent. Never a model-written URL. */
+  image_url?: string;
 }
 
 export interface MessageRow {

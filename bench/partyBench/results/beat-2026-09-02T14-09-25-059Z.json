@@ -1,0 +1,176 @@
+{
+  "token": "f9-swap-passes",
+  "bench": "Bench-Latency (beat mix)",
+  "supersedes_mix_of": "f9-bench-latency 2-call mix (that result stays valid for its own mix)",
+  "queue_depth": 1,
+  "live_db": 0,
+  "live_messages_post": 0,
+  "apps_product_code_changed": 0,
+  "prompts_from": "apps/server/src/prompt/passes.ts (the shipped renderers)",
+  "model_name": "/Users/llm/models/Gemma-4-Dark-Thoughts-V2-31B.i1-Q4_K_M.gguf",
+  "model_base_url": "http://100.97.170.121:8083/v1",
+  "context_tokens": 16384,
+  "n_target": 3,
+  "cuts": {
+    "n": 50,
+    "p50_s": 90,
+    "p95_s": 120,
+    "overflow": 0,
+    "queue_depth": 1,
+    "context_tokens": 16384,
+    "p50_redesign_s": 150
+  },
+  "started_at": "2026-09-02T14:09:25.059Z",
+  "status": "complete",
+  "finished_at": "2026-09-02T14:10:00.415Z",
+  "n": 3,
+  "p50_s": 9.43,
+  "p95_s": 16.945,
+  "overflow": 0,
+  "verdict": false,
+  "f9_adoption": "FAIL",
+  "redesign_trigger": false,
+  "per_pass": {
+    "delta": {
+      "n": 3,
+      "p50_s": 0.649,
+      "max_prompt_tokens": 415
+    },
+    "N": {
+      "n": 3,
+      "p50_s": 3.856,
+      "max_prompt_tokens": 368
+    },
+    "F": {
+      "n": 3,
+      "p50_s": 4.925,
+      "max_prompt_tokens": 1084
+    }
+  },
+  "turns": [
+    {
+      "i": 0,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 2931,
+          "ttft_ms": 2639,
+          "prompt_tokens": 415,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 4582,
+          "ttft_ms": 1705,
+          "prompt_tokens": 368,
+          "completion_tokens": 80,
+          "finish": "stop",
+          "text_len": 131,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 9432,
+          "ttft_ms": 4534,
+          "prompt_tokens": 1084,
+          "completion_tokens": 132,
+          "finish": "stop",
+          "text_len": 219,
+          "error": null
+        }
+      ],
+      "turn_ms": 16945,
+      "overflow": false
+    },
+    {
+      "i": 1,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 649,
+          "ttft_ms": 361,
+          "prompt_tokens": 415,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3856,
+          "ttft_ms": 238,
+          "prompt_tokens": 368,
+          "completion_tokens": 100,
+          "finish": "stop",
+          "text_len": 162,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4925,
+          "ttft_ms": 279,
+          "prompt_tokens": 1084,
+          "completion_tokens": 125,
+          "finish": "stop",
+          "text_len": 237,
+          "error": null
+        }
+      ],
+      "turn_ms": 9430,
+      "overflow": false
+    },
+    {
+      "i": 2,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 619,
+          "ttft_ms": 326,
+          "prompt_tokens": 415,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3623,
+          "ttft_ms": 226,
+          "prompt_tokens": 368,
+          "completion_tokens": 94,
+          "finish": "stop",
+          "text_len": 149,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4735,
+          "ttft_ms": 267,
+          "prompt_tokens": 1084,
+          "completion_tokens": 120,
+          "finish": "stop",
+          "text_len": 207,
+          "error": null
+        }
+      ],
+      "turn_ms": 8977,
+      "overflow": false
+    }
+  ],
+  "note": "Cuts are the sealed f9-bench-latency numbers, unchanged. Only the call mix differs."
+}

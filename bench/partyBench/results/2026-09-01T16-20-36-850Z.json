@@ -1,0 +1,1362 @@
+{
+  "token": "f9-bench-latency",
+  "bench": "Bench-Latency",
+  "queue_depth": 1,
+  "live_db": 0,
+  "apps_product_code": 0,
+  "pickSpeaker_product_path": 0,
+  "model_name": "/Users/llm/models/Gemma-4-Dark-Thoughts-V2-31B.i1-Q4_K_M.gguf",
+  "model_base_url": "http://100.97.170.121:8083/v1",
+  "context_tokens": 16384,
+  "n_target": 50,
+  "prompt_a_est_tokens": 449,
+  "prompt_b_est_tokens": 12010,
+  "started_at": "2026-09-01T16:20:36.850Z",
+  "status": "complete",
+  "finished_at": "2026-09-01T16:32:01.229Z",
+  "n": 50,
+  "p50_s": 9.979,
+  "p95_s": 11.761,
+  "overflow": 0,
+  "verdict": true,
+  "f9_adoption": "PASS",
+  "redesign_trigger": false,
+  "cuts": {
+    "n": 50,
+    "p50_s": 90,
+    "p95_s": 120,
+    "overflow": 0,
+    "queue_depth": 1,
+    "context_tokens": 16384,
+    "p50_redesign_s": 150
+  },
+  "overflow_probe": {
+    "i": 50,
+    "kind": "B",
+    "call1": {
+      "ok": true,
+      "ms": 72222,
+      "ttft_ms": 68732,
+      "prompt_tokens": 14151,
+      "completion_tokens": 47,
+      "finish": "stop",
+      "text_len": 125,
+      "error": null
+    },
+    "call2": {
+      "ok": true,
+      "ms": 76409,
+      "ttft_ms": 69310,
+      "prompt_tokens": 14213,
+      "completion_tokens": 99,
+      "finish": "stop",
+      "text_len": 177,
+      "error": null
+    },
+    "turn_ms": 148631,
+    "overflow": false
+  },
+  "turns": [
+    {
+      "i": 0,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 31690,
+        "ttft_ms": 29005,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 10469,
+        "ttft_ms": 2912,
+        "prompt_tokens": 528,
+        "completion_tokens": 116,
+        "finish": "stop",
+        "text_len": 206,
+        "error": null
+      },
+      "turn_ms": 42159,
+      "overflow": false
+    },
+    {
+      "i": 1,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3097,
+        "ttft_ms": 407,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 8117,
+        "ttft_ms": 371,
+        "prompt_tokens": 528,
+        "completion_tokens": 120,
+        "finish": "stop",
+        "text_len": 214,
+        "error": null
+      },
+      "turn_ms": 11214,
+      "overflow": false
+    },
+    {
+      "i": 2,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3166,
+        "ttft_ms": 380,
+        "prompt_tokens": 466,
+        "completion_tokens": 44,
+        "finish": "stop",
+        "text_len": 117,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 5917,
+        "ttft_ms": 355,
+        "prompt_tokens": 528,
+        "completion_tokens": 86,
+        "finish": "stop",
+        "text_len": 154,
+        "error": null
+      },
+      "turn_ms": 9083,
+      "overflow": false
+    },
+    {
+      "i": 3,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3272,
+        "ttft_ms": 336,
+        "prompt_tokens": 466,
+        "completion_tokens": 46,
+        "finish": "stop",
+        "text_len": 121,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 7928,
+        "ttft_ms": 339,
+        "prompt_tokens": 528,
+        "completion_tokens": 117,
+        "finish": "stop",
+        "text_len": 203,
+        "error": null
+      },
+      "turn_ms": 11200,
+      "overflow": false
+    },
+    {
+      "i": 4,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3143,
+        "ttft_ms": 343,
+        "prompt_tokens": 466,
+        "completion_tokens": 44,
+        "finish": "stop",
+        "text_len": 117,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6077,
+        "ttft_ms": 346,
+        "prompt_tokens": 528,
+        "completion_tokens": 89,
+        "finish": "stop",
+        "text_len": 146,
+        "error": null
+      },
+      "turn_ms": 9220,
+      "overflow": false
+    },
+    {
+      "i": 5,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 2857,
+        "ttft_ms": 334,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6891,
+        "ttft_ms": 343,
+        "prompt_tokens": 528,
+        "completion_tokens": 101,
+        "finish": "stop",
+        "text_len": 167,
+        "error": null
+      },
+      "turn_ms": 9748,
+      "overflow": false
+    },
+    {
+      "i": 6,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3003,
+        "ttft_ms": 332,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6524,
+        "ttft_ms": 340,
+        "prompt_tokens": 528,
+        "completion_tokens": 96,
+        "finish": "stop",
+        "text_len": 165,
+        "error": null
+      },
+      "turn_ms": 9527,
+      "overflow": false
+    },
+    {
+      "i": 7,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3199,
+        "ttft_ms": 330,
+        "prompt_tokens": 466,
+        "completion_tokens": 45,
+        "finish": "stop",
+        "text_len": 119,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 7278,
+        "ttft_ms": 348,
+        "prompt_tokens": 528,
+        "completion_tokens": 107,
+        "finish": "stop",
+        "text_len": 187,
+        "error": null
+      },
+      "turn_ms": 10477,
+      "overflow": false
+    },
+    {
+      "i": 8,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3213,
+        "ttft_ms": 329,
+        "prompt_tokens": 466,
+        "completion_tokens": 45,
+        "finish": "stop",
+        "text_len": 117,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6361,
+        "ttft_ms": 339,
+        "prompt_tokens": 528,
+        "completion_tokens": 93,
+        "finish": "stop",
+        "text_len": 168,
+        "error": null
+      },
+      "turn_ms": 9574,
+      "overflow": false
+    },
+    {
+      "i": 9,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3145,
+        "ttft_ms": 331,
+        "prompt_tokens": 466,
+        "completion_tokens": 44,
+        "finish": "stop",
+        "text_len": 117,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6781,
+        "ttft_ms": 340,
+        "prompt_tokens": 528,
+        "completion_tokens": 100,
+        "finish": "stop",
+        "text_len": 187,
+        "error": null
+      },
+      "turn_ms": 9926,
+      "overflow": false
+    },
+    {
+      "i": 10,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3152,
+        "ttft_ms": 329,
+        "prompt_tokens": 466,
+        "completion_tokens": 44,
+        "finish": "stop",
+        "text_len": 115,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 7423,
+        "ttft_ms": 342,
+        "prompt_tokens": 528,
+        "completion_tokens": 109,
+        "finish": "stop",
+        "text_len": 185,
+        "error": null
+      },
+      "turn_ms": 10575,
+      "overflow": false
+    },
+    {
+      "i": 11,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3285,
+        "ttft_ms": 328,
+        "prompt_tokens": 466,
+        "completion_tokens": 46,
+        "finish": "stop",
+        "text_len": 121,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6678,
+        "ttft_ms": 343,
+        "prompt_tokens": 528,
+        "completion_tokens": 98,
+        "finish": "stop",
+        "text_len": 174,
+        "error": null
+      },
+      "turn_ms": 9963,
+      "overflow": false
+    },
+    {
+      "i": 12,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3012,
+        "ttft_ms": 329,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 7284,
+        "ttft_ms": 341,
+        "prompt_tokens": 528,
+        "completion_tokens": 107,
+        "finish": "stop",
+        "text_len": 194,
+        "error": null
+      },
+      "turn_ms": 10296,
+      "overflow": false
+    },
+    {
+      "i": 13,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3148,
+        "ttft_ms": 325,
+        "prompt_tokens": 466,
+        "completion_tokens": 44,
+        "finish": "stop",
+        "text_len": 122,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 7837,
+        "ttft_ms": 338,
+        "prompt_tokens": 528,
+        "completion_tokens": 115,
+        "finish": "stop",
+        "text_len": 210,
+        "error": null
+      },
+      "turn_ms": 10985,
+      "overflow": false
+    },
+    {
+      "i": 14,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3315,
+        "ttft_ms": 329,
+        "prompt_tokens": 466,
+        "completion_tokens": 47,
+        "finish": "stop",
+        "text_len": 121,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 7159,
+        "ttft_ms": 342,
+        "prompt_tokens": 528,
+        "completion_tokens": 105,
+        "finish": "stop",
+        "text_len": 175,
+        "error": null
+      },
+      "turn_ms": 10474,
+      "overflow": false
+    },
+    {
+      "i": 15,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3017,
+        "ttft_ms": 328,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6252,
+        "ttft_ms": 337,
+        "prompt_tokens": 528,
+        "completion_tokens": 91,
+        "finish": "stop",
+        "text_len": 170,
+        "error": null
+      },
+      "turn_ms": 9269,
+      "overflow": false
+    },
+    {
+      "i": 16,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3232,
+        "ttft_ms": 333,
+        "prompt_tokens": 466,
+        "completion_tokens": 45,
+        "finish": "stop",
+        "text_len": 119,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6036,
+        "ttft_ms": 341,
+        "prompt_tokens": 528,
+        "completion_tokens": 88,
+        "finish": "stop",
+        "text_len": 161,
+        "error": null
+      },
+      "turn_ms": 9268,
+      "overflow": false
+    },
+    {
+      "i": 17,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3019,
+        "ttft_ms": 331,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 7165,
+        "ttft_ms": 338,
+        "prompt_tokens": 528,
+        "completion_tokens": 106,
+        "finish": "stop",
+        "text_len": 175,
+        "error": null
+      },
+      "turn_ms": 10184,
+      "overflow": false
+    },
+    {
+      "i": 18,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3032,
+        "ttft_ms": 331,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 7506,
+        "ttft_ms": 343,
+        "prompt_tokens": 528,
+        "completion_tokens": 110,
+        "finish": "stop",
+        "text_len": 193,
+        "error": null
+      },
+      "turn_ms": 10538,
+      "overflow": false
+    },
+    {
+      "i": 19,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3198,
+        "ttft_ms": 332,
+        "prompt_tokens": 466,
+        "completion_tokens": 45,
+        "finish": "stop",
+        "text_len": 119,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6708,
+        "ttft_ms": 340,
+        "prompt_tokens": 528,
+        "completion_tokens": 98,
+        "finish": "stop",
+        "text_len": 182,
+        "error": null
+      },
+      "turn_ms": 9906,
+      "overflow": false
+    },
+    {
+      "i": 20,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3098,
+        "ttft_ms": 333,
+        "prompt_tokens": 466,
+        "completion_tokens": 43,
+        "finish": "stop",
+        "text_len": 106,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6846,
+        "ttft_ms": 339,
+        "prompt_tokens": 528,
+        "completion_tokens": 100,
+        "finish": "stop",
+        "text_len": 169,
+        "error": null
+      },
+      "turn_ms": 9944,
+      "overflow": false
+    },
+    {
+      "i": 21,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3027,
+        "ttft_ms": 334,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 117,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 8389,
+        "ttft_ms": 337,
+        "prompt_tokens": 528,
+        "completion_tokens": 124,
+        "finish": "stop",
+        "text_len": 223,
+        "error": null
+      },
+      "turn_ms": 11416,
+      "overflow": false
+    },
+    {
+      "i": 22,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3221,
+        "ttft_ms": 335,
+        "prompt_tokens": 466,
+        "completion_tokens": 45,
+        "finish": "stop",
+        "text_len": 119,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6039,
+        "ttft_ms": 344,
+        "prompt_tokens": 528,
+        "completion_tokens": 88,
+        "finish": "stop",
+        "text_len": 150,
+        "error": null
+      },
+      "turn_ms": 9260,
+      "overflow": false
+    },
+    {
+      "i": 23,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3026,
+        "ttft_ms": 329,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6074,
+        "ttft_ms": 344,
+        "prompt_tokens": 528,
+        "completion_tokens": 88,
+        "finish": "stop",
+        "text_len": 158,
+        "error": null
+      },
+      "turn_ms": 9100,
+      "overflow": false
+    },
+    {
+      "i": 24,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3001,
+        "ttft_ms": 334,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 7768,
+        "ttft_ms": 325,
+        "prompt_tokens": 528,
+        "completion_tokens": 114,
+        "finish": "stop",
+        "text_len": 201,
+        "error": null
+      },
+      "turn_ms": 10769,
+      "overflow": false
+    },
+    {
+      "i": 25,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3022,
+        "ttft_ms": 329,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 8457,
+        "ttft_ms": 341,
+        "prompt_tokens": 528,
+        "completion_tokens": 124,
+        "finish": "stop",
+        "text_len": 195,
+        "error": null
+      },
+      "turn_ms": 11479,
+      "overflow": false
+    },
+    {
+      "i": 26,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3031,
+        "ttft_ms": 326,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 117,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 9376,
+        "ttft_ms": 336,
+        "prompt_tokens": 528,
+        "completion_tokens": 139,
+        "finish": "stop",
+        "text_len": 231,
+        "error": null
+      },
+      "turn_ms": 12407,
+      "overflow": false
+    },
+    {
+      "i": 27,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3302,
+        "ttft_ms": 335,
+        "prompt_tokens": 466,
+        "completion_tokens": 46,
+        "finish": "stop",
+        "text_len": 121,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6339,
+        "ttft_ms": 346,
+        "prompt_tokens": 528,
+        "completion_tokens": 92,
+        "finish": "stop",
+        "text_len": 164,
+        "error": null
+      },
+      "turn_ms": 9641,
+      "overflow": false
+    },
+    {
+      "i": 28,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3047,
+        "ttft_ms": 337,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 117,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 5812,
+        "ttft_ms": 340,
+        "prompt_tokens": 528,
+        "completion_tokens": 85,
+        "finish": "stop",
+        "text_len": 143,
+        "error": null
+      },
+      "turn_ms": 8859,
+      "overflow": false
+    },
+    {
+      "i": 29,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3047,
+        "ttft_ms": 334,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 8714,
+        "ttft_ms": 342,
+        "prompt_tokens": 528,
+        "completion_tokens": 128,
+        "finish": "stop",
+        "text_len": 235,
+        "error": null
+      },
+      "turn_ms": 11761,
+      "overflow": false
+    },
+    {
+      "i": 30,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3229,
+        "ttft_ms": 333,
+        "prompt_tokens": 466,
+        "completion_tokens": 45,
+        "finish": "stop",
+        "text_len": 119,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 7557,
+        "ttft_ms": 346,
+        "prompt_tokens": 528,
+        "completion_tokens": 110,
+        "finish": "stop",
+        "text_len": 205,
+        "error": null
+      },
+      "turn_ms": 10786,
+      "overflow": false
+    },
+    {
+      "i": 31,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3006,
+        "ttft_ms": 329,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6019,
+        "ttft_ms": 344,
+        "prompt_tokens": 528,
+        "completion_tokens": 87,
+        "finish": "stop",
+        "text_len": 154,
+        "error": null
+      },
+      "turn_ms": 9025,
+      "overflow": false
+    },
+    {
+      "i": 32,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3186,
+        "ttft_ms": 332,
+        "prompt_tokens": 466,
+        "completion_tokens": 44,
+        "finish": "stop",
+        "text_len": 117,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 7358,
+        "ttft_ms": 342,
+        "prompt_tokens": 528,
+        "completion_tokens": 107,
+        "finish": "stop",
+        "text_len": 190,
+        "error": null
+      },
+      "turn_ms": 10544,
+      "overflow": false
+    },
+    {
+      "i": 33,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3048,
+        "ttft_ms": 334,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6081,
+        "ttft_ms": 341,
+        "prompt_tokens": 528,
+        "completion_tokens": 88,
+        "finish": "stop",
+        "text_len": 161,
+        "error": null
+      },
+      "turn_ms": 9129,
+      "overflow": false
+    },
+    {
+      "i": 34,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3031,
+        "ttft_ms": 333,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 7239,
+        "ttft_ms": 338,
+        "prompt_tokens": 528,
+        "completion_tokens": 105,
+        "finish": "stop",
+        "text_len": 179,
+        "error": null
+      },
+      "turn_ms": 10270,
+      "overflow": false
+    },
+    {
+      "i": 35,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3253,
+        "ttft_ms": 334,
+        "prompt_tokens": 466,
+        "completion_tokens": 45,
+        "finish": "stop",
+        "text_len": 119,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 5967,
+        "ttft_ms": 346,
+        "prompt_tokens": 528,
+        "completion_tokens": 86,
+        "finish": "stop",
+        "text_len": 143,
+        "error": null
+      },
+      "turn_ms": 9220,
+      "overflow": false
+    },
+    {
+      "i": 36,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3140,
+        "ttft_ms": 334,
+        "prompt_tokens": 466,
+        "completion_tokens": 44,
+        "finish": "stop",
+        "text_len": 117,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6555,
+        "ttft_ms": 338,
+        "prompt_tokens": 528,
+        "completion_tokens": 95,
+        "finish": "stop",
+        "text_len": 168,
+        "error": null
+      },
+      "turn_ms": 9695,
+      "overflow": false
+    },
+    {
+      "i": 37,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3250,
+        "ttft_ms": 327,
+        "prompt_tokens": 466,
+        "completion_tokens": 45,
+        "finish": "stop",
+        "text_len": 119,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6774,
+        "ttft_ms": 346,
+        "prompt_tokens": 528,
+        "completion_tokens": 98,
+        "finish": "stop",
+        "text_len": 175,
+        "error": null
+      },
+      "turn_ms": 10024,
+      "overflow": false
+    },
+    {
+      "i": 38,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3178,
+        "ttft_ms": 330,
+        "prompt_tokens": 466,
+        "completion_tokens": 44,
+        "finish": "stop",
+        "text_len": 115,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 7192,
+        "ttft_ms": 345,
+        "prompt_tokens": 528,
+        "completion_tokens": 105,
+        "finish": "stop",
+        "text_len": 177,
+        "error": null
+      },
+      "turn_ms": 10370,
+      "overflow": false
+    },
+    {
+      "i": 39,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3035,
+        "ttft_ms": 337,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6230,
+        "ttft_ms": 341,
+        "prompt_tokens": 528,
+        "completion_tokens": 90,
+        "finish": "stop",
+        "text_len": 151,
+        "error": null
+      },
+      "turn_ms": 9265,
+      "overflow": false
+    },
+    {
+      "i": 40,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3058,
+        "ttft_ms": 328,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6710,
+        "ttft_ms": 340,
+        "prompt_tokens": 528,
+        "completion_tokens": 97,
+        "finish": "stop",
+        "text_len": 173,
+        "error": null
+      },
+      "turn_ms": 9768,
+      "overflow": false
+    },
+    {
+      "i": 41,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 2895,
+        "ttft_ms": 331,
+        "prompt_tokens": 466,
+        "completion_tokens": 44,
+        "finish": "stop",
+        "text_len": 117,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 7270,
+        "ttft_ms": 339,
+        "prompt_tokens": 528,
+        "completion_tokens": 106,
+        "finish": "stop",
+        "text_len": 182,
+        "error": null
+      },
+      "turn_ms": 10165,
+      "overflow": false
+    },
+    {
+      "i": 42,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3057,
+        "ttft_ms": 336,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6922,
+        "ttft_ms": 339,
+        "prompt_tokens": 528,
+        "completion_tokens": 100,
+        "finish": "stop",
+        "text_len": 187,
+        "error": null
+      },
+      "turn_ms": 9979,
+      "overflow": false
+    },
+    {
+      "i": 43,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3049,
+        "ttft_ms": 329,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6479,
+        "ttft_ms": 342,
+        "prompt_tokens": 528,
+        "completion_tokens": 94,
+        "finish": "stop",
+        "text_len": 164,
+        "error": null
+      },
+      "turn_ms": 9528,
+      "overflow": false
+    },
+    {
+      "i": 44,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3168,
+        "ttft_ms": 331,
+        "prompt_tokens": 466,
+        "completion_tokens": 44,
+        "finish": "stop",
+        "text_len": 117,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6643,
+        "ttft_ms": 342,
+        "prompt_tokens": 528,
+        "completion_tokens": 96,
+        "finish": "stop",
+        "text_len": 165,
+        "error": null
+      },
+      "turn_ms": 9811,
+      "overflow": false
+    },
+    {
+      "i": 45,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3328,
+        "ttft_ms": 334,
+        "prompt_tokens": 466,
+        "completion_tokens": 46,
+        "finish": "stop",
+        "text_len": 121,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6658,
+        "ttft_ms": 344,
+        "prompt_tokens": 528,
+        "completion_tokens": 96,
+        "finish": "stop",
+        "text_len": 162,
+        "error": null
+      },
+      "turn_ms": 9986,
+      "overflow": false
+    },
+    {
+      "i": 46,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3066,
+        "ttft_ms": 332,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6681,
+        "ttft_ms": 343,
+        "prompt_tokens": 528,
+        "completion_tokens": 97,
+        "finish": "stop",
+        "text_len": 177,
+        "error": null
+      },
+      "turn_ms": 9747,
+      "overflow": false
+    },
+    {
+      "i": 47,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3064,
+        "ttft_ms": 332,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 7070,
+        "ttft_ms": 341,
+        "prompt_tokens": 528,
+        "completion_tokens": 102,
+        "finish": "stop",
+        "text_len": 186,
+        "error": null
+      },
+      "turn_ms": 10134,
+      "overflow": false
+    },
+    {
+      "i": 48,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3049,
+        "ttft_ms": 335,
+        "prompt_tokens": 466,
+        "completion_tokens": 42,
+        "finish": "stop",
+        "text_len": 113,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 7607,
+        "ttft_ms": 344,
+        "prompt_tokens": 528,
+        "completion_tokens": 111,
+        "finish": "stop",
+        "text_len": 199,
+        "error": null
+      },
+      "turn_ms": 10656,
+      "overflow": false
+    },
+    {
+      "i": 49,
+      "kind": "A",
+      "call1": {
+        "ok": true,
+        "ms": 3254,
+        "ttft_ms": 323,
+        "prompt_tokens": 466,
+        "completion_tokens": 45,
+        "finish": "stop",
+        "text_len": 117,
+        "error": null
+      },
+      "call2": {
+        "ok": true,
+        "ms": 6133,
+        "ttft_ms": 342,
+        "prompt_tokens": 528,
+        "completion_tokens": 88,
+        "finish": "stop",
+        "text_len": 153,
+        "error": null
+      },
+      "turn_ms": 9387,
+      "overflow": false
+    }
+  ],
+  "note": "Percentiles are Prompt-A N=50 turn_ms. Prompt-B is overflow probe only. Helper/bench PASS is not a product code PASS. Fallback 1-call 2-channel is a new lock, not this run."
+}

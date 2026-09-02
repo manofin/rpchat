@@ -88,7 +88,8 @@ async function main() {
     assert.equal(tables.includes('worlds'), false);
   });
 
-  await t('stories columns match ADR v1 (no cover)', () => {
+  // f9-place-catalog (0011) added scene_catalog. `cover` is still forbidden (ADR-F8 §4).
+  await t('stories columns match ADR v1 + 0011 scene_catalog (still no cover)', () => {
     assert.deepEqual(cols(db, 'stories'), [
       'id',
       'name',
@@ -98,6 +99,7 @@ async function main() {
       'archived',
       'created_at',
       'updated_at',
+      'scene_catalog',
     ]);
   });
 

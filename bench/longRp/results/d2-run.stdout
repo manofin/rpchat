@@ -1,0 +1,169 @@
+FROST_GUARD char f89ace9b-8684-4d97-96dc-e00c4b25a819 convs 6
+conv 6cc7754e-db7e-46c7-8c89-374c318ffa70 char dfbd8394-e4c8-4f6c-b786-d71cde8fd02b
+story 1/100 ok 6172ms
+story 2/100 ok 1983ms
+story 3/100 ok 1868ms
+story 4/100 ok 1779ms
+story 5/100 ok 1900ms
+story 6/100 ok 2737ms
+story 7/100 ok 2296ms
+story 8/100 ok 2536ms
+story 9/100 ok 2719ms
+story 10/100 ok 1885ms
+story 11/100 ok 2553ms
+story 12/100 ok 3479ms
+story 13/100 ok 2703ms
+story 14/100 ok 2599ms
+story 15/100 ok 2978ms
+story 16/100 ok 2795ms
+story 17/100 ok 3059ms
+story 18/100 ok 2882ms
+story 19/100 ok 2949ms
+story 20/100 ok 2959ms
+summarize@20 ok status=200 id=130250be-4906-4f7b-851b-ee6dcbc674b4
+story 21/100 ok 11140ms
+story 22/100 ok 3209ms
+story 23/100 ok 3438ms
+story 24/100 ok 3178ms
+story 25/100 ok 3155ms
+story 26/100 ok 2978ms
+story 27/100 ok 3431ms
+story 28/100 ok 2912ms
+story 29/100 ok 2662ms
+story 30/100 ok 2493ms
+probe P30-a fail 12322ms
+probe P30-b fail 3152ms
+probe P30-c fail 3382ms
+story 31/100 ok 3338ms
+story 32/100 ok 3243ms
+story 33/100 ok 2683ms
+story 34/100 ok 2969ms
+story 35/100 ok 3728ms
+story 36/100 ok 3204ms
+story 37/100 ok 2858ms
+story 38/100 ok 2831ms
+story 39/100 ok 2831ms
+story 40/100 ok 3261ms
+story 41/100 ok 3546ms
+story 42/100 ok 3342ms
+story 43/100 ok 2916ms
+story 44/100 ok 3068ms
+story 45/100 ok 3147ms
+summarize@45 ok status=200 id=e06b6512-0cba-4573-855d-71d6d8362b75
+story 46/100 ok 19807ms
+story 47/100 ok 2934ms
+story 48/100 ok 3678ms
+story 49/100 ok 3391ms
+story 50/100 ok 3655ms
+story 51/100 ok 3440ms
+story 52/100 ok 3733ms
+story 53/100 ok 2845ms
+story 54/100 ok 3778ms
+story 55/100 ok 3199ms
+story 56/100 ok 2782ms
+story 57/100 ok 3269ms
+story 58/100 ok 3913ms
+story 59/100 ok 3347ms
+story 60/100 ok 3316ms
+probe P60-a PASS 24891ms
+probe P60-b fail 3733ms
+probe P60-c PASS 2625ms
+story 61/100 ok 3285ms
+story 62/100 ok 3350ms
+story 63/100 ok 3013ms
+story 64/100 ok 3297ms
+story 65/100 ok 4163ms
+story 66/100 ok 3494ms
+story 67/100 ok 2869ms
+story 68/100 ok 3185ms
+story 69/100 ok 2967ms
+story 70/100 ok 3596ms
+story 71/100 ok 3811ms
+story 72/100 ok 3473ms
+story 73/100 ok 3999ms
+story 74/100 ok 3836ms
+story 75/100 ok 3260ms
+summarize@75 ok status=200 id=059345f0-08f2-4d1a-939b-573a4048ce30
+story 76/100 ok 33088ms
+story 77/100 ok 4015ms
+story 78/100 ok 4443ms
+story 79/100 ok 4089ms
+story 80/100 ok 3808ms
+story 81/100 ok 3708ms
+story 82/100 ok 3842ms
+story 83/100 ok 3621ms
+story 84/100 ok 3739ms
+story 85/100 ok 3708ms
+story 86/100 ok 3837ms
+story 87/100 ok 4330ms
+story 88/100 ok 4240ms
+story 89/100 ok 3925ms
+story 90/100 ok 4334ms
+story 91/100 ok 3727ms
+story 92/100 ok 3575ms
+story 93/100 ok 4098ms
+story 94/100 ok 4422ms
+story 95/100 ok 4441ms
+story 96/100 ok 3772ms
+story 97/100 ok 4297ms
+story 98/100 ok 3855ms
+story 99/100 ok 4067ms
+story 100/100 ok 4556ms
+probe P100-a PASS 43792ms
+probe P100-b fail 2855ms
+probe P100-c PASS 3825ms
+{
+  "RUN": "VALID",
+  "file": "/home/hermes/rpchat/app/bench/longRp/results/long-rp-v2-1787628153825.json",
+  "storyComplete": 100,
+  "probeComplete": 9,
+  "summarizeOk": 3,
+  "hold": {
+    "30": {
+      "hold_rate": 0,
+      "held": 0,
+      "scored": 6,
+      "unscored": [
+        "F04",
+        "F08"
+      ]
+    },
+    "60": {
+      "hold_rate": 0.6666666666666666,
+      "held": 4,
+      "scored": 6,
+      "unscored": [
+        "F02",
+        "F03",
+        "F04",
+        "F05",
+        "F06",
+        "F07",
+        "F08",
+        "F14"
+      ]
+    },
+    "100": {
+      "hold_rate": 0.7142857142857143,
+      "held": 5,
+      "scored": 7,
+      "unscored": [
+        "F01",
+        "F02",
+        "F04",
+        "F05",
+        "F06",
+        "F07",
+        "F08",
+        "F09",
+        "F10",
+        "F11",
+        "F12",
+        "F13",
+        "F14"
+      ]
+    }
+  }
+}
+saved /home/hermes/rpchat/app/bench/longRp/results/long-rp-v2-1787628153825.json
+cleaned 6cc7754e-db7e-46c7-8c89-374c318ffa70

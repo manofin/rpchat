@@ -86,6 +86,12 @@ export function useChat(conversationId: string) {
             budgetAtHead: complete && e.budget ? e.message.id : s.budgetAtHead,
           };
         }
+        // f9-aux-speaker-generate: a secondary's interjection arrives after `done`
+        // as its own message row. Append it; the main turn is already settled.
+        case 'aux': {
+          if (s.messages.some((m) => m.id === e.message.id)) return s;
+          return { ...s, messages: [...s.messages, e.message] };
+        }
         case 'error': {
           const id = e.messageId ?? s.streamingId;
           return {

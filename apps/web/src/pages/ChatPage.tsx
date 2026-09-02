@@ -2,7 +2,10 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { get, patch } from '../lib/api';
 import { back, navigate } from '../lib/router';
 import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, PromptPreview, Summary } from '../types';
-import { Avatar, renderContent } from '../components/view';
+import {
+  Avatar, BeatHeader, BeatNarration, BeatThought, BeatUiPanel, parseBeatUi,
+  renderContent, SpeakerHeader,
+} from '../components/view';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { useChat } from './useChat';
 import { ChatDrawer } from './ChatDrawer';
@@ -326,9 +329,26 @@ function MessageView(props: {
     );
   }
 
+  // f9-swap-passes: a beat row renders as its §6 slot. A message with no
+  // `block_kind` — every 1:1 message, and everything written before the beat
+  // engine — falls through to the ordinary bubble below, untouched.
+  const kind = m.meta.block_kind;
+  if (!isUser && kind && kind !== 'line') {
+    if (kind === 'header') return <BeatHeader text={m.content} />;
+    if (kind === 'narration') return <BeatNarration text={m.content} />;
+    if (kind === 'thought') {
+      return <BeatThought name={m.meta.speaker_name ?? props.charName} text={m.content} />;
+    }
+    const ui = parseBeatUi(m.content);
+    return ui ? <BeatUiPanel ui={ui} /> : null;
+  }
+
   const showActions = !props.streaming;
   return (
     <div id={props.domId} className={`msg ${isUser ? 'user' : 'assistant'} ${m.meta.ooc ? 'ooc' : ''}`}>
+      {!isUser && m.meta.speaker_character_id ? (
+        <SpeakerHeader name={m.meta.speaker_name ?? props.charName} avatar={m.meta.image_url ?? m.meta.speaker_avatar} />
+      ) : null}
       <div
         className={`bubble ${m.status === 'interrupted' ? 'interrupted' : ''} ${m.status === 'error' ? 'error' : ''}`}
         style={{

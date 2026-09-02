@@ -226,7 +226,7 @@ async function main() {
       path.resolve('apps/web/src/pages/ConversationUserNotePage.tsx'),
       'utf8',
     );
-    assert.match(page, /if \(!patched\) \{/);
+    assert.match(page, /patched \? 'reload' : 'patch'/);
     assert.doesNotMatch(page, /setDraft\(''\)/);
     assert.doesNotMatch(page, /setStatusMessage\('저장되었습니다/);
     assert.doesNotMatch(page, /\/500|2,?000\//);

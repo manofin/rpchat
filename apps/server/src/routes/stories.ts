@@ -4,10 +4,16 @@ import type { Ctx } from '../ctx.js';
 import { PROMPT_VERSION, config } from '../config.js';
 import { many, nowIso, one, parseJson, run, uid } from '../db/index.js';
 import { buildPrompt, computeStoryInjection } from '../prompt/builder.js';
+import { parseSceneCatalog } from '../prompt/sceneCatalog.js';
 import type { CharacterRow, ConversationRow, StoryCharacterRow, StoryRow } from '../types.js';
 
 export function storyOut(s: StoryRow) {
-  return { ...s, minor_cast: parseJson<unknown[]>(s.minor_cast, []), archived: !!s.archived };
+  return {
+    ...s,
+    minor_cast: parseJson<unknown[]>(s.minor_cast, []),
+    scene_catalog: parseSceneCatalog(s.scene_catalog ?? '{}'),
+    archived: !!s.archived,
+  };
 }
 
 /** renderStory 출력(### 스토리 설정\n{...}\n\n### 조연\n...)에서 설정 부분만 발췌. 포맷은 templates.ts renderStory 계약. */
@@ -33,6 +39,26 @@ const storySchema = z.object({
     )
     .max(50)
     .default([]),
+  // f9-place-catalog: the Story layer of the scene model. Ids only; the server
+  // validates every proposed delta against this list (applySceneDelta).
+  scene_catalog: z
+    .object({
+      places: z
+        .array(
+          z.object({
+            id: z.string().min(1).max(60),
+            name: z.string().max(80).optional(),
+            tags: z.array(z.string().max(40)).max(20).optional(),
+          }),
+        )
+        .max(200)
+        .default([]),
+      weathers: z.array(z.string().max(40)).max(50).default([]),
+      arcs: z.array(z.string().max(60)).max(50).default([]),
+      stagesByArc: z.record(z.array(z.string().max(60)).max(50)).default({}),
+      flags: z.record(z.object({ owner_stage: z.string().max(60).optional() })).default({}),
+    })
+    .default({ places: [], weathers: [], arcs: [], stagesByArc: {}, flags: {} }),
 });
 
 const mappingSchema = z.object({
@@ -75,13 +101,14 @@ export function storyRoutes(ctx: Ctx) {
       const t = nowIso();
       run(
         db,
-        `INSERT INTO stories (id, name, tagline, setting, minor_cast, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO stories (id, name, tagline, setting, minor_cast, scene_catalog, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         id,
         d.name,
         d.tagline,
         d.setting,
         JSON.stringify(d.minor_cast),
+        JSON.stringify(d.scene_catalog),
         t,
         t,
       );
@@ -102,11 +129,12 @@ export function storyRoutes(ctx: Ctx) {
       const d = p.data;
       run(
         db,
-        `UPDATE stories SET name=?, tagline=?, setting=?, minor_cast=?, updated_at=? WHERE id=?`,
+        `UPDATE stories SET name=?, tagline=?, setting=?, minor_cast=?, scene_catalog=?, updated_at=? WHERE id=?`,
         d.name,
         d.tagline,
         d.setting,
         JSON.stringify(d.minor_cast),
+        JSON.stringify(d.scene_catalog),
         nowIso(),
         s.id,
       );

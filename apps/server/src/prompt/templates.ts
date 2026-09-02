@@ -49,6 +49,20 @@ export function renderRules(
   return substitute(`당신은 역할극(RP) 파트너로서 오직 '{{char}}' 역할만 연기한다. 상대는 '{{user}}'다.\n규칙:\n${lines.join('\n')}`, charName, userName);
 }
 
+/** F9F — party path only. 1:1 renderRules / HARD_RULES bytes stay. Not called from generate this slice. */
+export function renderPartyRules(
+  contentPolicy: string,
+  charName: string,
+  userName: string,
+  headerPolicy: HeaderPolicy = DEFAULT_HEADER_POLICY,
+): string {
+  const lines = HARD_RULES.map((r, i) => `${i + 1}. ${r}`);
+  lines.push(`${lines.length + 1}. ${headerRule(headerPolicy)}`);
+  if (contentPolicy.trim()) lines.push(`${lines.length + 1}. ${contentPolicy.trim()}`);
+  lines.push(`${lines.length + 1}. ${LENGTH_HINT}`);
+  return substitute(`당신은 역할극(RP) 파트너다. 이번 턴은 지정된 화자만 연기한다. 상대는 '{{user}}'다.\n규칙:\n${lines.join('\n')}`, charName, userName);
+}
+
 function field(label: string, value: string | null | undefined): string | null {
   const v = (value ?? '').trim();
   return v ? `${label}: ${v}` : null;

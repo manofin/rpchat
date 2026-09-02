@@ -17,6 +17,40 @@ const sceneSchema = z.object({
   genre: z.string().max(200).optional(),
   conflict: z.string().max(500).optional(),
   mood: z.string().max(200).optional(),
+  clock_minutes: z.number().int().min(0).optional(),
+  weather: z.string().max(200).optional(),
+  location: z.string().max(100).optional(),
+  stage: z.string().max(100).optional(),
+  arc: z.string().max(100).optional(),
+  flags: z.array(
+    z.object({
+      key: z.string().min(1).max(100),
+      owner_stage: z.string().max(100).optional(),
+    }),
+  ).optional(),
+  present_ids: z.array(z.string().min(1).max(100)).max(12).optional(),
+  // f9-beat-render (0012). Server-owned, but they must survive a client PATCH that
+  // echoes the whole scene back: zod strips unknown keys, so an unlisted key here
+  // would be silently erased on any scene edit.
+  day_index: z.number().int().min(0).max(100000).optional(),
+  weekday: z.string().max(20).optional(),
+  beat_goal: z.string().max(500).optional(),
+  roster: z.record(
+    z.string().min(1).max(100),
+    z.object({ emotion: z.string().max(40).optional(), outfit: z.string().max(60).optional() }),
+  ).optional(),
+  user_sheet: z.object({
+    hp: z.number().int().nullable().optional(),
+    money: z.number().int().nullable().optional(),
+    gear: z.array(z.string().max(60)).max(40).optional(),
+    inventory: z.array(z.string().max(60)).max(80).optional(),
+    traits: z.array(z.string().max(60)).max(40).optional(),
+  }).optional(),
+  last_beat: z.object({
+    focus_id: z.string().max(100).nullable(),
+    extra_ids: z.array(z.string().min(1).max(100)).max(2),
+    unresolved: z.array(z.string().min(1).max(100)).max(8),
+  }).optional(),
 });
 
 const createSchema = z.object({

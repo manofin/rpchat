@@ -2139,3 +2139,877 @@ HEAD/describe into this block after any docs commit.
   이미 별도로 닫혀 있음(Bucket 2, 이 배포와 무관).
 - F8b-story-inject 전체(ADR→schema→build→ui→라이브배포) 완결. STATUS.md 해당 행을
   "shipped+live"로 압축 갱신.
+
+
+## [2026-08-29 E1 Task 1 완료 — Claude Code 직접 수행, 이 세션이 곧 Mac] `[RP-Chat / E1 / mac-task1]`
+- `HANDOFF-P4-sketch-mac.md`는 "Task 1은 Mac 로컬 작업이라 hermes(Ubuntu)가 원격으로 할
+  수 없다"고 적혀 있었으나, 이 Claude Code 세션 자체가 §1 토폴로지의 그 Mac Studio임을
+  재확인(오늘 오전 mlx_vlm 웨지 진단 때와 동일 결론) — 그래서 원격 지시가 아니라 직접
+  로컬에서 수행.
+- `bench/sketchBench/preregistration.md`(§4 성공기준, 2026-08-24 잠금 완료) 원문 전체를
+  먼저 읽고 §4.5 안전게이트 등 확정문구 전부 확인 후 착수. §4 잠금 절대 미수정 —
+  append 전후 head -127 diff로 직접 확인(빈 diff).
+- Draw Things.app 이미 설치·실행 중(기존). API 서버는 꺼져 있었음(7860/8000/8080 전부
+  미리스닝, 앱 리소스 문자열 직접 파싱해 정확한 UI 라벨 확보 후 사용자에게 안내) — 사용자가
+  Settings에서 HTTP 모드·포트 7860으로 활성화.
+- 모델 선정 3단계(전부 사용자와 함께, 매 단계 raw 근거로 판단):
+  1) `ltx_2.3_22b_distilled_1.1_q8p.ckpt`(옵션 응답의 num_frames/fps로 비디오모델 식별) —
+     후보1 정의(§3 SDXL/경량 turbo-lightning) 밖이라 테스트 없이 배제.
+  2) `qwen_image_2512_i8x.ckpt`(steps=30 디폴트) — steps=30 자체가 "4-8스텝" 가정 위반.
+     디폴트 설정 실제 생성 시도 1건 → 280초 타임아웃까지 무응답(생성은 앱 화면에 완성 —
+     API 라운드트립 정상 여부를 별도로 축소설정(steps=8/512)로 재확인해 29.5초 200 정상
+     응답 확인, 즉 "느린 것"이지 "고장"은 아님을 raw로 구분). 사용자 판단으로 배제.
+  3) `z_image_turbo_1.0_i8x.ckpt`(디폴트 steps=8, guidance_scale=1) — §3 프로필과 부합.
+     실측(N=1, 예비신호): 512x512=26.9s, 768x768=25.7s(§4.2-6 30초 목표 이내), 1280x768=
+     48.6s(초과). Gemma 교차확인 3회 연속(36.09→34.02→33.74 tok/s) — 급격한 저하/먹통
+     없음(오늘 오전 mlx_vlm 웨지와 다른, 정상 패턴임을 직접 스택샘플+헬스체크로 구분).
+- **교란요인 발견 및 투명 기록**: 측정 중 `sysctl vm.swapusage` 직접 확인 → 16.8GB/17.4GB
+  사용(free 599MB). 원인 조사 중 오늘 오전 수리한 writer 서버(`mlx_vlm.server`,
+  COIN_MANAGER용, ~16GB)가 계속 상주 중임을 발견 — 사전등록 §1 토폴로지(Gemma+Draw
+  Things 2자 공존)엔 없던 3번째 대형 모델. 사용자에게 "중지 후 재측정" vs "그대로 기록"
+  선택지 제시 → 사용자가 "건드리지 않고 현재 조건 그대로 기록" 선택. 그대로 존중해
+  writer 서버 미조치, 이 교란요인 자체를 append log에 명시 기록(은폐 없음).
+- **append 실행**: preregistration.md를 fetch→로컬 append→scp 후 sha256 일치 확인
+  (`836d9e7e…`), 업로드 전후 §0~§8(127줄) byte-identical diff로 pure-append 재확인.
+  §4 수치는 일절 미변경 — 위 표는 "§4 정식 판정"이 아니라 "예비 신호"로 명시.
+- `STATUS.md` Bucket 3 `E1` 행을 이 내용으로 갱신 — 다음 코드/측정 단계는 **Task 3**
+  (`mac-exec.sh run-concurrent.ts`, N=10 정식 동시측정 하니스)이며, 아직 별도 요청 없이는
+  착수하지 않음. §4 채택/비채택 여부는 여전히 미판정.
+
+
+## [2026-08-30 E1 Task 3 완료 + 정식 판정 + 커밋 — Claude Code 직접 수행] `[RP-Chat / E1 / mac-task3-verdict]`
+- hermes(Ubuntu)가 세션 재연결 후 디스크만 raw로 재확인해 옴(sha256 `836d9e7e…`
+  일치, git diff +45/-0 순수 append, PROGRESS.md/STATUS.md 갱신 내용 확인) — 이 교차확인
+  자체도 직접 재검증(동일 sha256 재계산, 동일 diff 재확인) 후 정확함 확인. 지적해준
+  STATUS.md §0 문서표 `HANDOFF-P4-sketch-mac.md` 행의 "Mac Task 1 still open" 표류도
+  Bucket 2로 즉시 수정.
+- 사용자 결정 3건 확인 후 진행: (1) writer 서버 그대로 상주시키고 측정 (2) Task 3 지금
+  시작 (3) 커밋은 Task 3까지 묶어서 나중에.
+- `run-concurrent.ts` 전문 읽고 §7 표본계약(N=20 chat/N=10 image) 그대로 기본값 사용
+  확인 후 `mac-exec.sh run-concurrent.ts --tag TASK3` 직접 실행(DRAW_THINGS_BASE_URL=
+  http://127.0.0.1:7860). Preflight 통과(health/active/image-smoke 오염 없음), n_complete
+  20/20 chat·n_error 0·n_overlapped 5(하니스 유효표본 하한 정확히 충족)·image 10/10.
+  격리 대화(`2f3bb37c-…`) 정상 정리 확인 — 라이브 무접촉.
+- **정식 판정은 프로젝트 자체 도구로 수행** — 내가 임의로 계산하지 않고
+  `analyze.ts --baseline chat-baseline-1787541510028.json --concurrent
+  concurrent-TASK3-1788014610849.json` 직접 실행:
+  - §4.1.1 TTFT p50 1012→1874ms(+85.18%) **FAIL**, §4.1.2 overlapped p95 5527→19247ms
+    (+248.24%) **FAIL**, §4.1.3 tok/s p50 21.40→23.73(+10.87%) **FAIL**(경계선이지만
+    초과). §4.1.4 오류율 0% PASS.
+  - §4.2.6 이미지도착 p95 11966ms(≤30000ms) PASS. §4.3.1 성공률 100% PASS. §4.4.1
+    스왑 미증가(오히려 감소) PASS. §4.4.2 Gemma PID 안정(1394→1394) PASS.
+  - §4.2/4.3 다수 항목(접수응답/블로킹/상태폴링/재시도/새로고침복구/중복클릭가드/
+    정적저장)은 제품코드 미구현으로 DEFERRED — 사전등록 §0-3 스코핑, 정상.
+  - **§5 전부충족 규칙**: §4.1에 FAIL 3건 → §4.1 불충족 → **후보1(z_image_turbo)
+    비채택**. §4.1.1 실패는 소표본(overlapped n=5) 문제 아님 — 전체 N=20 기준 85%
+    변화로 견고.
+- **교란요인 정직하게 재확인**: memory snapshot "before" 스왑 14.8GB/15.36GB(free
+  531MB) — writer 서버 동시상주로 인한 심각한 사전압박, §1 토폴로지(2자 공존)와 다른
+  조건. 사용자에게 "writer 중지 후 클린 재측정" 여부 재확인 질의 → **사용자가 재측정
+  없이 이 비채택 결과를 최종 확정**(2026-08-30). 순수 2자 조건 결과는 미검증으로 남겨둠
+  — 재검토 필요 시 이 사실을 명시할 것.
+- **append + 커밋**: `preregistration.md`에 Task 3 전체 경위+판정표 append(§0~§8 잠금
+  구간 head -172 diff로 무변경 재확인, sha256 `1d90ba55…`). 사용자 승인으로 Task 1+3
+  파일만 커밋(`93f2b86`, `docs(bench): E1 Task 1+3 - Draw Things API confirmed,
+  candidate not-adopted`, 정확히 2 files — `preregistration.md`+`results/
+  concurrent-TASK3-1788014610849.json`). `git show --stat`로 직접 확인. PROGRESS.md·
+  bench-stale-01 fix(userNoteRequestRoundtrip.test.ts)는 의도적으로 이 커밋에서 제외,
+  여전히 dirty 상태로 남김(스코프 분리 유지).
+- 결론: **E1 후보1(z_image_turbo) 벤치 절차 종료 — 비채택.** §6 "비채택도 정상 결과"
+  원칙대로 이것으로 후보1 판정 완료. 프로덕션 코드(`apps/server/src/**`) 전 과정에서
+  미착수, 라이브 DB/배포/재시작 전부 무접촉. 후보2(mflux+Flux) 착수는 이 결과와 무관하게
+  별도 사용자 승인 필요(§3 순차게이트). STATUS.md E1 행 이 내용으로 최종 갱신.
+
+## [2026-08-30 후보2(mflux+Flux) 생략 결정 — Claude Code] `[RP-Chat / E1 / candidate2-declined]`
+- 사용자가 처음엔 후보2 벤치 준비를 요청했으나, 판정기준(후보1과 동일 엄격 게이트 vs
+  "품질상한 탐색" 별도기준) 질의에 "후보2 생략후 넘어가자"로 답해 종결.
+- 준비 단계에서 이 Mac에 mflux 미설치 확인만 함(pip/uv/pipx 전부 미발견). 코드 작성·
+  모델 다운로드·설치·apps/server/src 착수 전부 없음.
+- STATUS.md E1 행에 "후보2 명시적 생략(2026-08-30)"으로 기록, E1 벤치 전체 완결 처리.
+
+## [2026-08-29T23:53Z F1 remaining = live-switch decision note] `[RP-Chat / F1 / live-switch-decision]`
+- named lock: 사용자 순서 F1 → E-bytes → F2-live → F3/P3-v2 → F4 → F6. F1만 이번 메시지. 닫힌 격리테스트 재실행 없음. 라이브 AUTH_MODE 미변경.
+- 실측 bind: HEAD 93f2b86 describe v0.0.19-68-g93f2b86-dirty PID 140536 health authMode tailscale promptVersion 2026.08.22-r1+story. localhost /api/auth/me 200 authenticated false; /api/characters 401. .env length-only: AUTH_MODE len=9, APP_TOKEN/SESSION_SECRET len=0 (empty — token boot would fail validateConfig).
+- Login UI 존재 확인: LoginPage.tsx + App.tsx token-unauth 게이트. cookie secure:true.
+- 문서: /home/hermes/rpchat/planning_documents/F1-live-auth-switch.md (선행 F1-token-session-threat-model.md 대체 아님).
+- 안 한 것: .env 쓰기, 시크릿 생성, 재시작, E-bytes 코드, F2-live 재PATCH, apps/**.
+- 다음 한 단어: keep-tailscale (F1 잔여 닫고 E-bytes로) 또는 F1-live (라이브 전환 절차 — 이 노트가 스위치가 아님). F1 재사용 금지. F2-live는 큐에서 skip (2026-08-27 닫힘).
+
+## [2026-08-29 keep-tailscale] `[RP-Chat / F1 / keep-tailscale]`
+- 사용자 픽. 라이브 AUTH_MODE 유지 (tailscale). .env 쓰기/시크릿/재시작 없음. F1-live는 이후 새 이름.
+- 큐 다음: E-bytes remaining first legal step = §3 forks. requestDump.ts / env / generate 아직 금지.
+- F2-live skip 유지. F3/P3-v2/F4/F6 각자 lock word.
+
+## [2026-08-29 E-bytes §3 forks only] `[RP-Chat / E-bytes / §3-forks]`
+- 재바인드: adapter.ts GenParams L3–11 generationId 없음. dump.ts는 generationId 보유. chat.ts stream() 호출은 미전달.
+- 코드/배포/재시작/generate 안 함. E(B) 미재개방. 다음 단어: E-bytes-코드 (스펙 기본값 4개 채택 후 requestDump.ts).
+
+## [2026-08-29 E-bytes 코드] `[RP-Chat / E-bytes / 코드]`
+- 사용자 단어 `E-bytes` + §3 4개 확정 + 0o600 지시. 배포/재시작/generate/env 없음. E(B) 미재개방.
+- 파일: apps/server/src/model/requestDump.ts (RPCHAT_REQUEST_DUMP===1, last-request.json, write+chmod 0o600). dump.ts 무수정.
+- GenParams.generationId?: string. stream() body 구성 직후·fetch 직전 dump. complete()는 generationId 없음 → dump 안 함.
+- chat.ts stream()에 generationId 전달. ModelClient 4th arg dataDir (index.ts).
+- bench/requestDump.test.ts passed 4 EXIT 0. promptDump.test.ts passed 4 EXIT 0.
+- 다음 named: 배포 → dump-pipeline 재시작(RPCHAT_REQUEST_DUMP=1 append, .env 미인쇄) → 새 generate 토큰. E-bytes 재사용 금지. F2-live skip.
+
+
+## [2026-08-30 F1 keep-tailscale 종료 + E-bytes 코드 슬라이스 검증 — Claude Code 독립검증] `[RP-Chat / F1+E-bytes / verify]`
+- **F1**: `F1-live-auth-switch.md`(sha256 `de52e27e…`) 전문 읽고 §0 실측 전부 직접 재확인
+  (HEAD/PID/health/`/api/auth/me`/`/api/characters`/`.env` 길이) — 보고와 일치. 위협모델이
+  "인터넷 공격자"가 아니라 "이 호스트 셸 접근/디바이스 침해"로 좁게 잡힌 것 확인 후
+  keep-tailscale을 권장(셸 접근 시나리오에서는 token 계층의 한계적 방어 vs 지금 당장의
+  확실한 비용(로컬 curl 헤더 워크플로·Galaxy TTL 재로그인) 비교) → 사용자가 `keep-tailscale`
+  채택. 종료 후 라이브 재확인: `AUTH_MODE=tailscale`, PID/HEAD 무변경, `.env` 시크릿
+  여전히 len=0.
+- **E-bytes 코드**: 4개 포크(신규파일/신규env/신규sink/GenParams.generationId) + 사용자가
+  요청한 0600 권한까지 전부 반영됐는지 diff 4개 파일 전부 직접 읽어 확인:
+  - `requestDump.ts`(신규, sha256 `c54d031a…` 재계산 일치): `RPCHAT_REQUEST_DUMP!=='1'`
+    early return, `$dataDir/prompt-dump/last-request.json`에 write+`chmod 0o600`(dump.ts와
+    동일한 이중 설정 패턴), `last.json` 무접촉, `generationId?` optional이라 없으면
+    payload에서 그냥 생략.
+  - `adapter.ts` diff: `GenParams.generationId?: string` 순수 추가, `ModelClient` 생성자
+    4번째 인자 `dataDir` 추가, `stream()` 안에서 `body` 구성 직후·`fetch()` 직전에
+    `if (p.generationId) dumpRequestBody(...)` — `complete()`(별도 메서드, line 151)는
+    diff에 전혀 안 나타남(무접촉) 직접 확인, 즉 구조적으로 dump 불가능.
+  - `chat.ts` diff: `generationId,` 한 줄만 `stream()` 호출부 객체에 추가.
+  - `index.ts` diff: `new ModelClient(...)` 호출에 `config.dataDir` 한 줄만 추가 —
+    grep으로 이 생성자 호출이 코드베이스 전체에서 이 한 곳뿐임도 확인.
+  - `dump.ts` 자체는 `git diff`/`git status` 둘 다 완전히 빈 출력 — 진짜 무접촉.
+- 벤치 **직접 재실행**: `requestDump.test.ts` 4/4(PASS 4 중 "stream()이 body 후·fetch 전에
+  dump / complete()는 generationId 없음 / dump.ts 무접촉"을 실행 가능한 단언으로 검증),
+  회귀 `promptDump.test.ts` 4/4 — 보고와 일치. server typecheck EXIT 0.
+- 무접촉 확인: HEAD `93f2b86` 그대로(커밋 0), PID `140536` 그대로(재시작 0), `.env`에
+  `RPCHAT_REQUEST_DUMP` 없음(grep으로 `RPCHAT_PROMPT_DUMP=1` 한 줄만 존재 확인) —
+  "env 없음" 보고와 일치.
+- **부수 표류 발견·수정**: `lock-state.md`의 F7-settings 항목이 여전히
+  "deploy/restart/Serve-check still gated"로 남아있었으나, 이는 오늘 이미 raw로
+  확인한 사실(F7-settings 코드가 현재 라이브 번들 `index-Bygnza2t.js`에 실제 컴파일돼
+  있음)과 모순 — 나중 combined deploy(commit `91e03d2`)가 이를 실제로 배포했었는데
+  lock-state.md가 그 사실을 반영 못 하고 있었음. 즉시 Bucket 2로 수정(요약줄 + 상세
+  단락 둘 다), 코드/잠금 불필요.
+- `STATUS.md` F1/E-bytes 행 이 내용으로 갱신.
+- 결론: F1 종료 보고, E-bytes 코드 보고 전부 정확. **E-bytes 다음 3개 단어는 각각
+  별도**(배포 / dump-pipeline 재시작 / generate 신규토큰) — 하나로 묶어서 진행하지 않음,
+  전부 미착수 그대로.
+
+## [2026-08-30 E-bytes 배포] `[RP-Chat / E-bytes / 배포]`
+- 사용자 같은 메시지 `배포, 재시작, generate 순차적 실행`. 순서: 배포 → dump-pipeline 재시작 → generate 재바인드.
+- server `tsc` only (`npm run build --workspace apps/server`) EXIT:0. web 미빌드. 커밋 없음. HEAD `93f2b86`.
+- dist: `requestDump.js` sha256 `8e394a6c6c243fa5549603cc0f0c2820a9d0e161aa28a73a66ccd2485b7c367a`. `dump.js` sha256 `f42a833d842d3f48a0a4240122602fde8be415be2294acc80f377a80e3e6449d` (2026-08-27 dump 배포와 동일 — dump.ts 무접촉).
+- 이 토큰에서 env/재시작/generate 없음.
+
+## [2026-08-30 E-bytes dump-pipeline 재시작] `[RP-Chat / E-bytes / 재시작]`
+- `.env`에 `RPCHAT_REQUEST_DUMP` 키 부재 → append `RPCHAT_REQUEST_DUMP=1` (값 미인쇄). `RPCHAT_PROMPT_DUMP` 유지. LOG_LEVEL 미변경. drop-in 없음.
+- `systemctl --user restart rpchat.service` EXIT:0. PID `140536`→`160653`.
+- `/proc/160653/environ`: `RPCHAT_REQUEST_DUMP` PRESENT VAL_LEN 1. AUTH_MODE=tailscale HOST=127.0.0.1 PORT=8787 DATA_DIR=/home/hermes/rpchat/data.
+- localhost `/api/health` 200 `db:ok` `promptVersion:"2026.08.22-r1+story"` `authMode:"tailscale"`. localhost `/api/characters` 401.
+- Serve `https://hermes.tailf2217c.ts.net/api/health` 200. `/api/auth/me` 200 `authenticated:true` (헤더 위조 없음). `tailscale serve status` **tailnet only**.
+- `$DATA_DIR/prompt-dump/last-request.json` 부재 (expected). `last.json` 기존 파일 유지(덮어쓰기 없음). Generate 0.
+
+## [2026-08-30 E-bytes generate 재바인드] `[RP-Chat / E-bytes / generate-rebind]`
+- 같은 메시지의 `generate`는 dump-pipeline lock word. POST 0. PATCH 0.
+- 4항목 미충족: (1) 새 named 토큰 없음 (`generate` 자체는 락 워드이지 `[…]` 토큰이 아님; spent `[새 토큰명]` 재사용 금지) (2) 실 대화 UUID 없음 (서리/카이/황지명 SELECT-only, 발명 금지) (3) restore 허가 없음 (4) 세션은 Serve `/api/auth/me` authenticated:true 로 이 재시작에서 확인됨 — 이것만으로는 부족.
+- E(B) 미재개방. HTTP dump API 없음. §4 PASS 아님 (`last-request.json` 부재 = 관측 미열림이지 실패-A 아님).
+- 다음: 새 named 토큰 + 실 대화 UUID + 명시적 restore. `배포`/`재시작`/`E-bytes` 재사용 금지.
+
+
+## [2026-08-30 E-bytes 배포+재시작 검증, generate 정지 확인 — Claude Code 독립검증] `[RP-Chat / E-bytes / deploy-restart-verify]`
+- COIN_MANAGER 보고(배포=server tsc only/커밋없음, 재시작=.env append+PID전환,
+  같은메시지 generate는 4항목 미충족으로 rebind POST 0)를 자가보고로 두지 않고 전부
+  직접 재확인.
+- **배포**: HEAD `93f2b86` 무변경(커밋 0) 직접 확인. `apps/web/dist/index.html` mtime
+  Aug 29 07:09(오늘 무접촉, web 미빌드 확인). `dist/model/requestDump.js` sha256
+  `8e394a6c6c243fa5549603cc0f0c2820a9d0e161aa28a73a66ccd2485b7c367a` /
+  `dist/prompt/dump.js` sha256 `f42a833d842d3f48a0a4240122602fde8be415be2294acc80f377a80e3e6449d`
+  직접 재계산 — 둘 다 보고값과 일치.
+- **재시작**: `systemctl --user show -p MainPID` → `160653`(보고와 일치), `ps -p 140536`
+  (구 PID) → 없음 확인. `.env` 직접 grep — `RPCHAT_REQUEST_DUMP=1` 신규 추가,
+  `RPCHAT_PROMPT_DUMP=1`/`LOG_LEVEL=info` 무변경. **라이브 프로세스 실제 환경변수까지
+  직접 확인**: `cat /proc/160653/environ`에서 `RPCHAT_REQUEST_DUMP=` 값 길이 정확히 1 —
+  .env 파일뿐 아니라 실제 구동 중 프로세스에 반영됐음을 확인(단순 재시작 실패로 옛
+  env 유지되는 시나리오 배제).
+- health 직접 curl: `authMode:"tailscale"`/`promptVersion:"2026.08.22-r1+story"` 일치,
+  `/api/characters` 헤더 없이 401. Serve HTTPS `/api/health` 200,
+  `/api/auth/me` → `{"mode":"tailscale","authenticated":true,"login":"manofin@github"}`
+  — 위조 헤더 아닌 진짜 tailnet 신원으로 인증 성공, F1 keep-tailscale 경로가 재시작
+  후에도 정상 작동함을 재확인. `tailscale serve status` → tailnet only, 127.0.0.1:8787
+  프록시 — 무변경.
+- `prompt-dump/` 디렉터리 직접 `ls`: `last.json`만 존재(mtime Aug 29 14:43, 오늘 무접촉),
+  `last-request.json` **없음** — "이번 토큰에서 아직 안 생김"이 보고대로 정확함(generate가
+  실제로 안 돌았다는 raw 증거).
+- **generate 미실행 판정 재확인**: 이번 사용자 메시지엔 (1)새 named 토큰 (2)실 대화 UUID
+  (3)명시적 restore 허가 (4)세션 — 4항목 중 세션 신호(Serve authenticated:true)만 있고
+  나머지 3개가 빠짐. 이 프로젝트 전체에서 일관되게 지켜온 "generate는 같은 메시지에
+  4항목 전부 필요, 부분 충족은 POST/PATCH 0" 규칙과 정확히 일치 — 새로운 예외나
+  느슨함 없음. `last-request.json` 부재 = 관측 미열림이지 실패-A 취급 아님(§4 판정과
+  무관).
+- 결론: 배포·재시작·generate-정지 보고 전부 정확. `lock-state.md`는 이미 정확히
+  갱신돼 있어 추가 수정 불필요. `STATUS.md` E-bytes 행 이 내용으로 갱신.
+- 다음 generate 트리거 조건(한 메시지에 전부): 새 `[토큰명]` + 실제 대화 UUID +
+  명시적 restore 허가. 배포/재시작/E-bytes 토큰 재사용 불가.
+
+
+## [2026-08-30 E-bytes generate 완료 + §4 상관관계 검증 — Claude Code 독립검증] `[RP-Chat / E-bytes / request-dump]`
+- COIN_MANAGER 보고(4항목 충족 generate 1회, PATCH 마커 테스트, §4 상관관계 전부 PASS,
+  restore 완료)를 자가보고로 두지 않고 전부 직접 재확인 — 실 대화에 실제 쓰기가 있었던
+  가장 민감한 검증이라 raw-only(재실행 없이 결과 상태만 확인)로 꼼꼼히 봄.
+- **사전조건**: PID `160653` 무변경(재시작 재사용 안 함) 확인, `/proc/160653/environ`에서
+  `RPCHAT_PROMPT_DUMP`/`RPCHAT_REQUEST_DUMP` 둘 다 len=1 재확인, health ok/db:ok,
+  `/api/characters` 401 — 전부 이전 상태 그대로.
+- **PATCH+restore 사이클 직접 SQL 확인**: 현재 라이브 DB의 대화 `69e0ad66-333c-4b1c-
+  93c0-3b31e4cfecbe`(임포트테스트 캐릭터, 서리/카이 아님 확인) `user_note` 컬럼이
+  `"한쪽 눈이 나쁘다. "`로 복원돼 있음 — sha256 `bb0bf6c3574c124d7421f11cda31425d664d47
+  4476054a64985bdf7cfdd62167` 직접 재계산 일치, 길이 11자/25 UTF-8바이트 일치, null
+  아님·마커 아님 확인. 마커(`EBYTES-requestdump-20260830`)는 현재 DB 어디에도 없음.
+- **새 메시지 직접 SELECT**: user `7306fadf-1ca9-4042-b4f3-5ca44f78c56c`(role=user,
+  status=complete)와 assistant `ecd5f66e-d6c3-49b6-8761-0a1821d1df99`(role=assistant,
+  status=complete, `meta_json.generation_id`=`0203e60d-9d28-470b-9330-6e28b31376c4`)
+  둘 다 실제로 대화 내 존재 확인(삭제 안 됨). assistant meta_json에 실제 생성 결과(
+  prompt_tokens=4467/completion_tokens=344/finish_reason=stop/choices 3건)까지 들어있어
+  진짜 generate였음을 재확인.
+- **§4 상관관계, 파일 직접 fetch해서 프로그램적으로 검증**(눈으로 훑은 게 아니라 Python으로
+  실제 비교):
+  - 두 파일 sha256 각각 `abdf5f927e5044cdb53addcd7c2d534aa896feaf4342306cd6558f67281dba5d`/
+    `f78e89f6f199c9910f765ba61f6223c492decc5fbafb068a21a7091d526f2051` 직접 재계산 일치.
+    `ls -la`로 파일모드 둘 다 `-rw-------`(0600) 확인.
+  - `generationId` 두 파일 모두 `0203e60d-…` 동일(DB의 assistant meta_json과도 3중 일치).
+  - `last.json.messages`(n=61)와 `last-request.json.body.messages`(n=61)를 Python
+    `==`로 직접 deep-equal 검증 → **True**.
+  - `body.chat_template_kwargs={enable_thinking:false}` / `body.stop`(길이 정확히 2,
+    `['\nQatest:', '\nQatest :']`) / `body.stream_options={include_usage:true}` 전부
+    실제 파일 내용에서 확인.
+  - 마커 문자열이 61개 메시지 중 정확히 `messages[0]`(role=system) 한 곳에만 존재 —
+    나머지 60개(유저 턴 포함) 전부 무결. "system에만, user엔 없음" 주장이 프로그램적
+    검색으로 완전히 확인됨.
+- 결론: PATCH·generate·§4상관관계·restore 보고 전부 정확. E(B) 등급 변동 없음(PASS(B)
+  유지, 승격 아님). `lock-state.md`의 "generate still gated" 요약줄이 표류돼 있던 것
+  발견·수정. `STATUS.md` E-bytes 행을 이 최종 상태로 갱신 — **E-bytes 잠금 전체 완결,
+  이 이름으로 더 이상 열 단계 없음.**
+
+## [2026-08-30T04:54Z PRD lock — C-prd rebind] 문서만 — 코드 0·git add 0·커밋 0
+- named lock: 사용자 `Prd` = `PRD` (STATUS C-prd: header / §5.4 / §8 Q3). Not F3. Not 1.3 rewrite.
+- Task 0 raw (2026-08-30T04:54:32Z UTC): `git describe --tags --always --dirty` = `v0.0.19-68-g93f2b86-dirty`; HEAD `93f2b86f2a34c9154cfb8d4f86489c0e69a24728`; `git log --oneline -5` = `93f2b86` `28ea877` `b66635e` `959ceb0` `78d5249`; migrations on disk `0001`–`0009`. Serve/health **not** rechecked this turn.
+- Tracked dirty at bind (untouched this slice): `PROGRESS.md` (pre-existing) + E-bytes `apps/server/src/index.ts` `adapter.ts` `routes/chat.ts` + `bench/userNoteRequestRoundtrip.test.ts`. This slice did not open those files.
+- 헤더: 운영 버전 `v0.0.19-57-ga9114b2` → describe 그대로 `v0.0.19-68-g93f2b86-dirty`. 검증일/사실기준일 2026-08-27→2026-08-30. 문서 버전 **1.2 유지**.
+- §5.4: D1 닫힘 유지. 마이그레이션 서술 `0001`–`0007` / next=`0008` → `0001`–`0009` / next=`0010_<slug>.sql` (`ls` 실측). 빈 `0006`–`0009` 금지.
+- §8 Q3: ADR-F5 accepted-A 포인터 유지 — 바이트 수정 없음. F5-B 재선택 없음. F8를 Q3에 섞지 않음.
+- Also: `planning_documents/STATUS.md` C-prd + Bucket 3 PRD rows closed; skill `lock-state.md` / `remaining-locks.md` PRD spent. PRD path is outside `app/` git.
+- Forbidden held: apps/** 0 this slice, migration files 0, live DB 0, Galaxy PASS 없음, `git add` 0, 커밋 0.
+- This block is not handler SoT. Pre-docs-commit bind (no docs commit token).
+
+
+## [2026-08-30 PRD lock 검증 — Claude Code 독립검증] `[RP-Chat / PRD / c-prd-rebind]`
+- COIN_MANAGER 보고(헤더/§5.4/§8 Q3 포인터만 갱신, 문서버전 1.2 유지, apps/**·커밋·배포·
+  generate 0)를 자가보고로 두지 않고 직접 재확인.
+- `RP-Chat-PRD.md` sha256 `736805610f70fdd6aac6cf480091e6022004cf07430deca7737a1581e1463b43`
+  직접 재계산 일치.
+- 헤더 직접 읽음: "현재 운영 버전" → `v0.0.19-68-g93f2b86-dirty`, "이번 개정"에 2026-08-30
+  항목 추가("버전 미승격, describe + §5.4 마이그레이션 포인터만"), "마지막 검증일"/
+  "사실 기준일" 2026-08-30 — 문서 버전 자체는 1.2 그대로(1.3 재작성 아님, 새 이름 필요
+  원칙 지켜짐).
+- §5.4 직접 확인: "마이그레이션 번호 체계: 0001–0009 on disk... 다음 = `0010_<slug>.sql`"
+  — 보고와 일치.
+- §8 Q3(항목 3, 월드 재검토 조건) 직접 확인: "닫힘(2026-08-25). ADR-F5 accepted-A...
+  관측 시 새 ADR + 새 잠금" — F5-B 재선택 없음, F8/F8b 언급 전혀 없음(안 섞임) 확인.
+- `app/` git status 직접 확인: `apps/**` 신규 변경 0(E-bytes 슬라이스와 동일 dirty
+  집합 그대로), HEAD `93f2b86` 무변경, PID `160653` 무변경(배포/재시작 없음).
+  `PROGRESS.md`에 정확히 한 블록만 새로 추가됨(grep으로 블록 헤더 목록 확인).
+- **참고 사항(결함 아님, 스코프 확인용 관찰)**: §3.1의 "예산 기반 프롬프트 조립" 순서
+  설명이 여전히 `[시스템→카드→페르소나→장면→고정기억→활성로어→요약→최근대화→입력]`으로,
+  오늘 이미 라이브 검증된 F8b-story-inject의 실제 조립 순서(scene과 memory 사이에 스토리
+  설정 블록 삽입)를 반영 안 함. §5.3의 "장면 삽화 생성" 행도 여전히 💭(아이디어)로 남아
+  E1 벤치가 이미 실행·종결(후보1 비채택, 후보2 생략)된 사실을 반영 안 함. 이 둘 다 "이
+  잠금은 계약 본문 전체 따라잡기가 아님"이라는 보고 자체의 명시적 스코프 경계와 정확히
+  일치하는 의도된 보류이지, 누락이 아님 — 나중에 PRD 본문 내용을 실제로 따라잡는 더 큰
+  별도 잠금이 필요할 때 참고할 것.
+- 결론: PRD lock 보고 전부 정확. STATUS.md(C-prd + Bucket 3 PRD 행)·lock-state.md 둘 다
+  이미 정확히 갱신돼 있어 추가 수정 불필요.
+
+## [2026-08-30T05:05Z F3 lock — rebind, no reimplement] 문서만 — 코드 0·git add 0·커밋 0
+- named lock: 사용자 `F3`. Remaining first legal step = close stale Bucket 3 row. Product already shipped `fcc4056` 2026-08-25.
+- Task 0: `git merge-base --is-ancestor fcc4056 HEAD` exit 0. HEAD still `93f2b86`. describe `v0.0.19-68-g93f2b86-dirty`. Isolated `npx tsx bench/avatarUpload.test.ts` **PASS 8/8**. Live GET `http://127.0.0.1:8787/media/avatars/00000000-0000-0000-0000-000000000000.jpg` → `404` `application/json` `{"error":"not found"}` (explicit route, not SPA html). PID `160653` cwd has `apps/server/dist/media/avatar.js`. `/api/health` `authMode:"tailscale"` `promptVersion:"2026.08.22-r1+story"`. Avatars dir empty. 서리/카이 `avatar` NULL (SELECT only). Throwaway `624ebd8c-d094-4790-bc57-6e7c3d45d73b` stays `archived=1` (row not DELETE; jpg already gone).
+- PRD §5.3 B 💭 → **닫힘** (`fcc4056` + 2026-08-30 rebind). 문서 버전 1.2 유지. 헤더/§5.4/§8 Q3 이번 슬라이스 미수정.
+- STATUS F3 closed. `F3` spent — do not reuse. Galaxy not Hermes-PASS. No live POST. No cap bump. No `commit-f3`.
+- This block is not handler SoT. Pre-docs-commit bind (no docs commit token).
+
+
+## [2026-08-30 F3 rebind 검증 — Claude Code 독립검증] `[RP-Chat / F3 / rebind]`
+- COIN_MANAGER 보고("F3 제품은 이미 2026-08-25 fcc4056에 있음, 이번 잠금은 재구현이
+  아니라 HEAD·벤치·런타임 재확인 + 낡은 문서행 닫기")를 자가보고로 두지 않고 전부
+  직접 재확인 — 이번 슬라이스는 "새 코드"가 아니라 "기존 코드가 정말 아직 살아있는가"를
+  확인하는 성격이라 그 각도로 검증.
+- `git merge-base --is-ancestor fcc4056 HEAD` 직접 실행 → exit 0, fcc4056이 현재 HEAD의
+  진짜 조상 커밋임을 확인(과거 작업이 유실/되돌려지지 않았음). HEAD `93f2b86` 무변경,
+  PID `160653` 무변경(재시작 없음), `git status`로 apps/** 신규 변경 0(기존 dirty
+  집합과 동일) 확인.
+- 벤치 `avatarUpload.test.ts` **직접 재실행 8/8 PASS**(매직스니프/사이즈 400·413·415/
+  public 경로/정확히 최대바이트 케이스까지). `apps/server/dist/media/avatar.js` 컴파일
+  파일 존재 확인.
+- **라이브 미디어 라우트 직접 curl**: 존재하지 않는 아바타 UUID 요청 → `404`,
+  `content-type: application/json; charset=utf-8`, body `{"error":"not found"}` —
+  SPA HTML 캐치올로 탈취되지 않고 명시적 API 404로 응답함을 직접 확인(흔한 SPA 라우팅
+  버그 클래스를 실제로 피해가는지 검증한 것).
+- 아바타 디렉터리(`data/media/avatars/`) 직접 `ls` → 완전히 비어있음(Aug 25 이후 무접촉).
+- **DB 직접 SELECT**: 서리(`f89ace9b…`)·카이(`255f96a2…`) 둘 다 `avatar: null` — 캐너리
+  무손상. throwaway 캐릭터 `624ebd8c-…`("f3-avatar-throwaway") → `archived: 1`, 행이
+  실제로 존재(DELETE 안 됨) — 보고와 정확히 일치.
+- 두 문서 sha256 직접 재계산 후 실제 내용 확인:
+  - `RP-Chat-PRD.md`(`9567491c…`) §5.3 "아바타 이미지 업로드" 행이 "닫힘(2026-08-25
+    fcc4056; 2026-08-30 F3 rebind)"로 갱신, 상세 스펙(2MB/매직스니프/새 테이블 없음/
+    명시 GET 라우트/서리 POST 403) 기술됨.
+  - `STATUS.md`(`c1ab74a6…`) F3 행이 이번에 직접 확인한 내용과 정확히 동일한 근거로
+    "closed 2026-08-30" 갱신됨.
+- `lock-state.md`도 이미 정확히 반영돼 있어 추가 수정 불필요.
+- 결론: F3 rebind 보고 전부 정확. 새 코드/라이브 쓰기/배포/재시작/커밋 전부 없음
+  (보고대로). 실 업로드·서리 이미지 교체·커밋은 여전히 별도 이름 필요.
+
+## [2026-08-30T06:47Z F4 lock — §0 forks in chat] 문서 포인터만 — 모델 0·코드 0·커밋 0
+- named lock: 사용자 `F4`. Preregistration already spent 2026-08-27 `d46b6ee` (`bench/ttsBench/preregistration.md` sha256 `1e4f4b57fb75cc960f590ff86e157d29f0ed3f2171a289253cd5924f8d7c495d`, 9562 B). Remaining first legal step = §0 four items in chat. Not Task 1. Not download.
+- Task 0: `git merge-base --is-ancestor d46b6ee HEAD` exit 0. HEAD `93f2b86`. describe `v0.0.19-68-g93f2b86-dirty`. PID `160653` yes. TTS process comm hits [].
+- STATUS F4 first-legal-step text updated to §0 (prereg spent). `preregistration.md` bytes not rewritten. apps/** 0. Mac Kokoro/Piper/XTTS 0.
+- This block is not handler SoT. Pre-docs-commit bind (no docs commit token).
+
+
+## [2026-08-30 F4 §0 확정 (문서만) — Claude Code] `[RP-Chat / F4 / §0-confirm]`
+- 사전등록(`bench/ttsBench/preregistration.md`, `d46b6ee`, sha256 `1e4f4b57…`) 전문 읽고
+  §0 4개 미확정 항목에 대해 제안 작성 → 사용자가 "바로 진행해주십시오"로 채택.
+- 제안+채택 내용: (1) 후보 Kokoro-82M 1순위/Piper 대체/macOS say 기준선/XTTS-v2 벤치밖
+  그대로, "Kokoro의 CPU/MPS 추론이 sketchBench(E1)를 침몰시킨 GPU 경쟁을 구조적으로
+  피한다"는 근거 추가 (2) 개인가치판단(PRD §8)과 벤치 통과여부 분리 그대로 (3) §4.2-3
+  첫오디오 p95 = **문장당 5초를 상한으로 고정**(측정값 아닌 UX 목표치임을 명시, §5
+  사후조정 금지 원칙 재확인 — 실측이 5초보다 빠르면 여유/느리면 후보1-b 전환) (4) §4.5-1
+  입력범위(최종 assistant 텍스트만, 덤프/시스템/로어/요약 낭독 금지, 자동재생 off) 그대로,
+  같은 날 E-bytes generate에서 직접 읽은 `last-request.json`(시스템 프롬프트에 유저노트·
+  스토리설정 포함)을 이 안전선의 구체적 근거로 인용.
+- append 실행: fetch→로컬 append→scp, §0 확정 전 136줄 byte-identical diff로 무변경
+  확인, 업로드 후 원격에서도 다시 136줄 diff 재확인. sha256 `c371745cbfd481b0cde98ffd
+  9460e09224d0a066cd27f35da8c0769a162e1831` 로컬/원격 일치.
+- §1~§8(신호/대조군/후보/성공기준/판정규칙/분기/측정계약/경계) 원문 완전 무수정 —
+  이번 블록은 append-only.
+- `apps/**` 0. TTS 프로세스(Kokoro/Piper/XTTS) 0. 다운로드·설치·기동 전혀 없음.
+- `STATUS.md`/`lock-state.md` F4 항목을 "§0 confirmed, 다음은 Task1(새 이름, 미개방)"으로
+  갱신.
+- 결론: F4 §0 확정 완료. **Task 1(이 Mac에서 Kokoro-82M 설치·기동)은 별도 named lock
+  필요** — 이 확정 자체가 착수 승인이 아님. F4를 다운로드 토큰으로 재사용 안 함.
+
+## [2026-08-30 F4 §0 post-confirmation 검증 메모 (문서만) — Claude Code] `[RP-Chat / F4 / postconfirm-note]`
+- 사용자가 후보군 재검토(Audio8/Qwen/Breeze 리뷰)를 전달, 그 과정에서 한국어 지원 사실관계
+  논쟁 발생. 나(Claude Code)가 먼저 WebSearch 2차 요약을 신뢰해 "Kokoro 한국어 지원 O /
+  Audio8 experimental" 이라 답했으나, 사용자가 1차 출처(VOICES.md, pipeline.py, 모델카드)로
+  반박 → 내가 1차 아티팩트를 **직접 fetch**해 재확정.
+- **1차 출처 확정 결과**(내 이전 채팅 주장 2건 다 오류였음, 사용자가 맞음):
+  1) Kokoro-82M 공식 v1.0 `VOICES.md` = 9개 언어(한국어 없음), `af_kore`는 American English,
+     `pipeline.py` LANG_CODES에 k/ko 없음 → **공식 한국어 지원 없음**(misaki[ko] 미병합
+     PR/포크로만 도달). 2) Audio8 `audio8-TTS-0.1B-ONNX-INT8` 카드는 한국어를 11개 권장
+     언어 중 하나로 명시(내 "experimental only"는 Audio8 저장소 변형 혼동 오류). 3) Qwen3-TTS
+     Sohee = Korean-native 전용 음색 확인.
+- **중요**: 이 한국어 오류는 **채팅 추론에만** 있었고, 어떤 커밋/append 아티팩트에도 없었음 —
+  원 preregistration과 STATUS.md F4 행은 처음부터 Kokoro를 "자원 최소"로만 골랐지 한국어
+  지원을 주장한 적 없음. 즉 문서 record는 오염 안 됨, 채팅만 정정 필요했음.
+- 조치(문서만, append-only): preregistration.md에 "Post-confirmation 검증 메모" append
+  (§0-§8 + 이전 §0확정 append 전부 무변경, head -163 diff 확인, sha256 `4f29f243…`).
+  내용: Kokoro 1순위는 자원격리 가설에 한정 유지(공식 한국어 지원으로 기록 안 함),
+  Qwen3-TTS 0.6B(Sohee)를 한국어 품질 비교군으로 추가(교체 아님, GPU경쟁 위험으로 미승격),
+  Audio8은 선택적 CPU/ONNX 비교군(Preview/INT8 위험 명시). §4 성공기준·§5 판정규칙 원문
+  무수정. STATUS.md F4 행도 동일 내용으로 갱신.
+- 다운로드/설치/기동 승인 아님. Task 1은 여전히 별도 named lock. F4 다운로드 토큰 재사용 금지.
+- 교훈: 2차 요약 aggregator를 raw로 취급하지 말 것 — 이 프로젝트 원칙 그대로 1차 아티팩트
+  (VOICES.md/pipeline.py/모델카드 원문) fetch로 확정해야 함. 사용자의 1차출처 반박이 정확했음.
+
+## [2026-08-30 TTS-T1-MAC-KOKORO-QWEN06-AUDIO8-COMPARE-R1 opened] 문서만 — 모델 0·코드 0·커밋 0
+- named lock: 사용자 리터럴 `TTS-T1-MAC-KOKORO-QWEN06-AUDIO8-COMPARE-R1` + 승인 문장. `F4` 재사용 아님. 제품 도입/순위 자동변경/`apps/**` 아님.
+- Task 0 bind: DATE_UTC `Sun Aug 30 11:02:44 AM UTC 2026`. HEAD `93f2b86f2a34c9154cfb8d4f86489c0e69a24728`. describe `v0.0.19-68-g93f2b86-dirty`. ancestor `d46b6ee` exit 0. PID `160653`. TTS name hits []. `task1-r1` dir False. pre-append prereg sha256 `4f29f243e0c1709d74a315750769ea13da1ea517eeceddb8b15c86e06b06fc8a` (16162 B).
+- Remaining first legal step on this Ubuntu host = persist grant + remaining forks in chat. Download/install/start 0. Mac 원격 기동 0 (prereg §8).
+- Sub-ids (log labels, not tokens): `KOKORO-OFFICIAL` / `QWEN06-SOHEE` / `AUDIO8-ONNX-INT8`. One fail does not widen others.
+- Remaining forks before Mac download (not invented): (1) fill `<절대경로>` (2) fixed sentence set (3) fixed Korean quality rubric.
+- Pointers updated: `bench/ttsBench/preregistration.md` append-only; `STATUS.md` F4 row; `references/f4-tts.md`; `lock-state.md`; `remaining-locks.md`. This block is not handler SoT. No docs commit token.
+
+
+## [2026-08-30 TTS-T1-MAC-KOKORO-QWEN06-AUDIO8-COMPARE-R1 개방 검증 (문서만) — Claude Code 독립검증] `[RP-Chat / F4-Task1-R1 / grant-verify]`
+- COIN_MANAGER 보고(F4 재사용 없이 새 리터럴 이름 개방, 이 호스트 다운로드·설치·기동·
+  apps/**·커밋 전부 0, 남은 3개 분기는 여기서 채우지 않음)를 자가보고로 두지 않고 전부
+  직접 재확인.
+- HEAD `93f2b86` 무변경, PID `160653` 무변경, `git merge-base --is-ancestor d46b6ee HEAD`
+  exit 0 재확인. `apps/**` git status가 기존 E-bytes 잔여 dirty 집합과 완전히 동일(신규
+  변경 0) 확인.
+- `preregistration.md` 현재 sha256 `c7cfe28bdbe2fb73572cff1859b9e946c5bd70a66155922eb3ea9
+  5ec33d68227`(17537B) 직접 재계산 일치. 이전에 내가 직접 검증해둔 상태(sha256
+  `4f29f243…`, 16162B, post-confirmation 메모까지 포함)가 **첫 209줄/16162바이트로
+  그대로 남아있음을 diff로 재확인**(pure append, PURE_APPEND=True 주장과 정확히 일치).
+- **신규 잠금명 진짜 신규인지 직접 확인**: 작업트리 전체 grep(이 파일 자신 제외) → 0건,
+  `git log --all -p` 전체 이력 grep → 0건(이전에 커밋된 적 없음), 파일 내부에 정확히
+  1회만 등장(이번 grant 블록) — `TTS_NAME_HITS=[]` 주장과 일치. `bench/ttsBench/`
+  디렉터리에 `task1` 관련 디렉터리 없음(`TASK1_DIR_EXISTS=False` 일치, `preregistration.md`
+  단독 파일만 존재).
+- 새로 append된 본문 전문 직접 읽음: 3개 로그ID(`KOKORO-OFFICIAL`=공식
+  `hexgrad/Kokoro-82M`+공식 `hexgrad/kokoro`만, 미병합 한국어 PR/포크 제외, "공식
+  한국어 지원은 성공기준 아님, 공식경로 한국어 실패는 실패로 기록"까지 명시 / `QWEN06-
+  SOHEE`=`Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice` Sohee만, 1.7B/VoiceDesign/Base 제외,
+  비공식 MPS 패치는 새 잠금 필요 / `AUDIO8-ONNX-INT8`=공식 onnx_runtime+
+  CPUExecutionProvider만, HTTP/OpenAI 서비스·FP32 자동폴백 제외), 한 번에 하나만/포트·
+  데몬·sudo·Homebrew 전역 금지, 쓰기 경로 `<절대경로>/ttsBench/task1-r1/`(절대경로
+  **미기입** 명시), "이 Ubuntu 호스트는 TTS를 다운로드·기동하지 않는다"(prereg §8 참조)
+  명시 확인. 남은 3개 미확정 분기(절대경로/문장세트/한국어rubric)가 정확히 명시돼
+  있고 "여기서 발명하지 않는다"는 문구까지 원문에 있음.
+- `STATUS.md`/`lock-state.md` F4 행 둘 다 이미 이 내용으로 정확히 갱신돼 있어 추가
+  수정 불필요.
+- 결론: Task 1 잠금 개방 보고 전부 정확. §0-§8 + 이전 모든 append 완전 무변경(순수
+  append 재확인). 라이브/제품코드/커밋/다운로드 전부 0 그대로. **3개 분기(절대경로/
+  고정문장세트/한국어 rubric)는 사용자가 한 메시지에 전부 채워야 다음 단계(KOKORO-
+  OFFICIAL 공식경로부터)가 열림 — 나 스스로 발명하지 않음.**
+
+
+## [2026-08-30 TTS-T1-R1 3개 분기 확정 기록 검증 (문서만) — Claude Code 독립검증] `[RP-Chat / F4-Task1-R1 / forks-record-verify]`
+- hermes(Ubuntu)가 내 위임 지침대로 3개 분기(경로/문장세트/rubric)를
+  `bench/ttsBench/preregistration.md`에 append했다는 raw bind 보고를 자가보고로 두지
+  않고 전부 직접 재확인.
+- HEAD `93f2b86` 무변경(커밋 0), PID `160653` 무변경, `d46b6ee` ancestor exit 0 재확인.
+- `preregistration.md` 현재 sha256 `d274dd62a63ee74b55d274f338536e7ba944c4107bf3ecf7bd9
+  83c32a259a8fc`(27303B, 373줄) 직접 재계산 일치. **첫 17537바이트가 내가 직전에 검증해둔
+  상태(sha256 `c7cfe28b…`)와 완전히 byte-identical**함을 직접 diff로 확인 — 순수 append,
+  §0~§8 및 이전 모든 append 전부 무변경.
+- 새로 추가된 143줄 블록 직접 확인: RP01~RP10 정확히 10줄 존재, RP09("현재 시간은 오후
+  2시 30분이야...")·RP10("last-request.json"...) 텍스트가 내가 hermes에게 보낸 지침
+  파일과 byte-for-byte 일치. `WORK_ROOT=/Users/llm/rpchat-ttsbench-task1-r1` line 확인.
+  rubric 핵심 마커(`QUALITY_RUBRIC=TTS-KO-QUALITY-R1`, `QUALITY_PASS_RULE=...`,
+  `LONG_FORM_INSTABILITY`, `NOT_EVALUABLE`) 전부 존재. **B/C N=1 한계 문구가 은폐되지
+  않고 그대로 append에 남아있음**을 직접 확인(사후 은폐 금지 지침 준수).
+- `apps/**` git status/mtime 직접 확인 — 이번 턴 무접촉(기존 E-bytes 잔여 dirty만,
+  mtime 전부 08-30 00:33Z로 오늘 이 턴보다 이전). `bench/ttsBench/task1*` 디렉터리
+  없음(TASK1_DIR_EXISTS=False 재확인). TTS 관련 프로세스 0.
+- `STATUS.md`/`lock-state.md` mtime 12:44:20Z 직접 확인, 내용도 "forks confirmed
+  2026-08-30... 다음은 Mac-side KOKORO-OFFICIAL... 이 Ubuntu fork-record는 Mac 실행
+  승인 아님"으로 정확히 갱신됨을 직접 확인.
+- 결론: hermes의 3개 분기 기록 보고 전부 정확. 이 문서 기록 자체는 **Mac 실행 승인이
+  아니며**, KOKORO-OFFICIAL 공식 경로 설치·실행은 이 Mac Claude Code 세션에서 사용자의
+  별도 명시적 승인 후에만 착수함.
+
+## [2026-08-31 KOKORO-OFFICIAL 실행 + 검증 — Claude Code (Mac 세션 직접 수행)] `[RP-Chat / F4-Task1-R1 / kokoro-official-run]`
+- 사용자 "설치, 실행 시작" 승인 하에 lock `TTS-T1-MAC-KOKORO-QWEN06-AUDIO8-COMPARE-R1`
+  후보 1/3(KOKORO-OFFICIAL)을 이 Mac에서 직접 설치·실행. grant 제약 전부 준수: WORK_ROOT
+  (`/Users/llm/rpchat-ttsbench-task1-r1`) 안에서만, sudo/Homebrew전역/포트/데몬 없음,
+  공식 경로만(`kokoro==0.9.4` hexgrad + `hexgrad/Kokoro-82M`), 미병합 한국어 패치 미설치.
+- 격리: py3.11 venv, HF/PIP/TMP 캐시 전부 WORK_ROOT로 리다이렉트 → `~/.cache/huggingface`
+  kokoro 유출 0건 직접 확인. 모델 weights 313MB가 WORK_ROOT/cache/kokoro-official/hf에
+  안착 확인.
+- 공식 한국어 부재를 **설치된 패키지 소스로 직접** 확인: `kokoro/pipeline.py`
+  `LANG_CODES={a,b,e,f,h,i,p,j,z}`(한국어 없음), ALIASES에도 ko 없음. → lang_code=a(영어)
+  강제. grant의 "공식 한국어 실패는 실패로 기록" 그대로 이행.
+- 결과: 10/10 문장 합성(크래시 0, 빈오디오 0), ~0.9s/문장(CPU, E1같은 GPU경쟁 없음).
+  **객관 이상**: 오디오가 전 문장 ~3.0-3.5 chars/sec, 평균 18.1초/문장(총 180.7초) —
+  자연 한국어의 2.5-3배 과길이 = 뭉개진 비한국어 출력 강력 시사. rubric A-F는 사람
+  블라인드 청취 필요(Claude 청취 불가)라 점수 미부여 — NOT_EVALUABLE은 아니나(오디오
+  존재) FAIL_QUALITY 강하게 예고.
+- 기록: preregistration.md에 결과 요약 append(순수 append, 27303B prefix 무변경 확인,
+  신 sha256 `4b04f692…`). STATUS.md/lock-state.md F4 행 갱신. 원시 오디오/JSON/로그는
+  grant대로 Mac-local(WORK_ROOT) 보관, hermes 미동기화.
+- 다음: QWEN06-SOHEE는 GPU/MPS(E1 위험) + one-at-a-time이라 사용자 별도 승인 후 착수.
+  이 실행이 나머지 후보 권한을 넓히지 않음.
+
+## [2026-08-31 KOKORO-OFFICIAL FAIL 사람확정 — Claude Code] `[RP-Chat / F4-Task1-R1 / kokoro-fail-confirmed]`
+- 사용자가 대표 오디오(RP01/RP09/RP10) 직접 청취 → "한국어로 전혀 들리지 않는다" → KOKORO-OFFICIAL
+  후보1/3 = FAIL_QUALITY 확정. 앞서 기록한 객관 예고(공식 한국어 lang_code 부재 + 3배 과길이)가
+  사람 청취로 확인됨. prereg/STATUS/lock-state에 human-confirmed FAIL 기록(순수 append, sha256
+  `968cc7f5…`). 원시 오디오 WORK_ROOT 보존.
+- 다음 후보 판단: QWEN06-SOHEE(한국어 native이나 GPU/MPS=E1위험 + 공식 Mac 경로가 CUDA 기반이라
+  포gallery unofficial MPS 패치 필요할 수 있고 그건 grant상 새 잠금 필요) vs AUDIO8-ONNX-INT8
+  (CPU/ONNX=E1위험 없음, 카드상 한국어 권장언어 포함) — 사용자에게 다음 후보 확인 요청.
+
+## [2026-08-31 AUDIO8-ONNX-INT8 실행 — Claude Code (Mac)] `[RP-Chat / F4-Task1-R1 / audio8-run]`
+- 후보2/3(AUDIO8-ONNX-INT8) 이 Mac에서 직접 설치·실행. 공식 레포 arktts_runtime, CPUExecutionProvider
+  하드코딩(소스 확인, E1 GPU경쟁 없음), HTTP서비스 미기동, FP32폴백 없음, 886MB 모델 WORK_ROOT
+  격리(~/.cache 유출 0). setup.sh/register/cli 실행 전 직접 읽고 안전 확인.
+- 음성등록 해석: 규칙#10 "제공된 기본 음성 사용, 음성등록 안 함"에서 공식 런타임은 voices/에
+  default voice 필수이고 그건 모델 자체 번들 reference로 register_default_voice.py가 생성(외부
+  클로닝 아님). 이 해석으로 진행, prereg에 명기, 사용자 재검토 여지 남김.
+- 결과: 10/10 성공, 크래시·절단 0, 오디오 길이 평균 9.44s(Kokoro 18.07s의 ~절반, ~4-5음절/초
+  자연 범위) = Kokoro 뭉갬과 반대, 객관적으로 훨씬 유망. 단 실제 발음/명료도는 사람 청취 필요
+  (Claude 청취 불가). 대표 3개 사용자 전달.
+- 지연 주의: wall 7-10s/문장은 비스트리밍 전체합성이지 §4.2-3(스트리밍 첫바이트 ≤5s)이 아님 —
+  스트리밍 TTFA 별도 측정 필요.
+- 기록: prereg append(순수, sha256 `df95806f…`), STATUS/lock-state 갱신. 다음: QWEN06-SOHEE(3/3,
+  E1위험) 또는 사용자 청취 후 Audio8 채택 — one-at-a-time, 별도 go.
+
+## [2026-08-31 QWEN06-SOHEE 실행 — R1 세후보 완료 — Claude Code (Mac)] `[RP-Chat / F4-Task1-R1 / qwen-run]`
+- 후보3/3(QWEN06-SOHEE) 실행. 공식 qwen-tts 0.1.1 + Qwen3-TTS-12Hz-0.6B-CustomVoice, Sohee/Korean.
+  로드는 표준 from_pretrained kwargs만(device_map=cpu/float32/eager) — 패키지 자체가 flash-attn
+  부재 시 manual PyTorch로 자동 폴백한다고 명시 → 공식 경로(패치 아님). CPU라 GPU 미사용(E1 안전).
+  MPS available이나 의도적 CPU. 소스 무수정. → NOT_EVALUABLE 아님, 실제 구동됨.
+- 2.6GB 모델 WORK_ROOT 격리(~/.cache 유출 0). 10/10 성공, sr 24000, 길이 평균 11.1s(자연 범위),
+  단 전체합성 wall ~23s/문장(Audio8 ~9s의 2.5배, 0.6B CPU float32라 무거움).
+- R1 세 후보 완료: Kokoro FAIL(확정), Audio8 한국어확정+빠름, Qwen 자연한국어+native음색+느림.
+  결정=Audio8 vs Qwen 사용자 청취. 대표3개 전달. rubric A-F 세부/§4.2 스트리밍지연/§4.1 동시
+  비저하는 R1 이후 별도. 제품통합은 새 잠금.
+- 기록: prereg append(순수, sha256 `ab8d843b…`), STATUS/lock-state 갱신. 원시 Mac-local.
+
+## [2026-08-31 R1 종료 — 사람 최종판정 Qwen 우세] `[RP-Chat / F4-Task1-R1 / R1-closed]`
+- 사용자 직접 A/B 청취: "확실히 유창한 정도는 qwen이 압도적". R1 종료: Kokoro FAIL(확정)/
+  Audio8 한국어확정+빠름/Qwen-Sohee 최유창+native음색+느림. prereg append(순수, sha256
+  `751d87db…`), STATUS/lock-state 갱신. 제품채택 아님 — rubric세부/스트리밍지연/동시비저하/
+  제품통합 전부 이 lock 밖, 각자 새 이름 필요.
+
+## [2026-08-31 R2 named lock opened] `[RP-Chat / F4-Task2-R2 / grant]`
+- 사용자 리터럴 `TTS-T2-MAC-CHATTERBOX-COSYVOICE2-OMNIVOICE-S1MINI-VOXCPM2-HIGGS-COMPARE-R2`.
+  grep+git log 확인 — 완전히 신규. 6후보 전부 원문(WebFetch) 확인, 전부 공식 한국어 지원
+  (R1과 달리 언어 문제 없음, 실제 위험은 Mac CPU/MPS 구동가능성). VOXCPM2 CUDA필수 명시,
+  HIGGS 서버배포(vLLM/SGLang) 전제 — 둘 다 NOT_EVALUABLE 가능성. S1MINI gated(사용자
+  본인 토큰 준비 중). prereg append(순수, sha256 `c8e827f6…`), STATUS/lock-state 갱신.
+- 미확정 분기 4개(경로/문장세트재사용/rubric재사용/실행제약+Higgs특칙) 사용자 확인 대기.
+  다운로드·설치·기동 전부 0.
+
+## [2026-08-31 R2~R5 실행 요약 (logging gap 고지)] `[RP-Chat / F4-Task2-R2..R5 / logging-gap-note]`
+- **투명 공개**: R2 개방(grant) 이후 각 후보 실제 결과·판정, R2 종료(OMNIVOICE 채택),
+  R3(seed 무관 확인), R4(Voice Design 혼합판정), R5(결정론적 재현 확정)까지 전부 Mac-local
+  `bench/ttsBench/preregistration.md`(매 항목 pure-append+sha256 검증)와 hermes
+  `planning_documents/STATUS.md` F4행(매번 단일라인 편집+sha256 검증)에는 정확히 기록됐으나,
+  이 PROGRESS.md에는 R2 grant 이후 토큰이 누락됨(R1까지는 기록됨). 원인은 세션 중
+  위임/재개 과정에서 누락된 것으로 추정. **과거 이력을 소급 기록하지 않음**(허구적
+  시점 왜곡 방지) — 대신 이 항목으로 gap을 명시하고, 이후부터 정상 기록 재개.
+  실제 상세 근거(sha256 전체 이력)는 preregistration.md와 STATUS.md가 SoT.
+
+## [2026-08-31 R6 named lock: TTS provider interface design (design-only)] `[RP-Chat / F4-R6 / provider-interface-design]`
+- 사용자 리터럴 `TTS-R6-RPCHAT-PROVIDER-INTERFACE-DESIGN-ONLY-R1`. 범위: 모델 중립
+  `TtsProvider` 인터페이스 계약 문서화만 — 코드/`apps/**` 변경, 모델 다운로드, 합성 실행
+  전부 0. `planning_documents/TTS-Provider-Interface-Design.md`(신규, sha256 `bd0cdcd0…`,
+  115줄) 작성: F4 R1-R5 경과 요약(OMNIVOICE=SELECTED_BUT_BLOCKED, 8/30 결정론적 결함
+  R4/R5 확정), 6개 설계원칙(provider-neutral/텍스트범위 경계강제/스트리밍우선 배치안전/
+  단일 실패분류체계/취소 1급/엔진고유상태 유출금지), TypeScript 인터페이스 계약
+  (`TtsRequest`/`TtsAudioChunk`/`TtsReadyEvent`/`TtsCompleteEvent`/`TtsFailureKind`
+  enum/`TtsFailureEvent`/`TtsCleanupEvent`/`TtsProvider`), provider 레지스트리 이름만
+  (OmniVoice/Qwen/Audio8/SystemVoice), 명시적 범위밖 항목, 후속 lock용 미해결질문 목록.
+  git-외부 문서(`app/` 상위 디렉터리, 기존 ADR류와 동일 관례), 커밋 없음, `apps/**` 무접촉.
+
+## [2026-08-31 F8c gap ADR + story-inject-refactor closed — Claude Code] `[RP-Chat / F8c-story-authoring / story-inject-refactor]`
+- 사용자 F8c(story-authoring) 스펙 검토: 최소기능(생성/setting/minor_cast/참여캐릭터/기본 캐릭터/미리보기/수정/archive/시작) 대부분이 F8(story-adr→schema→tabs→detail)·F8b(story-inject-schema→build→ui)에서 이미 shipped+live(STATUS.md 89-90행)임을 코드 직접 확인(`routes/stories.ts`/`StoryPage.tsx`/`StoryEditor.tsx`/`resolveStory.ts`/`builder.ts` §1b/`GET /api/conversations/:id/prompt-preview` 전부 존재). 실제 갭은 2개: (1) 대화 시작 전(pre-start) 주입 미리보기 없음(기존 prompt-preview는 이미 시작된 대화 전용), (2) `POST /api/conversations`가 archived storyId를 서버에서 거부하지 않음(UI-only 게이팅). 사용자 확인: 미리보기=pre-start pre-flight만(공유 순수함수 재사용, 재구현 금지), 시작 캐릭터=시작시 선택만(컬럼 추가 없음, F5 사망컬럼 교훈).
+- `planning_documents/ADR-F8c-story-authoring.md`(신규, token `story-authoring`, HEAD `v0.0.19-68-g93f2b86`) 파일화: 위 갭+바인딩+슬라이스 계획(`story-inject-refactor`→`story-inject-preview`→`story-archived-gate`→`story-authoring-ui`) 확정. apps/** 0, 마이그레이션 0, 라이브 DB 0.
+- **`story-inject-refactor` 실행**(이번 토큰, apps/** 첫 코드 슬라이스): `apps/server/src/prompt/builder.ts` §1b(스토리 스냅샷 주입 계산, 구 147~201행)를 신규 export `computeStoryInjection(resolvedStory, fixedBudget, fixedEst, cal, charName, userName)` 순수함수로 추출(module-level, DB 접근 0). `buildPrompt`는 `resolveStory(conv)` 호출 후 이 함수를 호출하고 반환값(`text`/`estTokens`/`storyRoom`/`note`)으로 section push만 함. 로직 1바이트도 재작성하지 않음 — if/삼항/루프 순서 그대로 이동, `STORY_SETTING_SHARE=0.7`/`STORY_CAST_SHARE=0.3`/`storyCastLine`/setting-먼저·조연 prefix whole-or-drop 전부 원문 그대로. `storyText`는 여전히 `systemParts` 배열에서 scene 뒤·memories 앞 자리 그대로(배열 자체 무변경, 값을 만드는 코드만 이동).
+- **검증** (v22 서비스 node로 직접 실행, SSH 기본 v20이라 better-sqlite3 NODE_MODULE_VERSION 불일치 트랩 회피 — `PATH=/home/hermes/.local/bin:$PATH`): `npx tsx bench/builderDifferential.test.ts` PASS 1/1(리팩터 전후 오라클 대조, 이번 슬라이스의 byte-identical 직접 증거) · `builderBudget` PASS 4+2 · `storyInjectBuild` PASS 14/14(소스 스트링 어서션 `STORY_SETTING_SHARE\s*=\s*0\.7`/`STORY_CAST_SHARE\s*=\s*0\.3`/no-live-query 전부 무변경 통과 — 상수·`resolveStory`·`renderStory` 리터럴이 builder.ts에 여전히 존재하므로) · `storyInjectSchema` PASS 22/22 · `storySchema` PASS 24/24 · `storyTabs` PASS 5/5 · `storyDetail` PASS 7/7 · `personaResolve` PASS 9/9 · `userNoteInject` PASS 4/4 — 총 9개 격리 벤치 전부 EXIT 0, 무손 회귀. `npm run typecheck`(서버+웹 전체) EXIT 0.
+- **범위 확인**: `git status -s` — 이 세션 시작 시점부터 있던 기존 dirty 파일(PROGRESS.md/`index.ts`/`adapter.ts`/`chat.ts`/`requestDump.ts`/ttsBench 등, 전부 E-bytes/F4 이전 세션 잔존물) 무변경, 이 슬라이스가 건드린 파일은 정확히 `apps/server/src/prompt/builder.ts` 1개(+76/-52). `PROMPT_VERSION` 불변(`2026.08.22-r1+story`). API 라우트/웹 UI 무변경. 마이그레이션 파일 0. 커밋/배포/재시작/`story-inject-preview` 구현 전부 미실행(토큰 범위 밖).
+- 다음: `story-inject-preview`(가상 고정블록→storyRoom→`computeStoryInjection` 재사용→pre-start 엔드포인트) 또는 `story-archived-gate`(POST 서버 거부) — 각각 별도 토큰 필요.
+
+## [2026-09-01 story-inject-preview closed — Claude Code] `[RP-Chat / F8c-story-authoring / story-inject-preview]`
+- `GET /api/stories/:id/inject-preview?characterId=...` 신규(`apps/server/src/routes/stories.ts`, +100/-1, 파일 1개). archived story → 409; 없는 storyId → 404; characterId 누락 → 400; 스토리에 참여하지 않은(story_characters 미매핑) characterId → 404 — 매핑 확인이 캐릭터 존재 확인보다 먼저라 미존재 characterId도 동일하게 404.
+- **가상 입력**: 영구 미저장 `ConversationRow` 객체(`id:'preview'`, persona_id/persona_applied_at null → 기본 페르소나로 자연 폴백, scene_json `'{}'`, user_note null, profile_name `'rp-balanced'`(POST `/api/conversations`의 실제 기본값과 동일), story_* 5필드 전부 null)를 만들어 `buildPrompt`에 그대로 통과시킨다 — DB에 쓰지 않음(INSERT 없음), `buildPrompt` 자체가 SELECT-only 순수 계산이라 부작용 0. 여기서 나온 "시스템 규칙+카드+페르소나+장면" 섹션의 `est_tokens`/`budget`(=fixedEst/budgets.fixed)를 그대로 `computeStoryInjection`(직전 슬라이스 `story-inject-refactor`의 순수함수)에 넘겨 storyRoom·setting truncate·조연 whole-or-drop을 계산한다 — **§1 고정블록도 §1b 스토리계산도 재구현 0, 전부 실제 경로 그대로 재사용**.
+- **라이브 story를 스냅샷처럼 취급**: `story.setting`/`story.minor_cast`(parseJson, 손상 시 `[]`)를 `resolveStory`가 반환할 모양(`{name, setting, minorCast}`)으로 직접 구성해 `computeStoryInjection`에 전달 — POST `/api/conversations`가 INSERT 시 라이브 값을 재직렬화 없이 그대로 복사한다는 사실(ADR-F8b §3)에 의해, 이는 "지금 시작하면 생길 스냅샷"과 값이 100% 동일함.
+- **반환 필드**(사용자용, 디버거 아님): `settingExcerpt`(치환 완료된 발췌, `renderStory`의 `### 스토리 설정` 헤더로 파싱 추출), `settingTruncated`(computeStoryInjection의 note에 `'절단'` 포함 여부), `cast: [{name, included}]`(각 조연이 최종 렌더 텍스트에 자기 줄(`- name: note`)로 등장하는지 문자열 포함검사 — whole-or-drop 판정을 다시 계산하지 않고 결과 텍스트에서 읽기만 함), `estTokens`/`storyRoom`(computeStoryInjection과 동일 단위), `willFreeze: true`. story_name_snapshot 등 내부 필드 노출 없음.
+- **충실성 벤치**(ADR-F8c §5.1의 핵심 요구): `bench/storyInjectPreview.test.ts`(신규, 11 테스트) 중 마지막 테스트가 이 미리보기 결과를 실제 `POST /api/conversations`(storyId+characterId, persona/scene/note 전부 기본값)로 만든 진짜 대화의 `GET .../prompt-preview` 결과와 직접 대조 — `estTokens`/`storyRoom`/절단플래그가 정확히 일치하고, 미리보기 발췌 문자열이 실제 시스템 프롬프트에 그대로(verbatim) 포함되며, 조연별 포함/제외 판정이 실제 빌드와 전부 일치함을 확인. 나머지 10개: archived/404/400/미참여-거부/빈 설정·조연/손상 JSON/거대 setting 절단(head 유지·tail 제거)/조연 prefix whole-or-drop(순서 보존) 전부 PASS.
+  - 참고: 조연 whole-or-drop 테스트는 처음에 `storyInjectBuild.test.ts`와 같은 8000자 노트로 작성했으나 FAIL — 원인은 그 벤치가 `contextTokens=8192`로 좁게 호출하는 반면 이 프리뷰는 실제 라우트 경로라 `CONTEXT_TOKENS` 기본값 32768을 그대로 써서 storyRoom이 훨씬 커, 8000자가 더 이상 넘치지 않았던 것(버그 아님, 노트 크기를 200000자로 키워 재확인 후 PASS) — 두 벤치가 서로 다른 컨텍스트 크기를 쓰는 것 자체는 의도된 차이(하나는 §1b 단위테스트, 하나는 실제 엔드포인트 통합테스트).
+- **검증**(v22 서비스 node): 신규 `storyInjectPreview` 11/11 PASS + 회귀 스윕(`builderDifferential`/`builderBudget`/`storyInjectBuild`14/`storyInjectSchema`22/`storySchema`24/`storyTabs`5/`storyDetail`7/`personaResolve`9/`userNoteInject`4) 전부 EXIT 0. 서버+웹 전체 `npm run typecheck` EXIT 0.
+- **범위 확인**: 변경 파일은 정확히 `apps/server/src/routes/stories.ts`(+100/-1) 1개 + 신규 `bench/storyInjectPreview.test.ts` 1개. `builder.ts`는 이번 토큰에서 무수정(이전 `story-inject-refactor` 슬라이스의 미커밋 변경만 워킹트리에 남아있음, 재확인함). 시작 sheet UI·`POST /api/conversations`의 archived 차단·DB schema/migration·`PROMPT_VERSION`·story snapshot 형식·기존 대화·배포/재시작/라이브DB·preview 전용 예산 산식 전부 이 토큰에서 손대지 않음(허용 범위 밖).
+- 다음: `story-archived-gate`(POST 서버 거부) 또는 `story-authoring-ui`(시작 sheet에 이 엔드포인트 연결) — 각각 별도 토큰 필요.
+
+## [2026-09-01 story-archived-gate closed — Claude Code] `[RP-Chat / F8c-story-authoring / story-archived-gate]`
+- `POST /api/conversations`(`apps/server/src/routes/conversations.ts`, +1줄만)에 `if (story.archived) return reply.code(409).send({ error: 'archived' });` 추가 — 기존 `story not found` 404 검사 바로 다음, `storyId`/`storyAppliedAt`/스냅샷 변수 대입과 `db.transaction(...)` INSERT 이전 위치. `id`/`t`(uid/nowIso)는 이미 계산돼 있지만 순수 값 생성일 뿐 DB 쓰기가 아니므로, 이 반환 이전에는 어떤 테이블에도 쓰기가 발생할 수 없음(구조상 보장, 별도 트랜잭션 롤백 불필요). 에러 코드 `{error:'archived'}`는 직전 슬라이스 `story-inject-preview`의 409 응답과 동일 문자열로 통일(두 아카이브 거부 지점의 안정적 공용 코드).
+- **의도적으로 하지 않은 것**: 캐릭터가 스토리에 실제로 참여(hosted)했는지 확인하는 로직은 추가하지 않음 — `POST /api/conversations`는 원래부터 그런 검사가 없고, 이 슬라이스는 archived 게이팅 1건만 허용 범위이므로 기존 무검사 상태를 그대로 보존(벤치로 직접 회귀 확인).
+- `bench/storyArchivedGate.test.ts`(신규, 9 테스트, 실제 마이그레이션 기반 임시 DB): 활성 스토리 시작 201(스냅샷 정상 기록) · archived 스토리 409 `{error:'archived'}` + 거부 시 `conversations`/`messages` 행수 불변 + 대상 스토리 자신의 행(`archived`/`updated_at`)도 불변(COUNT/직접 SELECT 비교, 부수쓰기 0건 직접 증명) · 없는 storyId 기존 404 계약 무변경 · storyId 없는 일반 대화 무변경 · 없는 characterId 기존 404 무변경 · 미참여 캐릭터+활성 스토리 여전히 201(신규 제약 미도입 확인) · 스토리를 나중에 archived로 바꿔도 기존 대화의 GET/`prompt-preview`가 동결 스냅샷을 그대로 반영하고 스토리 상세 조회(`GET /api/stories/:id`)도 그대로 200(무변경) · unarchive(`archived=0`으로 되돌림) 직후 동일 storyId로 즉시 재시작 성공(체크가 매 요청 라이브 컬럼을 읽지 매개된 상태를 캐시하지 않음을 증명) · 소스 문자열 검사로 `PROMPT_VERSION` 불변(`2026.08.22-r1+story`)·`builder.ts`에 `computeStoryInjection`/`STORY_SETTING_SHARE=0.7` 여전히 존재·`conversations.ts`에 `computeStoryInjection` 미참조(이 슬라이스가 builder 쪽을 안 건드렸다는 직접 증거) 확인. 전부 PASS.
+- **회귀 스윕**(v22 서비스 node): `builderDifferential`·`builderBudget`·`storyInjectBuild`(14)·`storyInjectSchema`(22)·`storySchema`(24)·`storyTabs`(5)·`storyDetail`(7)·`personaResolve`(9)·`userNoteInject`(4)·`storyInjectPreview`(11) — 직전 두 슬라이스의 벤치 전부 포함해 EXIT 0. 서버+웹 `npm run typecheck` EXIT 0.
+- **범위 확인**: 변경 파일은 정확히 `apps/server/src/routes/conversations.ts`(+1/-0) 1개 + 신규 `bench/storyArchivedGate.test.ts` 1개. `builder.ts`/`stories.ts`는 이번 토큰에서 무수정(이전 두 슬라이스의 미커밋 변경만 워킹트리에 그대로 남음, 재확인함). schema/migration 0, `PROMPT_VERSION` 불변, `computeStoryInjection` 무변경, 시작 sheet UI(`story-authoring-ui`) 무착수, 라이브 DB/배포/재시작 전부 미실행(허용 범위 밖).
+- F8c 갭 2개(pre-start 주입 미리보기, archived 시작 서버 게이팅) 모두 슬라이스 완료. 다음: `story-authoring-ui`(시작 sheet에 `inject-preview` 연결 + archived 409를 사용자 메시지로 표시) — 새 토큰 필요.
+
+## [2026-08-31 story-authoring-ui closed — Hermes] `[RP-Chat / F8c-story-authoring / story-authoring-ui]`
+- 사용자 리터럴 토큰 `story-authoring-ui 진행`. 범위: start sheet에 이미 완성된 `GET /api/stories/:id/inject-preview?characterId=`와 `POST /api/conversations` 409 `{error:"archived"}`를 연결. 서버 소스·builder·prompt 산식·API 계약·schema/migration·`PROMPT_VERSION`·라이브 DB·배포·재시작 전부 0.
+- `apps/web/src/pages/StoryPage.tsx`: 시작 시트에서 선택 캐릭터로 preview GET. 카드는 확인 UI만 — 삽입 setting 발췌, `전체 포함`/`일부 잘림`, 조연 집계(`N명 포함, M명 제외` / 빈 경우 `조연: 없음`), `예상 사용량: 약 N 토큰`, 동결 안내 2문장. `storyRoom`/`fixedEst`/`budgets.fixed`/`willFreeze`/원문 BudgetReport 비표시. 캐릭터 변경 즉시 loading, `previewSeq`+effect cleanup으로 stale 응답이 현재 선택을 덮지 않음. preview 미준비·실패·archived면 시작 버튼 비활성(실패 우회 시작 없음). 404/일반 실패는 오류+`다시 시도`. preview 409와 conversation POST 409는 동일 문구(`보관된 스토리에서는 새 대화를 시작할 수 없습니다.` / `스토리를 다시 활성화한 뒤 시도해 주세요.`)로 수렴한 뒤 `load({ quiet: true })`로 시트 유지한 채 Story 재조회. 참여 1명이면 기존처럼 해당 캐릭터 사전선택. picker는 hosted만, 서버 hosted 검증은 추가하지 않음. CharacterPage/StoryEditor/archive·add/remove UI 무변경.
+- `apps/web/src/types.ts`: `StoryInjectPreview` 사용자 필드만(`settingExcerpt`/`settingTruncated`/`cast`/`estTokens`).
+- `bench/storyAuthoringUi.test.ts`(신규, 소스 인벤토리 8): endpoint+필드, 확인 UI 문자열·디버거 필드 부재, stale 가드, 시작 비활성+재시도+a11y, archived 문구 단일 상수·양 경로, 빈 setting/cast, CharacterPage story-less·editor/server 계약 무변경, 1명 사전선택.
+- **검증** (v22, `PATH=/home/hermes/.local/bin:$PATH`): `storyAuthoringUi` 8/8 · `storyInjectUi` 7/7 · `storyDetail` 7/7 · `storyTabs` 5/5 · `storySchema` 24/24 · `storyInjectSchema` 22/22 · `storyInjectBuild` 14/14 · `builderDifferential` 1/1 · `builderBudget` 6 · `storyInjectPreview` 11/11 · `storyArchivedGate` 9/9 · `personaResolve` 9/9 · `userNoteInject` 4/4 — EXIT 0. `npm run typecheck`(서버+웹) EXIT 0.
+- **범위 확인**: 이번 토큰이 쓴 파일은 `StoryPage.tsx`(+140/-8, sha256 `3668092550cee725…`) · `types.ts`(+8, sha256 `7e67d706d72aeda2…`) · 신규 `bench/storyAuthoringUi.test.ts`(sha256 `2d39c7fafdffb992…`) · `PROGRESS.md` append · `planning_documents/STATUS.md` F8c 단일 행. CharacterPage/StoryEditor/`config.ts` git status 공백. `stories.ts`/`conversations.ts`/`builder.ts`는 이전 F8c 슬라이스의 미커밋 dirty만 유지(이번 토큰 무수정). 커밋/배포/재시작/라이브 DB/`PROMPT_VERSION` 변경 없음.
+- F8c 코드 범위 완료. 다음: 별도 토큰으로 web build → 배포 → restart → live smoke.
+
+## [2026-08-31 story-authoring-deploy shipped+live — Hermes] `[RP-Chat / F8c-story-authoring / story-authoring-deploy]`
+- 사용자 리터럴 토큰 `story-authoring-deploy`. 허용 순서: HEAD/워킹트리 기록 → F8c 범위 재확인 → Story 벤치+typecheck → web production build → server tsc → 산출물 검증 → 라이브 DB 사전 기록 → migration 없이 배포(in-place dist) → unit 재시작 → localhost+Serve HTTPS 읽기 smoke → PROGRESS append → STATUS F8c 단일 행 shipped+live. 커밋 없음. `POST /api/conversations` 쓰기 smoke 없음. 스토리 생성 없음.
+- **HEAD/트리**: `git describe` `v0.0.19-68-g93f2b86`. HEAD `93f2b86`. F8c product dirty: `builder.ts`(+76/-52) `stories.ts`(+100/-1) `conversations.ts`(+1) `StoryPage.tsx`(+132/-8) `types.ts`(+8) + untracked `bench/storyAuthoringUi.test.ts` `storyInjectPreview.test.ts` `storyArchivedGate.test.ts`. 이미 live인 E-bytes dirty 재컴파일: `index.ts`/`adapter.ts`/`chat.ts`/`requestDump.ts`. 문서 dirty `PROGRESS.md`. 비범위 leftover(BRIEF/DESIGN/`dist.bak`/ttsBench) 미배포.
+- **벤치** (v22 `PATH=/home/hermes/.local/bin:$PATH`, `/tmp/f8c-deploy-bench.txt`): storyAuthoringUi 8/8 · storyInjectUi 7/7 · storyDetail 7/7 · storyTabs 5/5 · storySchema 24/24 · storyInjectSchema 22/22 · storyInjectBuild 14/14 · builderDifferential 1/1 · builderBudget 6 · storyInjectPreview 11/11 · storyArchivedGate 9/9 · personaResolve 9/9. 전부 EXIT 0. `npm run typecheck` 서버+웹 EXIT 0.
+- **빌드**: `npm run build --workspace apps/web` EXIT 0 — `index-VhUYCsPH.js` 300205 B sha256 `fc91e5d57e42c5c9ee19ffc86c2dbae2a562320501fdd430e4ac121f15eae670`; CSS `index-GL6MqQdo.css` sha256 `b3a502c5e3146fcc1ee94c776dfceae9449f4e9ca04b5bc3a5704c69a30d5fd1`(불변). `index.html`는 새 JS만 참조, `index-Bygnza2t.js` 디스크에서 제거. 번들에 `inject-preview`·archived 카피 존재, `storyRoom`/`fixedEst`/`PROMPT_VERSION` 부재. `npm run build --workspace apps/server` EXIT 0 — `stories.js` sha256 `5e9474d568951dcd6eeb606064f7fde0bf4eec342c3f4b7d7b1e7cdfd585d5ea` (`inject-preview`+`computeStoryInjection`), `conversations.js` `error: 'archived'` 409, `builder.js` `computeStoryInjection`. sibling `requestDump.js` sha256 `8e394a6c6c243fa5549603cc0f0c2820a9d0e161aa28a73a66ccd2485b7c367a` 빌드 전후 불변.
+- **DB 사전/사후** (`DATA_DIR=/home/hermes/rpchat/data`, SELECT-only): `schema_migrations` 0001–0009 불변. `stories|0` `story_characters|0` `conversations|6` `messages|108` `characters|8` `conversations` 26 cols, `story_id_not_null=0`. 서리 `f89ace9b-…` / 카이 `255f96a2-…` archived=0 불변. `.env` 416 B mtime 1788058653 sha256 `e063b306b67bc51d5d5ef7576938d8da93d5d3deec4c0f3e2deabb24f9d340a2` 불변. `AUTH_MODE=tailscale` 유지. migration 적용 0.
+- **재시작**: PID `160653`(2026-08-30 02:57:33 UTC) → `231817`(2026-08-31 23:00:53 UTC). 구 PID 소멸. health 1차 curl 7(레이스) 후 재시도 `{"ok":true,...,"db":"ok",...,"promptVersion":"2026.08.22-r1+story","authMode":"tailscale"}` HTTP 200. `/proc/231817/environ`: DATA_DIR/AUTH_MODE/HOST/PORT 일치, `RPCHAT_REQUEST_DUMP` VAL_LEN 1, APP_TOKEN/SESSION_SECRET VAL_LEN 0.
+- **읽기 smoke**: localhost `/api/characters`·`/api/stories` 401 `mode:tailscale`. Serve `https://hermes.tailf2217c.ts.net` tailnet only. `/api/auth/me` `{"mode":"tailscale","authenticated":true,"login":"manofin@github"}` 200. Serve `index.html` `index-VhUYCsPH.js` HTTP 200. Serve JS sha256 디스크 일치. `GET /api/stories` `[]` 200. unknown `GET /api/stories/00000000-0000-4000-8000-000000000000/inject-preview?characterId=f89ace9b-…` `{"error":"not found"}` 404. `/story/x` SPA 동일 새 번들. **POST conversations 0**.
+- **확인 안 함**: live `stories` 0행이라 preview 200·setting 발췌·절단·조연 집계·예상 토큰·동결 안내·start sheet 열림·모바일 스크롤은 HTTP로 증명 불가. Galaxy PWA 스와이프 재설치 확인 안 함. 브라우저 DOM 렌더 확인 안 함.
+- 커밋 없음. 다음 이름 잠금 없음(F8c 릴리스 닫힘). 실사용 스토리 생성+시작은 별도 토큰.
+
+## [2026-08-31 story-authoring-live-smoke — Hermes] `[RP-Chat / story-authoring-live-smoke]`
+- 사용자 리터럴 토큰 `story-authoring-live-smoke 진행`. 코드/빌드/배포/재시작/migration/SQL INSERT·DELETE/서리·카이/기존 6대화 변경 없음. Serve `https://hermes.tailf2217c.ts.net` (`/api/auth/me` 200 `mode:tailscale authenticated:true login:manofin@github`). PID `231817` 유지. health `ok`/`db:ok`/`promptVersion:2026.08.22-r1+story`/`authMode:tailscale`. HEAD `v0.0.19-68-g93f2b86`. `.env` 416 B sha256 `e063b306b67bc51d5d5ef7576938d8da93d5d3deec4c0f3e2deabb24f9d340a2` 불변. `schema_migrations` 0001–0009. integrity `ok`, foreign_key_check 0.
+- **캐릭터**: 활성 throwaway만 `임포트테스트` `a5073af0-14b3-4c3f-8750-04d76b547504`(row sha `b6109df2…` 전후 불변). 서리 `f89ace9b-…` sha `9daacba8…` / 카이 `255f96a2-…` sha `8eee46d5…` 불변. 기존 대화 6행 sha 전부 불변.
+- **생성**: `POST /api/stories` 201 `084b8002-02a7-4b38-a846-a67b59b09238` name `F8C-LIVE-SMOKE-20260901`. GET 입력값 일치. `POST .../characters` 201 role=main → hosted 1명만(임포트테스트).
+- **Preview 200** (아카이브 전, 동일 발췌 2회): keys `cast,estTokens,settingExcerpt,settingTruncated,storyRoom,willFreeze`. `settingExcerpt` = V1 원문, `settingTruncated:false`, cast 4명 전부 `included:true`, `estTokens:124`, `willFreeze:true`. raw에 `fixedEst`/`budgets.fixed`/`BudgetReport`/`PROMPT_VERSION` 없음. **와이어에 `storyRoom:3117` 존재**(F8c preview 계약; UI 비표시는 DOM 미확인).
+- **대화 1건만**: `POST /api/conversations` `{characterId,storyId,mode:story}` 201 `8724383f-bd91-4f4b-b59b-91b3dca733b0`. snapshot 5필드 = 생성 시점 V1. greeting 메시지 1행(캐릭터 first_message, 예상). `GET .../prompt-preview` 200에 `### 스토리 설정` + V1, V2 없음.
+- **동결**: `PUT` setting→V2 200. 이후 preview는 V2만. 기존 conv snapshot/prompt-preview는 V1 유지, V2 없음. live fallback 없음.
+- **Archive**: `DELETE /api/stories/:id` 200 `{ok:true}` → SQL `archived=1`. GET 스토리 200. 기존 conv GET 200. prompt-preview 여전히 V1. inject-preview 409 `{error:archived}`. 추가 POST conversations 409 `{error:archived}`. 거부 후 conversations=7 messages=109 불변(추가 쓰기 0). 테스트 conv `PATCH archived:true` 200.
+- **행 수**: before `stories|0 story_characters|0 conversations|6 messages|108 characters|8` → after `1|1|7|109|8`. Δ는 테스트 자산만. 하드 삭제 0.
+- **STATUS.md**: F8c 단일 행 `shipped+live 2026-08-31` 유지, 중복 행 없음(이 토큰에서 STATUS 미수정).
+- **확인 안 함**: start sheet DOM/picker UI/모바일 스크롤/Galaxy PWA; 조연 제외(예산 넉넉, 4명 전부 포함); 캐릭터 전환 stale preview(참여 1명); UI 발췌↔API 픽셀 대조; generate.
+
+## [2026-09-01 P5-context-inspector-design-R1 — Claude Code] `[RP-Chat / P5-context-inspector / design-R1]`
+- 사용자 리터럴 토큰 `P5-context-inspector-design-R1`. 범위: 설계 문서만. `apps/**`/마이그레이션/라이브 DB/커밋 전부 0.
+- 목표: 기존 prompt debugger·request dump를 그대로 노출하지 않고, story snapshot 사용여부/활성 로어+매칭키/user note 포함여부/scene·state 사용여부/summary tier/블록별 예산/절단·제외 이유/원문 evidence jump를 일반 사용자가 이해할 수 있게 보여주는 "Context Inspector" 설계.
+- **현황 조사**: `ChatDrawer.tsx`의 "컨텍스트" 탭(`BudgetTab`)이 이미 라이브에 존재하는 "기존 prompt debugger" 그 자체임을 확인 — 그리고 지금 이 탭엔 **"조립된 프롬프트 보기" 토글이 있어 전체 system prompt를 그대로 문자열 덤프**하고 있음(주의점 1번을 지금 라이브 코드가 위반 중). 두 섹션(`시스템 규칙+카드+페르소나+장면`, `고정 기억+요약`)이 서로 무관한 5개 개념을 각각 하나의 예산 숫자 뒤에 뭉쳐, scene/user note 사용 여부가 별도 필드 없이 자유텍스트 note에만 우연히 묻힘. 원문 점프는 MemoryTab/SummaryTab엔 이미 있으나(`evidence_message_ids`/`covers_until_message_id` → `/chat/:id?jump=`) 컨텍스트 탭엔 0. `last.json`/`last-request.json`은 `apps/server/src/routes/`·`apps/web/src/` 전체 grep으로 **서빙 라우트 0건 확인** — 주의점 2번은 이미 구조적으로 지켜지고 있음(설계 임무는 앞으로도 라우트를 안 만드는 것).
+- **격차 매핑**: 요청 8항목 중 활성로어+매칭키·summary tier 2개는 사실상 완비(`diagnostics.lore`/`diagnostics.summaries` 재사용 가능), 나머지 6개(story/user note/scene/state-evidence/블록별 예산 분리/절단 사유 통일)는 `BudgetDiagnostics`에 4개 필드(`story`/`userNote`/`scene`/`summaries[].messageEvidence`) additive 확장으로 충족 가능 — 전면 재작성 아님.
+- **재사용 원칙**: 새 엔드포인트 없음, 기존 `GET /api/conversations/:id/prompt-preview`(`diagnostics:true`)를 데이터 소스로 유지. 점프는 기존 `/chat/:id?jump=<messageId>` 메커니즘 그대로. F8c `story-inject-preview`가 이미 증명한 "내부 예산 계산 재구현 없이 결과에서 사용자용 필드만 투영" 원칙을 story 블록에도 적용 제안 — `extractSettingExcerpt`(현재 `stories.ts` private)를 공유 위치로 옮겨 `conversations.ts`(prompt-preview)와 `stories.ts`(inject-preview) 양쪽이 같은 함수를 호출하도록 제안(복제 금지).
+- **UI 방향**: `ChatDrawer.tsx` "컨텍스트" 탭 내용 교체(탭 자체는 유지) — raw dump 토글 완전 삭제, 카드형 리스트(스토리/로어/유저노트/장면·상태/요약/최근범위/예산막대)로 재구성, 어떤 카드에도 편집·승인·삭제 버튼 없음(전부 기존 MemoryTab/SummaryTab/Scene/UserNote 화면으로 링크 이동만) — 읽기전용·편집기능과 분리 원칙 그대로.
+- `planning_documents/P5-Context-Inspector-Design.md`(신규, sha256 `1a32e8d1…`, 14901B) 작성 — §1 현황조사, §2 격차매핑 표, §3 재사용 계약, §4 제안 데이터모델(TS 인터페이스), §5 제안 UI, §6 Non-goals(주의점 6개 그대로 잠금), §7 열린질문 5개(scene 원문노출 동의/로어 evidence jump 근사치 여부/투영로직 위치/탭 이름·위치/UI 통합시점), §8 예상 슬라이스, §9 Pick(이 라운드는 미확정 — R1 제안만).
+- 이 라운드는 결정 없음(design-only). 다음: 사용자가 §7 답하면 `context-inspector-schema`(서버 additive 확장)부터 — 새 토큰 필요. 침묵은 슬라이스 아님.
+
+## [2026-09-01 n9velai-gap 문서 정리 — Hermes] (pre-deploy bind)
+- 사용자 리터럴 순서: `문서 정리, 배포, 재시작`. 커밋 토큰 없음. F8c / slice 이름 재사용 없음. migration 0. `.env` 내용 미출력. leftover BRIEF/DESIGN/`dist.bak` 무접촉. 하드룰 dirty 5파일 무접촉: `apps/server/src/index.ts` `adapter.ts` `chat.ts` `bench/ttsBench/preregistration.md` `bench/userNoteRequestRoundtrip.test.ts`.
+- **git** 2026-09-01T01:18:13Z: `git describe --tags --always --dirty` = `v0.0.19-75-g9073c22-dirty`. HEAD `9073c2266682e42e1587016c1e4092c8182715b1`. log -8: `9073c22` lore clone / `344a348` budget kind / `99a1986` story-authoring-ui / `64d3af9` inject-preview / `03b7b35` archived-gate / `69ad4be` computeStoryInjection / `02c6903` context inspector entry / `93f2b86` E1 docs.
+- **tracked dirty**: `PROGRESS.md` `apps/server/src/index.ts` `apps/server/src/model/adapter.ts` `apps/server/src/routes/chat.ts` `bench/ttsBench/preregistration.md` `bench/userNoteRequestRoundtrip.test.ts`. untracked leftover 유지(BRIEF/DESIGN/HANDOFF/`dist.bak`/`requestDump.ts` 등).
+- **stale dist (pre-deploy)**: `apps/web/dist/index.html` 866 B sha256 `d2912f8a03e527cf64185b1f47cc6b0a6e3a77e79386f2a32d36c7ccee3bf9d1` → `/assets/index-VhUYCsPH.js`. JS 300205 B sha256 `fc91e5d57e42c5c9ee19ffc86c2dbae2a562320501fdd430e4ac121f15eae670`. CSS `index-GL6MqQdo.css` sha256 `b3a502c5e3146fcc1ee94c776dfceae9449f4e9ca04b5bc3a5704c69a30d5fd1`. sibling `requestDump.js` sha256 `8e394a6c6c243fa5549603cc0f0c2820a9d0e161aa28a73a66ccd2485b7c367a`. `.env` 416 B sha256 `e063b306b67bc51d5d5ef7576938d8da93d5d3deec4c0f3e2deabb24f9d340a2`.
+- **STATUS**: F8c 단일 행 유지, subsequent만. P5는 design-R1 + P5-R1 minimal subsequent — `context-inspector-schema` 아님, shipped+live 아님. ADR-F8c / HANDOFF / PRD 미수정. STATUS header Date/HEAD 미재바인드.
+- **의도적 계획 이탈 (코드 세션 보고, 이 문서가 재실행하지 않음)**: Task 1–4도 커밋(Task 7이 `builder.ts`/`types.ts` 공유). Task 6은 버튼 추가 대신 기존 ▤ 라벨. Task 7 push 5사이트·그룹 헤더 대신 출처 태그. Task 8 `lore_entries` 11컬럼·제목 120자.
+- 다음 같은 메시지: `배포` then `재시작`. Galaxy PWA / generate / throwaway DELETE 아님.
+- **배포 2026-09-01** (workdir `/home/hermes/rpchat/app`): `npm run build --workspace apps/web` EXIT 0 — `index-VhUYCsPH.js` 제거, `index-DeoM_59q.js` 300824 B sha256 `5834aa599208c688997500dbe45caab9743e5210fea4b26c0c840904a64ee5e8`; CSS `index-GL6MqQdo.css` sha256 `b3a502c5e3146fcc1ee94c776dfceae9449f4e9ca04b5bc3a5704c69a30d5fd1` 불변; `index.html` 866 B sha256 `09db7e4995fe20e191ba2b438ed73c8a35b06615629710c299ecbf83ecc309ea` → `/assets/index-DeoM_59q.js`. 번들 `context-inspector`/`▤`/`컨텍스트`/`inject-preview` 존재; `storyRoom`/`fixedEst`/`PROMPT_VERSION` 부재. `npm run build --workspace apps/server` EXIT 0 — `builder.js` sha256 `c6c100c6ecf289434322e068335efaf023dc9080e64cee829818adca7de2a13a` (`computeStoryInjection`); `stories.js` sha256 `5e9474d5…` (`inject-preview`+archived); `conversations.js` `error: 'archived'`; `config.js` `PROMPT_VERSION` `2026.08.22-r1+story`. sibling `requestDump.js` sha256 `8e394a6c6c243fa5549603cc0f0c2820a9d0e161aa28a73a66ccd2485b7c367a` 불변. mixed-tree: dirty `index.ts`/`adapter.ts`/`chat.ts` 재컴파일됨 (E-bytes 잔여; HEAD 9073c22 ≠ 그 3파일 워킹트리).
+- **재시작 2026-09-01T01:21Z**: PID `231817`→`251709`(구 PID `/proc` 소멸). health HTTP 200 `ok`/`db:ok`/`promptVersion:2026.08.22-r1+story`/`authMode:tailscale`. environ DATA_DIR VAL_LEN 24, AUTH_MODE 9, RPCHAT_REQUEST_DUMP 1, APP_TOKEN/SESSION_SECRET 0. localhost `/api/characters`·`/api/stories` 401 `mode:tailscale`. Serve `/` sha256 디스크 MATCH `09db7e49…` JS `index-DeoM_59q.js` MATCH `5834aa59…`. `/api/auth/me` 200 `authenticated:true login:manofin@github`. `GET /api/stories` `[]` 200 (archived throwaway hidden). POST conversations 0. `.env` 416 B sha256 `e063b306…` 불변. DB counts `1|1|7|109|8` 불변. integrity ok, fk 0, migrations 0001–0009. Story `084b8002-…` archived=1 유지.
+- **확인 안 함**: Galaxy PWA 스와이프 재설치; start-sheet DOM; 컨텍스트 버튼 실기기; lore clone UI; generate.
+
+## [2026-09-02 S1 헤더·UI·이미지 서버 템플릿] `[RP-Chat / F9-beat / f9-beat-render]`
+- 계약: `Notes_260902_210901.txt` §8-1. 계획서 `~/.claude/plans/fuzzy-jingling-cloud.md` (사용자 승인).
+  모델 출력에서 헤더·UI·이미지를 파싱하지 않게 렌더러를 먼저 고정. `chat.ts` generate 무변경(그건 S4).
+- 신규: `prompt/renderBeat.ts`(`794688c7…`, 순수 — 런타임 import 0, type-only만) ·
+  `media/assets.ts`(`e29d4db2…`) · `routes/media.ts`(`596023ce…`) ·
+  `migrations/0012_scene_beat.sql`(`3a7b26a4…`, 0010 선례 no-op + 키 계약 주석) ·
+  `bench/beatRender.test.ts`(`bfa2eb54…`, 38/38) · `bench/onePointOneBaseline.ts`(`4c395598…`).
+- 수정(전부 additive): `types.ts` Scene에 0012 optional 키(day_index/weekday/beat_goal/roster/
+  user_sheet/last_beat) · `conversations.ts` sceneSchema 동일 키(zod strip이 클라 PATCH에서
+  지우지 않게) · `sceneCatalog.ts` beat 섹션(places[].default_focus/outfits/emotions/
+  flags[].owner_duty/stages[].closer_duty) · `applySceneDelta.ts` cloneScene nested 복사 +
+  `appliedEvents` additive · `index.ts` media 라우트를 avatar 옆(static SPA보다 앞) 등록 ·
+  `deploy/schema-compat.json`에 0012 한 줄.
+- **모델은 0012 키를 제안할 수 없음**: APPLY_KEYS 미포함 → 전부 `not_in_allowlist`. 벤치로 확인.
+- **1:1 무영향 (S1 게이트)**: `bench/onePointOneBaseline.ts`로 `story_id IS NULL` 대화 **6개 전부**의
+  buildPrompt system 블록 sha256을 슬라이스 전후 대조 — 6/6 바이트 동일. 계획은 1개만 요구했으나 전수 실행.
+  라이브 DB는 `sqlite3 -readonly .backup` 스냅샷으로만 접근, 쓰기 0. 라이브 HTTP 0(auth 경로 미사용).
+  `templates.ts`/`builder.ts`/`chat.ts` mtime이 전부 S1 이전(09-01 01:00 / 09-02 00:29 / 09-02 05:49) —
+  S1이 만진 파일 목록에 없음.
+- 인접 회귀 12/12 PASS: beatRender · builderBudget · builderDifferential · storyInjectBuild ·
+  rpEngineR1 · summarizeContract · presenceModel · presenceIdResolve · sceneStateSchema ·
+  sceneCatalog · sceneProgression · partyBench.latency. 서버+웹 typecheck EXIT 0.
+- **스테일 펜스 재바인딩 (전부 어설션 의도 보존, 완화 아님)**:
+  - 「no 0012」 8건(`presenceModel`/`presenceIdResolve`/`sceneCatalog`/`presencePrompt`/
+    `tagsCatalog`/`sceneDeltaLive`/`auxSpeakerGate`/`auxSpeakerGenerate`) → 0012 **부재**가 아니라
+    0012 **내용**(주석 제외 `SELECT 1;` 한 줄뿐)에 바인딩. 0010/0011 해시 검사는 그대로.
+  - `sceneProgression` 「no hp/relationship on Scene」 → `user_sheet.hp`가 문자열로 걸리던 것을
+    **최상위 들여쓰기 2칸** 정규식으로 교정 + APPLY_KEYS에 hp/money/relationship/user_sheet/
+    roster/last_beat가 없음을 추가 검사(A-3 의도를 더 강하게 고정).
+  - `partyBench.latency` #10 「pickSpeaker.ts 부재; 0010 부재」 → **S1 이전부터 실패 중이던 스테일**
+    (pickSpeaker.ts 09-02 02:03, 0010 09-01 22:28 생성 — 벤치는 09-01 16:17 작성). 컷 봉인
+    테스트 1~9는 무변경 PASS. #10만 「러너가 product 모듈/DB를 import하지 않음」으로 재바인딩.
+    계획서 Key decision 11은 이 스테일을 `partyBench.test.ts`에만 있다고 봤으나 latency에도 있었음 — 사실 정정.
+- 마이그레이션 적용 0 · 라이브 DB 쓰기 0 · 배포 0 · 재시작 0 · generate 0 · 커밋 0.
+
+## [2026-09-02 S2 in_room·focus·eligible·ambient] `[RP-Chat / F9-beat / f9-focus-eligible]`
+- 계약: 노트 §4.1(포커스) · §4.2(닫힌 후보) · §4.4(ambient). **무작위 폴백 0, LLM 단계 0, 「후보가
+  있으면 누군가는 말한다」 제거.**
+- 신규: `prompt/cast.ts`(CastMember/CastRole + talkativeness/locked/outfit, `canSpeak`/
+  `talkativenessOf`) · `prompt/resolveFocus.ts` · `prompt/eligibleExtras.ts` · `prompt/ambient.ts`
+  (FNV-1a 시드, `Math.random` 0) · 벤치 `focusResolve`(29) · `eligibleExtras`(20) · `ambient`(22).
+- **삭제**: `prompt/pickSpeaker.ts`(F9C 4단계 라우터). import 전부 `cast.ts`로 retarget.
+  `bench/pickSpeaker.test.ts` 삭제 — `focusResolve.test.ts`가 대체.
+- 수정: `assignSpeakers.ts` **`main_character_id` 폴백 제거** → focus null이면 `speakers: []`이고
+  extra도 열리지 않음 · `presence.ts` `inRoom`/`outOfRoom`/`excludeUser` 추가 + 「main은 presence
+  무시」주석 정정 · `tagsCatalog.ts` `party:talkative`/`party:locked`/`party:outfit` 파싱 ·
+  `composePartyTurn.ts`가 `pickSpeaker` 대신 `resolveFocus`(post-apply scene 입력) 사용,
+  결과 필드 `route`→`focus`.
+- **§4.1 해석 확정**: 규칙 1~3은 각각 «산출 또는 통과»다. 부재·잠금·배경 후보는 결정이 아니므로
+  다음 우선순위로 떨어진다(부재자 입에 말을 넣지 않기 위함). **예외는 진짜 모호성** — 방 안의
+  두 명을 동시에 겨냥하면 통과가 아니라 즉시 focus null. 이 비대칭이 「모호하면 LLM」을 막는 지점.
+  소스 주석 + `focusResolve` 벤치 양쪽에 고정.
+- **종료된 측정 보호**: `bench/triggerSupply/filter.ts`는 삭제된 product 라우터를 쓰고 있었다.
+  의미가 다른 `resolveFocus`로 갈아끼우면 이미 기록된 결과와 어긋나므로,
+  `bench/triggerSupply/retiredRouter.ts`에 **폐기 라우터를 그대로 동결**하고 그쪽을 가리키게 했다.
+- 인접 회귀 17/17 PASS · 서버+웹 typecheck EXIT 0 · **1:1 system 블록 6/6 바이트 동일**.
+- **대체된 계약 (스테일 아님, 의도적 교체)**: `assignSpeakers.test.ts`의 A-6 「모든 점수 0 →
+  conversations.character_id 폴백」 2건과 `presenceModel.test.ts`의 「absent main still speaks」는
+  ADR-F9 §6 조항이며, 노트 §4.1-4가 **party 경로에 한해** 대체한다(ADR 본문 미수정, STATUS에 1줄 기록 예정).
+  각각 「focus null ⇒ speakers []」/「presence는 상류에서 해소, assignSpeakers는 결정된 focus만 소비」로 교체.
+  `sceneCatalog`·`presenceModel`의 `WIN = 95` 펜스는 「F9C 스코어링이 돌아오지 않았다」로 재바인딩.
+- 마이그레이션 적용 0 · 라이브 DB 쓰기 0 · 배포 0 · 재시작 0 · generate 0 · 커밋 0.
+
+## [2026-09-02 S3 extra 승인 — 기본 전원 거절] `[RP-Chat / F9-beat / f9-extra-approve]`
+- 계약: 노트 §4.3. `extra(c) iff eligible(c) AND incremental(c, focus, beat) AND
+  (hard_event(c) OR (EXTRA_SCORE_ENABLED && score(c) ≥ τ))`. **기본 0.**
+- 신규: `prompt/approveExtras.ts` · 벤치 `approveExtras.test.ts`(24, 노트 §4.3 통과/탈락 표를
+  테스트 이름에 그대로 박음) · `bench/approveExtras/preregistration.md`(τ=0.60 봉인, **product가
+  import하지 않음** — 닿을 수 있는 상수는 조용히 재조정 가능한 상수).
+- **삭제**: `prompt/auxGate.ts` 전체(`parseSecondaryTriggers`/`eligibleSecondaries`) ·
+  `bench/auxSpeakerGate.test.ts` · `sceneDeltaPrompt.ts`의 `secondary_triggers` 광고 3줄 + 예시 JSON.
+  **`trigger_exists`는 더 이상 모델 필드가 아니다** (§4.3 명시). presence add/remove 광고는 유지.
+- **hard_event가 유일한 오프너**: `applySceneDelta().appliedEvents`의 stage/flag 전환 ×
+  `catalog.flags[key].owner_duty` / `catalog.stages[id].closer_duty` ∩ `c.duties`.
+  모델 텍스트에서 이벤트를 읽지 않는다. `incremental()`은 **필터**(focus duty 중복 → duty_overlap,
+  같은 기능 슬롯 → dup_slot)이지 오프너가 아니다. 세계가 안 바뀐 턴은 eligible이 4명이어도 승인 0.
+- `score()` 골격만 존재하고 `EXTRA_SCORE_ENABLED = false`로 하드코딩. 켜져도 hard_event가 0건인
+  턴에서만 동작하고 τ는 서버가 적용한다 — 모델이 자기 슬롯을 열 경로는 없다. `score_ran`을 결과에
+  기록해 S5 로그가 「꺼져 있었다」를 증명할 수 있게 함.
+- 근거 재확인(무수정): `dutyAttribution` = 귀속은 정확(L0 recall 1.00)하나 장면당 슬롯 1개를
+  **채운다**(pick-one) → 관련성은 필요성이 아님. `necessity` V1 `H5_REJECTED`(discrimination 0.95)
+  = 증분 필요성 질문은 성립하지만 그것은 **서버가 물을 질문**이다. 두 사실 모두 소스 주석에 기록.
+- 수정: `composePartyTurn`이 `approveExtras` 사용, 결과 필드 `eligible_secondaries`→
+  `approved_extras` + `eligible_ids`/`rejected`(진단). extra 메시지의 `reason`은 이제 모델이 쓴
+  사유가 아니라 **슬롯을 연 duty**. `sceneCatalog`에 `duties{slot}` → `dutySlots` 추가(§4.3 기능 슬롯).
+- **종료된 측정 보호**: `bench/triggerSupply/{run,run-aprime}.ts`가 삭제된 `auxGate`를 쓰고 있었다.
+  `bench/triggerSupply/retiredAuxGate.ts`로 **동결 복사** 후 그쪽을 가리키게 함(S2의 retiredRouter와 동일 처리).
+- 인접 회귀 **22/22 PASS** · 서버+웹 typecheck EXIT 0 · **1:1 system 블록 6/6 바이트 동일**.
+- 갱신된 인접 벤치: `auxSpeakerGenerate`(trigger 경로 → hard_event 경로. 회귀 주장이 더 강해짐 —
+  「관련성만으로는 아무것도 안 열린다」) · `partyRender`/`tagsCatalog`(route→focus 리네임).
+- 마이그레이션 적용 0 · 라이브 DB 쓰기 0 · 배포 0 · 재시작 0 · generate 0 · 커밋 0.
+
+## [2026-09-02 S4 Swap 멀티패스 + 조립] `[RP-Chat / F9-beat / f9-swap-passes]`
+- 계약: 노트 §5(Swap 조립) · §6(렌더 스키마) · §4 파이프라인 1~9. **party 경로는 `buildPrompt`를
+  타지 않는다** — 1:1 빌더는 캐릭터 1명용 시스템 프롬프트를 조립하고, 비트는 카드가 겹치지 않는
+  좁은 콜 여러 개다. 두 경로를 가른 것이 「1:1 system 바이트 불변」게이트를 의미 있게 만든다.
+- 신규: `prompt/passes.ts`(`4b14cb3d…`, Pass N/F/E 렌더 + `splitFocusText`) ·
+  `prompt/composeBeat.ts`(`0519ef28…`, `planBeat`/`passFWith`/`planPassE`/`finishBeat`/
+  `detectUnresolved`) · `bench/composeBeat.test.ts`(26) · `bench/passPrompts.test.ts`(20) ·
+  `bench/beatRenderWeb.test.ts`(16) · `bench/partyBench/run-bench-latency-beat.ts`.
+- **삭제**: `prompt/composePartyTurn.ts` · `prompt/auxSpeakerPrompt.ts` ·
+  `bench/auxSpeakerGenerate.test.ts`(대상 모듈 소멸, Pass E는 위 3개 벤치가 더 넓게 커버).
+- `chat.ts`: party 분기를 `generateBeat`로 분리. 델타 → `planBeat` → scene UPDATE →
+  HEADER → Pass N → **Pass F(스트리밍)** → Pass E×K → THOUGHT/extra/UI → `finishBeat` →
+  `last_beat` 커밋 → `generation_log.budget_json.beat_log`.
+- **SSE 계약**: 스트리밍되는 행 1개를 뺀 모든 블록이 기존 `aux`(append-only + id 중복제거)로 나간다.
+  start/done 쌍은 턴당 정확히 1개 — focus가 있으면 focus 행, 없으면 UI 행이 닫는다(클라이언트는
+  `generating`을 끄기 위해 쌍이 필요하지, 특정 블록 종류가 필요한 게 아니다).
+  **사용자 메시지를 첫 블록보다 먼저** `aux`로 내보낸다 — 안 그러면 헤더가 유저 턴 위에 붙는다.
+- **실패 정책** (A-6): 델타 실패 → 상태 불변, 비트 계속 / Pass N 실패 → 서술 블록만 누락 /
+  Pass E 실패 → 그 extra만 누락 / **Pass F 실패만** `status='error'` / focus null → 슬롯 0, 에러 아님 /
+  이미지 없음 → 이름+대사만. 패스별 데드라인(N 20s, E 15s)은 공유 어댑터를 건드리지 않고
+  호출부에서 `AbortSignal` 합성으로 구현 — 1:1의 전역 타임아웃은 그대로.
+- 웹: `meta.block_kind`/`beat_seq`/`image_url` additive. `MessageView`가 `block_kind` 없으면
+  **기존 말풍선 그대로**(1:1 + 비트 엔진 이전 모든 메시지). `line`만 말풍선+`SpeakerHeader`,
+  나머지는 `BeatHeader`/`BeatNarration`/`BeatThought`/`BeatUiPanel`. 손상된 ui 페이로드는
+  크래시가 아니라 렌더 없음. `app.css`에 `.beat-*` 추가만(기존 `.bubble`/`.msg` 정의 1개 유지).
+- **`detectUnresolved` 판정 범위 정정**: 「마지막 40자」휴리스틱이 긴 턴 앞부분의 물음표를 잡아
+  다음 비트 포커스를 고정시켰다. **마지막 문장**으로 좁히고, 종결부호 뒤 닫는 따옴표를 문장 경계로
+  오인하지 않도록 분리 정규식을 고쳤다(`"왜 그래?" …바라보았다.` → 미검출). 과검출이 미검출보다 비싸다.
+- 갱신된 인접 벤치: `partyRender`/`tagsCatalog`/`approveExtras`/`presencePrompt`(`renderAuxSpeakerPrompt`
+  → `planPassE`) · `sceneDeltaLive`(「compose가 buildPrompt보다 먼저」→ 「비트 경로에서 델타 적용이
+  Pass N보다 먼저」+ 1:1은 여전히 buildPrompt이고 비트 기계장치가 없음).
+- 인접 회귀 **24/24 PASS** · 서버+웹 typecheck EXIT 0 · **1:1 system 블록 6/6 바이트 동일**.
+- **계획 대비 의도적 이탈 1건**: 계획은 「웹이 도착 순서가 아니라 `beat_seq`로 정렬」이었으나,
+  블록 행이 부모 체인으로 연결돼 `getPath`가 이미 비트 순서를 돌려주고 SSE도 순서대로 내보내므로
+  `beat_seq` 정렬을 추가하면 오히려 **이전 메시지들과의 시간 순서를 깨뜨린다**. `beat_seq`는
+  기록·진단용으로 유지하고 렌더 순서는 트리 순서를 따른다.
+- 마이그레이션 적용 0 · 라이브 DB 쓰기 0 · 배포 0 · 재시작 0 · 라이브 generate 0 · 커밋 0.
+
+## [2026-09-02 S5 계측 + 지연 게이트] `[RP-Chat / F9-beat / f9-beat-metrics]`
+- 계약: 노트 §8-5. `beat_log`는 S4의 `chat.ts`에 이미 배선됨 — 이 슬라이스는 그 계약을 벤치로 고정.
+- 신규 `bench/beatMetrics.test.ts`(14). 핵심 주장:
+  - **`k_opened === 0`은 성공 판독이다.** 비어 있는 eligible 집합과 「전원이 자격은 있었으나
+    아무도 슬롯을 못 얻음」을 구분해 기록한다. 모든 컷에 사유(`is_focus`/`locked`/`place`/
+    `no_hard_event`/`duty_overlap`/`dup_slot`/`cap`)가 붙는다.
+  - **`extra_count === 3`은 구조적으로 불가능**하다. 전환 3건이 실제로 일어난 픽스처에서도
+    승인은 2건이고 세 번째는 `cap`으로 기록된다 — 「드물다」가 아니라 「못 나온다」.
+  - `score_ran: false`가 기록되므로 「신호는 꺼져 있었다」가 기억이 아니라 증거다.
+  - `ambient_as_speech: 0` — ambient id가 line 화자로 나타나지 않음을 실제 블록에서 대조.
+  - `asset_nulls` — 이미지 없는 line 수. 자산 0개가 정상 결과임을 수치로 남긴다.
+  - `pass_ms{delta,n,f,e[]}` — Pass E는 1건당 1개 항목.
+- 지연 게이트(계획이 S4 안으로 당긴 항목): `bench/partyBench/run-bench-latency-beat.ts` 신설.
+  `run-bench-latency.ts`는 **그대로 둔다** — 2026-09-01 2콜 결과가 자기 믹스에 대해 계속 재현
+  가능해야 한다. 새 러너는 `score-latency.ts`의 **봉인된 컷을 그대로 import**(p50≤90 / p95≤120 /
+  overflow 0 / n=50)하고 믹스만 바꾼다. 프롬프트는 합성이 아니라 **출하되는 `passes.ts` 렌더러**를
+  그대로 쓴다(합성 스텁은 엉뚱한 prefill을 잰다). 5턴마다 1턴은 extra 2명(=5콜) 최악 케이스.
+- 마이그레이션 적용 0 · 라이브 DB 쓰기 0 · 배포 0 · 재시작 0 · 라이브 generate 0 · 커밋 0.
+
+## [2026-09-02 지연 게이트 PASS] `[RP-Chat / F9-beat / f9-swap-passes / latency]`
+- `bench/partyBench/run-bench-latency-beat.ts` N=50, 큐 깊이 1, 라이브 DB 0, `POST /messages` 0.
+- **n=50 p50 9.66s / p95 13.58s / overflow 0 → PASS** (봉인 컷 p50≤90 · p95≤120 · overflow 0).
+  재설계 트리거(p50≥150s) 미발동.
+- 패스별 p50: delta 0.55s · N 3.65s · F 4.89s · E1 1.79s · E2 2.20s.
+  최대 프롬프트 토큰 delta 415 / N 368 / **F 1084** / E 356.
+- **5콜 prefill 리스크 해소됨**: 노트 §5의 「패스마다 카드 1장」이 실제로 프롬프트를 좁게 유지해,
+  12K probe에서 2콜에 148초가 걸리던 상황이 재현되지 않았다. 5콜 최악 케이스(extra 2명, 10턴)도
+  p95 13.58s 안에 들어온다.
+- 결과 `bench/partyBench/results/beat-2026-09-02T14-10-11-104Z.json`.
+
+## [2026-09-02 마이그레이션] `[RP-Chat / F9-beat / f9-beat-migrate]`
+- 사전 백업 `backups/rpchat-pre-0012-scene-beat.db` sha256 `6d3bb97ab629eeae…` + manifest.
+  백업 자체를 열어 검증: integrity ok / foreign_key 0건 / 마이그레이션 0001–0011 / conversations 8 ·
+  characters 10 · messages 131 · stories 2 · story_characters 3.
+- 0012는 서버가 연 채로 쓰지 않는다 — 재시작 시 `openDb`가 적용(0010/0011 선례).
+
+## [2026-09-02 배포] `[RP-Chat / F9-beat / f9-beat-deploy]`
+- `npm run build` EXIT 0. web `index-Ci-eDnF1.js` / `index-CmymjmAt.css` / `index.html`
+  sha256 `0c45d23fd62a9a89…`. 비트 CSS·`block_kind` 분기 번들 컴파일 확인.
+- server dist에 `composeBeat/passes/renderBeat/approveExtras/resolveFocus/eligibleExtras/ambient/cast`
+  전부 존재. **`tsc`가 지우지 않는 stale 산출물 4개**(`pickSpeaker.js`/`auxGate.js`/
+  `auxSpeakerPrompt.js`/`composePartyTurn.js`) 수동 제거 — 런타임 import 0건임을 먼저 확인
+  (`cast.js`의 참조는 주석 1줄뿐). 커밋하지 않음.
+
+## [2026-09-02 재시작] `[RP-Chat / F9-beat / f9-beat-restart]`
+- PID `84236`→`105361`(구 PID 소멸). health `ok`/`db:ok`/`authMode:tailscale`/
+  `promptVersion:2026.08.22-r1+story`(불변). localhost 보호경로 401.
+- `schema_migrations`에 `0012_scene_beat.sql` 적용. **행수 전후 불변**(conversations 8 /
+  characters 10 / messages 131 / stories 2 / story_characters 3), `conversations` 컬럼 수 **26 불변**
+  (0012는 컬럼을 만들지 않는다), integrity ok / foreign_key 0건. 서리·카이 무손상.
+- Serve HTTPS index sha256 = 디스크 완전 일치.
+- 미디어 라우트 실측: 없는 자산 → `404 application/json`(SPA html 아님). traversal 4종 확인 —
+  라우트에 실제로 도달하는 형태(`nari/%2e%2e/0.webp` 등)는 전부 404, raw `..`는 Fastify가 403.
+  `../../etc/passwd/0.webp`의 200은 **라우트에 도달하지 못한 경로의 기존 SPA fallback**이며
+  파일 바이트 유출 없음(응답은 index.html) — 이 슬라이스가 만든 동작이 아님.
+
+## [2026-09-02 라이브 비트 검증] `[RP-Chat / F9-beat / f9-beat-live-turn]`
+- 대상 `552e0205-…`(F9-LIVE-PARTY-SMOKE)만. 서리·카이·1:1 6개 무접촉.
+- **이 스토리의 catalog에는 `owner_duty`/`closer_duty`/`outfits`/`emotions`가 없다** →
+  hard_event가 구조적으로 발생 불가 → `k_opened=0`과 이미지 null이 **보장된 정상 결과**.
+  노트 §7 교실 표(세라·하연 통과)는 이 대화로 증명되지 않으며 격리 벤치가 진다.
+- **턴 1 (포커스 없음)**: `aux`(user) → `aux`(header) → `aux`(narration) → `start` → `done`(ui).
+  HEADER `09:05 · clear · bureau_lobby` — `clock_minutes:545`·`weather`·`location`에서만 나옴.
+  `day_index`/`weekday`가 scene에 없어 **생략**(창작 안 함). 대사 슬롯 0, 에러 아님.
+  포커스가 null인 이유: 캐스트 이름이 `한소연-smoke`이고 별칭이 `소연`이라 「한소연」이 정확
+  일치하지 않음 — **부분 문자열 매칭 금지 규칙이 라이브에서 그대로 작동**.
+  `beat_log`: `focus_reason:"none"`, `k_opened:0`, `rejected` 전원 `no_focus`, `ambient_as_speech:0`.
+- **턴 2 (포커스, 별칭 `소연`)**: header → narration → `start` + **token 211개**(Pass F 스트리밍) →
+  thought(속마음 마커 분리, 한소연-smoke 귀속) → ui → `done`. `image_url` null(정상).
+  `beat_log`: `focus_reason:"targeted"`, `eligible_ids` **1명(비어 있지 않음)** + 그 1명의 사유가
+  `no_hard_event` — 「방이 비었다」와 「전원 자격은 있었으나 아무도 못 얻었다」가 실제로 구분됨.
+  `k_opened:0`, `score_ran:false`, `asset_nulls:1`. pass_ms delta 2.2s / N 6.0s / F 9.9s.
+- **결함 1건 발견·수정**: focus `line` 행이 `addBlock` 밖에서 생성돼 `emitted`에 안 세어졌고,
+  최종 `updateMessage`가 그 행의 `beat_seq`를 0으로 덮었다 → 이후 블록 번호가 한 칸씩 밀림.
+  렌더 순서는 부모 체인이라 영향 없었으나 진단 필드가 틀렸다. `focusSeq` 도입 + `emitted.push`로
+  수정, 회귀 테스트 추가(`beatRenderWeb` 17개), 재빌드·재시작(PID `105361`→`105659`).
+  **턴 3 재검증**: header 0 / narration 1 / line 2 / thought 3 / ui 4 — §6 순서 그대로.
+- **1:1 무영향 최종 확인**: 배포·재시작·라이브 3턴 이후 라이브 DB 스냅샷으로 재측정 —
+  `story_id IS NULL` 대화 **6/6의 system 블록 sha256이 S1 착수 전 기준선과 완전 동일**.
+  solo 대화에 beat 키 0건, solo 메시지에 `block_kind` 0건.
+- 최종 벤치 전수: **65개 중 64개 PASS**. 유일한 실패 `settingsRegression`은 「`git diff HEAD --
+  apps/server`가 비어 있어야 한다」는 F7-settings 락의 펜스로, 이 세션 이전부터 실패 중이었다
+  (`adapter.ts` 08-30 · `templates.ts` 09-02 00:29 · `stories.ts` 09-02 01:54 수정 — 전부 착수 이전).
+  **남의 락의 증거 파일이므로 손대지 않았다.**
+- `bench/partyBench.test.ts`의 스테일 펜스(09-01 작성, 「product 라우터 없음/0010 없음」)는 S2의
+  일괄 import retarget이 `cast.ts`를 가리키게 만들어 뜻이 달라졌다 — 「Bench-A는 자기 격리
+  라우터를 쟀고 product 코드를 import하지 않는다」로 바로잡았다.
+
+## [2026-09-02 워킹트리 봉인] `[RP-Chat / F9-beat / seal]`
+- **latency + F 상한을 STATUS F9에 박음**: N=50 p50 **9.66s** / p95 **13.58s** / overflow 0,
+  패스별 p50 delta 0.55 · N 3.65 · F 4.89 · E1 1.79 · E2 2.20, **Pass F 최대 프롬프트 1084 tok**.
+  옛 2콜 p50 9.98s와 거의 같다 — 리스크는 콜 수가 아니라 **prefill 폭**이었다는 것이 측정으로 확정.
+  누군가 패스에 히스토리를 되돌리면 p95가 먼저 알려 준다.
+- **`background` 술어 단일화**: 태그 파싱은 이미 `tagsCatalog` 한 곳이었으나 술어가 네 곳
+  (`assignSpeakers`×2 · `ambient` · `cast`)에 흩어져 있었다. `cast.ts`에 `isBackground()`를 두고
+  전부 그리로 모았다. `apps/server/src`에 `role === 'background'` 인라인 비교 **0건**(벤치가 확인).
+  주석 명시: **「배경은 §4.2의 네 번째 배제 집합이 아니다 — ambient 가중 입력이다」**.
+  `ambient.ts`는 배경을 **포함**하며(서술이 그들의 자리), 그 지점에만 「여기서 필터링하면 그
+  술어들이 막으려던 분기가 생긴다」를 명시.
+- **동결 실효화**: `bench/triggerSupply` → **`bench/retired/triggerSupply`**로 물리 이동
+  (「살아있는 라우터 회귀 스위트」로 읽히지 않게). `retiredAuxGate`가 아직 라이브 `presence.isPresent`/
+  `assignSpeakers.MAX_EXTRAS`를 **런타임 import** 하고 있어 실제로는 동결이 아니었다 — 인라인 복사로
+  차단(타입 import만 잔존, 컴파일 타임이라 결과를 못 바꾼다). 두 파일에 `PROD_IMPORT_FORBIDDEN` 마커.
+  신규 `bench/retiredFreeze.test.ts`(7): apps/**가 bench/를 import 0건 · 동결 모듈은 type-only import ·
+  동결본은 `WIN=95`/`secondary_triggers`를 **보존**하고 product는 **부활 0건** · 옛 경로 부재.
+- **beat_seq 정렬 생략의 불변식을 벤치로 고정**: `composeBeat.test.ts` +2 —
+  「chat.ts가 직렬화 순서 그대로 부모 체인에 append, `parent_id` 재계산 0 · `.sort(` 0 ·
+  header→narration→line→thought→ui 소스 순서」 + 「클라이언트가 자체 정렬을 추가하지 않음
+  (ChatPage/useChat에 `.sort(` 0건, `created_at`은 placeholder 생성에만)」.
+  이 과정에서 펜스 슬라이스가 `generateBeat` 아래 라우트 핸들러(regenerate의 정당한 `parent_id`)까지
+  삼키던 것을 발견해 `beatBody()`로 함수 본문에 한정.
+- **세 덩어리 diff 봉인**: `planning_documents/f9-beat-worktree-seal.md` —
+  A) F9 산출물(13:10 이후) B) 착수 전 dirty(`adapter.ts` 08-30 · `templates.ts` 09-02 00:29 ·
+  `stories.ts` 09-02 01:54 · `useChat.ts` 09-02 05:50) C) `settingsRegression` 펜스(미수정 사유).
+- **party legacy 경로 없음**: `pickSpeaker`/`auxGate`/`auxSpeakerPrompt`/`composePartyTurn` 삭제로
+  **플래그 토글 롤백은 불가능**하다. 롤백 = 워킹트리 복구(이번 파일 집합 checkout). 한 대화만 beat인
+  것이 아니라 **party 대화 전부가 새 엔진**이다. STATUS F9에 명시.
+- 재빌드 + 재시작 PID `105659`→`117656`(구 PID 소멸), health `ok`/`db:ok`/`tailscale`/
+  `promptVersion:2026.08.22-r1+story` 불변. **1:1 system 블록 6/6 바이트 동일**(재확인).
+  전체 벤치 **66개 중 65 PASS**(유일 실패 `settingsRegression` = C덩어리).
+- **다음에 열어도 되는 슬라이스는 하나뿐**: catalog에 `places/flags/stages/duties/outfits/emotions`를
+  채운 학교 스토리 1개 + 그 대화 1턴. 이름은 `f9-beat-catalog-school`. **엔진 코드는 잠근다.**
+  열면 안 되는 것: `score() ON` · `K=1` · 1콜 폴백 · 1:1 HARD_RULES · relationship 자동 적용 · 외부 이미지.

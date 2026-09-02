@@ -1,0 +1,7705 @@
+{
+  "n": 100,
+  "cases": [
+    {
+      "id": "R-E01",
+      "bucket": "explicit_name",
+      "user_text": "민아 씨, 지금 창구에서 불러요. 표식 101.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E02",
+      "bucket": "explicit_name",
+      "user_text": "지우 님 계시면 손 들어 주세요. 표식 102.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E03",
+      "bucket": "explicit_name",
+      "user_text": "저기 하린, 한 번만 봐 주세요. 표식 103.",
+      "scene": {
+        "place": "측정실",
+        "time": "오전",
+        "goal": "기초 능력 측정",
+        "genre": "현대물",
+        "conflict": "장비 대기",
+        "mood": "집중"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E04",
+      "bucket": "explicit_name",
+      "user_text": "경비원 호출합니다. 표식 104.",
+      "scene": {
+        "place": "정문",
+        "time": "오전",
+        "goal": "출입 확인",
+        "genre": "현대물",
+        "conflict": "출입증 줄",
+        "mood": "경계"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E05",
+      "bucket": "explicit_name",
+      "user_text": "민아, 이쪽으로 와 줄래요? 표식 105.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E06",
+      "bucket": "explicit_name",
+      "user_text": "지우 씨, 지금 창구에서 불러요. 표식 106.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E07",
+      "bucket": "explicit_name",
+      "user_text": "하린 님 계시면 손 들어 주세요. 표식 107.",
+      "scene": {
+        "place": "측정실",
+        "time": "오전",
+        "goal": "기초 능력 측정",
+        "genre": "현대물",
+        "conflict": "장비 대기",
+        "mood": "집중"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E08",
+      "bucket": "explicit_name",
+      "user_text": "저기 도윤, 한 번만 봐 주세요. 표식 108.",
+      "scene": {
+        "place": "정문",
+        "time": "오전",
+        "goal": "출입 확인",
+        "genre": "현대물",
+        "conflict": "출입증 줄",
+        "mood": "경계"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E09",
+      "bucket": "explicit_name",
+      "user_text": "접수원 호출합니다. 표식 109.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E10",
+      "bucket": "explicit_name",
+      "user_text": "지우, 이쪽으로 와 줄래요? 표식 110.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E11",
+      "bucket": "explicit_name",
+      "user_text": "하린 씨, 지금 창구에서 불러요. 표식 111.",
+      "scene": {
+        "place": "측정실",
+        "time": "오전",
+        "goal": "기초 능력 측정",
+        "genre": "현대물",
+        "conflict": "장비 대기",
+        "mood": "집중"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E12",
+      "bucket": "explicit_name",
+      "user_text": "도윤 님 계시면 손 들어 주세요. 표식 112.",
+      "scene": {
+        "place": "정문",
+        "time": "오전",
+        "goal": "출입 확인",
+        "genre": "현대물",
+        "conflict": "출입증 줄",
+        "mood": "경계"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E13",
+      "bucket": "explicit_name",
+      "user_text": "저기 민아, 한 번만 봐 주세요. 표식 113.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E14",
+      "bucket": "explicit_name",
+      "user_text": "안내원 호출합니다. 표식 114.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E15",
+      "bucket": "explicit_name",
+      "user_text": "하린, 이쪽으로 와 줄래요? 표식 115.",
+      "scene": {
+        "place": "측정실",
+        "time": "오전",
+        "goal": "기초 능력 측정",
+        "genre": "현대물",
+        "conflict": "장비 대기",
+        "mood": "집중"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E16",
+      "bucket": "explicit_name",
+      "user_text": "도윤 씨, 지금 창구에서 불러요. 표식 116.",
+      "scene": {
+        "place": "정문",
+        "time": "오전",
+        "goal": "출입 확인",
+        "genre": "현대물",
+        "conflict": "출입증 줄",
+        "mood": "경계"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E17",
+      "bucket": "explicit_name",
+      "user_text": "민아 님 계시면 손 들어 주세요. 표식 117.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E18",
+      "bucket": "explicit_name",
+      "user_text": "저기 지우, 한 번만 봐 주세요. 표식 118.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E19",
+      "bucket": "explicit_name",
+      "user_text": "측정원 호출합니다. 표식 119.",
+      "scene": {
+        "place": "측정실",
+        "time": "오전",
+        "goal": "기초 능력 측정",
+        "genre": "현대물",
+        "conflict": "장비 대기",
+        "mood": "집중"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E20",
+      "bucket": "explicit_name",
+      "user_text": "도윤, 이쪽으로 와 줄래요? 표식 120.",
+      "scene": {
+        "place": "정문",
+        "time": "오전",
+        "goal": "출입 확인",
+        "genre": "현대물",
+        "conflict": "출입증 줄",
+        "mood": "경계"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E21",
+      "bucket": "explicit_name",
+      "user_text": "민아 씨, 지금 창구에서 불러요. 표식 121.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E22",
+      "bucket": "explicit_name",
+      "user_text": "지우 님 계시면 손 들어 주세요. 표식 122.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E23",
+      "bucket": "explicit_name",
+      "user_text": "저기 하린, 한 번만 봐 주세요. 표식 123.",
+      "scene": {
+        "place": "측정실",
+        "time": "오전",
+        "goal": "기초 능력 측정",
+        "genre": "현대물",
+        "conflict": "장비 대기",
+        "mood": "집중"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E24",
+      "bucket": "explicit_name",
+      "user_text": "경비원 호출합니다. 표식 124.",
+      "scene": {
+        "place": "정문",
+        "time": "오전",
+        "goal": "출입 확인",
+        "genre": "현대물",
+        "conflict": "출입증 줄",
+        "mood": "경계"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E25",
+      "bucket": "explicit_name",
+      "user_text": "민아, 이쪽으로 와 줄래요? 표식 125.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E26",
+      "bucket": "explicit_name",
+      "user_text": "지우 씨, 지금 창구에서 불러요. 표식 126.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E27",
+      "bucket": "explicit_name",
+      "user_text": "하린 님 계시면 손 들어 주세요. 표식 127.",
+      "scene": {
+        "place": "측정실",
+        "time": "오전",
+        "goal": "기초 능력 측정",
+        "genre": "현대물",
+        "conflict": "장비 대기",
+        "mood": "집중"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E28",
+      "bucket": "explicit_name",
+      "user_text": "저기 도윤, 한 번만 봐 주세요. 표식 128.",
+      "scene": {
+        "place": "정문",
+        "time": "오전",
+        "goal": "출입 확인",
+        "genre": "현대물",
+        "conflict": "출입증 줄",
+        "mood": "경계"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E29",
+      "bucket": "explicit_name",
+      "user_text": "접수원 호출합니다. 표식 129.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E30",
+      "bucket": "explicit_name",
+      "user_text": "지우, 이쪽으로 와 줄래요? 표식 130.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E31",
+      "bucket": "explicit_name",
+      "user_text": "하린 씨, 지금 창구에서 불러요. 표식 131.",
+      "scene": {
+        "place": "측정실",
+        "time": "오전",
+        "goal": "기초 능력 측정",
+        "genre": "현대물",
+        "conflict": "장비 대기",
+        "mood": "집중"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E32",
+      "bucket": "explicit_name",
+      "user_text": "도윤 님 계시면 손 들어 주세요. 표식 132.",
+      "scene": {
+        "place": "정문",
+        "time": "오전",
+        "goal": "출입 확인",
+        "genre": "현대물",
+        "conflict": "출입증 줄",
+        "mood": "경계"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E33",
+      "bucket": "explicit_name",
+      "user_text": "저기 민아, 한 번만 봐 주세요. 표식 133.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E34",
+      "bucket": "explicit_name",
+      "user_text": "안내원 호출합니다. 표식 134.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E35",
+      "bucket": "explicit_name",
+      "user_text": "하린, 이쪽으로 와 줄래요? 표식 135.",
+      "scene": {
+        "place": "측정실",
+        "time": "오전",
+        "goal": "기초 능력 측정",
+        "genre": "현대물",
+        "conflict": "장비 대기",
+        "mood": "집중"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E36",
+      "bucket": "explicit_name",
+      "user_text": "도윤 씨, 지금 창구에서 불러요. 표식 136.",
+      "scene": {
+        "place": "정문",
+        "time": "오전",
+        "goal": "출입 확인",
+        "genre": "현대물",
+        "conflict": "출입증 줄",
+        "mood": "경계"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E37",
+      "bucket": "explicit_name",
+      "user_text": "민아 님 계시면 손 들어 주세요. 표식 137.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E38",
+      "bucket": "explicit_name",
+      "user_text": "저기 지우, 한 번만 봐 주세요. 표식 138.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E39",
+      "bucket": "explicit_name",
+      "user_text": "측정원 호출합니다. 표식 139.",
+      "scene": {
+        "place": "측정실",
+        "time": "오전",
+        "goal": "기초 능력 측정",
+        "genre": "현대물",
+        "conflict": "장비 대기",
+        "mood": "집중"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E40",
+      "bucket": "explicit_name",
+      "user_text": "도윤, 이쪽으로 와 줄래요? 표식 140.",
+      "scene": {
+        "place": "정문",
+        "time": "오전",
+        "goal": "출입 확인",
+        "genre": "현대물",
+        "conflict": "출입증 줄",
+        "mood": "경계"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E41",
+      "bucket": "explicit_name",
+      "user_text": "민아 씨, 지금 창구에서 불러요. 표식 141.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E42",
+      "bucket": "explicit_name",
+      "user_text": "지우 님 계시면 손 들어 주세요. 표식 142.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E43",
+      "bucket": "explicit_name",
+      "user_text": "저기 하린, 한 번만 봐 주세요. 표식 143.",
+      "scene": {
+        "place": "측정실",
+        "time": "오전",
+        "goal": "기초 능력 측정",
+        "genre": "현대물",
+        "conflict": "장비 대기",
+        "mood": "집중"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E44",
+      "bucket": "explicit_name",
+      "user_text": "경비원 호출합니다. 표식 144.",
+      "scene": {
+        "place": "정문",
+        "time": "오전",
+        "goal": "출입 확인",
+        "genre": "현대물",
+        "conflict": "출입증 줄",
+        "mood": "경계"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E45",
+      "bucket": "explicit_name",
+      "user_text": "민아, 이쪽으로 와 줄래요? 표식 145.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E46",
+      "bucket": "explicit_name",
+      "user_text": "지우 씨, 지금 창구에서 불러요. 표식 146.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E47",
+      "bucket": "explicit_name",
+      "user_text": "하린 님 계시면 손 들어 주세요. 표식 147.",
+      "scene": {
+        "place": "측정실",
+        "time": "오전",
+        "goal": "기초 능력 측정",
+        "genre": "현대물",
+        "conflict": "장비 대기",
+        "mood": "집중"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E48",
+      "bucket": "explicit_name",
+      "user_text": "저기 도윤, 한 번만 봐 주세요. 표식 148.",
+      "scene": {
+        "place": "정문",
+        "time": "오전",
+        "goal": "출입 확인",
+        "genre": "현대물",
+        "conflict": "출입증 줄",
+        "mood": "경계"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E49",
+      "bucket": "explicit_name",
+      "user_text": "접수원 호출합니다. 표식 149.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-E50",
+      "bucket": "explicit_name",
+      "user_text": "지우, 이쪽으로 와 줄래요? 표식 150.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U01",
+      "bucket": "duty_fit",
+      "user_text": "오늘 등록 업무 담당이 누구든 받아 주세요. 표식 201.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U02",
+      "bucket": "duty_fit",
+      "user_text": "안내 관련해서 다음 단계가 필요해요. 표식 202.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U03",
+      "bucket": "duty_fit",
+      "user_text": "이 건은 측정 창구 일입니다. 표식 203.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U04",
+      "bucket": "duty_fit",
+      "user_text": "출입만 처리되면 됩니다. 표식 204.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U05",
+      "bucket": "duty_fit",
+      "user_text": "등록 절차를 이어서 진행해 주세요. 표식 205.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U06",
+      "bucket": "duty_fit",
+      "user_text": "오늘 안내 업무 담당이 누구든 받아 주세요. 표식 206.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U07",
+      "bucket": "duty_fit",
+      "user_text": "측정 관련해서 다음 단계가 필요해요. 표식 207.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U08",
+      "bucket": "duty_fit",
+      "user_text": "이 건은 출입 창구 일입니다. 표식 208.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U09",
+      "bucket": "duty_fit",
+      "user_text": "등록만 처리되면 됩니다. 표식 209.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U10",
+      "bucket": "duty_fit",
+      "user_text": "안내 절차를 이어서 진행해 주세요. 표식 210.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U11",
+      "bucket": "duty_fit",
+      "user_text": "오늘 측정 업무 담당이 누구든 받아 주세요. 표식 211.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U12",
+      "bucket": "duty_fit",
+      "user_text": "출입 관련해서 다음 단계가 필요해요. 표식 212.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U13",
+      "bucket": "duty_fit",
+      "user_text": "이 건은 등록 창구 일입니다. 표식 213.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U14",
+      "bucket": "duty_fit",
+      "user_text": "안내만 처리되면 됩니다. 표식 214.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U15",
+      "bucket": "duty_fit",
+      "user_text": "측정 절차를 이어서 진행해 주세요. 표식 215.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U16",
+      "bucket": "duty_fit",
+      "user_text": "오늘 출입 업무 담당이 누구든 받아 주세요. 표식 216.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U17",
+      "bucket": "duty_fit",
+      "user_text": "등록 관련해서 다음 단계가 필요해요. 표식 217.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U18",
+      "bucket": "duty_fit",
+      "user_text": "이 건은 안내 창구 일입니다. 표식 218.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U19",
+      "bucket": "duty_fit",
+      "user_text": "측정만 처리되면 됩니다. 표식 219.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U20",
+      "bucket": "duty_fit",
+      "user_text": "출입 절차를 이어서 진행해 주세요. 표식 220.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U21",
+      "bucket": "duty_fit",
+      "user_text": "오늘 등록 업무 담당이 누구든 받아 주세요. 표식 221.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U22",
+      "bucket": "duty_fit",
+      "user_text": "안내 관련해서 다음 단계가 필요해요. 표식 222.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U23",
+      "bucket": "duty_fit",
+      "user_text": "이 건은 측정 창구 일입니다. 표식 223.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U24",
+      "bucket": "duty_fit",
+      "user_text": "출입만 처리되면 됩니다. 표식 224.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U25",
+      "bucket": "duty_fit",
+      "user_text": "등록 절차를 이어서 진행해 주세요. 표식 225.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U26",
+      "bucket": "duty_fit",
+      "user_text": "오늘 안내 업무 담당이 누구든 받아 주세요. 표식 226.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U27",
+      "bucket": "duty_fit",
+      "user_text": "측정 관련해서 다음 단계가 필요해요. 표식 227.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U28",
+      "bucket": "duty_fit",
+      "user_text": "이 건은 출입 창구 일입니다. 표식 228.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U29",
+      "bucket": "duty_fit",
+      "user_text": "등록만 처리되면 됩니다. 표식 229.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-U30",
+      "bucket": "duty_fit",
+      "user_text": "안내 절차를 이어서 진행해 주세요. 표식 230.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-L01",
+      "bucket": "scene_position",
+      "user_text": "여기 있는 담당자에게 물어볼게요. 표식 301.",
+      "scene": {
+        "place": "측정실",
+        "time": "오전",
+        "goal": "기초 능력 측정",
+        "genre": "현대물",
+        "conflict": "장비 대기",
+        "mood": "집중"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-L02",
+      "bucket": "scene_position",
+      "user_text": "이 공간에서 다음을 진행하고 싶습니다. 표식 302.",
+      "scene": {
+        "place": "정문",
+        "time": "오전",
+        "goal": "출입 확인",
+        "genre": "현대물",
+        "conflict": "출입증 줄",
+        "mood": "경계"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-L03",
+      "bucket": "scene_position",
+      "user_text": "방 안에 남은 사람에게 말할게요. 표식 303.",
+      "scene": {
+        "place": "측정실",
+        "time": "오전",
+        "goal": "기초 능력 측정",
+        "genre": "현대물",
+        "conflict": "장비 대기",
+        "mood": "집중"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-L04",
+      "bucket": "scene_position",
+      "user_text": "이 위치에서 진행해 주세요. 표식 304.",
+      "scene": {
+        "place": "정문",
+        "time": "오전",
+        "goal": "출입 확인",
+        "genre": "현대물",
+        "conflict": "출입증 줄",
+        "mood": "경계"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-L05",
+      "bucket": "scene_position",
+      "user_text": "지금 이 방에 계신 분이 응대해 주시면 됩니다. 표식 305.",
+      "scene": {
+        "place": "측정실",
+        "time": "오전",
+        "goal": "기초 능력 측정",
+        "genre": "현대물",
+        "conflict": "장비 대기",
+        "mood": "집중"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-L06",
+      "bucket": "scene_position",
+      "user_text": "여기 있는 담당자에게 물어볼게요. 표식 306.",
+      "scene": {
+        "place": "정문",
+        "time": "오전",
+        "goal": "출입 확인",
+        "genre": "현대물",
+        "conflict": "출입증 줄",
+        "mood": "경계"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-L07",
+      "bucket": "scene_position",
+      "user_text": "이 공간에서 다음을 진행하고 싶습니다. 표식 307.",
+      "scene": {
+        "place": "측정실",
+        "time": "오전",
+        "goal": "기초 능력 측정",
+        "genre": "현대물",
+        "conflict": "장비 대기",
+        "mood": "집중"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-L08",
+      "bucket": "scene_position",
+      "user_text": "방 안에 남은 사람에게 말할게요. 표식 308.",
+      "scene": {
+        "place": "정문",
+        "time": "오전",
+        "goal": "출입 확인",
+        "genre": "현대물",
+        "conflict": "출입증 줄",
+        "mood": "경계"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-L09",
+      "bucket": "scene_position",
+      "user_text": "이 위치에서 진행해 주세요. 표식 309.",
+      "scene": {
+        "place": "측정실",
+        "time": "오전",
+        "goal": "기초 능력 측정",
+        "genre": "현대물",
+        "conflict": "장비 대기",
+        "mood": "집중"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-L10",
+      "bucket": "scene_position",
+      "user_text": "지금 이 방에 계신 분이 응대해 주시면 됩니다. 표식 310.",
+      "scene": {
+        "place": "정문",
+        "time": "오전",
+        "goal": "출입 확인",
+        "genre": "현대물",
+        "conflict": "출입증 줄",
+        "mood": "경계"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-M01",
+      "bucket": "ambiguous",
+      "user_text": "잠깐, 생각 좀 해볼게요. 표식 401.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-M02",
+      "bucket": "ambiguous",
+      "user_text": "다음이 뭔지 잘 모르겠어요. 표식 402.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-M03",
+      "bucket": "ambiguous",
+      "user_text": "누가 먼저 말해도 상관없어요. 표식 403.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-M04",
+      "bucket": "ambiguous",
+      "user_text": "그냥 상황을 지켜볼게요. 표식 404.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-M05",
+      "bucket": "ambiguous",
+      "user_text": "그래서 이제 어떻게 하죠? 표식 405.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-M06",
+      "bucket": "ambiguous",
+      "user_text": "잠깐, 생각 좀 해볼게요. 표식 406.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-M07",
+      "bucket": "ambiguous",
+      "user_text": "다음이 뭔지 잘 모르겠어요. 표식 407.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-M08",
+      "bucket": "ambiguous",
+      "user_text": "누가 먼저 말해도 상관없어요. 표식 408.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-M09",
+      "bucket": "ambiguous",
+      "user_text": "그냥 상황을 지켜볼게요. 표식 409.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    },
+    {
+      "id": "R-M10",
+      "bucket": "ambiguous",
+      "user_text": "그래서 이제 어떻게 하죠? 표식 410.",
+      "scene": {
+        "place": "로비",
+        "time": "오전",
+        "goal": "아카데미 등록",
+        "genre": "현대물",
+        "conflict": "대기 줄",
+        "mood": "긴장"
+      },
+      "cast": [
+        {
+          "id": "npc_mina",
+          "name": "민아",
+          "aliases": [
+            "접수원"
+          ],
+          "duties": [
+            "등록",
+            "접수"
+          ],
+          "place": "로비",
+          "role": "main"
+        },
+        {
+          "id": "npc_jiu",
+          "name": "지우",
+          "aliases": [
+            "안내원"
+          ],
+          "duties": [
+            "안내",
+            "길찾기"
+          ],
+          "place": "로비",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_harin",
+          "name": "하린",
+          "aliases": [
+            "측정원"
+          ],
+          "duties": [
+            "측정",
+            "검사"
+          ],
+          "place": "측정실",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_doyun",
+          "name": "도윤",
+          "aliases": [
+            "경비원"
+          ],
+          "duties": [
+            "출입",
+            "경비"
+          ],
+          "place": "정문",
+          "role": "secondary"
+        },
+        {
+          "id": "npc_bg",
+          "name": "설화",
+          "aliases": [
+            "청소부"
+          ],
+          "duties": [],
+          "place": "로비",
+          "role": "background"
+        }
+      ]
+    }
+  ]
+}

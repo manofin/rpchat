@@ -1,0 +1,30 @@
+-- 0012_scene_beat.sql — f9-beat-render (Notes_260902_210901 장면 비트 계약)
+-- Runner wraps each file in a transaction. This file must not open or close that wrapper.
+-- Store remains conversations.scene_json TEXT (0001) and stories.scene_catalog TEXT (0011).
+-- No new table. No new column. character_id nullability unchanged from 0001.
+-- This migration does not rewrite existing conversation scene_json row bytes.
+--
+-- 0001 6 string keys unchanged: place, time, goal, genre, conflict, mood.
+-- 0010 keys unchanged: clock_minutes, weather, location, stage, arc, flags, present_ids.
+--
+-- Additive optional conversations.scene_json keys (omitted = byte identity with 0010):
+--   day_index   -- integer, 장면 일차. 없으면 헤더에서 생략(창작 금지)
+--   weekday     -- string token, 요일. 없으면 생략
+--   beat_goal   -- string, 이 턴이 끝나야 하는 게임 지시
+--   roster      -- {char_id: {emotion?: str, outfit?: str}} 서버 소유 턴 상태
+--   user_sheet  -- {hp?: int|null, money?: int|null, gear?: [str], inventory?: [str], traits?: [str]}
+--   last_beat   -- {focus_id: str|null, extra_ids: [str], unresolved: [str]}
+-- 모델은 위 키를 제안할 수 없다. applySceneDelta APPLY_KEYS에 없다(default-deny).
+--
+-- Additive optional stories.scene_catalog sections (0011 컬럼 재사용, '{}' = 전부 거부):
+--   places[].default_focus  -- 장소 기본 포커스 char id
+--   outfits[]               -- 허용 의상 토큰
+--   emotions{emotion: n}    -- 이미지 인덱스 매핑. 목록 밖 emotion → 이미지 없음
+--   flags{key}.owner_duty   -- 이 flag 전환의 hard_event 소유 직무
+--   stages{id}.closer_duty  -- 이 stage 종료의 hard_event 소유 직무
+--
+-- 이미지는 로컬 자산만: GET /media/assets/{char_id}/{outfit}/{n}.webp
+-- 파일 부재는 정상 — 404 application/json, 외부 아웃바운드 0.
+-- SQLite cannot constrain JSON shape. This file records the contract in schema_migrations.
+
+SELECT 1;

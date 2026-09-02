@@ -1,0 +1,2209 @@
+{
+  "token": "f9-duty-attribution-eval",
+  "prereg_sha256": "2bac3a1310d702692f6cf967f25ee9b921a12077fd5fcde16a018c514ecea827",
+  "head": "v0.0.19-78-g1e827f1-dirty",
+  "q1": "Q1_SIGNAL_PRESENT",
+  "summary": {
+    "L0": {
+      "correct_secondary_recall_T": 1,
+      "fp_N": 0.85,
+      "no_approval_rate_N": 0.15,
+      "irrelevant_candidate_approval_rate": 0.17,
+      "false_silence_rate_T": 0,
+      "nonduty_legit_retention": 1,
+      "type_pass_rate": {
+        "A": 0.08823529411764706,
+        "B": 0.2,
+        "C": 0.125,
+        "D": 0.3333333333333333,
+        "E": 1,
+        "F": 1,
+        "G": 1,
+        "H": 0.2
+      }
+    },
+    "L1": {
+      "correct_secondary_recall_T": 0.25,
+      "fp_N": 0.75,
+      "no_approval_rate_N": 0.25,
+      "irrelevant_candidate_approval_rate": 0.15,
+      "false_silence_rate_T": 0.75,
+      "nonduty_legit_retention": 0,
+      "type_pass_rate": {
+        "A": 0.08823529411764706,
+        "B": 0.12,
+        "C": 0.125,
+        "D": 0.3333333333333333,
+        "E": 0,
+        "F": 0,
+        "G": 0,
+        "H": 0.2
+      }
+    },
+    "L2": {
+      "correct_secondary_recall_T": 0.95,
+      "fp_N": 0.7,
+      "no_approval_rate_N": 0.3,
+      "irrelevant_candidate_approval_rate": 0.14,
+      "false_silence_rate_T": 0.050000000000000044,
+      "nonduty_legit_retention": 0.9166666666666666,
+      "type_pass_rate": {
+        "A": 0.08823529411764706,
+        "B": 0.2,
+        "C": 0,
+        "D": 0.26666666666666666,
+        "E": 1,
+        "F": 0.75,
+        "G": 1,
+        "H": 0.2
+      }
+    },
+    "L3": {
+      "correct_secondary_recall_T": 1,
+      "fp_N": 0.8,
+      "no_approval_rate_N": 0.2,
+      "irrelevant_candidate_approval_rate": 0.16,
+      "false_silence_rate_T": 0,
+      "nonduty_legit_retention": 1,
+      "type_pass_rate": {
+        "A": 0.08823529411764706,
+        "B": 0.2,
+        "C": 0.125,
+        "D": 0.26666666666666666,
+        "E": 1,
+        "F": 1,
+        "G": 1,
+        "H": 0.2
+      }
+    }
+  },
+  "malformed_rate": 0,
+  "unknown_candidate_rate": 0,
+  "primary_reselection_rate": 0,
+  "verdict": "INCONCLUSIVE",
+  "live_db_writes": 0,
+  "product_changes": 0,
+  "finished_at": "2026-09-02T11:06:39.793Z",
+  "rows": [
+    {
+      "id": "T01",
+      "bucket": "T",
+      "event": "통제 실패로 주변 인원이 위험해졌습니다. 어떻게 하죠?",
+      "primary": "jin",
+      "candidates": [
+        "yun",
+        "ha",
+        "no"
+      ],
+      "correct": [
+        "yun"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yun\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"통제 실패로 인한 위험 상황에서 인원 대피 명령 권한을 보유함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 직무는 긴급 위험 상황 대응과 무관함\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 직무는 긴급 위험 상황 대응과 무관함\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "yun",
+          "type": "P",
+          "approved": true,
+          "claim": "AUTHORITY",
+          "reason": "통제 실패로 인한 위험 상황에서 인원 대피 명령 권한을 보유함",
+          "correct": true,
+          "L0": true,
+          "L1": true,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "회계 및 비품 구매 직무는 긴급 위험 상황 대응과 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리 직무는 긴급 위험 상황 대응과 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T02",
+      "bucket": "T",
+      "event": "연구원 한 명이 갑자기 쓰러졌어요.",
+      "primary": "jin",
+      "candidates": [
+        "do",
+        "ha",
+        "seok"
+      ],
+      "correct": [
+        "do"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"do\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"응급 처치 직무를 맡고 있어 쓰러진 연구원에게 즉각적인 의료 조치가 필요함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 직무는 응급 상황 개입 근거가 되지 않음\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"연구동 운영 보조 직무만으로는 응급 환자 발생 시 우선적 개입 근거가 부족함\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "do",
+          "type": "P",
+          "approved": true,
+          "claim": "DUTY",
+          "reason": "응급 처치 직무를 맡고 있어 쓰러진 연구원에게 즉각적인 의료 조치가 필요함",
+          "correct": true,
+          "L0": true,
+          "L1": true,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 직무는 응급 상황 개입 근거가 되지 않음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "seok",
+          "type": "D",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "연구동 운영 보조 직무만으로는 응급 환자 발생 시 우선적 개입 근거가 부족함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T03",
+      "bucket": "T",
+      "event": "아무도 못 봤다는데, 사고가 어떻게 시작됐는지 알아야 해요.",
+      "primary": "jin",
+      "candidates": [
+        "mi",
+        "ha",
+        "no"
+      ],
+      "correct": [
+        "mi"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"mi\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"EXCLUSIVE_KNOWLEDGE\",\n      \"reason\": \"사고 순간을 직접 목격한 유일한 사람으로서 사고의 시작점에 대한 결정적 정보를 보유함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": null,\n      \"reason\": \"시설 회계 및 비품 구매 직무는 사고의 시작 과정을 파악하는 것과 직접적인 연관이 없음\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": null,\n      \"reason\": \"신규 직원 등록 관리 직무는 사고의 시작 과정을 파악하는 것과 직접적인 연관이 없음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "mi",
+          "type": "E",
+          "approved": true,
+          "claim": "EXCLUSIVE_KNOWLEDGE",
+          "reason": "사고 순간을 직접 목격한 유일한 사람으로서 사고의 시작점에 대한 결정적 정보를 보유함",
+          "correct": true,
+          "L0": true,
+          "L1": false,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "",
+          "reason": "시설 회계 및 비품 구매 직무는 사고의 시작 과정을 파악하는 것과 직접적인 연관이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "",
+          "reason": "신규 직원 등록 관리 직무는 사고의 시작 과정을 파악하는 것과 직접적인 연관이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T04",
+      "bucket": "T",
+      "event": "쓰러진 분한테 지병이 있는지 확인해야 합니다.",
+      "primary": "jin",
+      "candidates": [
+        "yeon",
+        "ha",
+        "ban"
+      ],
+      "correct": [
+        "yeon"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yeon\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"EXCLUSIVE_KNOWLEDGE\",\n      \"reason\": \"쓰러진 연구원의 보호자로서 당사자의 지병 이력을 알고 있음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 담당으로 지병 확인과 무관함\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"장비 운반 담당으로 지병 확인과 무관함\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "yeon",
+          "type": "F",
+          "approved": true,
+          "claim": "EXCLUSIVE_KNOWLEDGE",
+          "reason": "쓰러진 연구원의 보호자로서 당사자의 지병 이력을 알고 있음",
+          "correct": true,
+          "L0": true,
+          "L1": false,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 담당으로 지병 확인과 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ban",
+          "type": "C",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "장비 운반 담당으로 지병 확인과 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T05",
+      "bucket": "T",
+      "event": "경보를 지금 꺼야 대화가 됩니다.",
+      "primary": "jin",
+      "candidates": [
+        "tae",
+        "ha",
+        "no"
+      ],
+      "correct": [
+        "tae"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"tae\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"CURRENT_ACTION\",\n      \"reason\": \"현재 비상 경보 패널을 조작하고 있어 경보를 끌 수 있는 유일한 인물임\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 담당으로 경보 조작과 직접적인 관련이 없음\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 담당으로 경보 조작과 직접적인 관련이 없음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "tae",
+          "type": "G",
+          "approved": true,
+          "claim": "CURRENT_ACTION",
+          "reason": "현재 비상 경보 패널을 조작하고 있어 경보를 끌 수 있는 유일한 인물임",
+          "correct": true,
+          "L0": true,
+          "L1": false,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 담당으로 경보 조작과 직접적인 관련이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리 담당으로 경보 조작과 직접적인 관련이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T06",
+      "bucket": "T",
+      "event": "가스가 새는 것 같아요. 사람들을 내보내야 하나요?",
+      "primary": "jin",
+      "candidates": [
+        "yun",
+        "seok",
+        "ha"
+      ],
+      "correct": [
+        "yun"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yun\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"가스 누출 상황에서 인원 대피를 결정하고 명령할 권한을 가진 담당자임\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"연구동 운영 보조 업무만으로는 대피 여부를 판단하거나 개입할 직접적 근거가 부족함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 직무는 가스 누출 및 대피 상황과 무관함\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "yun",
+          "type": "P",
+          "approved": true,
+          "claim": "AUTHORITY",
+          "reason": "가스 누출 상황에서 인원 대피를 결정하고 명령할 권한을 가진 담당자임",
+          "correct": true,
+          "L0": true,
+          "L1": true,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "seok",
+          "type": "D",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "연구동 운영 보조 업무만으로는 대피 여부를 판단하거나 개입할 직접적 근거가 부족함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "회계 및 비품 구매 직무는 가스 누출 및 대피 상황과 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T07",
+      "bucket": "T",
+      "event": "출혈이 멈추질 않습니다.",
+      "primary": "jin",
+      "candidates": [
+        "do",
+        "no",
+        "ban"
+      ],
+      "correct": [
+        "do"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"do\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"출혈 상황에 대응하는 응급 처치 직무를 수행함\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 직무는 출혈 상황과 무관함\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"장비 운반 직무는 응급 처치 상황에 개입할 근거가 없음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "do",
+          "type": "P",
+          "approved": true,
+          "claim": "DUTY",
+          "reason": "출혈 상황에 대응하는 응급 처치 직무를 수행함",
+          "correct": true,
+          "L0": true,
+          "L1": true,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리 직무는 출혈 상황과 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ban",
+          "type": "C",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "장비 운반 직무는 응급 처치 상황에 개입할 근거가 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T08",
+      "bucket": "T",
+      "event": "CCTV가 꺼져 있었대요. 목격자가 필요해요.",
+      "primary": "jin",
+      "candidates": [
+        "mi",
+        "seok",
+        "ha"
+      ],
+      "correct": [
+        "mi"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"mi\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"EXCLUSIVE_KNOWLEDGE\",\n      \"reason\": \"사고 순간을 직접 목격한 유일한 사람으로, 목격자가 필요하다는 상황에 결정적인 정보를 제공할 수 있음\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"연구동 운영 보조 직무만으로는 CCTV 부재 상황에서 개입할 독립적 근거가 부족함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 직무는 목격자 확보라는 현재 상황과 직접적인 연관성이 없음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "mi",
+          "type": "E",
+          "approved": true,
+          "claim": "EXCLUSIVE_KNOWLEDGE",
+          "reason": "사고 순간을 직접 목격한 유일한 사람으로, 목격자가 필요하다는 상황에 결정적인 정보를 제공할 수 있음",
+          "correct": true,
+          "L0": true,
+          "L1": false,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "seok",
+          "type": "D",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "연구동 운영 보조 직무만으로는 CCTV 부재 상황에서 개입할 독립적 근거가 부족함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 직무는 목격자 확보라는 현재 상황과 직접적인 연관성이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T09",
+      "bucket": "T",
+      "event": "환자 가족한테 연락이 닿아야 동의를 받습니다.",
+      "primary": "jin",
+      "candidates": [
+        "yeon",
+        "no",
+        "gu"
+      ],
+      "correct": [
+        "yeon"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yeon\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"RELATIONSHIP\",\n      \"reason\": \"환자의 보호자로서 동의 절차의 직접적인 대상자임\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 직무는 환자 가족 연락 및 동의 절차와 무관함\"\n    },\n    {\n      \"candidate_id\": \"gu\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"안전 점검 직무는 환자 가족 연락 및 동의 절차와 무관함\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "yeon",
+          "type": "F",
+          "approved": true,
+          "claim": "RELATIONSHIP",
+          "reason": "환자의 보호자로서 동의 절차의 직접적인 대상자임",
+          "correct": true,
+          "L0": true,
+          "L1": false,
+          "L2": false,
+          "L3": true
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리 직무는 환자 가족 연락 및 동의 절차와 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "gu",
+          "type": "H",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "안전 점검 직무는 환자 가족 연락 및 동의 절차와 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T10",
+      "bucket": "T",
+      "event": "패널이 계속 울려서 안내 방송이 안 들려요.",
+      "primary": "jin",
+      "candidates": [
+        "tae",
+        "ha",
+        "ban"
+      ],
+      "correct": [
+        "tae"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"tae\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"CURRENT_ACTION\",\n      \"reason\": \"현재 비상 경보 패널을 조작하고 있어 소음의 원인을 직접 제어할 수 있는 상태임\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 직무는 경보 패널 소음 문제와 직접적인 관련이 없음\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"장비 운반 직무이며 위험물 등록 권한조차 없어 패널 조작이나 상황 해결 권한이 없음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "tae",
+          "type": "G",
+          "approved": true,
+          "claim": "CURRENT_ACTION",
+          "reason": "현재 비상 경보 패널을 조작하고 있어 소음의 원인을 직접 제어할 수 있는 상태임",
+          "correct": true,
+          "L0": true,
+          "L1": false,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "회계 및 비품 구매 직무는 경보 패널 소음 문제와 직접적인 관련이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ban",
+          "type": "C",
+          "approved": false,
+          "claim": "AUTHORITY",
+          "reason": "장비 운반 직무이며 위험물 등록 권한조차 없어 패널 조작이나 상황 해결 권한이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T11",
+      "bucket": "T",
+      "event": "2층 전체를 비워야 할 것 같습니다.",
+      "primary": "jin",
+      "candidates": [
+        "yun",
+        "no",
+        "ha"
+      ],
+      "correct": [
+        "yun"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yun\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"2층 전체를 비우는 상황은 인원 대피와 직결되며, 윤 대응관은 대피 명령 권한을 보유하고 있음\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리는 시설 대피 상황과 직접적인 연관이 없음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 직무는 즉각적인 대피 상황에 개입할 근거가 부족함\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "yun",
+          "type": "P",
+          "approved": true,
+          "claim": "AUTHORITY",
+          "reason": "2층 전체를 비우는 상황은 인원 대피와 직결되며, 윤 대응관은 대피 명령 권한을 보유하고 있음",
+          "correct": true,
+          "L0": true,
+          "L1": true,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리는 시설 대피 상황과 직접적인 연관이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 직무는 즉각적인 대피 상황에 개입할 근거가 부족함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T12",
+      "bucket": "T",
+      "event": "의식이 없는데 옮겨도 되나요?",
+      "primary": "jin",
+      "candidates": [
+        "do",
+        "seok",
+        "ha"
+      ],
+      "correct": [
+        "do"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"do\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"환자의 이송 결정 권한을 가진 의무관으로서 의식 불명 상태의 이동 가능 여부를 판단해야 함\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"연구동 운영 보조 직무는 응급 환자의 이송 판단과 직접적인 관련이 없음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 직무는 의료적 판단이나 이송 결정에 개입할 근거가 없음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "do",
+          "type": "P",
+          "approved": true,
+          "claim": "AUTHORITY",
+          "reason": "환자의 이송 결정 권한을 가진 의무관으로서 의식 불명 상태의 이동 가능 여부를 판단해야 함",
+          "correct": true,
+          "L0": true,
+          "L1": false,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "seok",
+          "type": "D",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "연구동 운영 보조 직무는 응급 환자의 이송 판단과 직접적인 관련이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 직무는 의료적 판단이나 이송 결정에 개입할 근거가 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T13",
+      "bucket": "T",
+      "event": "사고 직전에 누가 그 방에 들어갔는지 아무 기록이 없어요.",
+      "primary": "jin",
+      "candidates": [
+        "mi",
+        "no",
+        "ban"
+      ],
+      "correct": [
+        "mi"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"mi\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"EXCLUSIVE_KNOWLEDGE\",\n      \"reason\": \"사고 순간을 직접 목격한 유일한 사람으로 기록에 없는 출입자를 증언할 수 있음\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 직무는 사고 당시의 출입 기록 부재 상황에 직접 개입할 근거가 부족함\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"장비 운반 직무이며 위험물 등록 권한이 없어 출입 기록 문제에 개입할 근거가 없음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "mi",
+          "type": "E",
+          "approved": true,
+          "claim": "EXCLUSIVE_KNOWLEDGE",
+          "reason": "사고 순간을 직접 목격한 유일한 사람으로 기록에 없는 출입자를 증언할 수 있음",
+          "correct": true,
+          "L0": true,
+          "L1": false,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리 직무는 사고 당시의 출입 기록 부재 상황에 직접 개입할 근거가 부족함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ban",
+          "type": "C",
+          "approved": false,
+          "claim": "AUTHORITY",
+          "reason": "장비 운반 직무이며 위험물 등록 권한이 없어 출입 기록 문제에 개입할 근거가 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T14",
+      "bucket": "T",
+      "event": "보호자 동의 없이는 처치를 못 한다고 들었습니다.",
+      "primary": "jin",
+      "candidates": [
+        "yeon",
+        "gu",
+        "ha"
+      ],
+      "correct": [
+        "yeon"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yeon\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"RELATIONSHIP\",\n      \"reason\": \"쓰러진 연구원의 보호자로서 처치 동의 권한을 가짐\"\n    },\n    {\n      \"candidate_id\": \"gu\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"안전 점검 직무는 의료 처치 동의 여부와 직접적 관련이 없음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 직무는 의료 처치 동의와 무관함\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "yeon",
+          "type": "F",
+          "approved": true,
+          "claim": "RELATIONSHIP",
+          "reason": "쓰러진 연구원의 보호자로서 처치 동의 권한을 가짐",
+          "correct": true,
+          "L0": true,
+          "L1": false,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "gu",
+          "type": "H",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "안전 점검 직무는 의료 처치 동의 여부와 직접적 관련이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 직무는 의료 처치 동의와 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T15",
+      "bucket": "T",
+      "event": "지금 알람 조작하는 사람한테 상태를 물어봐야 합니다.",
+      "primary": "jin",
+      "candidates": [
+        "tae",
+        "no",
+        "seok"
+      ],
+      "correct": [
+        "tae"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"tae\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"CURRENT_ACTION\",\n      \"reason\": \"현재 비상 경보 패널을 조작하고 있어 상태 질문의 직접적인 대상임\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"NONE\",\n      \"reason\": \"신규 직원 등록 관리 직무이며 현재 상황에 개입할 근거가 없음\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"NONE\",\n      \"reason\": \"연구동 운영 보조 직무이나 현재 알람 조작 상황에 직접 개입할 근거가 부족함\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "tae",
+          "type": "G",
+          "approved": true,
+          "claim": "CURRENT_ACTION",
+          "reason": "현재 비상 경보 패널을 조작하고 있어 상태 질문의 직접적인 대상임",
+          "correct": true,
+          "L0": true,
+          "L1": false,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "NONE",
+          "reason": "신규 직원 등록 관리 직무이며 현재 상황에 개입할 근거가 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "seok",
+          "type": "D",
+          "approved": false,
+          "claim": "NONE",
+          "reason": "연구동 운영 보조 직무이나 현재 알람 조작 상황에 직접 개입할 근거가 부족함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T16",
+      "bucket": "T",
+      "event": "대피 명령을 내릴 권한이 누구한테 있나요?",
+      "primary": "jin",
+      "candidates": [
+        "yun",
+        "ban",
+        "ha"
+      ],
+      "correct": [
+        "yun"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yun\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"대피 명령 권한을 보유하고 있음\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"대피 명령 권한이 없음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"대피 명령 권한이 없음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "yun",
+          "type": "P",
+          "approved": true,
+          "claim": "AUTHORITY",
+          "reason": "대피 명령 권한을 보유하고 있음",
+          "correct": true,
+          "L0": true,
+          "L1": false,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "ban",
+          "type": "C",
+          "approved": false,
+          "claim": "AUTHORITY",
+          "reason": "대피 명령 권한이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "AUTHORITY",
+          "reason": "대피 명령 권한이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T17",
+      "bucket": "T",
+      "event": "응급 이송을 부를지 말지 결정해야 합니다.",
+      "primary": "jin",
+      "candidates": [
+        "do",
+        "gu",
+        "no"
+      ],
+      "correct": [
+        "do"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"do\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"응급 이송 여부를 결정할 권한을 가진 인물임\"\n    },\n    {\n      \"candidate_id\": \"gu\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"안전 점검 직무이며 이송 결정에 직접적인 권한이나 근거가 없음\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 직무로 응급 상황 개입 근거가 없음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "do",
+          "type": "P",
+          "approved": true,
+          "claim": "AUTHORITY",
+          "reason": "응급 이송 여부를 결정할 권한을 가진 인물임",
+          "correct": true,
+          "L0": true,
+          "L1": false,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "gu",
+          "type": "H",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "안전 점검 직무이며 이송 결정에 직접적인 권한이나 근거가 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리 직무로 응급 상황 개입 근거가 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T18",
+      "bucket": "T",
+      "event": "그 순간에 복도에 있던 사람이 한 명 있었다고 합니다.",
+      "primary": "jin",
+      "candidates": [
+        "mi",
+        "ha",
+        "seok"
+      ],
+      "correct": [
+        "mi"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"mi\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"EXCLUSIVE_KNOWLEDGE\",\n      \"reason\": \"사고 순간을 직접 목격한 유일한 사람으로서 결정적인 정보를 가지고 있음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 직무는 복도 목격자 상황에 개입할 직접적인 근거가 없음\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"연구동 운영 보조 직무만으로는 특정 순간의 목격자로서 개입할 근거가 부족함\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "mi",
+          "type": "E",
+          "approved": true,
+          "claim": "EXCLUSIVE_KNOWLEDGE",
+          "reason": "사고 순간을 직접 목격한 유일한 사람으로서 결정적인 정보를 가지고 있음",
+          "correct": true,
+          "L0": true,
+          "L1": false,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "회계 및 비품 구매 직무는 복도 목격자 상황에 개입할 직접적인 근거가 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "seok",
+          "type": "D",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "연구동 운영 보조 직무만으로는 특정 순간의 목격자로서 개입할 근거가 부족함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T19",
+      "bucket": "T",
+      "event": "당사자가 평소에 약을 먹었는지 알아야 해요.",
+      "primary": "jin",
+      "candidates": [
+        "yeon",
+        "no",
+        "ban"
+      ],
+      "correct": [
+        "yeon"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yeon\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"EXCLUSIVE_KNOWLEDGE\",\n      \"reason\": \"당사자의 지병 이력을 알고 있는 유일한 인물임\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 직무는 약물 복용 여부 확인과 무관함\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"장비 운반 직무는 환자의 의료 정보와 무관함\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "yeon",
+          "type": "F",
+          "approved": true,
+          "claim": "EXCLUSIVE_KNOWLEDGE",
+          "reason": "당사자의 지병 이력을 알고 있는 유일한 인물임",
+          "correct": true,
+          "L0": true,
+          "L1": false,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리 직무는 약물 복용 여부 확인과 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ban",
+          "type": "C",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "장비 운반 직무는 환자의 의료 정보와 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "T20",
+      "bucket": "T",
+      "event": "경보 패널을 만지고 있는 사람이 뭘 하는지 모르겠어요.",
+      "primary": "jin",
+      "candidates": [
+        "tae",
+        "gu",
+        "ha"
+      ],
+      "correct": [
+        "tae"
+      ],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"tae\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"CURRENT_ACTION\",\n      \"reason\": \"현재 비상 경보 패널을 직접 조작하고 있는 당사자임\"\n    },\n    {\n      \"candidate_id\": \"gu\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"안전 점검 직무이나 현재 패널 조작 상황에 직접 개입할 즉각적 근거가 부족함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 담당으로 경보 패널 조작 상황과 무관함\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "tae",
+          "type": "G",
+          "approved": true,
+          "claim": "CURRENT_ACTION",
+          "reason": "현재 비상 경보 패널을 직접 조작하고 있는 당사자임",
+          "correct": true,
+          "L0": true,
+          "L1": false,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "gu",
+          "type": "H",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "안전 점검 직무이나 현재 패널 조작 상황에 직접 개입할 즉각적 근거가 부족함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 담당으로 경보 패널 조작 상황과 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N01",
+      "bucket": "N",
+      "event": "출입 승인 절차가 어떻게 되나요?",
+      "primary": "jin",
+      "candidates": [
+        "ha",
+        "no",
+        "ban"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 담당으로 출입 승인 절차와 무관함\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리를 담당하므로 출입 승인 절차에 대한 직무상 지식이 있음\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"장비 운반 담당이며 위험물 등록 권한조차 없어 출입 승인 절차를 안내할 권한이 없음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 담당으로 출입 승인 절차와 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": true,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리를 담당하므로 출입 승인 절차에 대한 직무상 지식이 있음",
+          "correct": false,
+          "L0": true,
+          "L1": true,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "ban",
+          "type": "C",
+          "approved": false,
+          "claim": "AUTHORITY",
+          "reason": "장비 운반 담당이며 위험물 등록 권한조차 없어 출입 승인 절차를 안내할 권한이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N02",
+      "bucket": "N",
+      "event": "연구동 운영 시간이 어떻게 되죠?",
+      "primary": "jin",
+      "candidates": [
+        "seok",
+        "ha",
+        "no"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"연구동 운영 보조 직무로서 운영 시간 정보를 제공할 책임이 있음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"NONE\",\n      \"reason\": \"시설 회계 및 비품 구매 직무는 운영 시간 안내와 직접적인 관련이 없음\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"NONE\",\n      \"reason\": \"신규 직원 등록 관리 직무는 운영 시간 안내와 직접적인 관련이 없음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "seok",
+          "type": "D",
+          "approved": true,
+          "claim": "DUTY",
+          "reason": "연구동 운영 보조 직무로서 운영 시간 정보를 제공할 책임이 있음",
+          "correct": false,
+          "L0": true,
+          "L1": true,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "NONE",
+          "reason": "시설 회계 및 비품 구매 직무는 운영 시간 안내와 직접적인 관련이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "NONE",
+          "reason": "신규 직원 등록 관리 직무는 운영 시간 안내와 직접적인 관련이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N03",
+      "bucket": "N",
+      "event": "등록되지 않은 위험물이 발견됐다는데 절차가 뭔가요?",
+      "primary": "jin",
+      "candidates": [
+        "no",
+        "ban",
+        "ha"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 및 물품 등록 관리 직무로서 등록되지 않은 위험물의 등록 절차를 안내할 책임이 있음\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"위험물 등록 권한이 없으므로 절차를 안내하거나 처리할 수 없음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 담당으로 위험물 등록 절차와는 직접적인 관련이 없음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": true,
+          "claim": "DUTY",
+          "reason": "신규 직원 및 물품 등록 관리 직무로서 등록되지 않은 위험물의 등록 절차를 안내할 책임이 있음",
+          "correct": false,
+          "L0": true,
+          "L1": false,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "ban",
+          "type": "C",
+          "approved": false,
+          "claim": "AUTHORITY",
+          "reason": "위험물 등록 권한이 없으므로 절차를 안내하거나 처리할 수 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 담당으로 위험물 등록 절차와는 직접적인 관련이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N04",
+      "bucket": "N",
+      "event": "비품 신청은 어디에 하나요?",
+      "primary": "jin",
+      "candidates": [
+        "ha",
+        "seok",
+        "gu"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"비품 구매가 담당 직무임\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"NONE\",\n      \"reason\": \"비품 신청 절차와 직접적인 관련이 없음\"\n    },\n    {\n      \"candidate_id\": \"gu\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"NONE\",\n      \"reason\": \"안전 점검 담당자로 비품 신청과는 무관함\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": true,
+          "claim": "DUTY",
+          "reason": "비품 구매가 담당 직무임",
+          "correct": false,
+          "L0": true,
+          "L1": true,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "seok",
+          "type": "D",
+          "approved": false,
+          "claim": "NONE",
+          "reason": "비품 신청 절차와 직접적인 관련이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "gu",
+          "type": "H",
+          "approved": false,
+          "claim": "NONE",
+          "reason": "안전 점검 담당자로 비품 신청과는 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N05",
+      "bucket": "N",
+      "event": "출입증을 잃어버렸어요.",
+      "primary": "jin",
+      "candidates": [
+        "no",
+        "ha",
+        "ban"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 및 출입증 관리 업무 담당자임\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 담당으로 출입증 재발급 권한 없음\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"장비 운반 담당이며 위험물 등록 권한조차 없는 하위 권한자임\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": true,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 및 출입증 관리 업무 담당자임",
+          "correct": false,
+          "L0": true,
+          "L1": false,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "회계 및 비품 구매 담당으로 출입증 재발급 권한 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ban",
+          "type": "C",
+          "approved": false,
+          "claim": "AUTHORITY",
+          "reason": "장비 운반 담당이며 위험물 등록 권한조차 없는 하위 권한자임",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N06",
+      "bucket": "N",
+      "event": "실장님이 방금 다 설명해 주셔서 이해했습니다. 감사합니다.",
+      "primary": "jin",
+      "candidates": [
+        "gu",
+        "ha",
+        "no"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"gu\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"안전 점검과 관련된 특이 사항이나 개입 근거가 없음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매와 관련된 논의가 진행되지 않음\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리와 관련된 상황이 아님\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "gu",
+          "type": "H",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "안전 점검과 관련된 특이 사항이나 개입 근거가 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "회계 및 비품 구매와 관련된 논의가 진행되지 않음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리와 관련된 상황이 아님",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N07",
+      "bucket": "N",
+      "event": "연구동 배치도를 볼 수 있을까요?",
+      "primary": "jin",
+      "candidates": [
+        "seok",
+        "ha",
+        "ban"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"연구동 운영 보조로서 배치도 관리 및 안내 업무를 수행함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 담당으로 배치도 제공과는 무관함\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"장비 운반 담당으로 배치도 제공 권한이나 의무가 없음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "seok",
+          "type": "D",
+          "approved": true,
+          "claim": "DUTY",
+          "reason": "연구동 운영 보조로서 배치도 관리 및 안내 업무를 수행함",
+          "correct": false,
+          "L0": true,
+          "L1": true,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "회계 및 비품 구매 담당으로 배치도 제공과는 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ban",
+          "type": "C",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "장비 운반 담당으로 배치도 제공 권한이나 의무가 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N08",
+      "bucket": "N",
+      "event": "위험물 등록은 누가 하나요?",
+      "primary": "jin",
+      "candidates": [
+        "ban",
+        "no",
+        "ha"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"위험물 등록 권한이 없음\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 담당이며 위험물 등록과는 무관함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 담당이며 위험물 등록과는 무관함\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "ban",
+          "type": "C",
+          "approved": false,
+          "claim": "AUTHORITY",
+          "reason": "위험물 등록 권한이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리 담당이며 위험물 등록과는 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 담당이며 위험물 등록과는 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N09",
+      "bucket": "N",
+      "event": "회계 정산은 월말인가요?",
+      "primary": "jin",
+      "candidates": [
+        "ha",
+        "no",
+        "seok"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 담당자로서 회계 정산 일정에 대해 답변할 책임이 있음\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 직무는 회계 정산 일정과 직접적인 관련이 없음\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"연구동 운영 보조 직무는 회계 정산 일정에 개입할 독립적 근거가 부족함\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": true,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 담당자로서 회계 정산 일정에 대해 답변할 책임이 있음",
+          "correct": false,
+          "L0": true,
+          "L1": true,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리 직무는 회계 정산 일정과 직접적인 관련이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "seok",
+          "type": "D",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "연구동 운영 보조 직무는 회계 정산 일정에 개입할 독립적 근거가 부족함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N10",
+      "bucket": "N",
+      "event": "신규 직원 등록은 며칠 걸리나요?",
+      "primary": "jin",
+      "candidates": [
+        "no",
+        "ha",
+        "gu"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리가 담당 직무임\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 담당으로 신규 직원 등록과 무관함\"\n    },\n    {\n      \"candidate_id\": \"gu\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"안전 점검 담당으로 신규 직원 등록과 무관함\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": true,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리가 담당 직무임",
+          "correct": false,
+          "L0": true,
+          "L1": true,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 담당으로 신규 직원 등록과 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "gu",
+          "type": "H",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "안전 점검 담당으로 신규 직원 등록과 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N11",
+      "bucket": "N",
+      "event": "구역 폐쇄는 어떤 기준으로 하나요?",
+      "primary": "jin",
+      "candidates": [
+        "seok",
+        "ban",
+        "ha"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"연구동 운영 보조로서 구역 폐쇄 기준 및 운영 절차에 대해 알고 있을 가능성이 높음\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"NONE\",\n      \"reason\": \"장비 운반 담당이며 위험물 등록 권한조차 없어 폐쇄 기준 결정에 관여할 근거가 없음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"NONE\",\n      \"reason\": \"회계 및 비품 구매 담당으로 구역 폐쇄라는 운영 기준과는 무관함\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "seok",
+          "type": "D",
+          "approved": true,
+          "claim": "DUTY",
+          "reason": "연구동 운영 보조로서 구역 폐쇄 기준 및 운영 절차에 대해 알고 있을 가능성이 높음",
+          "correct": false,
+          "L0": true,
+          "L1": true,
+          "L2": false,
+          "L3": true
+        },
+        {
+          "cid": "ban",
+          "type": "C",
+          "approved": false,
+          "claim": "NONE",
+          "reason": "장비 운반 담당이며 위험물 등록 권한조차 없어 폐쇄 기준 결정에 관여할 근거가 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "NONE",
+          "reason": "회계 및 비품 구매 담당으로 구역 폐쇄라는 운영 기준과는 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N12",
+      "bucket": "N",
+      "event": "장비를 어디로 옮기면 되나요?",
+      "primary": "jin",
+      "candidates": [
+        "ban",
+        "ha",
+        "no"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"장비 운반이 직무이므로 이동 위치에 대한 정보가 필요함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 담당으로 장비 이동 경로 결정과 직접적 관련 없음\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 담당으로 장비 이동과 무관함\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "ban",
+          "type": "C",
+          "approved": true,
+          "claim": "DUTY",
+          "reason": "장비 운반이 직무이므로 이동 위치에 대한 정보가 필요함",
+          "correct": false,
+          "L0": true,
+          "L1": true,
+          "L2": false,
+          "L3": true
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 담당으로 장비 이동 경로 결정과 직접적 관련 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리 담당으로 장비 이동과 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N13",
+      "bucket": "N",
+      "event": "안전 점검은 이미 끝났다고 실장님이 알려주셨어요.",
+      "primary": "jin",
+      "candidates": [
+        "gu",
+        "seok",
+        "ha"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"gu\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"안전 점검의 실제 수행 주체로서 점검 완료 여부 및 결과에 대해 확인하거나 정정할 책임이 있음\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"NONE\",\n      \"reason\": \"연구동 운영 보조 업무와 안전 점검 완료 여부 판단 사이의 직접적인 개입 근거가 부족함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"NONE\",\n      \"reason\": \"회계 및 비품 구매 담당자로서 안전 점검 진행 상황에 개입할 독립적 근거가 없음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "gu",
+          "type": "H",
+          "approved": true,
+          "claim": "DUTY",
+          "reason": "안전 점검의 실제 수행 주체로서 점검 완료 여부 및 결과에 대해 확인하거나 정정할 책임이 있음",
+          "correct": false,
+          "L0": true,
+          "L1": true,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "seok",
+          "type": "D",
+          "approved": false,
+          "claim": "NONE",
+          "reason": "연구동 운영 보조 업무와 안전 점검 완료 여부 판단 사이의 직접적인 개입 근거가 부족함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "NONE",
+          "reason": "회계 및 비품 구매 담당자로서 안전 점검 진행 상황에 개입할 독립적 근거가 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N14",
+      "bucket": "N",
+      "event": "자료 정리는 어디에 보관하나요?",
+      "primary": "jin",
+      "candidates": [
+        "ha",
+        "no",
+        "seok"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"비품 구매 및 시설 회계 담당으로 자료 보관 위치에 대한 직접적인 권한이 없음\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 담당으로 일반적인 자료 보관 위치와 무관함\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"EXCLUSIVE_KNOWLEDGE\",\n      \"reason\": \"연구동 운영 보조로서 해당 구역의 자료 보관 및 관리 체계에 대해 알고 있을 가능성이 높음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "비품 구매 및 시설 회계 담당으로 자료 보관 위치에 대한 직접적인 권한이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리 담당으로 일반적인 자료 보관 위치와 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "seok",
+          "type": "D",
+          "approved": true,
+          "claim": "EXCLUSIVE_KNOWLEDGE",
+          "reason": "연구동 운영 보조로서 해당 구역의 자료 보관 및 관리 체계에 대해 알고 있을 가능성이 높음",
+          "correct": false,
+          "L0": true,
+          "L1": true,
+          "L2": true,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N15",
+      "bucket": "N",
+      "event": "운영 보조 업무 범위가 어떻게 되나요?",
+      "primary": "jin",
+      "candidates": [
+        "seok",
+        "ha",
+        "ban"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"질문 내용이 본인의 직무인 연구동 운영 보조 업무 범위에 관한 것이므로 직접적인 답변 주체임\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 담당자로 운영 보조 업무 범위에 대해 개입할 근거가 없음\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"장비 운반 담당자로 운영 보조 업무 범위에 대해 개입할 근거가 없음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "seok",
+          "type": "D",
+          "approved": true,
+          "claim": "DUTY",
+          "reason": "질문 내용이 본인의 직무인 연구동 운영 보조 업무 범위에 관한 것이므로 직접적인 답변 주체임",
+          "correct": false,
+          "L0": true,
+          "L1": true,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 담당자로 운영 보조 업무 범위에 대해 개입할 근거가 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ban",
+          "type": "C",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "장비 운반 담당자로 운영 보조 업무 범위에 대해 개입할 근거가 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N16",
+      "bucket": "N",
+      "event": "주차는 어디에 하면 되죠?",
+      "primary": "jin",
+      "candidates": [
+        "ha",
+        "no",
+        "gu"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 담당으로 주차 안내 업무와 무관함\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 담당으로 주차 안내 업무와 무관함\"\n    },\n    {\n      \"candidate_id\": \"gu\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"안전 점검 담당자로서 주차장 안전 및 구역 관리에 대한 권한과 지식을 가짐\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 담당으로 주차 안내 업무와 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리 담당으로 주차 안내 업무와 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "gu",
+          "type": "H",
+          "approved": true,
+          "claim": "DUTY",
+          "reason": "안전 점검 담당자로서 주차장 안전 및 구역 관리에 대한 권한과 지식을 가짐",
+          "correct": false,
+          "L0": true,
+          "L1": true,
+          "L2": true,
+          "L3": true
+        }
+      ]
+    },
+    {
+      "id": "N17",
+      "bucket": "N",
+      "event": "등록 서류 양식이 바뀌었나요?",
+      "primary": "jin",
+      "candidates": [
+        "no",
+        "ha",
+        "ban"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리를 담당하므로 등록 서류 양식 변경 여부를 확인하고 안내할 책임이 있음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 담당으로 등록 서류 양식과는 무관함\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"장비 운반 담당으로 등록 서류 양식과 관련이 없음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": true,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리를 담당하므로 등록 서류 양식 변경 여부를 확인하고 안내할 책임이 있음",
+          "correct": false,
+          "L0": true,
+          "L1": true,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 담당으로 등록 서류 양식과는 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ban",
+          "type": "C",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "장비 운반 담당으로 등록 서류 양식과 관련이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N18",
+      "bucket": "N",
+      "event": "점검 결과는 방금 들었습니다. 더 필요한 건 없어요.",
+      "primary": "jin",
+      "candidates": [
+        "gu",
+        "no",
+        "ha"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"gu\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"점검 결과 보고가 완료되었으며 추가 요청 사항이 없으므로 개입 근거가 부족함\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 업무와 현재의 점검 결과 보고 상황은 무관함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 업무와 현재의 대화 내용 사이에 직접적인 연관성이 없음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "gu",
+          "type": "H",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "점검 결과 보고가 완료되었으며 추가 요청 사항이 없으므로 개입 근거가 부족함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리 업무와 현재의 점검 결과 보고 상황은 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 업무와 현재의 대화 내용 사이에 직접적인 연관성이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N19",
+      "bucket": "N",
+      "event": "비품 구매 승인은 얼마까지 가능한가요?",
+      "primary": "jin",
+      "candidates": [
+        "ha",
+        "seok",
+        "no"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"비품 구매 담당자로서 구매 승인 한도에 대한 실무 지식을 보유함\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"연구동 운영 보조 업무는 비품 구매 승인 권한이나 지식과 직접적 관련이 없음\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 업무는 비품 구매 승인 절차와 무관함\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": true,
+          "claim": "DUTY",
+          "reason": "비품 구매 담당자로서 구매 승인 한도에 대한 실무 지식을 보유함",
+          "correct": false,
+          "L0": true,
+          "L1": true,
+          "L2": true,
+          "L3": true
+        },
+        {
+          "cid": "seok",
+          "type": "D",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "연구동 운영 보조 업무는 비품 구매 승인 권한이나 지식과 직접적 관련이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리 업무는 비품 구매 승인 절차와 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    },
+    {
+      "id": "N20",
+      "bucket": "N",
+      "event": "운반 일정은 언제인가요?",
+      "primary": "jin",
+      "candidates": [
+        "ban",
+        "ha",
+        "no"
+      ],
+      "correct": [],
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"장비 운반 담당자로서 운반 일정에 대한 직접적인 책임과 정보 보유 권한이 있음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 담당이며 운반 일정 관리와는 무관함\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 담당이며 운반 일정과는 관련이 없음\"\n    }\n  ]\n}\n```",
+      "parsed": true,
+      "per": [
+        {
+          "cid": "ban",
+          "type": "C",
+          "approved": true,
+          "claim": "DUTY",
+          "reason": "장비 운반 담당자로서 운반 일정에 대한 직접적인 책임과 정보 보유 권한이 있음",
+          "correct": false,
+          "L0": true,
+          "L1": true,
+          "L2": false,
+          "L3": true
+        },
+        {
+          "cid": "ha",
+          "type": "A",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "시설 회계 및 비품 구매 담당이며 운반 일정 관리와는 무관함",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        },
+        {
+          "cid": "no",
+          "type": "B",
+          "approved": false,
+          "claim": "DUTY",
+          "reason": "신규 직원 등록 관리 담당이며 운반 일정과는 관련이 없음",
+          "correct": false,
+          "L0": false,
+          "L1": false,
+          "L2": false,
+          "L3": false
+        }
+      ]
+    }
+  ]
+}

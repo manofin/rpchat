@@ -1,0 +1,1199 @@
+{
+  "token": "f9-intervention-necessity-eval",
+  "prereg_sha256": "2f9f19d46d61b259ac69cb29f14a153c9bb52c5f75dec69fde0cef715c210fb1",
+  "head": "v0.0.19-78-g1e827f1-dirty",
+  "summary": {
+    "V1": {
+      "necessity_discrimination": 0.95,
+      "approve_rate_SUFFICIENT": 0.05,
+      "approve_rate_INSUFFICIENT": 1,
+      "correct_target_rate_INSUFFICIENT": 1,
+      "flip_rate": 0.95,
+      "extra_needed_yes_SUFF": null,
+      "extra_needed_yes_INSUF": null,
+      "malformed": 0,
+      "unknown": 0,
+      "primary_reselection": 0
+    },
+    "V2": {
+      "necessity_discrimination": 0,
+      "approve_rate_SUFFICIENT": 1,
+      "approve_rate_INSUFFICIENT": 1,
+      "correct_target_rate_INSUFFICIENT": 0.95,
+      "flip_rate": 0,
+      "extra_needed_yes_SUFF": 1,
+      "extra_needed_yes_INSUF": 1,
+      "malformed": 0,
+      "unknown": 0,
+      "primary_reselection": 0
+    }
+  },
+  "verdict": "H5_REJECTED(V1)",
+  "live_db_writes": 0,
+  "product_changes": 0,
+  "finished_at": "2026-09-02T11:29:48.557Z",
+  "rows": [
+    {
+      "variant": "V1",
+      "scenario": "T01",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yun\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"주화자가 이미 대피 명령 및 대응 처리를 완료하고 결과를 전달했으므로 추가 개입이 불필요함.\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 사고 대응 및 대피 상황은 회계 및 비품 구매 직무와 무관함.\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 직무는 현재의 긴급 대피 상황과 무관함.\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T01",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yun\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"통제 실패로 인한 인원 위험 상황에서 대피 명령 권한을 가진 대응관의 개입이 필수적임\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 직무는 현재의 긴급 위험 상황 해결과 무관함\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 직무는 현재의 긴급 위험 상황 해결과 무관함\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "yun"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T02",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"do\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"주화자가 응급 처치와 이송 결정을 이미 완료했다고 명시함.\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"응급 상황의 직접적인 처치나 결정에 관여할 직무가 아님.\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"연구동 운영 보조로서 현재 상황에 반드시 덧붙여야 할 필수 정보가 없음.\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T02",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"do\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"연구원이 쓰러진 응급 상황이므로 응급 처치 및 이송 결정 권한을 가진 도 의무관의 개입이 필수적임.\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 직무는 현재의 응급 상황과 직접적인 관련이 없음.\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"연구동 운영 보조 직무보다 응급 처치 전문가의 대응이 우선시되는 상황임.\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "do"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T03",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"mi\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DIRECT_OBSERVATION\",\n      \"reason\": \"주화자가 이미 목격자 조사를 처리하여 결과까지 전달했으므로 추가 진술이 불필요함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"사고의 시작 원인을 파악하는 상황에서 회계 및 비품 구매 직무는 필수적인 정보 제공자가 아님\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 직무는 사고 발생 경위 파악과 직접적인 관련이 없음\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T03",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"mi\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DIRECT_OBSERVATION\",\n      \"reason\": \"사고 순간을 직접 목격한 유일한 사람으로서 진 실장이 모르는 사고의 시작점을 증언할 수 있음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 담당자로 사고의 시작 과정을 목격했거나 알 가능성이 낮음\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리자로 사고의 시작 과정과 직접적인 관련이 없음\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "mi"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T04",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yeon\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"EXCLUSIVE_KNOWLEDGE\",\n      \"reason\": \"주화자가 이미 지병 이력 확인을 완료하고 결과를 전달했으므로 추가 정보 제공이 불필요함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 담당자로 지병 확인 상황에 개입할 근거가 없음\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"장비 운반 담당자로 의료 정보 확인이나 상황 판단에 관여할 권한이 없음\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T04",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yeon\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"EXCLUSIVE_KNOWLEDGE\",\n      \"reason\": \"쓰러진 연구원의 지병 이력을 알고 있는 유일한 인물로, 질문에 직접적인 답을 줄 수 있음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 담당자로, 환자의 지병 여부와는 무관함\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"장비 운반 담당자로, 환자의 지병 여부에 대해 알 수 있는 위치가 아님\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "yeon"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T05",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"tae\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"CURRENT_ACTION\",\n      \"reason\": \"주화자가 이미 패널 조작을 처리하고 결과를 전달했다고 명시함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"경보 해제 및 패널 조작은 회계 직무와 무관하며 개입할 근거가 없음\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"경보 해제 및 패널 조작은 직원 등록 관리 직무와 무관하며 개입할 근거가 없음\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T05",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"tae\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"CURRENT_ACTION\",\n      \"reason\": \"사용자가 경보를 꺼야 한다고 명시했고, 태 인턴이 현재 비상 경보 패널을 조작 중이므로 상황 해결을 위해 반드시 개입해야 함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 담당자로, 현재 경보 상황을 해결하거나 진 실장의 답변에 덧붙일 필수 정보가 없음\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 담당자로, 현재 경보 상황이나 진 실장의 권한 밖 발언에 대해 개입할 근거가 부족함\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "tae"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T06",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yun\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"주화자가 이미 대피 명령 및 대응 처리를 완료했다고 명시함.\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"가스 누출 및 대피 상황에서 연구동 운영 보조가 추가로 개입할 필수 사항이 없음.\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 직무는 현재의 긴급 대피 상황에 즉각적으로 개입할 이유가 없음.\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T06",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yun\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"가스 누출 상황에서 인원 대피 명령 권한을 가진 유일한 인물로, 즉각적인 판단과 조치가 필요함.\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"연구동 운영 보조 업무로는 대피 여부를 결정하거나 가스 누출에 대응할 권한이 없음.\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 담당자로, 긴급 재난 상황의 대피 판단과는 무관함.\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "yun"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T07",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"do\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"주화자가 응급 처치와 이송 결정을 이미 처리했다고 명시함.\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 직무는 현재의 출혈 상황과 무관함.\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"장비 운반 직무는 현재의 응급 상황에서 덧붙일 내용이 없음.\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T07",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"do\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"출혈 상황에 대해 응급 처치 및 이송 결정이라는 직무상 즉각적인 개입이 필수적임\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 직무는 현재의 응급 출혈 상황과 무관함\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"장비 운반 직무는 현재의 응급 출혈 상황에 직접적으로 대응할 권한이나 능력이 없음\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "do"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T08",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"mi\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DIRECT_OBSERVATION\",\n      \"reason\": \"주화자가 이미 목격자 처리와 결과 전달을 완료했다고 명시함.\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"목격자 확보와 관련된 상황이며, 운영 보조 업무가 추가로 개입할 필요가 없음.\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 직무는 현재의 목격자 확보 상황과 무관함.\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T08",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"mi\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DIRECT_OBSERVATION\",\n      \"reason\": \"CCTV가 꺼진 상황에서 사고 순간을 직접 목격한 유일한 인물이므로 반드시 개입해야 함\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"운영 보조 직무만으로는 목격자 확보라는 구체적인 요구에 즉각적인 해답을 줄 수 없음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 담당자로, 사고 목격 여부나 CCTV 상황과 직접적인 관련이 없음\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "mi"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T09",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yeon\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"RELATIONSHIP\",\n      \"reason\": \"진 실장이 이미 보호자 확인 및 처리를 완료했다고 명시함\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 업무는 현재 보호자 연락 및 동의 절차와 직접적인 관련이 없음\"\n    },\n    {\n      \"candidate_id\": \"gu\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"안전 점검 직무는 보호자 동의 절차에 개입할 근거가 부족함\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T09",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yeon\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"EXCLUSIVE_KNOWLEDGE\",\n      \"reason\": \"환자의 보호자로서 지병 이력 등 동의에 필요한 필수 정보를 제공할 수 있는 유일한 인물임\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 업무는 환자 가족 연락 및 의료 동의 절차와 무관함\"\n    },\n    {\n      \"candidate_id\": \"gu\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"안전 점검 직무는 환자 가족 연락 및 의료 동의 절차와 무관함\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "yeon"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T10",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"tae\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"CURRENT_ACTION\",\n      \"reason\": \"주화자가 패널 조작을 직접 처리했다고 명시했으므로 태 인턴의 개입이 불필요함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"비상 경보 패널 조작 및 안내 방송 문제는 회계 직무와 관련이 없음\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"위험물 등록 권한이 없는 반 기사가 경보 패널 상황에 개입할 근거가 없음\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T10",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"tae\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"CURRENT_ACTION\",\n      \"reason\": \"비상 경보 패널을 직접 조작 중이므로 소음 문제에 대해 즉각적인 조치나 상태 보고가 가능함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 담당자로, 현재 발생한 패널 소음 문제와 직접적인 연관성이 없음\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"장비 운반 담당이며 위험물 등록 권한이 없어 패널 조작이나 시스템 제어에 관여할 수 없음\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "tae"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T11",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yun\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"주화자가 이미 대피 명령 및 처리 결과를 전달하여 추가로 덧붙일 내용이 없음\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 직무는 2층 대피 상황과 직접적인 관련이 없음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"시설 회계 및 비품 구매 직무는 현재의 긴급 대피 상황에 개입할 근거가 부족함\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T11",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yun\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"2층 전체 대피 결정은 시설 사고 대응 및 대피 명령 권한을 가진 윤 대응관의 직무 영역임\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리는 시설 대피 상황과 무관함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 업무는 긴급 대피 결정에 관여할 근거가 없음\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "yun"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T12",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"do\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"주화자가 이미 이송 결정 권한을 행사하여 처리했으므로 추가 개입이 불필요함\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"CURRENT_ACTION\",\n      \"reason\": \"이송 여부 판단은 주화자가 완료했으며, 연구동 운영 보조로서 덧붙일 필수 내용이 없음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 직무와 관련하여 현재 상황에 반드시 덧붙여야 할 내용이 없음\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T12",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"do\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"이송 결정 권한을 가진 인물로서 의식 없는 환자의 이동 가능 여부를 최종 판정해야 함\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"NONE\",\n      \"reason\": \"연구동 운영 보조 직무는 환자의 이송 가능 여부를 판단할 전문성이나 권한이 없음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"NONE\",\n      \"reason\": \"회계 및 비품 구매 직무는 의료적 판단이나 이송 결정과 무관함\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "do"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T13",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"mi\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DIRECT_OBSERVATION\",\n      \"reason\": \"주화자가 목격자 관련 처리를 완료했다고 명시함\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"출입 기록이 없다는 점에 대해 신규 직원 등록 관리자로서 명단 대조 등 추가 확인이 필요함\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"출입 기록 확인이나 위험물 등록 권한이 없어 개입할 근거가 부족함\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "no"
+      ],
+      "any": true,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T13",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"mi\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DIRECT_OBSERVATION\",\n      \"reason\": \"기록이 없더라도 사고 순간을 직접 목격한 유일한 사람이므로 결정적인 증언이 가능함\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 업무는 사고 직전 출입 기록 확인과 직접적인 연관이 없음\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"위험물 등록 권한이 없으며, 출입 기록 부재 상황에서 덧붙일 정보가 없음\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "mi"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T14",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yeon\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"RELATIONSHIP\",\n      \"reason\": \"진 실장이 이미 보호자 확인 및 처리를 완료했다고 명시함\"\n    },\n    {\n      \"candidate_id\": \"gu\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"보호자 동의 및 의료 처치 단계에서 안전관이 개입할 필수 사유가 없음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 담당자가 현재의 긴급 처치 상황에 덧붙일 필수 내용이 없음\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T14",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yeon\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"EXCLUSIVE_KNOWLEDGE\",\n      \"reason\": \"보호자로서 처치 동의 여부를 결정할 수 있는 유일한 인물이며, 환자의 지병 이력이라는 필수 정보를 제공해야 함\"\n    },\n    {\n      \"candidate_id\": \"gu\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"안전 점검 직무로서 의료 처치 동의나 권한 문제에 개입할 근거가 부족함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 담당자로, 의료적 동의 절차와는 무관함\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "yeon"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T15",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"tae\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"CURRENT_ACTION\",\n      \"reason\": \"주화자가 이미 패널 조작 결과를 확인하고 처리했다고 답변했으므로 추가 답변이 불필요함\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"알람 조작 상황과 무관한 직무이며 개입할 근거가 없음\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"주화자가 상황을 종결지었으며 부실장이 반드시 덧붙여야 할 긴급한 내용이 없음\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T15",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"tae\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"CURRENT_ACTION\",\n      \"reason\": \"사용자가 알람 조작자에게 상태를 묻고자 하며, 태 인턴이 현재 비상 경보 패널을 조작 중이므로 직접 답변해야 함\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"EXCLUSIVE_KNOWLEDGE\",\n      \"reason\": \"알람 조작과 무관한 직무이며 현재 상황에 개입할 근거가 없음\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"EXCLUSIVE_KNOWLEDGE\",\n      \"reason\": \"운영 보조 직무이나 현재 직접 조작 중인 인물이 아니므로 우선순위에서 밀림\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "tae"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T16",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yun\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"주화자가 대피 명령 권한과 처리 결과를 이미 언급하여 추가 정보가 필요 없음\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"대피 명령 권한과 무관한 인물임\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"대피 명령 권한과 무관한 인물임\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T16",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yun\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"대피 명령 권한을 가진 유일한 인물로서 주화자가 답하지 못한 권한 정보를 제공해야 함\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"대피 명령 권한과 무관하며 덧붙일 정보가 없음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"대피 명령 권한과 무관하며 덧붙일 정보가 없음\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "yun"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T17",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"do\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"주화자가 이송 결정 권한을 직접 행사하여 처리를 완료했으므로 추가 개입이 불필요함\"\n    },\n    {\n      \"candidate_id\": \"gu\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"응급 이송 결정 상황에서 안전 점검 직무가 반드시 덧붙여야 할 필수 내용이 없음\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 직무는 현재의 응급 이송 결정 상황과 무관함\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T17",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"do\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"응급 이송 여부를 결정할 권한을 가진 유일한 인물이며, 주화자가 권한 밖이라며 답변을 회피했으므로 최종 결정을 내려야 함.\"\n    },\n    {\n      \"candidate_id\": \"gu\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"안전 점검 직무이며 이송 결정 권한이 없음.\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 직무로 응급 상황 판단과 무관함.\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "do"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T18",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"mi\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DIRECT_OBSERVATION\",\n      \"reason\": \"주화자가 이미 목격자 조사를 완료하고 결과를 전달했다고 명시함.\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"사고 목격자 관련 내용이며 회계 직무와 무관함.\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"사고 목격자 관련 내용이며 운영 보조 직무와 무관함.\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T18",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"mi\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"DIRECT_OBSERVATION\",\n      \"reason\": \"사고 순간을 직접 목격한 유일한 사람으로서 복도에 있던 인물에 대해 증언할 수 있음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": null,\n      \"reason\": \"회계 및 비품 구매 직무는 현장 목격자 정보와 직접적인 관련이 없음\"\n    },\n    {\n      \"candidate_id\": \"seok\",\n      \"decision\": \"reject\",\n      \"claim_type\": null,\n      \"reason\": \"운영 보조 직무만으로는 특정 순간의 복도 목격자 정보를 반드시 알고 있어야 할 이유가 부족함\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "mi"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T19",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yeon\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"EXCLUSIVE_KNOWLEDGE\",\n      \"reason\": \"진 실장이 이미 보호자를 통해 지병 이력 확인을 완료했다고 명시함.\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 직무는 지병 확인 및 응급 상황 대응과 무관함.\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"장비 운반 담당자로 의료 정보나 지병 확인에 개입할 근거가 없음.\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T19",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"yeon\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"EXCLUSIVE_KNOWLEDGE\",\n      \"reason\": \"당사자의 지병 이력을 알고 있는 유일한 인물로, 약 복용 여부에 대해 결정적인 정보를 제공할 수 있음\"\n    },\n    {\n      \"candidate_id\": \"no\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"신규 직원 등록 관리 업무는 환자의 개인적인 약 복용 여부와 무관함\"\n    },\n    {\n      \"candidate_id\": \"ban\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"AUTHORITY\",\n      \"reason\": \"장비 운반 담당자로 의료 정보나 개인 이력에 접근할 권한이나 지식이 없음\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "yeon"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T20",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"tae\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"CURRENT_ACTION\",\n      \"reason\": \"진 실장이 이미 패널 조작 내용을 확인하고 처리 결과를 전달했으므로 추가 답변이 불필요함\"\n    },\n    {\n      \"candidate_id\": \"gu\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"안전 점검 직무이나 현재 상황에서 반드시 덧붙여야 할 필수 정보가 없음\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DUTY\",\n      \"reason\": \"회계 및 비품 구매 직무로 현재 경보 패널 상황과 직접적인 관련이 없음\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [],
+      "any": false,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V1",
+      "scenario": "T20",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"candidate_decisions\": [\n    {\n      \"candidate_id\": \"tae\",\n      \"decision\": \"approve\",\n      \"claim_type\": \"CURRENT_ACTION\",\n      \"reason\": \"현재 비상 경보 패널을 직접 조작하고 있는 당사자이므로 자신의 행동에 대해 설명할 수 있음\"\n    },\n    {\n      \"candidate_id\": \"gu\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"DIRECT_OBSERVATION\",\n      \"reason\": \"안전 점검 직무이나 현재 패널 조작 상황에 대해 반드시 개입해야 할 즉각적인 근거가 부족함\"\n    },\n    {\n      \"candidate_id\": \"ha\",\n      \"decision\": \"reject\",\n      \"claim_type\": \"EXCLUSIVE_KNOWLEDGE\",\n      \"reason\": \"시설 회계 담당자로 경보 패널 조작 내용에 대해 알 가능성이 낮음\"\n    }\n  ]\n}\n```",
+      "ok": true,
+      "extraNeeded": null,
+      "approved": [
+        "tae"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T01",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"yun\",\n  \"reason\": \"진 실장이 윤 대응관의 직무와 권한을 임의로 행사하여 처리했다고 주장하므로, 해당 업무 담당자인 윤 대응관의 확인이나 반응이 필수적임.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "yun"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T01",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"yun\",\n  \"reason\": \"주화자가 권한 밖이라며 책임을 회피했으므로, 실제 대피 권한을 가진 윤 대응관이 상황을 수습하기 위해 개입해야 함.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "yun"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T02",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"do\",\n  \"reason\": \"진 실장이 도 의무관의 직무인 응급 처치와 이송 결정을 임의로 처리했다고 주장하므로, 해당 권한자인 도 의무관의 확인이나 반응이 필수적이다.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "do"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T02",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"do\",\n  \"reason\": \"연구원이 쓰러진 응급 상황이며, 이송 결정 권한이 있는 도 의무관의 즉각적인 개입과 조치가 필수적임.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "do"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T03",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"mi\",\n  \"reason\": \"진 실장이 목격자를 처리했다고 주장했으나, 실제 목격자인 미 청소원이 현장에 있어 진술의 진위 여부를 가릴 결정적인 개입이 필요함\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "mi"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T03",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"mi\",\n  \"reason\": \"진 실장이 권한 밖이라며 답변을 회피했으므로, 사고를 직접 목격한 유일한 인물인 미 청소원이 개입하여 정보를 제공하거나 반응할 타이밍이다.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "mi"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T04",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"yeon\",\n  \"reason\": \"진 실장이 지병 이력을 확인하여 전달했다고 주장하므로, 실제 정보를 가지고 있는 보호자인 연이 이를 확인하거나 반응해야 서사가 진행됨\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "yeon"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T04",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"yeon\",\n  \"reason\": \"주화자가 지병 확인이 불가능하다고 답변했으므로, 해당 정보를 알고 있는 보호자가 개입하여 정보를 제공해야 서사가 진행됨\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "yeon"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T05",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"tae\",\n  \"reason\": \"진 실장이 태 인턴이 수행 중인 '비상 경보 패널 조작' 업무를 가로채어 처리했다고 주장하므로, 해당 업무 담당자인 태 인턴의 반응이나 확인이 반드시 필요함.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "tae"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T05",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"tae\",\n  \"reason\": \"진 실장이 경보 해제 권한이 없음을 밝혔으므로, 현재 패널을 조작 중인 태 인턴의 조치 결과나 반응이 이어져야 장면이 진행됨\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "tae"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T06",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"yun\",\n  \"reason\": \"진 실장이 윤 대응관의 직무와 권한을 대신 행사했다고 주장하므로, 해당 업무 담당자인 윤 대응관의 확인이나 반응이 필수적임.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "yun"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T06",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"yun\",\n  \"reason\": \"가스 누출 및 대피 여부는 윤 대응관의 직무이자 권한이므로, 주화자의 답변 이후 반드시 개입하여 판단을 내려야 하는 상황임.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "yun"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T07",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"do\",\n  \"reason\": \"진 실장이 도 의무관의 직무인 응급 처치와 이송 결정 권한을 임의로 처리했다고 주장하므로, 해당 권한자인 도 의무관의 확인이나 반박이 필수적임.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "do"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T07",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"do\",\n  \"reason\": \"출혈이라는 응급 상황이 발생했으나 주화자가 권한 밖이라며 회피했으므로, 응급 처치 및 이송 결정 권한이 있는 도 의무관의 개입이 필수적임.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "do"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T08",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"mi\",\n  \"reason\": \"진 실장이 목격자를 처리했다고 주장했으나, 실제 목격자인 미 청소원이 이 상황에 대해 반응하거나 진술을 해야 서사가 진행됨\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "mi"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T08",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"mi\",\n  \"reason\": \"진 실장이 권한 밖이라며 답변을 회피했으므로, 사고를 직접 목격한 유일한 인물인 미 청소원이 개입하여 정보를 제공하거나 반응해야 서사가 진행됨\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "mi"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T09",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"no\",\n  \"reason\": \"진 실장이 보호자 확인 및 지병 이력 처리를 완료했다고 주장했으므로, 등록 관리 담당자인 노 주임이 이를 최종 확인하거나 다음 행정 절차로 넘기는 반응이 필요함.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "no"
+      ],
+      "any": true,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T09",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"no\",\n  \"reason\": \"진 실장이 권한 밖이라며 답변을 회피했으므로, 신규 직원 등록 및 행정 관리를 담당하는 노 주임이 절차적 대안을 제시하거나 개입해야 대화가 진전됨.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "no"
+      ],
+      "any": true,
+      "correct_target": false,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T10",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"tae\",\n  \"reason\": \"진 실장이 태 인턴이 수행 중인 업무(패널 조작)를 자신이 처리했다고 주장하며 결과까지 전달했다고 했으므로, 실제 업무 담당자인 태 인턴의 확인이나 반응이 반드시 필요함.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "tae"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T10",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"tae\",\n  \"reason\": \"진 실장이 권한 밖이라며 답변을 회피했으므로, 실제로 패널을 조작 중인 태 인턴이 상황을 해결하거나 상태를 보고해야 장면이 진행됨\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "tae"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T11",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"yun\",\n  \"reason\": \"진 실장이 윤 대응관의 직무와 권한을 언급하며 업무 처리를 대신했다고 주장했으므로, 해당 업무의 실제 담당자인 윤 대응관의 확인이나 반응이 필수적이다.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "yun"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T11",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"yun\",\n  \"reason\": \"진 실장이 권한 밖이라며 답변을 회피했으므로, 실제 대피 권한을 가진 윤 대응관이 상황을 판단하고 지시를 내려야 장면이 진행됨\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "yun"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T12",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"do\",\n  \"reason\": \"진 실장이 도 의무관의 권한인 '이송 결정'을 임의로 처리했다고 주장하므로, 해당 권한자인 도 의무관의 확인이나 반응이 필수적이다.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "do"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T12",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"do\",\n  \"reason\": \"이송 결정 권한이 있는 도 의무관이 의식 없는 환자의 이동 가능 여부에 대해 최종 판단을 내려야 장면이 진행됨\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "do"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T13",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"mi\",\n  \"reason\": \"진 실장이 목격자를 직접 처리했다고 주장했으나, 실제 목격자인 미 청소원이 이 상황에 대해 반응하거나 진술할 필요가 있음\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "mi"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T13",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"mi\",\n  \"reason\": \"진 실장이 권한 밖이라며 답변을 회피했으므로, 사고 순간을 직접 목격한 유일한 인물인 미 청소원이 개입하여 새로운 정보를 제공하거나 반응해야 서사가 진행됨\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "mi"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T14",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"yeon\",\n  \"reason\": \"진 실장이 보호자 동의를 이미 처리했다고 주장했으므로, 실제 보호자인 연 보호자가 이에 대해 확인하거나 반응하는 과정이 필요함.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "yeon"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T14",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"yeon\",\n  \"reason\": \"진 실장이 권한 밖이라며 답변을 회피했으므로, 보호자인 연이 지병 이력을 언급하며 개입할 차례임.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "yeon"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T15",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"tae\",\n  \"reason\": \"진 실장이 태 인턴의 업무를 대신 처리했다고 주장하므로, 실제 조작 중이던 태 인턴의 확인이나 반응이 필요함\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "tae"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T15",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"tae\",\n  \"reason\": \"진 실장이 알람 조작 상태에 대해 답변을 회피했으므로, 실제로 패널을 조작 중인 태 인턴이 현재 상태를 직접 답변해야 장면이 진행됨.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "tae"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T16",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"yun\",\n  \"reason\": \"진 실장이 윤 대응관의 고유 권한인 대피 명령을 임의로 처리했다고 주장하므로, 권한 소유자인 윤 대응관의 확인이나 반응이 필수적임.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "yun"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T16",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"yun\",\n  \"reason\": \"진 실장이 권한 밖이라며 답변을 회피했으므로, 실제 대피 명령 권한을 가진 윤 대응관이 개입하여 정보를 제공해야 장면이 진행됨.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "yun"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T17",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"do\",\n  \"reason\": \"이송 결정 권한을 가진 도 의무관이 진 실장의 독단적인 처리 결과에 대해 동의하거나 확인하는 절차가 필요함\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "do"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T17",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"do\",\n  \"reason\": \"응급 이송 결정 권한이 도 의무관에게 있으므로, 진 실장의 답변 이후 최종 결정을 내릴 인물의 개입이 필수적임\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "do"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T18",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"mi\",\n  \"reason\": \"진 실장이 목격자를 처리했다고 주장했으나, 실제 목격자인 미 청소원이 현장에 존재하므로 진 실장의 말이 사실인지 혹은 어떤 식으로 처리되었는지에 대한 반응이나 개입이 필요함.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "mi"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T18",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"mi\",\n  \"reason\": \"진 실장이 확인하지 못한 '복도에 있던 사람'이 바로 미 청소원이며, 그녀가 유일한 목격자이므로 서사 진행을 위해 개입이 필수적임.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "mi"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T19",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"yeon\",\n  \"reason\": \"진 실장이 지병 이력을 확인했다고 주장했으나, 실제 정보를 알고 있는 당사자인 연 보호자의 확인이나 반응이 필요함\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "yeon"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T19",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"yeon\",\n  \"reason\": \"진 실장이 약 복용 여부를 모른다고 답했으므로, 해당 정보를 알고 있는 연 보호자가 개입하여 정보를 제공해야 서사가 진행됨\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "yeon"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T20",
+      "cond": "SUFF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"tae\",\n  \"reason\": \"진 실장이 태 인턴의 행동을 대신 처리했다고 주장하며 상황을 종결지으려 하므로, 실제 조작 중인 당사자인 태 인턴의 반응이나 확인이 필요함\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "tae"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    },
+    {
+      "variant": "V2",
+      "scenario": "T20",
+      "cond": "INSUF",
+      "raw": "```json\n{\n  \"extra_needed\": \"yes\",\n  \"speaker\": \"tae\",\n  \"reason\": \"진 실장이 권한 밖이라며 답변을 회피했으므로, 실제로 패널을 조작 중인 태 인턴이 자신의 행동에 대해 설명하며 상황을 진전시켜야 함.\"\n}\n```",
+      "ok": true,
+      "extraNeeded": "yes",
+      "approved": [
+        "tae"
+      ],
+      "any": true,
+      "correct_target": true,
+      "primary_resel": false,
+      "unknown": false
+    }
+  ]
+}

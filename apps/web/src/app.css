@@ -355,3 +355,63 @@ textarea { resize: none; }
   justify-content: center;
   min-height: 44px;
 }
+
+/* f9-swap-passes — §6 beat blocks. The bubble stays for `line`; the other slots
+   are chrome around it, so they deliberately do not look like speech. */
+.beat-header {
+  align-self: center;
+  margin: 10px 0 2px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--panel-2, rgba(127, 127, 127, 0.12));
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+.beat-narration {
+  align-self: stretch;
+  margin: 4px 8px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+.beat-thought {
+  align-self: stretch;
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  margin: 2px 8px 6px;
+  padding-left: 8px;
+  border-left: 2px solid var(--border, rgba(127, 127, 127, 0.25));
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+}
+.beat-thought-who { font-weight: 600; font-style: normal; }
+.beat-thought-text { white-space: pre-wrap; }
+.beat-ui {
+  align-self: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  margin: 6px 8px 12px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--border, rgba(127, 127, 127, 0.2));
+  font-size: 12px;
+  color: var(--muted);
+}
+.beat-ui-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--panel-2, rgba(127, 127, 127, 0.12));
+}
+.beat-ui-roster { display: flex; flex-wrap: wrap; gap: 4px; }
+.beat-chip {
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.25));
+  white-space: nowrap;
+}
+.beat-chip.locked { opacity: 0.5; }

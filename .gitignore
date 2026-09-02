@@ -17,3 +17,6 @@ content/
 # sketchBench smoke-test artifacts (--tag STUBIMG) — not §4 evidence, never commit
 bench/sketchBench/results/concurrent-STUBIMG-*.json
 __pycache__/
+
+# build-output backups (apps/web/dist.bak) — artifact, never commit
+dist.bak/

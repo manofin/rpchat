@@ -1,0 +1,21 @@
+-- 0011_scene_catalog.sql — f9-place-catalog (Story-owned place/arc/stage catalog)
+-- Runner wraps each file in a transaction. This file must not open or close that wrapper.
+--
+-- Separates the three layers that were previously collapsed into character tags:
+--   Story     → scene_catalog: the places/arcs/stages/weathers/flags that MAY exist
+--   Scene     → conversations.scene_json: where the scene currently IS (0010)
+--   Character → tags_json `party:home=`: where an NPC normally stands (presence only)
+--
+-- Before this file, PartyCatalog.locations was collected from each cast member's
+-- `party:place` tag, so the GM could only ever move the scene to a location that
+-- already had a character standing in it. Places now come from the story.
+--
+-- Shape of scene_catalog (JSON object; SQLite cannot constrain it):
+--   {"places":[{"id":str,"name"?:str,"tags"?:[str]}],
+--    "weathers":[str], "arcs":[str],
+--    "stagesByArc":{arc:[stage]}, "flags":{key:{"owner_stage"?:str}}}
+-- '{}' means "no catalog": every delta key is then rejected by applySceneDelta.
+--
+-- Existing rows default to '{}'. No row is rewritten. No new table.
+
+ALTER TABLE stories ADD COLUMN scene_catalog TEXT NOT NULL DEFAULT '{}';

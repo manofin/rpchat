@@ -19,6 +19,7 @@ import { chatRoutes } from './routes/chat.js';
 import { memoryRoutes } from './routes/memory.js';
 import { settingsRoutes } from './routes/settings.js';
 import { searchRoutes } from './routes/search.js';
+import { mediaRoutes } from './routes/media.js';
 
 async function main() {
   const problems = validateConfig();
@@ -38,7 +39,7 @@ async function main() {
   if (orphaned) app.log.warn({ orphaned }, '고아 streaming 메시지를 interrupted 로 접음');
   seed(db, config.contentDir, (m) => app.log.info(m));
 
-  const model = new ModelClient(config.model.baseUrl, config.model.apiKey, config.model.timeoutMs);
+  const model = new ModelClient(config.model.baseUrl, config.model.apiKey, config.model.timeoutMs, config.dataDir);
   const queue = new GenerationQueue(1);
 
   // 모델 이름 해석 + 헬스 캐시(10초)
@@ -94,6 +95,10 @@ async function main() {
     if (!fs.existsSync(p)) return reply.code(404).send({ error: 'not found' });
     return reply.type(avatarMime[m[2]]).send(fs.readFileSync(p));
   });
+
+  // f9-beat-render: scene assets. Registered here (before the SPA static handler)
+  // so a missing asset 404s as JSON rather than falling through to index.html.
+  await app.register(mediaRoutes(mediaRoot));
 
   // 정적 SPA (빌드 결과가 있을 때만). /api 외 경로는 index.html 로 폴백.
   const hasWeb = fs.existsSync(config.webDist) && fs.existsSync(`${config.webDist}/index.html`);

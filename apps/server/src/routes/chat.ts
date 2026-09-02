@@ -2,10 +2,21 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../ctx.js';
 import { PROMPT_VERSION, config } from '../config.js';
-import { nowIso, one, run, uid } from '../db/index.js';
+import { getSetting, many, nowIso, one, run, uid } from '../db/index.js';
 import { interruptOrphanStreaming } from '../db/generation.js';
 import { getPath, insertMessage, messageOut, setHead, updateMessage } from '../db/tree.js';
 import { ModelError } from '../model/adapter.js';
+import {
+  finishBeat, passFWith, planBeat, planPassE, partyCastForGenerate,
+  type BeatPlanInput,
+} from '../prompt/composeBeat.js';
+import type { PartyTagRow } from '../prompt/tagsCatalog.js';
+import { catalogFromStory } from '../prompt/sceneCatalog.js';
+import { currentSceneVersion, parseSceneDelta, renderSceneDeltaPrompt } from '../prompt/sceneDeltaPrompt.js';
+import { PASS_E_MAX_SENTENCES } from '../prompt/passes.js';
+import { resolvePersona } from '../prompt/builder.js';
+import type { PassCard } from '../prompt/passes.js';
+import type { CharacterRow } from '../types.js';
 import { buildPrompt } from '../prompt/builder.js';
 import { dumpGenerationPrompt } from '../prompt/dump.js';
 import { extractChoices } from '../prompt/templates.js';
@@ -24,6 +35,10 @@ type SseEvent =
   | { type: 'start'; generationId: string; messageId: string; userMessage?: ReturnType<typeof messageOut> }
   | { type: 'token'; text: string }
   | { type: 'done'; message: ReturnType<typeof messageOut>; usage: unknown; ttftMs: number | null; totalMs: number; budget?: SseBudget }
+  // f9-swap-passes: every beat block except the streamed one arrives here. `aux`
+  // is already append-only and id-deduped on the client, which is exactly the
+  // semantics a header / narration / thought / extra / ui row needs.
+  | { type: 'aux'; message: ReturnType<typeof messageOut> }
   | { type: 'error'; message: string; messageId?: string };
 
 function sseBudget(b: { dropped_messages: number; included_messages: number; est_total: number; available: number }): SseBudget {
@@ -36,6 +51,37 @@ function sseBudget(b: { dropped_messages: number; included_messages: number; est
 }
 
 const PERSIST_INTERVAL_MS = 800;
+/** f9-live-scene-delta: the proposal is a one-line JSON verdict, not prose. */
+const SCENE_DELTA_MAX_TOKENS = 200;
+/** f9-swap-passes: a secondary interjects, it does not take the scene over. */
+const AUX_MAX_TOKENS = 220;
+/** Pass N is scene-setting, not a chapter. */
+const PASS_N_MAX_TOKENS = 300;
+/** Pass N failing must not cost the turn, so it gets a short leash. */
+const PASS_N_TIMEOUT_MS = 20_000;
+const PASS_E_TIMEOUT_MS = 15_000;
+
+/**
+ * Per-pass deadline. The model client has one global timeout tuned for a full 1:1
+ * turn, which is far too generous for a four-sentence narration — and §7's whole
+ * defence against a five-call beat is that a stalled optional pass gets dropped
+ * fast rather than adding a minute to the turn. Composing a signal here keeps that
+ * local to the beat path instead of changing the shared client for 1:1 too.
+ */
+function withDeadline(ms: number, parent: AbortSignal): { signal: AbortSignal; done: () => void } {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(new Error('pass timeout')), ms);
+  const onAbort = () => ctrl.abort(parent.reason);
+  if (parent.aborted) ctrl.abort(parent.reason);
+  else parent.addEventListener('abort', onAbort, { once: true });
+  return {
+    signal: ctrl.signal,
+    done: () => {
+      clearTimeout(timer);
+      parent.removeEventListener('abort', onAbort);
+    },
+  };
+}
 
 export function chatRoutes(ctx: Ctx) {
   const { db } = ctx;
@@ -76,7 +122,31 @@ export function chatRoutes(ctx: Ctx) {
     if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
 
     setHead(db, conv.id, parentId);
-    const convNow = loadConversation(ctx, conv.id)!;
+    let convNow = loadConversation(ctx, conv.id)!;
+
+    const generationId = uid();
+    // f9-tags-catalog: a party roster only exists for story-hosted conversations.
+    // story_id is null on every 1:1 row, so this costs a 1:1 turn zero queries.
+    const partyRoster: PartyTagRow[] = convNow.story_id
+      ? many<PartyTagRow>(
+          db,
+          `SELECT c.id, c.name, c.tags_json
+             FROM story_characters sc
+             JOIN characters c ON c.id = sc.character_id
+            WHERE sc.story_id = ?
+            ORDER BY sc.sort_order ASC, c.name ASC`,
+          convNow.story_id,
+        )
+      : [];
+    const partyCast = partyCastForGenerate(convNow, partyRoster);
+
+    // f9-swap-passes: a party conversation does not build a 1:1 prompt at all.
+    // It assembles one beat out of several narrow calls (§5), so it takes its own
+    // path and `buildPrompt` is never reached below.
+    if (partyCast && partyCast.length) {
+      return generateBeat(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage);
+    }
+
     const history = getPath(db, convNow);
 
     let built;
@@ -87,7 +157,6 @@ export function chatRoutes(ctx: Ctx) {
     }
     if (!built.model) return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
 
-    const generationId = uid();
     const assistant = insertMessage(db, conv.id, parentId, 'assistant', '', 'streaming', {
       generation_id: generationId, profile: built.profile.name, prompt_version: PROMPT_VERSION, ooc: built.isOoc || undefined,
     });
@@ -133,6 +202,7 @@ export function chatRoutes(ctx: Ctx) {
             max_tokens: built.profile.max_tokens,
             stop: built.stop,
             signal: controller.signal,
+            generationId,
           },
           (delta) => {
             buffer += delta;
@@ -152,6 +222,7 @@ export function chatRoutes(ctx: Ctx) {
         if (result.usage?.prompt_tokens) updateCalibration(db, estPrompt, result.usage.prompt_tokens);
         logRow('complete', { actual: result.usage?.prompt_tokens ?? null, completion: result.usage?.completion_tokens ?? null, ttft: result.ttftMs, total: result.totalMs, finish: result.finishReason });
         sse.send({ type: 'done', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', assistant.id)!), usage: result.usage, ttftMs: result.ttftMs, totalMs: result.totalMs, budget: sseBudget(built.budget) });
+
       }, controller.signal);
     } catch (err) {
       const aborted = controller.signal.aborted;
@@ -165,6 +236,338 @@ export function chatRoutes(ctx: Ctx) {
         updateMessage(db, assistant.id, { content: buffer.trim(), status: 'error', meta: { error: msg } });
         logRow('error', { finish: 'error' });
         sse.send({ type: 'error', message: msg, messageId: assistant.id });
+      }
+    } finally {
+      ctx.queue.unregister(generationId);
+      sse.close();
+    }
+  }
+
+  /**
+   * f9-swap-passes — the party path. One user input, one assembled beat (§4, §6).
+   *
+   * Deliberately NOT `buildPrompt`: the 1:1 builder assembles a single system
+   * prompt for one character, and a beat is several narrow calls whose cards do
+   * not overlap. Keeping the two paths separate is also what makes the "1:1 system
+   * block bytes unchanged" gate meaningful — this function cannot affect it.
+   *
+   * Failure policy (A-6 / §3): nothing here kills the turn except Pass F.
+   *   delta   → scene unchanged, beat continues
+   *   Pass N  → no narration block, beat continues
+   *   Pass E  → that extra is dropped, beat continues
+   *   Pass F  → status='error', same as the 1:1 path
+   */
+  async function generateBeat(
+    req: FastifyRequest,
+    reply: FastifyReply,
+    conv: ConversationRow,
+    parentId: string | null,
+    convNow: ConversationRow,
+    cast: NonNullable<ReturnType<typeof partyCastForGenerate>>,
+    roster: PartyTagRow[],
+    generationId: string,
+    userMessage?: MessageRow,
+  ) {
+    const model = ctx.resolvedModel();
+    if (!model) return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
+
+    const scene = JSON.parse(convNow.scene_json || '{}');
+    // f9-place-catalog: places/arcs/stages come from the Story layer, so the GM can
+    // move the scene somewhere no cast member currently stands. Read live because
+    // this is a server-side validation allow-list, not narrative text.
+    const storyCatalogRow = one<{ scene_catalog: string }>(
+      db, 'SELECT scene_catalog FROM stories WHERE id = ?', convNow.story_id,
+    );
+    const catalog = catalogFromStory(storyCatalogRow?.scene_catalog ?? '{}');
+    const baseVersion = currentSceneVersion(scene);
+    const userText = userMessage?.content ?? '';
+
+    // Turn Pipeline step 2-4: propose → validate → apply. One short call; any
+    // failure leaves the scene untouched and the beat continues.
+    let patch: Record<string, unknown> | null = null;
+    const passMs: { delta: number; n: number; f: number; e: number[] } = { delta: 0, n: 0, f: 0, e: [] };
+    const t0delta = Date.now();
+    try {
+      const proposal = await ctx.queue.run(() =>
+        ctx.model.complete({
+          model,
+          messages: [{ role: 'user', content: renderSceneDeltaPrompt({ scene, catalog: { ...catalog, cast }, userText }) }],
+          temperature: 0.2,
+          top_p: 0.9,
+          max_tokens: SCENE_DELTA_MAX_TOKENS,
+          stop: [],
+        }),
+      );
+      patch = parseSceneDelta(proposal.text);
+    } catch (err) {
+      req.log.warn({ err, conversationId: conv.id }, 'scene delta proposal failed; scene unchanged');
+    }
+    passMs.delta = Date.now() - t0delta;
+
+    const cards: Record<string, PassCard> = {};
+    for (const row of many<CharacterRow>(
+      db,
+      `SELECT * FROM characters WHERE id IN (${roster.map(() => '?').join(',')})`,
+      ...roster.map((r) => r.id),
+    )) {
+      cards[row.id] = {
+        name: row.name,
+        tagline: row.tagline,
+        description: row.description,
+        personality: row.personality,
+        speech_style: row.speech_style,
+        taboos: row.taboos,
+      };
+    }
+
+    const persona = resolvePersona(db, convNow);
+    const planInput: BeatPlanInput = {
+      conversation_id: conv.id,
+      scene,
+      patch: patch ?? undefined,
+      catalog,
+      current_version: baseVersion,
+      user_text: userText,
+      user_name: persona?.name || '나',
+      cast,
+      cards,
+      main_character_id: convNow.character_id,
+      message_id: userMessage?.id ?? null,
+      content_policy: getSetting(db, 'content_policy', ''),
+    };
+    const plan = planBeat(planInput);
+
+    // Persist the applied scene before generating, so the passes and any concurrent
+    // reader see the same world the focus was resolved against.
+    if (!plan.applied.discarded && plan.applied.applied.length > 0) {
+      run(db, `UPDATE conversations SET scene_json = ?, updated_at = ? WHERE id = ?`,
+        JSON.stringify(plan.applied.state), nowIso(), conv.id);
+    }
+
+    const profileName = convNow.profile_name;
+    const sse = openSse(reply);
+    const controller = new AbortController();
+
+    let head = parentId;
+    const emitted: MessageRow[] = [];
+    /** Creates a beat block row, chained under the previous one. */
+    const addBlock = (
+      kind: 'header' | 'narration' | 'line' | 'thought' | 'ui',
+      content: string,
+      meta: Record<string, unknown> = {},
+    ): MessageRow => {
+      const row = insertMessage(db, conv.id, head, 'assistant', content, 'complete', {
+        generation_id: generationId, profile: profileName, prompt_version: PROMPT_VERSION,
+        block_kind: kind, beat_seq: emitted.length, ...meta,
+      });
+      setHead(db, conv.id, row.id);
+      head = row.id;
+      emitted.push(row);
+      return row;
+    };
+    const send = (row: MessageRow) =>
+      sse.send({ type: 'aux', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', row.id)!) });
+
+    ctx.queue.register({ id: generationId, conversationId: conv.id, messageId: '', startedAt: nowIso(), controller });
+
+    let focusRow: MessageRow | null = null;
+    let focusSeq = 0;
+    let started = false;
+    let buffer = '';
+    const tBeat = Date.now();
+
+    try {
+      // The user's own message goes out first. `start` also carries it (and the
+      // client dedupes by id), but `start` does not fire until Pass F begins, and
+      // by then the header and narration rows would already have been appended
+      // ahead of it.
+      if (userMessage) sse.send({ type: 'aux', message: messageOut(db, userMessage) });
+
+      // HEADER — server template, no model wait at all.
+      if (plan.header) send(addBlock('header', plan.header));
+
+      // Pass N — narration, crowd, camera. Failure costs the block, not the turn.
+      let narration = '';
+      const tN = Date.now();
+      const nDeadline = withDeadline(PASS_N_TIMEOUT_MS, controller.signal);
+      try {
+        const out = await ctx.queue.run(() => ctx.model.complete({
+          model, messages: [{ role: 'user', content: plan.pass_n }],
+          temperature: 0.8, top_p: 0.95, max_tokens: PASS_N_MAX_TOKENS, stop: [],
+          signal: nDeadline.signal,
+        }), controller.signal);
+        narration = out.text.trim();
+      } catch (err) {
+        if (controller.signal.aborted) throw err;
+        req.log.warn({ err, conversationId: conv.id }, 'pass N failed; beat continues without narration');
+      } finally {
+        nDeadline.done();
+      }
+      passMs.n = Date.now() - tN;
+      if (narration) send(addBlock('narration', narration));
+
+      // Pass F — the focus speaks. The only streamed pass, and the only one whose
+      // failure is a turn failure.
+      let focusText = '';
+      const passF = passFWith(planInput, plan, narration);
+      if (passF && plan.focus.focus_id) {
+        const focusName = cast.find((c) => c.id === plan.focus.focus_id)?.name ?? '';
+        focusSeq = emitted.length;
+        focusRow = insertMessage(db, conv.id, head, 'assistant', '', 'streaming', {
+          generation_id: generationId, profile: profileName, prompt_version: PROMPT_VERSION,
+          block_kind: 'line', beat_seq: focusSeq,
+          speaker_character_id: plan.focus.focus_id, speaker_name: focusName,
+        });
+        setHead(db, conv.id, focusRow.id);
+        head = focusRow.id;
+        // The focus row occupies a beat position like any other block, so it has to
+        // count. Leaving it out made every later block's beat_seq one short, and the
+        // final updateMessage below then reset the line's own seq to 0.
+        emitted.push(focusRow);
+        started = true;
+        sse.send({ type: 'start', generationId, messageId: focusRow.id, userMessage: userMessage ? messageOut(db, userMessage) : undefined });
+
+        const tF = Date.now();
+        let lastPersist = Date.now();
+        const result = await ctx.queue.run(() => ctx.model.stream(
+          {
+            model, messages: [{ role: 'user', content: passF }],
+            temperature: 0.9, top_p: 0.95, max_tokens: 500, stop: [], signal: controller.signal,
+          },
+          (delta) => {
+            buffer += delta;
+            sse.send({ type: 'token', text: delta });
+            if (Date.now() - lastPersist > PERSIST_INTERVAL_MS) {
+              lastPersist = Date.now();
+              updateMessage(db, focusRow!.id, { content: buffer });
+            }
+          },
+        ), controller.signal);
+        passMs.f = Date.now() - tF;
+        focusText = result.text.trim();
+      }
+
+      // Pass E — each approved extra, serially (queue concurrency is 1 anyway).
+      const extraTexts: Record<string, string> = {};
+      for (const e of planPassE(planInput, plan, narration, focusText)) {
+        const tE = Date.now();
+        const eDeadline = withDeadline(PASS_E_TIMEOUT_MS, controller.signal);
+        try {
+          const out = await ctx.queue.run(() => ctx.model.complete({
+            model, messages: [{ role: 'user', content: e.prompt }],
+            temperature: 0.85, top_p: 0.95, max_tokens: AUX_MAX_TOKENS, stop: [],
+            signal: eDeadline.signal,
+          }), controller.signal);
+          const text = out.text.trim();
+          if (text) extraTexts[e.character_id] = text;
+        } catch (err) {
+          if (controller.signal.aborted) throw err;
+          req.log.warn({ err, conversationId: conv.id, speaker: e.name }, 'pass E failed; that extra is dropped');
+        } finally {
+          eDeadline.done();
+        }
+        passMs.e.push(Date.now() - tE);
+      }
+
+      // Steps 8-9: serialize, persist the remaining blocks, commit the scene.
+      const finished = finishBeat(planInput, plan, { narration, focus_text: focusText, extra_texts: extraTexts });
+      const lineOf = (id: string) => finished.blocks.find((b) => b.kind === 'line' && b.speaker_character_id === id);
+
+      if (focusRow) {
+        const block = plan.focus.focus_id ? lineOf(plan.focus.focus_id) : undefined;
+        updateMessage(db, focusRow.id, {
+          content: block?.text ?? focusText,
+          status: 'complete',
+          meta: {
+            block_kind: 'line', beat_seq: focusSeq,
+            speaker_character_id: plan.focus.focus_id ?? undefined,
+            speaker_name: cast.find((c) => c.id === plan.focus.focus_id)?.name ?? undefined,
+            image_url: block?.asset_path ?? undefined,
+          },
+        });
+      }
+
+      const thought = finished.blocks.find((b) => b.kind === 'thought');
+      if (thought) {
+        send(addBlock('thought', thought.text, {
+          speaker_character_id: thought.speaker_character_id ?? undefined,
+          speaker_name: thought.speaker_name ?? undefined,
+        }));
+      }
+      for (const extra of plan.approved_extras) {
+        const block = lineOf(extra.character_id);
+        if (!block) continue;
+        send(addBlock('line', block.text, {
+          speaker_character_id: extra.character_id, speaker_name: extra.name,
+          image_url: block.asset_path ?? undefined,
+        }));
+      }
+      const uiRow = addBlock('ui', JSON.stringify(plan.ui));
+
+      run(db, `UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?`,
+        JSON.stringify(finished.scene), nowIso(), nowIso(), conv.id);
+
+      // f9-beat-metrics: one row per beat. `k_opened === 0` is the expected reading
+      // of a quiet turn, so it is recorded rather than treated as a miss.
+      run(
+        db,
+        `INSERT INTO generation_log (id, conversation_id, message_id, profile_name, prompt_version, est_prompt_tokens, actual_prompt_tokens, completion_tokens, ttft_ms, total_ms, finish_reason, status, budget_json, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        uid(), conv.id, focusRow?.id ?? uiRow.id, profileName, PROMPT_VERSION,
+        estimateTokens(plan.pass_n, 1) + estimateTokens(passF ?? '', 1), null, null, null,
+        Date.now() - tBeat, 'beat', 'complete',
+        JSON.stringify({
+          beat_log: {
+            focus_id: plan.focus.focus_id,
+            focus_reason: plan.focus.reason,
+            extra_ids: finished.scene.last_beat?.extra_ids ?? [],
+            extra_count: (finished.scene.last_beat?.extra_ids ?? []).length,
+            eligible_ids: plan.eligible_ids,
+            rejected: plan.rejected,
+            ambient_ids: plan.ambient.map((a) => a.character_id),
+            hard_events: plan.applied.appliedEvents,
+            k_opened: plan.approved_extras.length,
+            score_ran: false,
+            ambient_as_speech: 0,
+            asset_nulls: finished.blocks.filter((b) => b.kind === 'line' && !b.asset_path).length,
+            unresolved: finished.scene.last_beat?.unresolved ?? [],
+            pass_ms: passMs,
+          },
+        }),
+        nowIso(),
+      );
+
+      // Exactly one start/done pair per turn. When the beat has no focus there is
+      // nothing to stream, so the UI block closes it — the client needs the pair to
+      // clear `generating`, not a particular block kind.
+      const closing = focusRow ?? uiRow;
+      if (!started) {
+        sse.send({ type: 'start', generationId, messageId: closing.id, userMessage: userMessage ? messageOut(db, userMessage) : undefined });
+      }
+      if (focusRow) send(uiRow);
+      sse.send({
+        type: 'done',
+        message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', closing.id)!),
+        usage: null, ttftMs: null, totalMs: Date.now() - tBeat,
+      });
+    } catch (err) {
+      const aborted = controller.signal.aborted;
+      const msg = err instanceof ModelError ? err.message : (err as Error)?.name === 'TimeoutError' ? '모델 응답 시간 초과' : (err as Error).message;
+      if (focusRow) {
+        updateMessage(db, focusRow.id, {
+          content: buffer.trim(),
+          status: aborted ? 'interrupted' : 'error',
+          meta: aborted ? { finish_reason: 'aborted' } : { error: msg },
+        });
+        if (aborted) {
+          sse.send({ type: 'done', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', focusRow.id)!), usage: null, ttftMs: null, totalMs: Date.now() - tBeat });
+        } else {
+          ctx.log.error({ err, generationId }, '비트 생성 실패');
+          sse.send({ type: 'error', message: msg, messageId: focusRow.id });
+        }
+      } else {
+        ctx.log.error({ err, generationId }, '비트 생성 실패');
+        sse.send({ type: 'error', message: msg });
       }
     } finally {
       ctx.queue.unregister(generationId);

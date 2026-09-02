@@ -107,6 +107,17 @@ export interface Message {
     choices?: string[];
     ooc?: boolean;
     error?: string;
+    speaker_character_id?: string;
+    speaker_name?: string;
+    speaker_avatar?: string | null;
+    /**
+     * f9-swap-passes: which §6 slot this row is. Absent on 1:1 messages and on
+     * anything written before the beat engine — those keep the ordinary bubble.
+     */
+    block_kind?: 'header' | 'narration' | 'line' | 'thought' | 'ui';
+    beat_seq?: number;
+    /** Server-chosen local asset path. Never a model-written URL. */
+    image_url?: string;
   };
   bookmarked: boolean;
   created_at: string;
@@ -223,4 +234,5 @@ export type SseEvent =
   | { type: 'start'; generationId: string; messageId: string; userMessage?: Message }
   | { type: 'token'; text: string }
   | { type: 'done'; message: Message; usage: unknown; ttftMs: number | null; totalMs: number; budget?: SseBudget }
+  | { type: 'aux'; message: Message }
   | { type: 'error'; message: string; messageId?: string };
