@@ -88,6 +88,18 @@ t('ST-style italic stage direction still targets 나리 (whisper follow-up)', ()
   assert.equal(actionOnly.focus_id, 'nari', 'asterisks must not hide the name');
 });
 
+t('aiming at 하연 in *direction* while mentioning 나리 in speech targets 하연', () => {
+  const r = focus('*하연을 향해 씩 웃으며* 과제 세 배라니, 첫날부터 가혹하시네요. 나리 씨랑 좀 더 친해지라는 뜻으로 받아들이겠습니다.');
+  assert.equal(r.focus_id, 'hayeon');
+  assert.equal(r.reason, 'targeted');
+  assert.deepEqual(r.matched_ids, ['hayeon']);
+});
+
+t('two names inside the *direction* stay ambiguous; speech-only two names stay ambiguous', () => {
+  assert.equal(focus('*세라와 하연을 보며* 둘 다 들어.').focus_id, null);
+  assert.equal(focus('세라, 하연, 둘 다 들어.').focus_id, null);
+});
+
 t('Korean particles are stripped, so 나리가 / 나리에게 / 나리를 all target 나리', () => {
   for (const p of ['가', '는', '를', '에게', '한테', '야', '아', '도', '의']) {
     assert.equal(focus(`나리${p} 대답해`).focus_id, 'nari', p);

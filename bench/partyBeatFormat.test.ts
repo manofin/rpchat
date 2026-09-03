@@ -124,6 +124,38 @@ t('initialBeatScene overlay wins; 1:1 (cast < 2) is a no-op', () => {
   assert.deepEqual(one, { place: '복도' });
 });
 
+t('aiming at 하연 while mentioning 나리: focus 하연, extras ≤ 2, 루나 not a slot, beat_goal on UI', () => {
+  const line = '*하연을 향해 씩 웃으며* 과제 세 배라니, 첫날부터 가혹하시네요. 나리 씨랑 좀 더 친해지라는 뜻으로 받아들이겠습니다.';
+  const goal = '합동 과제(나리) - 재해 등급별 초동 대응 매뉴얼 D~S급 각 3000자 [내일 아침]';
+  const i = input({
+    user_text: line,
+    scene: { ...CLASSROOM, beat_goal: goal, last_beat: { focus_id: 'nari', extra_ids: [], unresolved: ['nari'] } },
+  });
+  const plan = planBeat(i);
+  assert.equal(plan.focus.focus_id, 'hayeon');
+  assert.ok(plan.header!.includes('교실'));
+  assert.ok(plan.approved_extras.length <= 2);
+  assert.equal(plan.ui.intent_hint, goal);
+  const done = finishBeat(i, plan, {
+    narration: '분필이 칠판에서 부러졌다. 루나가 킥킥 웃었다.',
+    focus_text: `"좋아. 그 해석력이면 리포트 쓸 때도 잘 하겠네."\n${THOUGHT_MARKER} 교직 12년차에 처음 보는 유형이네.`,
+    extra_texts: {},
+  });
+  const lines = done.blocks.filter((b) => b.kind === 'line');
+  assert.ok(lines.some((b) => b.speaker_character_id === 'hayeon' && b.speaker_name === '하연'));
+  assert.ok(lines.filter((b) => b.speaker_character_id !== 'hayeon').length <= 2);
+  assert.equal(lines.some((b) => b.speaker_name === '루나'), false);
+  assert.equal(lines.some((b) => b.speaker_name === '미르'), false);
+  const thoughts = done.blocks.filter((b) => b.kind === 'thought');
+  assert.equal(thoughts.length, 1);
+  assert.equal(thoughts[0].speaker_character_id, 'hayeon');
+  const ui = JSON.parse(done.blocks.find((b) => b.kind === 'ui')!.text);
+  assert.equal(ui.intent_hint, goal);
+  assert.equal(ui.user_sheet.hp, 100);
+  assert.equal(done.scene.location, '교실');
+  assert.equal(done.scene.clock_minutes, CLASSROOM.clock_minutes);
+});
+
 t('whisper-to-나리 follow-up: header clock+place, focus line, extras ≤ 2, thought only on focus', () => {
   const whisper = '*나리의 귓가에 낮게 속삭이며* 협박치고는 귀엽네요. 옮길 생각 없으니 안심해요, 나리 씨.';
   const i = input({

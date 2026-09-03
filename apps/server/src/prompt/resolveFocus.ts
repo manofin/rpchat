@@ -87,6 +87,21 @@ export function targetedIds(text: string, cast: CastMember[]): string[] {
   return hits;
 }
 
+/**
+ * ST/Risu stage directions sit in *asterisks*. A name there is who the user
+ * aimed at; a name in the spoken remainder is often a topic ("나리 씨랑 친해질게"
+ * while facing 하연). Concatenate every well-formed *span*; unmatched stars
+ * contribute nothing.
+ */
+export function actionDirectionText(text: string): string {
+  if (!text || !text.includes('*')) return '';
+  const spans: string[] = [];
+  const re = /\*([^*\n]+)\*/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text))) spans.push(m[1]);
+  return spans.join(' ');
+}
+
 /** True when the message uses second person as a standalone token. */
 export function usesSecondPerson(text: string): boolean {
   if (!text) return false;
@@ -143,6 +158,12 @@ export function resolveFocus(input: {
   // through. Two people in the room were both addressed; picking one would be a
   // guess, and guessing is the behaviour this module exists to remove.
   const named = targetedIds(text, cast).filter((id) => selectable(id, cast, scene));
+  const aimed = targetedIds(actionDirectionText(text), cast).filter((id) => selectable(id, cast, scene));
+  // A single name inside *stage direction* is the aim, even if speech mentions
+  // someone else. Two names inside the direction stay ambiguous. No direction
+  // (or no name in it) keeps the whole-message rule.
+  if (aimed.length === 1) return result(aimed[0], 'targeted', aimed);
+  if (aimed.length > 1) return result(null, 'none', aimed);
   if (named.length === 1) return result(named[0], 'targeted', named);
   if (named.length > 1) return result(null, 'none', named);
 

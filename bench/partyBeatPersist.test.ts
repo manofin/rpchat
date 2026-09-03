@@ -255,6 +255,34 @@ async function main() {
     assert.ok(beat2.includes('header') && beat2.includes('line') && beat2.includes('ui'), JSON.stringify(beat2));
   });
 
+  await t('third send aims at 하연 in *direction* while speech names 나리; scene survives', async () => {
+    const aim = '*하연을 향해 씩 웃으며* 과제 세 배라니, 첫날부터 가혹하시네요. 나리 씨랑 좀 더 친해지라는 뜻으로 받아들이겠습니다.';
+    const res = await fetch(`${origin}/api/conversations/${convId}/messages`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ content: aim }),
+    });
+    assert.equal(res.status, 200, `turn3 expected SSE 200 got ${res.status}`);
+    const tokens = parseSse(await res.text()).filter((e) => e.type === 'token');
+    assert.ok(tokens.length > 1, `turn3 needs incremental tokens, got ${tokens.length}`);
+
+    const detail = await api('GET', `/api/conversations/${convId}`);
+    const body = detail.json as {
+      conversation: { scene: { location?: string; clock_minutes?: number } };
+      messages: Array<{ role: string; content: string; meta: Record<string, unknown> }>;
+    };
+    assert.equal(body.conversation.scene.location, '교실');
+    assert.equal(typeof body.conversation.scene.clock_minutes, 'number');
+    const users = body.messages.filter((m) => m.role === 'user').map((m) => m.content);
+    assert.equal(users[users.length - 1], aim);
+    const kinds = body.messages.filter((m) => m.role === 'assistant').map((m) => m.meta.block_kind);
+    assert.equal(kinds.filter((k) => k === 'ui').length, 3, JSON.stringify(kinds));
+    const lines = body.messages.filter((m) => m.meta.block_kind === 'line');
+    assert.equal(lines[lines.length - 1].meta.speaker_name, '하연');
+    assert.equal(lines.some((m) => m.meta.speaker_name === '루나'), false);
+    assert.equal(lines.some((m) => m.meta.speaker_name === '미르'), false);
+  });
+
   await app.close();
   db.close();
   fs.rmSync(tmp, { recursive: true, force: true });

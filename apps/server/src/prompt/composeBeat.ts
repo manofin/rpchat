@@ -169,6 +169,7 @@ export function planBeat(input: BeatPlanInput): BeatPlan {
     cast: input.cast,
     focus_id: focus.focus_id,
     extra_ids: extraIds,
+    intent_hint: scene.beat_goal ?? null,
   });
 
   const focusCard = focus.focus_id ? cardFor(focus.focus_id, input) : null;
