@@ -124,6 +124,36 @@ t('initialBeatScene overlay wins; 1:1 (cast < 2) is a no-op', () => {
   assert.deepEqual(one, { place: '복도' });
 });
 
+t('whisper-to-나리 follow-up: header clock+place, focus line, extras ≤ 2, thought only on focus', () => {
+  const whisper = '*나리의 귓가에 낮게 속삭이며* 협박치고는 귀엽네요. 옮길 생각 없으니 안심해요, 나리 씨.';
+  const i = input({
+    user_text: whisper,
+    scene: { ...CLASSROOM, last_beat: { focus_id: 'nari', extra_ids: [], unresolved: ['nari'] } },
+  });
+  const plan = planBeat(i);
+  assert.equal(plan.focus.focus_id, 'nari');
+  assert.ok(plan.header!.includes('09:38'));
+  assert.ok(plan.header!.includes('교실'));
+  assert.ok(plan.approved_extras.length <= 2);
+  const done = finishBeat(i, plan, {
+    narration: '황지명의 목소리는 낮고 또렷했다. 뒤에서 루나가 킥킥 웃었다.',
+    focus_text: `"귀, 귀엽다고?!"\n${THOUGHT_MARKER} 심장이 왜 이래.`,
+    extra_texts: {},
+  });
+  const lines = done.blocks.filter((b) => b.kind === 'line');
+  assert.ok(lines.some((b) => b.speaker_character_id === 'nari'));
+  assert.ok(lines.filter((b) => b.speaker_character_id !== 'nari').length <= 2);
+  assert.equal(lines.some((b) => b.speaker_name === '루나'), false);
+  assert.equal(lines.some((b) => b.speaker_name === '유라'), false);
+  const thoughts = done.blocks.filter((b) => b.kind === 'thought');
+  assert.equal(thoughts.length, 1);
+  assert.equal(thoughts[0].speaker_character_id, 'nari');
+  const ui = JSON.parse(done.blocks.find((b) => b.kind === 'ui')!.text);
+  assert.equal(ui.user_sheet.hp, 100);
+  assert.equal(done.scene.location, '교실');
+  assert.equal(done.scene.clock_minutes, CLASSROOM.clock_minutes);
+});
+
 t('나리-targeted turn: focus line + extras ≤ 2 + ambient not a slot + thought only on focus + UI vitals/roster', () => {
   const i = input({ patch: { base_version: 0, flags: { rulebreak: true } } });
   const plan = planBeat(i);

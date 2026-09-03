@@ -218,6 +218,43 @@ async function main() {
     assert.ok(hanChip.locked || hanChip.chip === '🔒');
   });
 
+  await t('second send on the same conv is still a structured beat; scene place+clock survive', async () => {
+    const whisper = '*나리의 귓가에 낮게 속삭이며* 협박치고는 귀엽네요. 옮길 생각 없으니 안심해요, 나리 씨.';
+    const res = await fetch(`${origin}/api/conversations/${convId}/messages`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ content: whisper }),
+    });
+    assert.equal(res.status, 200, `turn2 expected SSE 200 got ${res.status}`);
+    const raw = await res.text();
+    const tokens = parseSse(raw).filter((e) => e.type === 'token');
+    assert.ok(tokens.length > 1, `turn2 needs incremental tokens, got ${tokens.length}`);
+
+    const detail = await api('GET', `/api/conversations/${convId}`);
+    assert.equal(detail.status, 200, detail.text);
+    const body = detail.json as {
+      conversation: { scene: { location?: string; clock_minutes?: number } };
+      messages: Array<{ role: string; content: string; meta: Record<string, unknown> }>;
+    };
+    assert.equal(body.conversation.scene.location, '교실');
+    assert.equal(typeof body.conversation.scene.clock_minutes, 'number');
+    assert.ok((body.conversation.scene.clock_minutes as number) >= 0);
+
+    const users = body.messages.filter((m) => m.role === 'user').map((m) => m.content);
+    assert.deepEqual(users, ['나리, 네 이야기 말인데.', whisper]);
+
+    const kinds = body.messages.filter((m) => m.role === 'assistant').map((m) => m.meta.block_kind);
+    const uiCount = kinds.filter((k) => k === 'ui').length;
+    assert.equal(uiCount, 2, `expected two ui blocks, kinds=${JSON.stringify(kinds)}`);
+    assert.ok(kinds.includes('header'));
+    assert.ok(kinds.includes('line'));
+    const extraLines = body.messages.filter((m) => m.meta.block_kind === 'line' && m.meta.speaker_name !== '나리');
+    assert.ok(extraLines.length <= 4, 'two turns × extras ≤ 2');
+    assert.equal(extraLines.some((m) => m.meta.speaker_name === '루나'), false);
+    const beat2 = kinds.slice(kinds.indexOf('ui') + 1);
+    assert.ok(beat2.includes('header') && beat2.includes('line') && beat2.includes('ui'), JSON.stringify(beat2));
+  });
+
   await app.close();
   db.close();
   fs.rmSync(tmp, { recursive: true, force: true });

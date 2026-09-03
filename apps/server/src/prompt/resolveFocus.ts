@@ -43,7 +43,8 @@ const PARTICLES = [
 /** §4.1-3 second person. Only ever *confirms* the previous focus, never creates one. */
 const SECOND_PERSON = ['너', '넌', '네가', '니가', '당신', '그대', '자네'];
 
-const TOKEN_SPLIT = /[\s,.!?;:"'()[\]{}<>~…·「」『』“”‘’\-—]+/u;
+/** Includes `*` so ST-style stage directions (`*나리의 귓가에 속삭이며*`) still name-match. */
+const TOKEN_SPLIT = /[\s,.!?;:"'()[\]{}<>~…·「」『』“”‘’*\-—]+/u;
 
 function stripParticle(token: string): string {
   for (const p of PARTICLES) {

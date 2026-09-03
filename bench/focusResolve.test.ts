@@ -80,6 +80,14 @@ t('@ prefix, bare name, alias and id all target the same person', () => {
   }
 });
 
+t('ST-style italic stage direction still targets 나리 (whisper follow-up)', () => {
+  const r = focus('*나리의 귓가에 낮게 속삭이며* 협박치고는 귀엽네요. 옮길 생각 없으니 안심해요, 나리 씨.');
+  assert.equal(r.focus_id, 'nari');
+  assert.equal(r.reason, 'targeted');
+  const actionOnly = focus('*나리의 귓가에 낮게 속삭이며*');
+  assert.equal(actionOnly.focus_id, 'nari', 'asterisks must not hide the name');
+});
+
 t('Korean particles are stripped, so 나리가 / 나리에게 / 나리를 all target 나리', () => {
   for (const p of ['가', '는', '를', '에게', '한테', '야', '아', '도', '의']) {
     assert.equal(focus(`나리${p} 대답해`).focus_id, 'nari', p);
