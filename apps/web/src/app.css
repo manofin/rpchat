@@ -376,6 +376,34 @@ textarea { resize: none; }
   line-height: 1.65;
   white-space: pre-wrap;
 }
+/* dialog-format — the INFO sheet. A monospaced label column so 정보/계약/침식/목표
+   line up as a sheet; the beat's pill header is the wrong shape for five rows. */
+.beat-info {
+  align-self: stretch;
+  margin: 10px 8px 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.25));
+  border-radius: 8px;
+  background: var(--panel-2, rgba(127, 127, 127, 0.08));
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.beat-info-head {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+  color: var(--fg, inherit);
+}
+.beat-info-row { display: flex; gap: 8px; }
+.beat-info-label {
+  flex: 0 0 auto;
+  min-width: 3.2em;
+  font-weight: 600;
+  opacity: 0.8;
+}
+.beat-info-value { flex: 1 1 auto; word-break: break-word; }
+
 .beat-thought {
   align-self: stretch;
   display: flex;

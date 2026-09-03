@@ -10,6 +10,9 @@ import {
   finishBeat, passFWith, planBeat, planPassE, partyCastForGenerate,
   type BeatPlanInput,
 } from '../prompt/composeBeat.js';
+import {
+  finishDialogBeat, planDialogBeat, type DialogPlanInput,
+} from '../prompt/composeDialog.js';
 import type { PartyTagRow } from '../prompt/tagsCatalog.js';
 import { catalogFromStory } from '../prompt/sceneCatalog.js';
 import { currentSceneVersion, parseSceneDelta, renderSceneDeltaPrompt } from '../prompt/sceneDeltaPrompt.js';
@@ -21,7 +24,7 @@ import { buildPrompt } from '../prompt/builder.js';
 import { dumpGenerationPrompt } from '../prompt/dump.js';
 import { extractChoices } from '../prompt/templates.js';
 import { estimateTokens, updateCalibration } from '../prompt/tokens.js';
-import type { ConversationRow, MessageRow } from '../types.js';
+import type { ConversationRow, MessageRow, Scene } from '../types.js';
 import { loadConversation } from './conversations.js';
 
 type SseBudget = {
@@ -60,6 +63,12 @@ const PASS_N_MAX_TOKENS = 300;
 /** Pass N failing must not cost the turn, so it gets a short leash. */
 const PASS_N_TIMEOUT_MS = 20_000;
 const PASS_E_TIMEOUT_MS = 15_000;
+/**
+ * dialog-format: Pass S writes the whole turn — narration and every line — so it
+ * needs the room the beat path splits across N + F + E. It is also the only call
+ * that turn, which is why one budget this size still costs less than the mix.
+ */
+const PASS_S_MAX_TOKENS = 900;
 
 /**
  * Per-pass deadline. The model client has one global timeout tuned for a full 1:1
@@ -144,6 +153,12 @@ export function chatRoutes(ctx: Ctx) {
     // It assembles one beat out of several narrow calls (§5), so it takes its own
     // path and `buildPrompt` is never reached below.
     if (partyCast && partyCast.length) {
+      // dialog-format: same cast gate, different output shape. The switch is scene
+      // state, so a conversation opts in without touching any other conversation.
+      const fmt = (JSON.parse(convNow.scene_json || '{}') as Scene).format;
+      if (fmt === 'dialog') {
+        return generateDialog(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage);
+      }
       return generateBeat(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage);
     }
 
@@ -567,6 +582,260 @@ export function chatRoutes(ctx: Ctx) {
         }
       } else {
         ctx.log.error({ err, generationId }, '비트 생성 실패');
+        sse.send({ type: 'error', message: msg });
+      }
+    } finally {
+      ctx.queue.unregister(generationId);
+      sse.close();
+    }
+  }
+
+  /**
+   * dialog-format — the Dialog.txt-class path. One user input, one script.
+   *
+   * Structurally the beat path with its generation half swapped: the same scene
+   * apply, the same server-only focus, then a single streamed Pass S instead of
+   * N + F + E. The reason it is one call is in `dialogScript.ts` — reproducing a
+   * turn where two people trade four lines each would otherwise cost eight round
+   * trips — and the price of that trade is paid by `parseScript`, which refuses
+   * any speaker the server did not put on the allow-list.
+   *
+   * Failure policy, unchanged in spirit (A-6 / §3):
+   *   delta   → scene unchanged, turn continues
+   *   Pass S  → status='error', same as Pass F on the beat path
+   */
+  async function generateDialog(
+    req: FastifyRequest,
+    reply: FastifyReply,
+    conv: ConversationRow,
+    parentId: string | null,
+    convNow: ConversationRow,
+    cast: NonNullable<ReturnType<typeof partyCastForGenerate>>,
+    roster: PartyTagRow[],
+    generationId: string,
+    userMessage?: MessageRow,
+  ) {
+    const model = ctx.resolvedModel();
+    if (!model) return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
+
+    const scene: Scene = JSON.parse(convNow.scene_json || '{}');
+    const storyCatalogRow = one<{ scene_catalog: string }>(
+      db, 'SELECT scene_catalog FROM stories WHERE id = ?', convNow.story_id,
+    );
+    const catalog = catalogFromStory(storyCatalogRow?.scene_catalog ?? '{}');
+    const baseVersion = currentSceneVersion(scene);
+    const userText = userMessage?.content ?? '';
+
+    // Scene delta — identical contract to the beat path, including the allow-list.
+    let patch: Record<string, unknown> | null = null;
+    const passMs: { delta: number; s: number } = { delta: 0, s: 0 };
+    const t0delta = Date.now();
+    try {
+      const proposal = await ctx.queue.run(() =>
+        ctx.model.complete({
+          model,
+          messages: [{ role: 'user', content: renderSceneDeltaPrompt({ scene, catalog: { ...catalog, cast }, userText }) }],
+          temperature: 0.2,
+          top_p: 0.9,
+          max_tokens: SCENE_DELTA_MAX_TOKENS,
+          stop: [],
+        }),
+      );
+      patch = parseSceneDelta(proposal.text);
+    } catch (err) {
+      req.log.warn({ err, conversationId: conv.id }, 'scene delta proposal failed; scene unchanged');
+    }
+    passMs.delta = Date.now() - t0delta;
+
+    const cards: Record<string, PassCard> = {};
+    for (const row of many<CharacterRow>(
+      db,
+      `SELECT * FROM characters WHERE id IN (${roster.map(() => '?').join(',')})`,
+      ...roster.map((r) => r.id),
+    )) {
+      cards[row.id] = {
+        name: row.name,
+        tagline: row.tagline,
+        description: row.description,
+        personality: row.personality,
+        speech_style: row.speech_style,
+        taboos: row.taboos,
+      };
+    }
+
+    const persona = resolvePersona(db, convNow);
+    const planInput: DialogPlanInput = {
+      conversation_id: conv.id,
+      scene,
+      patch: patch ?? undefined,
+      catalog,
+      current_version: baseVersion,
+      user_text: userText,
+      user_name: persona?.name || '나',
+      cast,
+      cards,
+      main_character_id: convNow.character_id,
+      message_id: userMessage?.id ?? null,
+      content_policy: getSetting(db, 'content_policy', ''),
+    };
+    const plan = planDialogBeat(planInput);
+
+    if (!plan.applied.discarded && plan.applied.applied.length > 0) {
+      run(db, `UPDATE conversations SET scene_json = ?, updated_at = ? WHERE id = ?`,
+        JSON.stringify(plan.applied.state), nowIso(), conv.id);
+    }
+
+    const profileName = convNow.profile_name;
+    const sse = openSse(reply);
+    const controller = new AbortController();
+
+    let head = parentId;
+    const emitted: MessageRow[] = [];
+    const addBlock = (
+      kind: 'info' | 'narration' | 'line',
+      content: string,
+      meta: Record<string, unknown> = {},
+    ): MessageRow => {
+      const row = insertMessage(db, conv.id, head, 'assistant', content, 'complete', {
+        generation_id: generationId, profile: profileName, prompt_version: PROMPT_VERSION,
+        block_kind: kind, beat_seq: emitted.length, ...meta,
+      });
+      setHead(db, conv.id, row.id);
+      head = row.id;
+      emitted.push(row);
+      return row;
+    };
+    const send = (row: MessageRow) =>
+      sse.send({ type: 'aux', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', row.id)!) });
+
+    ctx.queue.register({ id: generationId, conversationId: conv.id, messageId: '', startedAt: nowIso(), controller });
+
+    let scriptRow: MessageRow | null = null;
+    let scriptSeq = 0;
+    let buffer = '';
+    const tBeat = Date.now();
+
+    try {
+      if (userMessage) sse.send({ type: 'aux', message: messageOut(db, userMessage) });
+
+      // INFO sheet — server template, so it lands before the model is even called.
+      // `finishDialogBeat` will serialize the same sheet as its first block; that
+      // copy is dropped below rather than re-sent.
+      const sheet = [plan.header, plan.info].filter(Boolean).join('\n');
+      const sheetSent = Boolean(sheet);
+      if (sheetSent) send(addBlock('info', sheet));
+
+      // Pass S. The raw script streams into one row so the reader sees text
+      // arriving; that row then becomes the script's first block, and the rest
+      // chain after it. No insert and no reorder, so `beat_seq` stays the append
+      // order the client relies on.
+      scriptSeq = emitted.length;
+      scriptRow = insertMessage(db, conv.id, head, 'assistant', '', 'streaming', {
+        generation_id: generationId, profile: profileName, prompt_version: PROMPT_VERSION,
+        beat_seq: scriptSeq,
+      });
+      setHead(db, conv.id, scriptRow.id);
+      head = scriptRow.id;
+      emitted.push(scriptRow);
+      sse.send({ type: 'start', generationId, messageId: scriptRow.id, userMessage: userMessage ? messageOut(db, userMessage) : undefined });
+
+      const tS = Date.now();
+      let lastPersist = Date.now();
+      const result = await ctx.queue.run(() => ctx.model.stream(
+        {
+          model, messages: [{ role: 'user', content: plan.pass_s }],
+          temperature: 0.9, top_p: 0.95, max_tokens: PASS_S_MAX_TOKENS, stop: [], signal: controller.signal,
+        },
+        (delta) => {
+          buffer += delta;
+          sse.send({ type: 'token', text: delta });
+          if (Date.now() - lastPersist > PERSIST_INTERVAL_MS) {
+            lastPersist = Date.now();
+            updateMessage(db, scriptRow!.id, { content: buffer });
+          }
+        },
+      ), controller.signal);
+      passMs.s = Date.now() - tS;
+
+      const finished = finishDialogBeat(planInput, plan, result.text);
+      const scriptBlocks = sheetSent
+        ? finished.blocks.filter((b) => b.kind !== 'info')
+        : finished.blocks;
+
+      // A turn whose script parsed to nothing is a failed turn, exactly as an
+      // empty Pass F is on the beat path. The sheet alone is not a turn.
+      if (!scriptBlocks.length) throw new ModelError('대본을 만들지 못했습니다');
+
+      const [first, ...rest] = scriptBlocks;
+      updateMessage(db, scriptRow.id, {
+        content: first.text,
+        status: 'complete',
+        meta: {
+          block_kind: first.kind, beat_seq: scriptSeq,
+          speaker_character_id: first.speaker_character_id ?? undefined,
+          speaker_name: first.speaker_name ?? undefined,
+          image_url: first.asset_path ?? undefined,
+        },
+      });
+      for (const block of rest) {
+        send(addBlock(block.kind as 'info' | 'narration' | 'line', block.text, {
+          speaker_character_id: block.speaker_character_id ?? undefined,
+          speaker_name: block.speaker_name ?? undefined,
+          image_url: block.asset_path ?? undefined,
+        }));
+      }
+
+      run(db, `UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?`,
+        JSON.stringify(finished.scene), nowIso(), nowIso(), conv.id);
+
+      run(
+        db,
+        `INSERT INTO generation_log (id, conversation_id, message_id, profile_name, prompt_version, est_prompt_tokens, actual_prompt_tokens, completion_tokens, ttft_ms, total_ms, finish_reason, status, budget_json, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        uid(), conv.id, scriptRow.id, profileName, PROMPT_VERSION,
+        estimateTokens(plan.pass_s, 1), null, null, null,
+        Date.now() - tBeat, 'dialog', 'complete',
+        JSON.stringify({
+          dialog_log: {
+            focus_id: plan.focus.focus_id,
+            focus_reason: plan.focus.reason,
+            allowed_ids: plan.speakers.map((sp) => sp.id),
+            spoke_ids: finished.parsed.spoke_ids,
+            // A name the model tried to give a voice to and the server refused.
+            // Non-zero here is the signal that the allow-list is doing work.
+            rejected_names: finished.parsed.rejected_names,
+            dropped_lines: finished.parsed.dropped_lines,
+            ambient_ids: plan.ambient.map((a) => a.character_id),
+            turn_no: finished.scene.turn_no ?? null,
+            blocks: scriptBlocks.length,
+            pass_ms: passMs,
+          },
+        }),
+        nowIso(),
+      );
+
+      sse.send({
+        type: 'done',
+        message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', scriptRow.id)!),
+        usage: null, ttftMs: null, totalMs: Date.now() - tBeat,
+      });
+    } catch (err) {
+      const aborted = controller.signal.aborted;
+      const msg = err instanceof ModelError ? err.message : (err as Error)?.name === 'TimeoutError' ? '모델 응답 시간 초과' : (err as Error).message;
+      if (scriptRow) {
+        updateMessage(db, scriptRow.id, {
+          content: buffer.trim(),
+          status: aborted ? 'interrupted' : 'error',
+          meta: aborted ? { finish_reason: 'aborted' } : { error: msg },
+        });
+        if (aborted) {
+          sse.send({ type: 'done', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', scriptRow.id)!), usage: null, ttftMs: null, totalMs: Date.now() - tBeat });
+        } else {
+          ctx.log.error({ err, generationId }, '대본 생성 실패');
+          sse.send({ type: 'error', message: msg, messageId: scriptRow.id });
+        }
+      } else {
+        ctx.log.error({ err, generationId }, '대본 생성 실패');
         sse.send({ type: 'error', message: msg });
       }
     } finally {

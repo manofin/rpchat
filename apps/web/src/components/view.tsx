@@ -44,6 +44,32 @@ export function BeatThought({ name, text }: { name: string; text: string }) {
   );
 }
 
+/**
+ * dialog-format — the Dialog.txt-class INFO sheet.
+ *
+ * The server sends it as text because that is what the format is: a bracketed
+ * header line followed by `[라벨]: 값` rows, where the labels are world data and
+ * not a schema the client can know. So the client's whole job is to keep the line
+ * breaks and stop the rows from being read as prose — it parses nothing.
+ */
+export function BeatInfoSheet({ text }: { text: string }) {
+  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+  return (
+    <div className="beat-info">
+      {lines.map((line, i) => {
+        const m = /^\[([^\]]+)\]:\s*(.*)$/.exec(line);
+        if (!m) return <div key={i} className="beat-info-head">{line}</div>;
+        return (
+          <div key={i} className="beat-info-row">
+            <span className="beat-info-label">{m[1]}</span>
+            <span className="beat-info-value">{m[2]}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export type BeatUiData = {
   location_badge?: string | null;
   user_sheet?: {

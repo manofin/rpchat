@@ -114,7 +114,7 @@ export interface Message {
      * f9-swap-passes: which §6 slot this row is. Absent on 1:1 messages and on
      * anything written before the beat engine — those keep the ordinary bubble.
      */
-    block_kind?: 'header' | 'narration' | 'line' | 'thought' | 'ui';
+    block_kind?: 'header' | 'narration' | 'line' | 'thought' | 'ui' | 'info';
     beat_seq?: number;
     /** Server-chosen local asset path. Never a model-written URL. */
     image_url?: string;

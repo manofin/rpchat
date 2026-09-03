@@ -13,7 +13,12 @@
 import type { PartyCatalog } from './applySceneDelta.js';
 import type { Scene } from '../types.js';
 
-export type BeatBlockKind = 'header' | 'narration' | 'line' | 'thought' | 'ui';
+/**
+ * `info` is the dialog-format sheet (`renderDialog.ts`); the beat path never emits
+ * it, and the dialog path never emits `header`/`ui`. Both live in one union so a
+ * stored block only ever has to name its kind.
+ */
+export type BeatBlockKind = 'header' | 'narration' | 'line' | 'thought' | 'ui' | 'info';
 
 /** A cast row as this module needs it. Structural, so any richer cast type fits. */
 export type BeatCastMember = {

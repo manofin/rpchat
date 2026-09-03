@@ -3,7 +3,7 @@ import { get, patch } from '../lib/api';
 import { back, navigate } from '../lib/router';
 import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, PromptPreview, Summary } from '../types';
 import {
-  Avatar, BeatHeader, BeatNarration, BeatThought, BeatUiPanel, parseBeatUi,
+  Avatar, BeatHeader, BeatInfoSheet, BeatNarration, BeatThought, BeatUiPanel, parseBeatUi,
   renderContent, SpeakerHeader,
 } from '../components/view';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
@@ -335,6 +335,7 @@ function MessageView(props: {
   const kind = m.meta.block_kind;
   if (!isUser && kind && kind !== 'line') {
     if (kind === 'header') return <BeatHeader text={m.content} />;
+    if (kind === 'info') return <BeatInfoSheet text={m.content} />;
     if (kind === 'narration') return <BeatNarration text={m.content} />;
     if (kind === 'thought') {
       return <BeatThought name={m.meta.speaker_name ?? props.charName} text={m.content} />;

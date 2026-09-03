@@ -40,7 +40,12 @@ const sceneSchema = z.object({
   beat_goal: z.string().max(500).optional(),
   roster: z.record(
     z.string().min(1).max(100),
-    z.object({ emotion: z.string().max(40).optional(), outfit: z.string().max(60).optional() }),
+    z.object({
+      emotion: z.string().max(40).optional(),
+      outfit: z.string().max(60).optional(),
+      // dialog-format: the `[인물]` descriptor — '봉인국 국장·1급·검사 중'.
+      note: z.string().max(200).optional(),
+    }),
   ).optional(),
   user_sheet: z.object({
     hp: z.number().int().nullable().optional(),
@@ -53,6 +58,23 @@ const sceneSchema = z.object({
     focus_id: z.string().max(100).nullable(),
     extra_ids: z.array(z.string().min(1).max(100)).max(2),
     unresolved: z.array(z.string().min(1).max(100)).max(8),
+  }).optional(),
+  // dialog-format. Listed here for the same reason as the 0012 keys above: zod
+  // strips unknown keys, so an unlisted field is silently erased the first time
+  // the client PATCHes a scene back — the failure `f9-catalog-write` closed on
+  // the stories side.
+  format: z.enum(['beat', 'dialog']).optional(),
+  turn_no: z.number().int().min(0).max(100000).optional(),
+  time_phrase: z.string().max(120).optional(),
+  info: z.object({
+    status: z.array(z.string().max(200)).max(8).optional(),
+    contract: z.string().max(300).optional(),
+    erosion: z.string().max(300).optional(),
+    goals: z.array(z.string().max(300)).max(8).optional(),
+    extra: z.array(z.object({
+      label: z.string().min(1).max(20),
+      value: z.string().max(300),
+    })).max(6).optional(),
   }).optional(),
 });
 

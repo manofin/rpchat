@@ -99,7 +99,7 @@ export interface Scene {
   day_index?: number;
   weekday?: string;
   beat_goal?: string;
-  roster?: Record<string, { emotion?: string; outfit?: string }>;
+  roster?: Record<string, { emotion?: string; outfit?: string; note?: string }>;
   user_sheet?: {
     hp?: number | null;
     money?: number | null;
@@ -108,6 +108,35 @@ export interface Scene {
     traits?: string[];
   };
   last_beat?: { focus_id: string | null; extra_ids: string[]; unresolved: string[] };
+  /**
+   * dialog-format — the Dialog.txt-class output shape (INFO 상태 블록 + `이름 | 대사`
+   * 스크립트). Absent means `'beat'`: every conversation that predates this slice
+   * renders exactly as before, and `scene_json` stays byte-identical until someone
+   * opts in. The switch is scene state, so it is per-conversation and never a
+   * global flag.
+   */
+  format?: 'beat' | 'dialog';
+  /** The `[T-n]` counter. Server-incremented, one per committed dialog beat. */
+  turn_no?: number;
+  /** `[이틀 뒤·오전 11시 35분]` — a written phrase, not a clock the server can do math on. */
+  time_phrase?: string;
+  /**
+   * The INFO status block. Free text by design: the fields a given world needs
+   * (계약, 침식, 성흔 …) are not knowable in advance, so the labels are data.
+   * Server/user-owned — none of this is in applySceneDelta's APPLY_KEYS.
+   */
+  info?: {
+    /** `[정보]` segments after the protagonist's name: 신분 · 전투상태 · 소속 … */
+    status?: string[];
+    /** `[계약]` */
+    contract?: string;
+    /** `[침식]` */
+    erosion?: string;
+    /** `[목표]` — rendered ` / `-joined. */
+    goals?: string[];
+    /** Extra labeled rows, appended in order after 목표. */
+    extra?: Array<{ label: string; value: string }>;
+  };
 }
 
 export interface ConversationRow {
@@ -158,7 +187,7 @@ export interface MessageMeta {
    * every row written before the beat engine, so the client keeps rendering those
    * as ordinary bubbles.
    */
-  block_kind?: 'header' | 'narration' | 'line' | 'thought' | 'ui';
+  block_kind?: 'header' | 'narration' | 'line' | 'thought' | 'ui' | 'info';
   /** Position within the beat. The client sorts on this, not on arrival order. */
   beat_seq?: number;
   /** Server-chosen local asset path, or absent. Never a model-written URL. */
