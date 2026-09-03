@@ -136,13 +136,29 @@ export function conversationRoutes(ctx: Ctx) {
         storySettingSnapshot = story.setting;
         storyMinorCastSnapshot = story.minor_cast;
       }
+      let personaNameSnap: string | null = null;
+      let personaAddressSnap: string | null = null;
+      let personaAppearanceSnap: string | null = null;
+      let personaPersonalitySnap: string | null = null;
+      let personaRelationshipSnap: string | null = null;
+      let personaAppliedAt: string | null = null;
+      if (d.personaId) {
+        const src = one<PersonaRow>(db, 'SELECT * FROM personas WHERE id = ?', d.personaId)!;
+        personaNameSnap = src.name ?? null;
+        personaAddressSnap = src.address_as ?? null;
+        personaAppearanceSnap = src.appearance ?? null;
+        personaPersonalitySnap = src.personality ?? null;
+        personaRelationshipSnap = src.relationship ?? null;
+        personaAppliedAt = t;
+      }
       db.transaction(() => {
         run(
           db,
-          `INSERT INTO conversations (id, character_id, persona_id, title, mode, profile_name, scene_json, head_message_id, prompt_version, created_at, updated_at, last_message_at, story_id, story_applied_at, story_name_snapshot, story_setting_snapshot, story_minor_cast_snapshot)
-           VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, NULL, ?, ?, ?, ?, ?)`,
+          `INSERT INTO conversations (id, character_id, persona_id, title, mode, profile_name, scene_json, head_message_id, prompt_version, created_at, updated_at, last_message_at, story_id, story_applied_at, story_name_snapshot, story_setting_snapshot, story_minor_cast_snapshot, persona_name_snapshot, persona_address_snapshot, persona_appearance_snapshot, persona_personality_snapshot, persona_relationship_snapshot, persona_applied_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           id, character.id, d.personaId ?? null, d.title ?? '', d.mode, profileName, JSON.stringify(d.scene), PROMPT_VERSION, t, t,
           storyId, storyAppliedAt, storyNameSnapshot, storySettingSnapshot, storyMinorCastSnapshot,
+          personaNameSnap, personaAddressSnap, personaAppearanceSnap, personaPersonalitySnap, personaRelationshipSnap, personaAppliedAt,
         );
         const conv = loadConversation(ctx, id)!;
         const persona = resolvePersona(db, conv);
