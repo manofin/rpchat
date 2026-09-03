@@ -7,6 +7,11 @@
  *
  * Pure: no DB, no fetch, no model. Cast length < 2 means this is not a party
  * roster, so the overlay is returned unchanged (1:1 story rows stay sparse).
+ *
+ * A 1:1 `first_message` is a different opening world (cliff, reading room).
+ * When this module seeds a party scene, that greeting must not be inserted —
+ * otherwise the user plays the card opening and the beat answers from the
+ * catalog place (로비에서 밧줄을 잡자).
  */
 import type { PartyCatalog } from './applySceneDelta.js';
 import type { CastMember } from './cast.js';
@@ -25,6 +30,11 @@ const DEFAULT_SHEET: NonNullable<Scene['user_sheet']> = {
 
 function defined<T>(v: T | undefined): v is T {
   return v !== undefined;
+}
+
+/** True when the seeded scene is a party beat, so 1:1 first_message stays off. */
+export function partySuppressesGreeting(cast: CastMember[]): boolean {
+  return cast.length >= 2;
 }
 
 /**

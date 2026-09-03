@@ -8,7 +8,7 @@ import {
 } from '../apps/server/src/prompt/composeBeat.ts';
 import { THOUGHT_MARKER } from '../apps/server/src/prompt/passes.ts';
 import { catalogFromStory } from '../apps/server/src/prompt/sceneCatalog.ts';
-import { initialBeatScene, DEFAULT_STORY_CLOCK_MINUTES } from '../apps/server/src/prompt/initScene.ts';
+import { initialBeatScene, partySuppressesGreeting, DEFAULT_STORY_CLOCK_MINUTES } from '../apps/server/src/prompt/initScene.ts';
 import { renderHeader, renderUi, LOCK_CHIP } from '../apps/server/src/prompt/renderBeat.ts';
 import type { CastMember } from '../apps/server/src/prompt/cast.ts';
 import type { Scene } from '../apps/server/src/types.ts';
@@ -109,6 +109,12 @@ t('initialBeatScene fills a StoryPage-empty overlay from catalog + closed cast',
   assert.equal(scene.user_sheet!.hp, 100);
   assert.equal(typeof scene.user_sheet!.money, 'number');
   assert.equal(scene.roster!.nari.outfit, '교복');
+});
+
+t('a party cast suppresses the 1:1 first_message; a solo cast does not', () => {
+  assert.equal(partySuppressesGreeting(CAST), true);
+  assert.equal(partySuppressesGreeting([NARI]), false);
+  assert.equal(partySuppressesGreeting([]), false);
 });
 
 t('initialBeatScene overlay wins; 1:1 (cast < 2) is a no-op', () => {

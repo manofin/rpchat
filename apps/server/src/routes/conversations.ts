@@ -9,7 +9,7 @@ import { buildPrompt, resolvePersona } from '../prompt/builder.js';
 import { substitute } from '../prompt/templates.js';
 import { catalogFromStory } from '../prompt/sceneCatalog.js';
 import { castFromCharacters, withConversationStarter, type PartyTagRow } from '../prompt/tagsCatalog.js';
-import { initialBeatScene } from '../prompt/initScene.js';
+import { initialBeatScene, partySuppressesGreeting } from '../prompt/initScene.js';
 import type { CharacterRow, ConversationRow, MessageRow, PersonaRow, Scene, StoryRow } from '../types.js';
 import { characterOut, personaOut } from './characters.js';
 
@@ -140,6 +140,7 @@ export function conversationRoutes(ctx: Ctx) {
         storyMinorCastSnapshot = story.minor_cast;
       }
       let sceneJson = JSON.stringify(d.scene);
+      let partyOpening = false;
       if (storyId) {
         const catalogRow = one<{ scene_catalog: string }>(db, 'SELECT scene_catalog FROM stories WHERE id = ?', storyId);
         const catalog = catalogFromStory(catalogRow?.scene_catalog ?? '{}');
@@ -157,6 +158,7 @@ export function conversationRoutes(ctx: Ctx) {
           ? withConversationStarter(tagged, { id: character.id, name: character.name })
           : [];
         sceneJson = JSON.stringify(initialBeatScene({ catalog, cast, overlay: d.scene }));
+        partyOpening = partySuppressesGreeting(cast);
       }
       let personaNameSnap: string | null = null;
       let personaAddressSnap: string | null = null;
@@ -184,7 +186,9 @@ export function conversationRoutes(ctx: Ctx) {
         );
         const conv = loadConversation(ctx, id)!;
         const persona = resolvePersona(db, conv);
-        const greeting = substitute(character.first_message, character.name, persona?.name || '나').trim();
+        const greeting = partyOpening
+          ? ''
+          : substitute(character.first_message, character.name, persona?.name || '나').trim();
         if (greeting) {
           const m = insertMessage(db, id, null, 'assistant', greeting, 'complete', { profile: profileName, prompt_version: PROMPT_VERSION });
           setHead(db, id, m.id);

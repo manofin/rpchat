@@ -171,6 +171,36 @@ async function main() {
     assert.equal(present.includes(han.id), false);
   });
 
+  await t('party story start drops 1:1 first_message; 1:1 keeps it', async () => {
+    const guide = await char('길잡이', ['party:duty=안내', 'party:place=교실'], {
+      first_message: '다리가 끊겼어. 밧줄을 잡아.',
+    });
+    const add = await api('POST', `/api/stories/${story.id}/characters`, { characterId: guide.id, sortOrder: 6 });
+    assert.equal(add.status, 201, add.text);
+
+    const party = await api('POST', '/api/conversations', {
+      characterId: guide.id,
+      storyId: story.id,
+      mode: 'story',
+    });
+    assert.equal(party.status, 201, party.text);
+    const partyDetail = await api('GET', `/api/conversations/${(party.json as { id: string }).id}`);
+    const partyMsgs = (partyDetail.json as { messages: Array<{ role: string; content: string }> }).messages;
+    assert.equal(
+      partyMsgs.some((m) => m.content.includes('밧줄') || m.content.includes('다리')),
+      false,
+    );
+
+    const solo = await api('POST', '/api/conversations', {
+      characterId: guide.id,
+      mode: 'chat',
+    });
+    assert.equal(solo.status, 201, solo.text);
+    const soloDetail = await api('GET', `/api/conversations/${(solo.json as { id: string }).id}`);
+    const soloMsgs = (soloDetail.json as { messages: Array<{ role: string; content: string }> }).messages;
+    assert.ok(soloMsgs.some((m) => m.role === 'assistant' && m.content.includes('밧줄')));
+  });
+
   await t('POST /messages persists header/line/thought/ui in order, with stream chunks', async () => {
     const res = await fetch(`${origin}/api/conversations/${convId}/messages`, {
       method: 'POST',

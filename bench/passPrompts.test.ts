@@ -93,6 +93,10 @@ t('Pass N is told the header exists and must not restate it', () => {
   assert.ok(p.includes('서버가 이미 붙였다'));
 });
 
+t('Pass N stays in the header place even when the card describes another world', () => {
+  assert.ok(passN().includes('지금 장소는 헤더의 장소다'));
+});
+
 t('Pass N carries the beat goal so narration can move toward it', () => {
   assert.ok(passN().includes('자리에 앉히기'));
 });
@@ -119,6 +123,10 @@ t('Pass F fixes the thought marker and scopes 속마음 to the focus', () => {
   assert.ok(p.includes('맨 마지막 줄에만'));
   assert.ok(p.includes("속마음은 '나리'의 것만 쓴다"));
   assert.ok(p.includes('없으면 그 줄을 쓰지 않는다'), 'the marker must be optional, not required');
+});
+
+t('Pass F stays in the header place rather than the card\'s home world', () => {
+  assert.ok(passF().includes('헤더의 장소에서 말한다'));
 });
 
 t('Pass F is shown the narration and told not to repeat it', () => {
