@@ -255,6 +255,43 @@ t('the line cap survives the whole pipeline', () => {
   assert.equal(finished.parsed.dropped_lines, 5);
 });
 
+// ---- choices ----------------------------------------------------------------
+
+const SCRIPT_WITH_CHOICES = `${SCRIPT}\n<choices>["초안 1","초안 2","초안 3"]</choices>`;
+
+t('a trailing <choices> block is extracted and never leaks into the script', () => {
+  const inp = input();
+  const finished = finishDialogBeat(inp, planDialogBeat(inp), SCRIPT_WITH_CHOICES);
+  assert.deepEqual(finished.choices, ['초안 1', '초안 2', '초안 3']);
+  assert.ok(!finished.blocks.some((b) => b.text.includes('<choices>')));
+  // same block shape as the choices-free run — extraction must not eat a line
+  assert.deepEqual(
+    finished.blocks.map((b) => b.kind),
+    ['info', 'narration', 'line', 'narration', 'line', 'line', 'narration', 'line'],
+  );
+});
+
+t('a script with no choices block yields null, not an empty array (A-6)', () => {
+  const inp = input();
+  const finished = finishDialogBeat(inp, planDialogBeat(inp), SCRIPT);
+  assert.equal(finished.choices, null);
+});
+
+t('a name inside a choice draft is never read as a speaker line', () => {
+  const inp = input();
+  const withNamedDraft = `${SCRIPT}\n<choices>["오세린 님, 잠시만요.","그냥 지나친다.","되묻는다."]</choices>`;
+  const finished = finishDialogBeat(inp, planDialogBeat(inp), withNamedDraft);
+  // SCRIPT itself has 4 speaker lines (오세린 x3, 한여진 x1) — the point is that
+  // count does not change when a choice draft mentions a cast member's name.
+  assert.equal(finished.blocks.filter((b) => b.kind === 'line').length, 4);
+  assert.deepEqual(finished.choices, ['오세린 님, 잠시만요.', '그냥 지나친다.', '되묻는다.']);
+});
+
+t('the Pass S prompt reuses the 1:1 choices contract, not a bespoke format', () => {
+  const plan = planDialogBeat(input());
+  assert.ok(plan.pass_s.includes('<choices>['));
+});
+
 // ---- isolation ------------------------------------------------------------
 
 t('the dialog modules call no model and touch no DB', () => {

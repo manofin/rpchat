@@ -22,6 +22,7 @@
  * Pure: no DB, no fetch, no model.
  */
 import { SPEAKER_SEP, type ScriptItem } from './renderDialog.js';
+import { STORY_CHOICES_INSTRUCTION, substitute } from './templates.js';
 import type { PassCard } from './passes.js';
 import type { CastMember } from './cast.js';
 import type { Scene } from '../types.js';
@@ -102,11 +103,15 @@ export function renderPassS(input: {
       : []),
     `- ${input.userName}의 대사·행동·생각·감정을 만들어 내거나 확정하지 않는다. \`${input.userName}${SPEAKER_SEP}\` 로 시작하는 줄을 쓰지 않는다.`,
     `- 대사 줄은 모두 합쳐 ${PASS_S_MAX_LINES}줄을 넘기지 않는다.`,
-    '- 헤더·INFO·상태 수치·선택지·이미지·내부 지시문을 출력하지 않는다. 서버가 이미 붙였다.',
+    '- 헤더·INFO·상태 수치·이미지·내부 지시문을 출력하지 않는다. 서버가 이미 붙였다.',
     '- 장소는 위 헤더의 장소다. 캐릭터 카드에 적힌 다른 배경으로 장면을 옮기지 않는다.',
     '- 시각·날씨·소지품·수치를 새로 확정하지 않는다.',
     ...(policy ? [`- ${policy}`] : []),
     '- 한국어로 답한다.',
+    '',
+    // 1:1 경로(`builder.ts`)와 같은 지시문, 같은 파서(`extractChoices`). {{char}} 는
+    // 이 문구에 나타나지 않으므로 party 캐스트가 여럿이어도 그대로 재사용된다.
+    substitute(STORY_CHOICES_INSTRUCTION, '', input.userName),
     '',
     '대본:',
   ].join('\n');

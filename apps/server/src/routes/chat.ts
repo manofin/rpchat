@@ -767,6 +767,10 @@ export function chatRoutes(ctx: Ctx) {
       if (!scriptBlocks.length) throw new ModelError('대본을 만들지 못했습니다');
 
       const [first, ...rest] = scriptBlocks;
+      // Choices ride on whichever block is actually last — same rule the 1:1 path
+      // uses (they sit on the one assistant message, and `isLastAssistant` on the
+      // client is positional, not kind-specific).
+      const choices = finished.choices && finished.choices.length ? finished.choices : undefined;
       updateMessage(db, scriptRow.id, {
         content: first.text,
         status: 'complete',
@@ -775,15 +779,17 @@ export function chatRoutes(ctx: Ctx) {
           speaker_character_id: first.speaker_character_id ?? undefined,
           speaker_name: first.speaker_name ?? undefined,
           image_url: first.asset_path ?? undefined,
+          ...(rest.length === 0 ? { choices } : {}),
         },
       });
-      for (const block of rest) {
+      rest.forEach((block, i) => {
         send(addBlock(block.kind as 'info' | 'narration' | 'line', block.text, {
           speaker_character_id: block.speaker_character_id ?? undefined,
           speaker_name: block.speaker_name ?? undefined,
           image_url: block.asset_path ?? undefined,
+          ...(i === rest.length - 1 ? { choices } : {}),
         }));
-      }
+      });
 
       run(db, `UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?`,
         JSON.stringify(finished.scene), nowIso(), nowIso(), conv.id);
@@ -808,6 +814,7 @@ export function chatRoutes(ctx: Ctx) {
             ambient_ids: plan.ambient.map((a) => a.character_id),
             turn_no: finished.scene.turn_no ?? null,
             blocks: scriptBlocks.length,
+            choices_count: choices?.length ?? 0,
             pass_ms: passMs,
           },
         }),

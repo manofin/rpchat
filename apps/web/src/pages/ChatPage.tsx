@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { get, patch } from '../lib/api';
 import { back, navigate } from '../lib/router';
 import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, PromptPreview, Summary } from '../types';
@@ -334,14 +334,25 @@ function MessageView(props: {
   // engine — falls through to the ordinary bubble below, untouched.
   const kind = m.meta.block_kind;
   if (!isUser && kind && kind !== 'line') {
-    if (kind === 'header') return <BeatHeader text={m.content} />;
-    if (kind === 'info') return <BeatInfoSheet text={m.content} />;
-    if (kind === 'narration') return <BeatNarration text={m.content} />;
-    if (kind === 'thought') {
-      return <BeatThought name={m.meta.speaker_name ?? props.charName} text={m.content} />;
-    }
-    const ui = parseBeatUi(m.content);
-    return ui ? <BeatUiPanel ui={ui} /> : null;
+    let body: ReactNode = null;
+    if (kind === 'header') body = <BeatHeader text={m.content} />;
+    else if (kind === 'info') body = <BeatInfoSheet text={m.content} />;
+    else if (kind === 'narration') body = <BeatNarration text={m.content} />;
+    else if (kind === 'thought') body = <BeatThought name={m.meta.speaker_name ?? props.charName} text={m.content} />;
+    else { const ui = parseBeatUi(m.content); body = ui ? <BeatUiPanel ui={ui} /> : null; }
+    // dialog-format: choices ride on whichever block a turn actually ends on
+    // (narration or a speaker's line), not just the `line` kind — see chat.ts
+    // generateDialog. The chip row below is otherwise identical to the 1:1 one.
+    return (
+      <>
+        {body}
+        {!props.streaming && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
+          <div className="chips">
+            {m.meta.choices.map((c, i) => <button key={i} className="chip" onClick={() => props.onChoice(c)}>{c}</button>)}
+          </div>
+        )}
+      </>
+    );
   }
 
   const showActions = !props.streaming;

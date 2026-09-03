@@ -26,6 +26,7 @@ import { resolveFocus, type FocusResult } from './resolveFocus.js';
 import { parseScript, renderPassS, type ParseScriptResult, type SpeakerSlot } from './dialogScript.js';
 import { assetPathFor, type BeatBlock, type BeatCastMember } from './renderBeat.js';
 import { renderDialogHeader, renderInfoBlock, serializeDialogBeat } from './renderDialog.js';
+import { extractChoices } from './templates.js';
 import type { PassCard } from './passes.js';
 import { canSpeak, type CastMember } from './cast.js';
 import type { Scene } from '../types.js';
@@ -203,6 +204,8 @@ export type FinishedDialog = {
   parsed: ParseScriptResult;
   /** The scene to persist: turn_no advanced, last_beat committed. */
   scene: Scene;
+  /** The turn's next-input drafts, or null if Pass S didn't emit any (A-6: not a failure). */
+  choices: string[] | null;
 };
 
 /**
@@ -211,6 +214,10 @@ export type FinishedDialog = {
  * `turn_no` is incremented here and nowhere else, so the `[T-n]` a reader sees is
  * always the count of committed dialog turns — the model cannot skip, repeat or
  * invent one. A turn that produced no script at all does not advance it.
+ *
+ * The trailing `<choices>[...]</choices>` block (same contract as the 1:1 path's
+ * `extractChoices`) is stripped before the script is parsed, so a name inside a
+ * choice draft can never be misread as a speaker line.
  */
 export function finishDialogBeat(
   input: DialogPlanInput,
@@ -218,7 +225,8 @@ export function finishDialogBeat(
   scriptText: string,
 ): FinishedDialog {
   const scene = plan.applied.state;
-  const parsed = parseScript(scriptText, plan.speakers);
+  const { content, choices } = extractChoices(scriptText);
+  const parsed = parseScript(content, plan.speakers);
 
   const blocks = serializeDialogBeat({
     header: plan.header,
@@ -243,6 +251,7 @@ export function finishDialogBeat(
   return {
     blocks,
     parsed,
+    choices,
     scene: {
       ...scene,
       ...(parsed.items.length ? { turn_no: turnNo + 1 } : {}),

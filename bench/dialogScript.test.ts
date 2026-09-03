@@ -168,7 +168,13 @@ t('the prompt forbids writing the user and forbids re-emitting server chrome', (
   const p = passS();
   assert.ok(p.includes('황지명의 대사·행동·생각·감정을 만들어 내거나 확정하지 않는다'));
   assert.ok(p.includes('`황지명 | ` 로 시작하는 줄을 쓰지 않는다'));
-  assert.ok(p.includes('헤더·INFO·상태 수치·선택지·이미지·내부 지시문을 출력하지 않는다'));
+  assert.ok(p.includes('헤더·INFO·상태 수치·이미지·내부 지시문을 출력하지 않는다'));
+});
+
+t('the prompt asks for trailing choices, the same contract the 1:1 path parses', () => {
+  const p = passS();
+  assert.ok(p.includes('<choices>'), 'must carry the same tag extractChoices looks for');
+  assert.ok(p.includes('황지명가 다음에 보낼 입력 초안 3개') || p.includes('황지명이 다음에 보낼 입력 초안 3개'));
 });
 
 t('ambient names are told to appear without speaking, and never listed as speakers', () => {

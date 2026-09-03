@@ -34,7 +34,8 @@ const CATALOG = {
   weathers: ['실내'],
 };
 
-/** The script the fake model "writes" — Dialog.txt T-29 shape. */
+/** The script the fake model "writes" — Dialog.txt T-29 shape, plus the trailing
+ * choices block Pass S's prompt now asks for. */
 const SCRIPT = [
   '오세린의 자안이 우산에서 황지명의 얼굴로 돌아왔다.',
   '오세린 | 아라, 벌써 면역이 되셨네요.',
@@ -42,6 +43,7 @@ const SCRIPT = [
   '오세린 | 들어오세요.',
   '한여진 | 불편하시면 말씀하세요.',
   '설록 | 네 이름을 줘.',
+  '<choices>["*가방을 고쳐 메며* 알겠습니다, 시작하시죠.","질문이 있는데요.","조금 더 생각해볼게요."]</choices>',
 ].join('\n');
 
 async function main() {
@@ -209,6 +211,19 @@ async function main() {
 
   await t('beat_seq is the append order, with no gaps and no reordering', () => {
     assert.deepEqual(blocks.map((b) => b.meta.beat_seq), [0, 1, 2, 3, 4, 5, 6]);
+  });
+
+  await t('the trailing <choices> block never leaks into any message content', () => {
+    for (const b of blocks) assert.ok(!b.content.includes('<choices>'));
+  });
+
+  await t('choices land on the last block of the turn, not the first', () => {
+    const withChoices = blocks.filter((b) => Array.isArray(b.meta.choices));
+    assert.equal(withChoices.length, 1);
+    assert.equal(withChoices[0].meta.beat_seq, 6);
+    assert.deepEqual(withChoices[0].meta.choices, [
+      '*가방을 고쳐 메며* 알겠습니다, 시작하시죠.', '질문이 있는데요.', '조금 더 생각해볼게요.',
+    ]);
   });
 
   await t('one streamed call wrote the whole turn — no per-speaker round trips', () => {
