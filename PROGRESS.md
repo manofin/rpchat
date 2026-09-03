@@ -3184,3 +3184,18 @@ HEAD/describe into this block after any docs commit.
   STATUS.md의 F9 행을 먼저 확인할 것 — 그쪽이 정본이고, 계획서는 낡아도 '승인됨'으로 읽힌다」**를 추가했다.
   `f9-catalog-write` 잠금 사실도 함께 넣었다. `MEMORY.md` 인덱스 한 줄도 같이 고쳤다.
 - 라이브 무접촉: stories 2 / characters 10 / conversations 8, school 스토리 0행, 교실 캐스트 0행.
+
+## [2026-09-03 catalog-school 계획서 무효 표시] `[RP-Chat / f9-catalog-write / void-plan]`
+- 남은 문서 불일치만 정리. 소스·벤치·라이브 DB·배포 **0.**
+- `planning_documents/f9-beat-catalog-school.md` 배너를 **무효 · 실행 금지**로 고정.
+  디스크상 배너는 줄곧 「미승인 · 미실행」이었고, 잠금 §6의 「승인됨」은 S1 진행 승인을
+  계획서 전체 승인으로 읽은 기록이었다. 어느 쪽으로 읽히든 큐가 되지 않게 무효로 못 박음.
+- `f9-catalog-write-lock.md` §6: 계획서 항목을 「무효 표시 2026-09-03」으로 갱신.
+  라이브 토큰 재개는 「그 플랜을 무효화하는 별도 결정」이 아니라 **새 명명 잠금**.
+  하단 HEAD `ae46774` → `43e002f` (당시 실제 봉인 HEAD. 이 기록 커밋이 생기면 그 해시가 앞선다).
+- STATUS How-to-read에 School catalog plan 행 추가. `f9-catalog-write` 잠금 행
+  「딸리지 않은 것」에 무효 표시를 한 줄 덧붙임.
+- 메모리 `rpchat-f9-beat-engine.md` YAML description의 「the one slice that may open next」
+  잔여 문구를 제거. 본문에 2026-09-03 무효 표시를 사실로 추가.
+- 라이브 무접촉: PID `130631`, stories 2 / characters 10 / conversations 8,
+  school 스토리 0행, 교실 캐스트 0행.
