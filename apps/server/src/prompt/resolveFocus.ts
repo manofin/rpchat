@@ -21,6 +21,7 @@ export type FocusReason =
   | 'targeted'        // 1. the user named them
   | 'unresolved'      // 2. they were left hanging last beat
   | 'default_focus'   // 3. the location's default
+  | 'conversation_partner' // 3b. the character this chat was opened as
   | 'none';           // 4. nobody — narration-only beat
 
 export type FocusResult = {
@@ -132,6 +133,7 @@ function result(focus_id: string | null, reason: FocusReason, matched: string[])
  *   1. the user aimed at someone (@ / name / alias, or second person + last focus)
  *   2. the party left unresolved by the previous beat
  *   3. the location's declared default focus
+ *   3b. the character this chat was opened as, when they can speak here
  *   4. otherwise: no focus, no dialogue slot
  *
  * Ambiguity is silence, not a coin flip: when the message names two present
@@ -143,6 +145,8 @@ export function resolveFocus(input: {
   scene: Scene;
   cast: CastMember[];
   catalog?: Pick<PartyCatalog, 'places'>;
+  /** Character id this conversation was opened as. Not ST-Natural random. */
+  main_character_id?: string | null;
 }): FocusResult {
   const { scene, cast } = input;
   const text = input.user_text ?? '';
@@ -186,6 +190,14 @@ export function resolveFocus(input: {
   const fallback = place?.default_focus;
   if (fallback && selectable(fallback, cast, scene)) {
     return result(fallback, 'default_focus', []);
+  }
+
+  // 3b. this chat's partner. Opening a 서리 conversation and saying 안녕하세요
+  // is talking to 서리 — not a random draw, and not assignSpeakers stuffing
+  // main in after a null focus.
+  const partner = input.main_character_id ?? null;
+  if (partner && selectable(partner, cast, scene)) {
+    return result(partner, 'conversation_partner', []);
   }
 
   // 4. narration only

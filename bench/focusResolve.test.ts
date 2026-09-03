@@ -242,6 +242,39 @@ t('empty user text still resolves through priority 2 and 3, never randomly', () 
   assert.equal(focus('', { location: '옥상', present_ids: ['nari'] }).focus_id, null);
 });
 
+t('안녕하세요 with no name talks to the conversation partner, not narration-only', () => {
+  const r = resolveFocus({
+    user_text: '안녕하세요',
+    scene: { present_ids: ['nari', 'sera', 'hayeon'] },
+    cast: CAST,
+    main_character_id: 'nari',
+  });
+  assert.equal(r.focus_id, 'nari');
+  assert.equal(r.reason, 'conversation_partner');
+});
+
+t('location default_focus still beats the conversation partner', () => {
+  const r = resolveFocus({
+    user_text: '안녕하세요',
+    scene: CLASSROOM,
+    cast: CAST,
+    catalog: CAT,
+    main_character_id: 'nari',
+  });
+  assert.equal(r.focus_id, 'hayeon');
+  assert.equal(r.reason, 'default_focus');
+});
+
+t('an absent conversation partner does not steal the turn', () => {
+  const r = resolveFocus({
+    user_text: '안녕하세요',
+    scene: { location: '옥상', present_ids: ['nari'] },
+    cast: CAST,
+    main_character_id: 'hayeon',
+  });
+  assert.equal(r.focus_id, null);
+});
+
 // ── 7. determinism and A-5 ordering ─────────────────────────────────────────
 t('the same input always yields the same focus (no draw anywhere)', () => {
   const runs = Array.from({ length: 25 }, () => focus('교실을 둘러본다.').focus_id);

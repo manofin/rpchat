@@ -8,7 +8,7 @@ import { deepestLeaf, getPath, insertMessage, messageOut, setHead, updateMessage
 import { buildPrompt, resolvePersona } from '../prompt/builder.js';
 import { substitute } from '../prompt/templates.js';
 import { catalogFromStory } from '../prompt/sceneCatalog.js';
-import { castFromCharacters, type PartyTagRow } from '../prompt/tagsCatalog.js';
+import { castFromCharacters, withConversationStarter, type PartyTagRow } from '../prompt/tagsCatalog.js';
 import { initialBeatScene } from '../prompt/initScene.js';
 import type { CharacterRow, ConversationRow, MessageRow, PersonaRow, Scene, StoryRow } from '../types.js';
 import { characterOut, personaOut } from './characters.js';
@@ -152,7 +152,10 @@ export function conversationRoutes(ctx: Ctx) {
             ORDER BY sc.sort_order ASC, c.name ASC`,
           storyId,
         );
-        const cast = castFromCharacters(roster, character.id) ?? [];
+        const tagged = castFromCharacters(roster, character.id);
+        const cast = tagged
+          ? withConversationStarter(tagged, { id: character.id, name: character.name })
+          : [];
         sceneJson = JSON.stringify(initialBeatScene({ catalog, cast, overlay: d.scene }));
       }
       let personaNameSnap: string | null = null;

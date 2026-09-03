@@ -103,11 +103,18 @@ t('A-5: everything downstream reads the POST-apply scene', () => {
     scene: { ...CLASSROOM, location: '교실' },
     patch: { base_version: 0, location: '복도' },
     user_text: '이동한다',
+    catalog: catalogFromStory(JSON.stringify({
+      places: [{ id: '교실', default_focus: 'nari' }, { id: '복도' }],
+      arcs: ['entry'],
+      stagesByArc: { entry: ['reg', 'class'] },
+      weathers: ['맑음'],
+    })),
   });
   const plan = planBeat(i);
   assert.equal(plan.applied.state.location, '복도');
-  // The classroom default focus must NOT apply — the scene already moved.
-  assert.equal(plan.focus.focus_id, null);
+  // 교실 default_focus (나리) must not apply after leaving. The chat partner
+  // (하연) may still answer an untargeted line.
+  assert.notEqual(plan.focus.focus_id, 'nari');
   assert.equal(plan.ui.location_badge, '복도');
   assert.ok(plan.header!.includes('복도'));
 });
@@ -125,6 +132,22 @@ t('A-5 source order: apply → focus → approve → ambient → assign', () => 
   const ambient = idx('ambientPicks(');
   const assign = idx('assignSpeakers(');
   assert.ok(apply < focus && focus < approve && approve < ambient && ambient < assign);
+});
+
+t('안녕하세요 talks to the story opener even without party: tags on them', () => {
+  const seori = member({ id: 'seori', name: '서리', place: '', role: 'main' });
+  const plan = planBeat(input({
+    user_text: '안녕하세요',
+    main_character_id: 'seori',
+    cast: [seori, NARI, SERA],
+    scene: { location: 'bureau_lobby', present_ids: ['seori', 'nari', 'sera'], weather: 'clear' },
+    catalog: catalogFromStory(JSON.stringify({
+      places: [{ id: 'bureau_lobby', name: '로비' }],
+      weathers: ['clear'],
+    })),
+  }));
+  assert.equal(plan.focus.focus_id, 'seori');
+  assert.equal(plan.focus.reason, 'conversation_partner');
 });
 
 t('the party path never calls buildPrompt', () => {

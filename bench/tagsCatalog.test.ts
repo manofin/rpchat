@@ -13,6 +13,7 @@ import {
   castFromCharacters,
   catalogFromCharacters,
   parsePartyTags,
+  withConversationStarter,
 } from '../apps/server/src/prompt/tagsCatalog.ts';
 import { partyCastForGenerate, planBeat } from '../apps/server/src/prompt/composeBeat.ts';
 import { resolveFocus } from '../apps/server/src/prompt/resolveFocus.ts';
@@ -110,6 +111,20 @@ function main() {
     assert.deepEqual(cast!.map((c) => c.id).sort(), ['c_soyeon', 'c_yuki']);
   });
 
+  t('withConversationStarter splices an untagged opener (서리) into the party cast', () => {
+    const tagged = castFromCharacters([SOYEON, YUKI, SEORI], 'f89ace9b')!;
+    const cast = withConversationStarter(tagged, { id: SEORI.id, name: SEORI.name });
+    assert.ok(cast.some((c) => c.id === SEORI.id && c.role === 'main' && c.name === '서리'));
+    assert.ok(cast.some((c) => c.id === 'c_soyeon'));
+    assert.ok(cast.some((c) => c.id === 'c_yuki'));
+  });
+
+  t('partyCastForGenerate includes the untagged conversation starter', () => {
+    const cast = partyCastForGenerate({ character_id: SEORI.id }, [SOYEON, YUKI, SEORI]);
+    assert.ok(cast);
+    assert.ok(cast!.some((c) => c.id === SEORI.id && c.role === 'main'));
+  });
+
   t('castFromCharacters: main_character_id is forced to role main', () => {
     const cast = castFromCharacters([SOYEON, YUKI], 'c_yuki')!;
     const yuki = cast.find((c) => c.id === 'c_yuki')!;
@@ -202,9 +217,11 @@ function main() {
     assert.equal(out.messages[0].meta.speaker_character_id, out.messages[0].speaker_character_id);
   });
 
-  // The same call with nobody named. Under the retired router this produced a
-  // forced main line; §4.1-4 makes it a narration-only beat with no message rows.
-  t('composePartyTurn with no target produces zero speaker rows', () => {
+  // Untargeted speech is aimed at whoever this chat was opened as (§4.1-3b).
+  // That is not the retired assignSpeakers main-character stuffing: the focus
+  // is decided here, extras stay closed, and a duty word still does not pick
+  // the duty holder (see the resolveFocus test above, which omits the partner).
+  t('composePartyTurn with no target talks to the conversation partner', () => {
     const cast = partyCastForGenerate({ character_id: 'c_soyeon' }, [SOYEON, YUKI])!;
     const out = planBeat({
       scene: { place: 'bureau_lobby' },
@@ -214,10 +231,42 @@ function main() {
       cast,
       main_character_id: 'c_soyeon',
     });
-    assert.equal(out.focus.focus_id, null);
-    assert.equal(out.focus.reason, 'none');
-    assert.deepEqual(out.messages, []);
+    assert.equal(out.focus.focus_id, 'c_soyeon');
+    assert.equal(out.focus.reason, 'conversation_partner');
+    assert.equal(out.messages.length, 1);
+    assert.equal(out.messages[0].speaker_character_id, 'c_soyeon');
+    assert.equal(out.messages[0].slot, 'main');
     assert.deepEqual(out.approved_extras, []);
+  });
+
+  t('composePartyTurn: a duty word still does not pick the duty holder', () => {
+    const cast = partyCastForGenerate({ character_id: 'c_soyeon' }, [SOYEON, YUKI, GUARD])!;
+    const out = planBeat({
+      scene: { place: 'bureau_lobby' },
+      catalog: catalogFromCharacters([SOYEON, YUKI, GUARD]),
+      current_version: 0,
+      user_text: '보안 쪽에 물어볼 게 있어요',
+      cast,
+      main_character_id: 'c_soyeon',
+    });
+    assert.notEqual(out.focus.focus_id, 'c_yuki');
+    assert.equal(out.focus.focus_id, 'c_soyeon');
+    assert.equal(out.focus.reason, 'conversation_partner');
+  });
+
+  t('안녕하세요 to an untagged opener in a tagged party focuses the opener', () => {
+    const cast = partyCastForGenerate({ character_id: SEORI.id }, [SOYEON, YUKI, SEORI])!;
+    const out = planBeat({
+      scene: { place: 'bureau_lobby' },
+      catalog: catalogFromCharacters([SOYEON, YUKI, SEORI]),
+      current_version: 0,
+      user_text: '안녕하세요',
+      cast,
+      main_character_id: SEORI.id,
+    });
+    assert.equal(out.focus.focus_id, SEORI.id);
+    assert.equal(out.focus.reason, 'conversation_partner');
+    assert.equal(out.messages[0]?.speaker_character_id, SEORI.id);
   });
 
   t('tagsCatalog source is pure: no db, routes, fetch, model, generate', () => {

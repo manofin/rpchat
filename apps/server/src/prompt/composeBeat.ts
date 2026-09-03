@@ -32,7 +32,7 @@ import {
   assetPathFor, renderHeader, renderUi, serializeBeat,
   type BeatBlock, type BeatLine, type BeatUi,
 } from './renderBeat.js';
-import { castFromCharacters, type PartyTagRow } from './tagsCatalog.js';
+import { castFromCharacters, withConversationStarter, type PartyTagRow } from './tagsCatalog.js';
 import type { CastMember } from './cast.js';
 import type { Scene } from '../types.js';
 
@@ -98,7 +98,13 @@ export function partyCastForGenerate(
   roster: PartyTagRow[],
 ): CastMember[] | null {
   if (!roster.length) return null;
-  return castFromCharacters(roster, conv.character_id);
+  const tagged = castFromCharacters(roster, conv.character_id);
+  if (!tagged) return null;
+  const starter = roster.find((r) => r.id === conv.character_id);
+  return withConversationStarter(tagged, {
+    id: conv.character_id,
+    name: starter?.name ?? conv.character_id,
+  });
 }
 
 function cardFor(id: string, input: BeatPlanInput): PassCard {
@@ -133,7 +139,13 @@ export function planBeat(input: BeatPlanInput): BeatPlan {
   const scene = applied.state;
 
   // 2. Focus. Server only, no draw, no model.
-  const focus = resolveFocus({ user_text: input.user_text, scene, cast: input.cast, catalog });
+  const focus = resolveFocus({
+    user_text: input.user_text,
+    scene,
+    cast: input.cast,
+    catalog,
+    main_character_id: input.main_character_id,
+  });
 
   // 3-5. Candidates closed, then approved. Default: nobody.
   const approval = approveExtras({

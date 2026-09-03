@@ -177,6 +177,31 @@ export function castFromCharacters(rows: PartyTagRow[], mainCharacterId: string)
   });
 }
 
+/**
+ * The character this conversation was opened as must be able to speak even when
+ * they have no `party:` tags (live 서리 on F9-LIVE-PARTY-SMOKE). Untagged rows
+ * stay out of `castFromCharacters`; this splice puts only the starter back.
+ */
+export function withConversationStarter(
+  cast: CastMember[],
+  starter: { id: string; name: string },
+): CastMember[] {
+  if (cast.some((m) => m.id === starter.id)) {
+    return cast.map((m) => (m.id === starter.id ? { ...m, role: 'main' } : m));
+  }
+  return [
+    {
+      id: starter.id,
+      name: starter.name,
+      aliases: [],
+      duties: [],
+      place: '',
+      role: 'main',
+    },
+    ...cast,
+  ];
+}
+
 export function catalogFromCharacters(rows: PartyTagRow[]): PartyCatalog {
   const locations: string[] = [];
   const weathers: string[] = [];
