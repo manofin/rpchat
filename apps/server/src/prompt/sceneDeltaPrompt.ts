@@ -90,6 +90,8 @@ export function renderSceneDeltaPrompt(input: {
     `- 현재 arc의 stage: ${list(stagesForArc)}`,
     `- flags: ${list(flagKeys)} (각각 true/false)`,
     `- advance_minutes: 0 이상 ${ADVANCE_MINUTES_MAX} 이하의 정수`,
+    `- hp_delta / money_delta: 정수. 결과 HP는 0..9999, money는 0 이상. 범위 밖이면 이전 값 유지`,
+    `- inventory_add / inventory_remove: 아이템 id 문자열 또는 배열. 허용: ${list(catalog.items ?? [])}`,
     ...presenceAllowLines(catalog),
     '',
     '## 사용자 입력',

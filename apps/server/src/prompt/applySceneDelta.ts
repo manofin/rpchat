@@ -4,6 +4,9 @@ import type { Scene } from '../types.js';
 
 /** Per-turn cap on GM `advance_minutes` (24h). Fail → clock unchanged. */
 export const ADVANCE_MINUTES_MAX = 1440;
+/** HUD numeric caps. Out of range → previous value unchanged (no silent clamp-apply). */
+export const HP_MAX = 9999;
+export const MONEY_MAX = 1_000_000_000;
 
 export type PartyCatalog = {
   weathers: string[];
@@ -23,6 +26,8 @@ export type PartyCatalog = {
   stages?: Record<string, { closer_duty?: string }>;
   /** f9-extra-approve: duties that share one function slot. Unlisted = own slot. */
   dutySlots?: Record<string, string>;
+  /** Allow-list for `inventory_add`. Absent/empty → adds fail closed. */
+  items?: string[];
 };
 
 export type ApplyIgnore = { key: string; reason: string };
@@ -56,6 +61,12 @@ const APPLY_KEYS = new Set([
   'present_ids',
   'present_ids_add',
   'present_ids_remove',
+  // Notes_260903 HUD: deltas into user_sheet. Bare `hp`/`money`/`inventory` stay
+  // off this list so a GM-shaped top-level field cannot overwrite the sheet.
+  'hp_delta',
+  'money_delta',
+  'inventory_add',
+  'inventory_remove',
 ]);
 
 const APPROVAL_KEYS = new Set(['relationship', 'memories']);
@@ -106,6 +117,117 @@ function discard(state: Scene): ApplySceneDeltaResult {
     approvalCandidates: {},
     appliedEvents: [],
   };
+}
+
+function isInt(v: unknown): v is number {
+  return typeof v === 'number' && Number.isInteger(v);
+}
+
+function ensureSheet(scene: Scene): NonNullable<Scene['user_sheet']> {
+  if (!scene.user_sheet) scene.user_sheet = {};
+  if (!scene.user_sheet.inventory) scene.user_sheet.inventory = [];
+  return scene.user_sheet;
+}
+
+function tokenList(v: unknown): string[] | null {
+  if (typeof v === 'string') return v ? [v] : [];
+  if (!Array.isArray(v)) return null;
+  const out: string[] = [];
+  for (const x of v) {
+    if (typeof x !== 'string') return null;
+    if (x && !out.includes(x)) out.push(x);
+  }
+  return out;
+}
+
+/** Notes_260903 HUD: hp/money deltas clamp-reject; inventory against catalog.items. */
+function applyHudDeltas(
+  next: Scene,
+  patch: Record<string, unknown>,
+  catalog: PartyCatalog,
+  applied: string[],
+  ignored: ApplyIgnore[],
+): void {
+  if ('hp_delta' in patch) {
+    const v = patch.hp_delta;
+    if (!isInt(v)) {
+      ignored.push({ key: 'hp_delta', reason: 'type' });
+    } else {
+      const cur = typeof next.user_sheet?.hp === 'number' ? next.user_sheet.hp : 0;
+      const n = cur + v;
+      if (n < 0 || n > HP_MAX) {
+        ignored.push({ key: 'hp_delta', reason: 'out_of_range' });
+      } else {
+        ensureSheet(next).hp = n;
+        applied.push('hp_delta');
+      }
+    }
+  }
+
+  if ('money_delta' in patch) {
+    const v = patch.money_delta;
+    if (!isInt(v)) {
+      ignored.push({ key: 'money_delta', reason: 'type' });
+    } else {
+      const cur = typeof next.user_sheet?.money === 'number' ? next.user_sheet.money : 0;
+      const n = cur + v;
+      if (n < 0 || n > MONEY_MAX) {
+        ignored.push({ key: 'money_delta', reason: 'out_of_range' });
+      } else {
+        ensureSheet(next).money = n;
+        applied.push('money_delta');
+      }
+    }
+  }
+
+  const allowed = catalog.items ?? [];
+
+  if ('inventory_add' in patch) {
+    const tokens = tokenList(patch.inventory_add);
+    if (!tokens) {
+      ignored.push({ key: 'inventory_add', reason: 'type' });
+    } else {
+      const inv = [...(next.user_sheet?.inventory ?? [])];
+      let any = false;
+      for (const id of tokens) {
+        if (!allowed.includes(id)) {
+          ignored.push({ key: `inventory_add.${id}`, reason: 'not_in_allowlist' });
+          continue;
+        }
+        if (!inv.includes(id)) {
+          inv.push(id);
+          any = true;
+        }
+      }
+      if (any) {
+        ensureSheet(next).inventory = inv;
+        applied.push('inventory_add');
+      }
+    }
+  }
+
+  if ('inventory_remove' in patch) {
+    const tokens = tokenList(patch.inventory_remove);
+    if (!tokens) {
+      ignored.push({ key: 'inventory_remove', reason: 'type' });
+    } else {
+      const inv = [...(next.user_sheet?.inventory ?? [])];
+      let any = false;
+      for (const id of tokens) {
+        const idx = inv.indexOf(id);
+        if (idx < 0) {
+          ignored.push({ key: `inventory_remove.${id}`, reason: 'not_held' });
+          continue;
+        }
+        inv.splice(idx, 1);
+        any = true;
+      }
+      if (any) {
+        ensureSheet(next).inventory = inv;
+        applied.push('inventory_remove');
+      }
+    }
+  }
 }
 
 export function applySceneDelta(
@@ -198,6 +320,8 @@ export function applySceneDelta(
       ignored.push({ key: 'advance_minutes', reason: 'out_of_range' });
     }
   }
+
+  applyHudDeltas(next, patch, catalog, applied, ignored);
 
   if ('flags' in patch) {
     const v = patch.flags;

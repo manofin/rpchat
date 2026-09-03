@@ -108,7 +108,7 @@ function main() {
     }
     assert.equal(p.includes('relationship'), false, 'approval-gated field must not be advertised');
     assert.equal(p.includes('memories'), false);
-    assert.equal(p.includes('hp'), false);
+    assert.equal(p.includes('"hp"'), false, 'bare hp key is not a GM field; deltas use hp_delta');
   });
 
   t('prompt carries the user turn', () => {

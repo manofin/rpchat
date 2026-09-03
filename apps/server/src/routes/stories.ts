@@ -65,6 +65,8 @@ const sceneCatalogSchema = z.object({
     .default({}),
   /** Allowed outfit tokens. An outfit outside this list yields no image, never a broken path. */
   outfits: z.array(z.string().max(40)).max(50).default([]),
+  /** HUD inventory allow-list (Notes_260903). Adds outside this list are ignored. */
+  items: z.array(z.string().max(60)).max(80).default([]),
   /** emotion → asset index n. Non-integer or negative is rejected, not silently coerced. */
   emotions: z.record(z.number().int().min(0)).default({}),
   /** stage id → the duty that closes it (the other half of hard_event). */

@@ -38,6 +38,8 @@ export type SceneCatalog = {
    * Unlisted duties are their own slot.
    */
   dutySlots: Record<string, string>;
+  /** Allow-list for HUD inventory_add. */
+  items: string[];
 };
 
 export const SCENE_CATALOG_EMPTY: PartyCatalog = {
@@ -51,6 +53,7 @@ export const SCENE_CATALOG_EMPTY: PartyCatalog = {
   emotions: {},
   stages: {},
   dutySlots: {},
+  items: [],
 };
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
@@ -152,6 +155,7 @@ export function parseSceneCatalog(raw: string): SceneCatalog {
     emotions,
     stages,
     dutySlots,
+    items: strings(src.items),
   };
 }
 
@@ -172,6 +176,7 @@ export function catalogFromStory(raw: string): PartyCatalog {
     emotions: c.emotions,
     stages: c.stages,
     dutySlots: c.dutySlots,
+    items: c.items,
   };
 }
 
