@@ -70,7 +70,9 @@ export function BeatUiPanel({ ui }: { ui: BeatUiData }) {
   if (sheet) {
     if (typeof sheet.hp === 'number') stats.push(`HP ${sheet.hp}`);
     if (typeof sheet.money === 'number') stats.push(`₩ ${sheet.money.toLocaleString()}`);
-    for (const g of sheet.gear ?? []) stats.push(g);
+    if (sheet.gear?.length) stats.push(`장비 ${sheet.gear.join(', ')}`);
+    if (sheet.inventory?.length) stats.push(`보유 ${sheet.inventory.join(', ')}`);
+    if (sheet.traits?.length) stats.push(`특수 ${sheet.traits.join(', ')}`);
   }
   return (
     <div className="beat-ui">

@@ -7,6 +7,9 @@ import { interruptOrphanStreaming } from '../db/generation.js';
 import { deepestLeaf, getPath, insertMessage, messageOut, setHead, updateMessage } from '../db/tree.js';
 import { buildPrompt, resolvePersona } from '../prompt/builder.js';
 import { substitute } from '../prompt/templates.js';
+import { catalogFromStory } from '../prompt/sceneCatalog.js';
+import { castFromCharacters, type PartyTagRow } from '../prompt/tagsCatalog.js';
+import { initialBeatScene } from '../prompt/initScene.js';
 import type { CharacterRow, ConversationRow, MessageRow, PersonaRow, Scene, StoryRow } from '../types.js';
 import { characterOut, personaOut } from './characters.js';
 
@@ -136,6 +139,22 @@ export function conversationRoutes(ctx: Ctx) {
         storySettingSnapshot = story.setting;
         storyMinorCastSnapshot = story.minor_cast;
       }
+      let sceneJson = JSON.stringify(d.scene);
+      if (storyId) {
+        const catalogRow = one<{ scene_catalog: string }>(db, 'SELECT scene_catalog FROM stories WHERE id = ?', storyId);
+        const catalog = catalogFromStory(catalogRow?.scene_catalog ?? '{}');
+        const roster = many<PartyTagRow>(
+          db,
+          `SELECT c.id, c.name, c.tags_json
+             FROM story_characters sc
+             JOIN characters c ON c.id = sc.character_id
+            WHERE sc.story_id = ?
+            ORDER BY sc.sort_order ASC, c.name ASC`,
+          storyId,
+        );
+        const cast = castFromCharacters(roster, character.id) ?? [];
+        sceneJson = JSON.stringify(initialBeatScene({ catalog, cast, overlay: d.scene }));
+      }
       let personaNameSnap: string | null = null;
       let personaAddressSnap: string | null = null;
       let personaAppearanceSnap: string | null = null;
@@ -156,7 +175,7 @@ export function conversationRoutes(ctx: Ctx) {
           db,
           `INSERT INTO conversations (id, character_id, persona_id, title, mode, profile_name, scene_json, head_message_id, prompt_version, created_at, updated_at, last_message_at, story_id, story_applied_at, story_name_snapshot, story_setting_snapshot, story_minor_cast_snapshot, persona_name_snapshot, persona_address_snapshot, persona_appearance_snapshot, persona_personality_snapshot, persona_relationship_snapshot, persona_applied_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          id, character.id, d.personaId ?? null, d.title ?? '', d.mode, profileName, JSON.stringify(d.scene), PROMPT_VERSION, t, t,
+          id, character.id, d.personaId ?? null, d.title ?? '', d.mode, profileName, sceneJson, PROMPT_VERSION, t, t,
           storyId, storyAppliedAt, storyNameSnapshot, storySettingSnapshot, storyMinorCastSnapshot,
           personaNameSnap, personaAddressSnap, personaAppearanceSnap, personaPersonalitySnap, personaRelationshipSnap, personaAppliedAt,
         );

@@ -74,6 +74,16 @@ t('the speaker header is used for line blocks only', () => {
   assert.ok(branchAt < at, 'SpeakerHeader lives below the chrome branch, i.e. on the bubble path');
 });
 
+t('BeatUiPanel prints gear, inventory and traits from the user_sheet', () => {
+  const s = view();
+  assert.ok(s.includes('sheet.gear'), 'gear');
+  assert.ok(s.includes('sheet.inventory'), 'inventory');
+  assert.ok(s.includes('sheet.traits'), 'traits');
+  assert.ok(s.includes('장비'), 'gear label');
+  assert.ok(s.includes('보유'), 'inventory label');
+  assert.ok(s.includes('특수'), 'traits label');
+});
+
 t('a damaged ui payload renders nothing rather than throwing', () => {
   const s = view();
   assert.match(s, /export function parseBeatUi[\s\S]{0,400}catch \{\s*return null;/);
