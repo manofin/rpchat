@@ -231,6 +231,7 @@ async function main() {
 
     const line = msgs.find((m) => m.meta.block_kind === 'line')!;
     assert.equal(line.meta.speaker_name, '나리');
+    assert.equal(line.meta.speaker_character_id, nari.id);
     assert.ok(String(line.content).includes('짝꿍'));
 
     const thought = msgs.find((m) => m.meta.block_kind === 'thought')!;
@@ -246,6 +247,40 @@ async function main() {
     assert.ok(ui.roster.some((r: { name: string; chip: string }) => r.name === '나리'));
     const hanChip = ui.roster.find((r: { name: string }) => r.name === '한소연');
     assert.ok(hanChip.locked || hanChip.chip === '🔒');
+  });
+
+  await t('greeting persist: header + named line + extras ≤ 2 + ui, no 1:1 first_message', async () => {
+    const start = await api('POST', '/api/conversations', {
+      characterId: hayeon.id,
+      storyId: story.id,
+      mode: 'story',
+    });
+    assert.equal(start.status, 201, start.text);
+    const greetId = (start.json as { id: string }).id;
+    const greetGet = await api('GET', `/api/conversations/${greetId}`);
+    const greetBefore = (greetGet.json as { messages: Array<{ content: string }> }).messages;
+    assert.equal(greetBefore.some((m) => m.content.includes('밧줄') || m.content.includes('다리')), false);
+
+    const res = await fetch(`${origin}/api/conversations/${greetId}/messages`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ content: '안녕하시오' }),
+    });
+    assert.equal(res.status, 200, `greeting SSE 200 got ${res.status}`);
+    const detail = await api('GET', `/api/conversations/${greetId}`);
+    const msgs = (detail.json as { messages: Array<{ role: string; content: string; meta: Record<string, unknown> }> }).messages;
+    const kinds = msgs.filter((m) => m.role === 'assistant').map((m) => m.meta.block_kind);
+    assert.ok(kinds.includes('header'), JSON.stringify(kinds));
+    assert.ok(kinds.includes('line'), JSON.stringify(kinds));
+    assert.ok(kinds.includes('ui'), JSON.stringify(kinds));
+    const lines = msgs.filter((m) => m.meta.block_kind === 'line');
+    assert.ok(lines.length >= 1);
+    assert.ok(lines.every((m) => m.meta.speaker_character_id && m.meta.speaker_name));
+    const extraLines = lines.filter((m) => m.meta.speaker_character_id !== hayeon.id);
+    assert.ok(extraLines.length >= 1 && extraLines.length <= 2, JSON.stringify(extraLines.map((m) => m.meta.speaker_name)));
+    const focusLine = lines.find((m) => m.meta.speaker_character_id === hayeon.id);
+    assert.ok(focusLine, 'conversation partner must have a named line');
+    assert.equal(focusLine!.meta.speaker_name, '하연');
   });
 
   await t('second send on the same conv is still a structured beat; scene place+clock survive', async () => {
@@ -308,7 +343,9 @@ async function main() {
     const kinds = body.messages.filter((m) => m.role === 'assistant').map((m) => m.meta.block_kind);
     assert.equal(kinds.filter((k) => k === 'ui').length, 3, JSON.stringify(kinds));
     const lines = body.messages.filter((m) => m.meta.block_kind === 'line');
-    assert.equal(lines[lines.length - 1].meta.speaker_name, '하연');
+    assert.ok(lines.some((m) => m.meta.speaker_character_id === hayeon.id && m.meta.speaker_name === '하연'));
+    const extrasThis = lines.filter((m) => m.meta.speaker_character_id !== hayeon.id && m.meta.speaker_name !== '나리');
+    assert.ok(extrasThis.length <= 2);
     assert.equal(lines.some((m) => m.meta.speaker_name === '루나'), false);
     assert.equal(lines.some((m) => m.meta.speaker_name === '미르'), false);
   });
