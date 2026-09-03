@@ -27,8 +27,13 @@ export type FocusReason =
 export type FocusResult = {
   focus_id: string | null;
   reason: FocusReason;
-  /** Ids that matched the user's text. 2+ means ambiguity, which yields no focus. */
+  /** Ids named as addressees. Extra candidates are `mention_ids`, not a coin flip. */
   matched_ids: string[];
+  /**
+   * Named in the text but not the addressee (`유키랑` = with 유키).
+   * ApproveExtras may open these as extra slots; they do not steal the focus.
+   */
+  mention_ids: string[];
 };
 
 /**
@@ -46,6 +51,9 @@ const SECOND_PERSON = ['너', '넌', '네가', '니가', '당신', '그대', '�
 
 /** Includes `*` so ST-style stage directions (`*나리의 귓가에 속삭이며*`) still name-match. */
 const TOKEN_SPLIT = /[\s,.!?;:"'()[\]{}<>~…·「」『』“”‘’*\-—]+/u;
+
+/** Comitative: "with X". A match this way is a mention, not the addressee. */
+const COMITATIVE_TAILS = ['이랑', '이하고', '하고', '랑', '와', '과'];
 
 function stripParticle(token: string): string {
   for (const p of PARTICLES) {
@@ -122,8 +130,42 @@ function selectable(id: string, cast: CastMember[], scene: Scene): boolean {
   return present ? present.includes(id) : true;
 }
 
-function result(focus_id: string | null, reason: FocusReason, matched: string[]): FocusResult {
-  return { focus_id, reason, matched_ids: matched };
+function result(
+  focus_id: string | null,
+  reason: FocusReason,
+  matched: string[],
+  mentions: string[] = [],
+): FocusResult {
+  const mention_ids: string[] = [];
+  for (const id of mentions) {
+    if (id && id !== focus_id && !mention_ids.includes(id)) mention_ids.push(id);
+  }
+  return { focus_id, reason, matched_ids: matched, mention_ids };
+}
+
+function isComitativeMention(text: string, forms: string[]): boolean {
+  return forms.some((f) => COMITATIVE_TAILS.some((tail) => text.includes(f + tail)));
+}
+
+function splitAddressed(
+  text: string,
+  ids: string[],
+  cast: CastMember[],
+): { addressed: string[]; mentioned: string[] } {
+  const addressed: string[] = [];
+  const mentioned: string[] = [];
+  for (const id of ids) {
+    const m = cast.find((c) => c.id === id);
+    const forms = m ? nameMatchForms(m) : [id];
+    if (isComitativeMention(text, forms)) mentioned.push(id);
+    else addressed.push(id);
+  }
+  return { addressed, mentioned };
+}
+
+function pickAddressed(ids: string[], partner: string | null): string {
+  if (partner && ids.includes(partner)) return partner;
+  return ids[0];
 }
 
 /**
@@ -136,9 +178,9 @@ function result(focus_id: string | null, reason: FocusReason, matched: string[])
  *   3b. the character this chat was opened as, when they can speak here
  *   4. otherwise: no focus, no dialogue slot
  *
- * Ambiguity is silence, not a coin flip: when the message names two present
- * characters, rule 1 yields nobody rather than picking one. This is the single
- * line that keeps "모호하면 LLM" from creeping back in.
+ * Two addressees are not a coin flip: the conversation partner wins if named,
+ * otherwise the first match in roster order. The rest become `mention_ids` so
+ * extra slots can open. Comitative "X랑" is a mention, not the addressee.
  */
 export function resolveFocus(input: {
   user_text: string;
@@ -150,6 +192,7 @@ export function resolveFocus(input: {
 }): FocusResult {
   const { scene, cast } = input;
   const text = input.user_text ?? '';
+  const partner = input.main_character_id ?? null;
 
   // 1. explicit targeting.
   //
@@ -157,49 +200,65 @@ export function resolveFocus(input: {
   // candidate (absent, locked, background) is not a decision, so naming someone
   // who is not in the room lets the location's default answer instead of putting
   // words in an absent character's mouth.
-  //
-  // Genuine ambiguity is the exception and stops here rather than falling
-  // through. Two people in the room were both addressed; picking one would be a
-  // guess, and guessing is the behaviour this module exists to remove.
   const named = targetedIds(text, cast).filter((id) => selectable(id, cast, scene));
-  const aimed = targetedIds(actionDirectionText(text), cast).filter((id) => selectable(id, cast, scene));
-  // A single name inside *stage direction* is the aim, even if speech mentions
-  // someone else. Two names inside the direction stay ambiguous. No direction
-  // (or no name in it) keeps the whole-message rule.
-  if (aimed.length === 1) return result(aimed[0], 'targeted', aimed);
-  if (aimed.length > 1) return result(null, 'none', aimed);
-  if (named.length === 1) return result(named[0], 'targeted', named);
-  if (named.length > 1) return result(null, 'none', named);
+  const direction = actionDirectionText(text);
+  const aimed = targetedIds(direction, cast).filter((id) => selectable(id, cast, scene));
+  const aimedSplit = splitAddressed(direction || text, aimed, cast);
+  const namedSplit = splitAddressed(text, named, cast);
+
+  const takeAddressed = (addressed: string[], mentioned: string[]) => {
+    const id = pickAddressed(addressed, partner);
+    return result(id, 'targeted', addressed, [...mentioned, ...addressed.filter((x) => x !== id)]);
+  };
+
+  // A name inside *stage direction* is the aim, even if speech mentions someone
+  // else. Comitative-only direction names are mentions and fall through.
+  if (aimedSplit.addressed.length >= 1) {
+    return takeAddressed(aimedSplit.addressed, [
+      ...aimedSplit.mentioned,
+      ...namedSplit.addressed.filter((id) => !aimedSplit.addressed.includes(id)),
+      ...namedSplit.mentioned,
+    ]);
+  }
+  if (namedSplit.addressed.length >= 1) {
+    return takeAddressed(namedSplit.addressed, namedSplit.mentioned);
+  }
+  // A lone comitative ("나리랑") with no conversation partner is still who the
+  // line is about. With a partner ("유키랑" in a 카이 chat) it stays a mention.
+  if (namedSplit.mentioned.length >= 1 && !partner) {
+    return takeAddressed(namedSplit.mentioned, []);
+  }
+
+  const mentionIds = [...aimedSplit.mentioned, ...namedSplit.mentioned];
 
   const lastFocus = scene.last_beat?.focus_id ?? null;
 
   // 1b. second person with no name: only ever re-confirms the standing focus.
   // With no previous focus it creates nothing — a pronoun is not an introduction.
   if (usesSecondPerson(text) && lastFocus && selectable(lastFocus, cast, scene)) {
-    return result(lastFocus, 'targeted', [lastFocus]);
+    return result(lastFocus, 'targeted', [lastFocus], mentionIds);
   }
 
   // 2. whoever the previous beat left hanging
   const unresolved = (scene.last_beat?.unresolved ?? []).filter((id) => selectable(id, cast, scene));
-  if (unresolved.length === 1) return result(unresolved[0], 'unresolved', []);
-  if (unresolved.length > 1) return result(null, 'none', []);
+  if (unresolved.length === 1) return result(unresolved[0], 'unresolved', [], mentionIds);
+  if (unresolved.length > 1) return result(null, 'none', [], mentionIds);
 
   // 3. the location's default focus
   const here = scene.location ?? scene.place ?? '';
   const place = here ? (input.catalog?.places ?? []).find((p) => p.id === here) : undefined;
   const fallback = place?.default_focus;
   if (fallback && selectable(fallback, cast, scene)) {
-    return result(fallback, 'default_focus', []);
+    return result(fallback, 'default_focus', [], mentionIds);
   }
 
   // 3b. this chat's partner. Opening a 서리 conversation and saying 안녕하세요
   // is talking to 서리 — not a random draw, and not assignSpeakers stuffing
   // main in after a null focus.
-  const partner = input.main_character_id ?? null;
   if (partner && selectable(partner, cast, scene)) {
-    return result(partner, 'conversation_partner', []);
+    return result(partner, 'conversation_partner', [], mentionIds);
   }
 
   // 4. narration only
-  return result(null, 'none', []);
+  return result(null, 'none', [], mentionIds);
 }

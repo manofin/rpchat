@@ -148,6 +148,30 @@ t('안녕하세요 talks to the story opener even without party: tags on them', 
   }));
   assert.equal(plan.focus.focus_id, 'seori');
   assert.equal(plan.focus.reason, 'conversation_partner');
+  assert.equal(plan.approved_extras.length, 2);
+  assert.ok(plan.approved_extras.every((e) => e.character_id !== 'seori'));
+});
+
+t('유키랑 on a 카이 chat: 카이 keeps the line, 유키 extras, 한소연 stays locked', () => {
+  const kai = member({ id: 'kai', name: '카이', place: '', role: 'main' });
+  const yuki = member({ id: 'yuki-smoke', name: '유키-smoke', aliases: ['유키'], place: '' });
+  const soyeon = member({ id: 'soyeon-smoke', name: '한소연-smoke', aliases: ['소연'], place: '' });
+  const plan = planBeat(input({
+    user_text: '어 유키랑 담배피다가 온건데?',
+    main_character_id: 'kai',
+    cast: [kai, yuki, soyeon],
+    scene: {
+      location: 'bureau_lobby',
+      present_ids: ['kai', 'yuki-smoke', 'soyeon-smoke'],
+      last_beat: { focus_id: 'kai', extra_ids: [], unresolved: [] },
+    },
+    catalog: catalogFromStory(JSON.stringify({
+      places: [{ id: 'bureau_lobby', name: '로비' }],
+    })),
+  }));
+  assert.equal(plan.focus.focus_id, 'kai');
+  assert.deepEqual(plan.approved_extras.map((e) => e.character_id), ['yuki-smoke']);
+  assert.deepEqual(plan.assigned.speakers.map((s) => s.character_id), ['kai', 'yuki-smoke']);
 });
 
 t('the party path never calls buildPrompt', () => {
@@ -184,7 +208,12 @@ t('a quiet turn: focus speaks alone, everyone else is ambient or 🔒', () => {
 });
 
 t('a beat with no focus still plans Pass N, and plans no Pass F', () => {
-  const plan = planBeat(input({ user_text: '세라, 하연, 둘 다 들어.' }));
+  const plan = planBeat(input({
+    user_text: '둘러본다',
+    scene: { location: '옥상', present_ids: ['nari'] },
+    catalog: catalogFromStory(JSON.stringify({ places: [{ id: '옥상' }], weathers: ['맑음'] })),
+    main_character_id: 'hayeon',
+  }));
   assert.equal(plan.focus.focus_id, null);
   assert.ok(plan.pass_n.length > 0);
   assert.equal(plan.pass_f, null);
@@ -239,7 +268,12 @@ t('a failed Pass N drops the narration block only', () => {
 });
 
 t('a no-focus beat serializes header + narration + ui with zero line slots', () => {
-  const i = input({ user_text: '세라, 하연, 둘 다 들어.' });
+  const i = input({
+    user_text: '둘러본다',
+    scene: { location: '옥상', present_ids: ['nari'], scene_version: 0 },
+    catalog: catalogFromStory(JSON.stringify({ places: [{ id: '옥상' }], weathers: ['맑음'] })),
+    main_character_id: 'hayeon',
+  });
   const plan = planBeat(i);
   const done = finishBeat(i, plan, outputs({ focus_text: '' }));
   assert.deepEqual(done.blocks.map((b) => b.kind), ['header', 'narration', 'ui']);
@@ -316,7 +350,12 @@ t('Pass F is rebuilt with the narration Pass N actually produced', () => {
   const withN = passFWith(i, plan, '교실이 조용해졌다.')!;
   assert.ok(withN.includes('교실이 조용해졌다.'));
   assert.ok(withN.includes('다시 쓰지 말 것'));
-  assert.equal(passFWith(i, planBeat(input({ user_text: '세라, 하연, 둘 다.' })), 'x'), null);
+  assert.equal(passFWith(i, planBeat(input({
+    user_text: '둘러본다',
+    scene: { location: '옥상', present_ids: ['nari'] },
+    catalog: catalogFromStory(JSON.stringify({ places: [{ id: '옥상' }] })),
+    main_character_id: 'hayeon',
+  })), 'x'), null);
 });
 
 t('Pass E is planned once per approved extra, carrying its opening duty', () => {

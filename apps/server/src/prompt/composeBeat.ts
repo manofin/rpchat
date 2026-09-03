@@ -155,6 +155,10 @@ export function planBeat(input: BeatPlanInput): BeatPlan {
     catalog,
     applied_events: applied.discarded ? [] : applied.appliedEvents,
     user_id: input.user_id ?? null,
+    mention_ids: focus.mention_ids,
+    matched_ids: focus.matched_ids,
+    focus_reason: focus.reason,
+    user_text: input.user_text,
   });
   const extraIds = approval.approved.map((e) => e.character_id);
 

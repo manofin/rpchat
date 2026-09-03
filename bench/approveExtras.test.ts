@@ -292,6 +292,25 @@ t('end-to-end through composePartyTurn: flag flip opens exactly 세라', () => {
   assert.deepEqual(out.messages.map((m) => `${m.slot}:${m.speaker_name}`), ['main:나리', 'extra:세라']);
 });
 
+t('a named mention (mention_ids) opens that extra without a hard_event', () => {
+  const r = run({ mention_ids: ['sera'], focus_reason: 'conversation_partner' });
+  assert.deepEqual(ids(r), ['sera']);
+  assert.equal(r.approved[0].hard_event, null);
+});
+
+t('a first 안녕하시오 opens extras up to the cap; a named quiet turn still does not', () => {
+  const greet = run({
+    focus_id: 'hayeon',
+    focus_reason: 'conversation_partner',
+    user_text: '안녕하시오',
+  });
+  assert.ok(greet.k_opened >= 1);
+  assert.ok(greet.k_opened <= MAX_EXTRAS);
+  assert.equal(greet.approved.some((a) => a.character_id === 'hayeon'), false);
+  const quiet = run();
+  assert.equal(quiet.k_opened, 0);
+});
+
 t('end-to-end with no world change: focus speaks alone', () => {
   const out = planBeat({
     scene: { ...CLASSROOM, scene_version: 0 },

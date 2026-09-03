@@ -3,13 +3,15 @@
  *
  *   extra(c) iff eligible(c)
  *              AND incremental(c, focus, beat)
- *              AND (hard_event(c) OR (EXTRA_SCORE_ENABLED && score(c) >= TAU))
+ *              AND (hard_event(c)
+ *                   OR addressed(c)
+ *                   OR opening_ack(c)
+ *                   OR (EXTRA_SCORE_ENABLED && score(c) >= TAU))
  *
- * **기본은 전원 거절.** With the model signal off — which is the shipped default —
- * the only thing that opens a slot is a `hard_event`: a stage or flag transition
- * the server itself applied this turn, owned by a duty this candidate holds.
- * A turn where the world did not change opens nothing, no matter how relevant
- * anybody is.
+ * **기본은 전원 거절.** Score stays OFF. `hard_event` still opens a duty-owner
+ * after a stage/flag the server applied. Party RP also opens extras when the
+ * user named them (`유키랑`) or on the first untargeted beat of a conversation
+ * (the rest of the room greets back). A quiet targeted turn still opens nothing.
  *
  * That asymmetry is the measurement result, not a preference. `bench/dutyAttribution`
  * showed the model attributes reasons accurately (recall 1.00 on L0) and still
@@ -29,6 +31,7 @@ import { eligibleExtras, type ExtraRejection } from './eligibleExtras.js';
 import { MAX_EXTRAS } from './assignSpeakers.js';
 import type { CastMember } from './cast.js';
 import type { AppliedEvent, PartyCatalog } from './applySceneDelta.js';
+import type { FocusReason } from './resolveFocus.js';
 import type { Scene } from '../types.js';
 
 /**
@@ -93,13 +96,12 @@ function slotOf(duty: string, catalog: PartyCatalog): string {
  *
  * Order matters and is the point:
  *   1. eligible (§4.2 closed set) — who may be considered at all
- *   2. hard_event opens candidates — the ONLY opener
+ *   2. hard_event / addressed / opening_ack open candidates
  *   3. incremental filters them — duty overlap with the focus, then slot dedupe
  *   4. cap at MAX_EXTRAS
  *
- * Because step 2 is the only opener, an empty `appliedEvents` produces an empty
- * approval however large the eligible set is. `k_opened === 0` is the expected
- * reading of a quiet turn, not a defect.
+ * A quiet targeted turn (named the focus, world unchanged) still opens zero.
+ * EXTRA_SCORE_ENABLED stays false — this is not the model filling a slot.
  */
 export function approveExtras(input: {
   cast: CastMember[];
@@ -112,6 +114,10 @@ export function approveExtras(input: {
   /** Optional model signal, §4 step 4. Ignored entirely while EXTRA_SCORE_ENABLED is false. */
   scores?: Record<string, number>;
   tau?: number;
+  mention_ids?: string[];
+  matched_ids?: string[];
+  focus_reason?: FocusReason;
+  user_text?: string;
 }): ApproveExtrasResult {
   const { cast, scene, catalog } = input;
   const rejected: Array<{ id: string; reason: ApproveRejectReason }> = [];
@@ -142,15 +148,48 @@ export function approveExtras(input: {
   const opened: ApprovedExtra[] = [];
   const openedIds = new Set<string>();
 
+  const tryOpen = (id: string, duty: string, event: AppliedEvent | null) => {
+    if (openedIds.has(id)) return;
+    if (!elig.eligible_ids.includes(id)) return;
+    const member = cast.find((c) => c.id === id);
+    if (!member) return;
+    openedIds.add(id);
+    opened.push({ character_id: id, name: member.name, duty, hard_event: event });
+  };
+
   for (const event of hardEvents) {
     const duty = dutyForEvent(event, catalog);
     if (!duty) continue;
     for (const id of elig.eligible_ids) {
-      if (openedIds.has(id)) continue;
       const member = cast.find((c) => c.id === id);
       if (!member || !member.duties.includes(duty)) continue;
-      openedIds.add(id);
-      opened.push({ character_id: id, name: member.name, duty, hard_event: event });
+      tryOpen(id, duty, event);
+    }
+  }
+
+  // Addressed extras: the user named them as a mention (`유키랑`) or as a second
+  // addressee (`세라, 하연`). Not a score. Not "someone always speaks".
+  const addressed: string[] = [];
+  for (const id of [...(input.mention_ids ?? []), ...(input.matched_ids ?? [])]) {
+    if (id && id !== input.focus_id && !addressed.includes(id)) addressed.push(id);
+  }
+  for (const id of addressed) {
+    const member = cast.find((c) => c.id === id);
+    if (!member) continue;
+    tryOpen(id, member.duties[0] ?? `반응:${id}`, null);
+  }
+
+  // First greeting of a party chat: the rest of the room greets back.
+  // "등록하고 싶어요" / later turns stay partner-only.
+  const openingAck =
+    input.focus_reason === 'conversation_partner'
+    && !input.scene.last_beat?.focus_id
+    && /안녕|하이|헬로|반갑|처음|hello|\bhi\b/i.test(input.user_text ?? '');
+  if (openingAck) {
+    for (const id of elig.eligible_ids) {
+      const member = cast.find((c) => c.id === id);
+      if (!member) continue;
+      tryOpen(id, member.duties[0] ?? `반응:${id}`, null);
     }
   }
 

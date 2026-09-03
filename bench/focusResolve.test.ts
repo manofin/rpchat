@@ -95,9 +95,25 @@ t('aiming at 하연 in *direction* while mentioning 나리 in speech targets 하
   assert.deepEqual(r.matched_ids, ['hayeon']);
 });
 
-t('two names inside the *direction* stay ambiguous; speech-only two names stay ambiguous', () => {
-  assert.equal(focus('*세라와 하연을 보며* 둘 다 들어.').focus_id, null);
-  assert.equal(focus('세라, 하연, 둘 다 들어.').focus_id, null);
+t('two names: 와/랑 is a mention, a comma address picks a focus (partner if named)', () => {
+  const looking = resolveFocus({
+    user_text: '*세라와 하연을 보며* 둘 다 들어.',
+    scene: CLASSROOM,
+    cast: CAST,
+    catalog: CAT,
+    main_character_id: 'hayeon',
+  });
+  assert.equal(looking.focus_id, 'hayeon');
+  assert.ok(looking.mention_ids.includes('sera'));
+  const both = resolveFocus({
+    user_text: '세라, 하연, 둘 다 들어.',
+    scene: CLASSROOM,
+    cast: CAST,
+    catalog: CAT,
+    main_character_id: 'hayeon',
+  });
+  assert.equal(both.focus_id, 'hayeon');
+  assert.ok(both.mention_ids.includes('sera'));
 });
 
 t('Korean particles are stripped, so 나리가 / 나리에게 / 나리를 all target 나리', () => {
@@ -145,11 +161,27 @@ t('a background character is never matched; the turn falls through to rule 3', (
 });
 
 // ── 2. ambiguity is silence, not a coin flip ────────────────────────────────
-t('naming two present characters yields NO focus (no random pick, no LLM)', () => {
+t('naming two present characters is deterministic: partner if named, else roster order', () => {
   const r = focus('세라, 하연, 둘 다 들어.');
-  assert.equal(r.focus_id, null);
-  assert.equal(r.reason, 'none');
-  assert.deepEqual(r.matched_ids.sort(), ['hayeon', 'sera']);
+  assert.equal(r.focus_id, 'sera');
+  assert.equal(r.reason, 'targeted');
+  assert.ok(r.matched_ids.includes('sera') && r.matched_ids.includes('hayeon'));
+  assert.ok(r.mention_ids.includes('hayeon'));
+});
+
+t('유키랑 keeps the conversation partner as focus and mentions 유키 for an extra', () => {
+  const yuki = member({ id: 'yuki-smoke', name: '유키-smoke', aliases: ['유키'], place: '' });
+  const kai = member({ id: 'kai', name: '카이', place: '', role: 'main' });
+  const scene: Scene = { present_ids: ['kai', 'yuki-smoke'] };
+  const r = resolveFocus({
+    user_text: '어 유키랑 담배피다가 온건데?',
+    scene,
+    cast: [kai, yuki],
+    main_character_id: 'kai',
+  });
+  assert.equal(r.focus_id, 'kai');
+  assert.equal(r.reason, 'conversation_partner');
+  assert.deepEqual(r.mention_ids, ['yuki-smoke']);
 });
 
 t('naming an absent character never puts words in their mouth', () => {
