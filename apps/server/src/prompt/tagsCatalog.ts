@@ -19,7 +19,7 @@
  *   party:stage=<arc id>/<stage id>        catalog only
  *   party:flag=<key>[@<owner_stage>]       catalog only
  */
-import type { CastMember, CastRole } from './cast.js';
+import { hyphenHead, type CastMember, type CastRole } from './cast.js';
 import type { PartyCatalog } from './applySceneDelta.js';
 
 const PREFIX = 'party:';
@@ -160,10 +160,13 @@ export function castFromCharacters(rows: PartyTagRow[], mainCharacterId: string)
     if (row.id === mainCharacterId) role = 'main';
     else if (parsed.role === 'background') role = 'background';
     else role = 'secondary';
+    const aliases = [...parsed.aliases];
+    const head = hyphenHead(row.name);
+    if (head) pushUnique(aliases, head);
     return {
       id: row.id,
       name: row.name,
-      aliases: parsed.aliases,
+      aliases,
       duties: parsed.duties,
       place: parsed.place,
       home_places: parsed.home_places,
@@ -189,11 +192,14 @@ export function withConversationStarter(
   if (cast.some((m) => m.id === starter.id)) {
     return cast.map((m) => (m.id === starter.id ? { ...m, role: 'main' } : m));
   }
+  const aliases: string[] = [];
+  const head = hyphenHead(starter.name);
+  if (head) aliases.push(head);
   return [
     {
       id: starter.id,
       name: starter.name,
-      aliases: [],
+      aliases,
       duties: [],
       place: '',
       role: 'main',

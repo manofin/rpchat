@@ -13,7 +13,7 @@
  *
  * Pure: no DB, no fetch, no model. Deterministic.
  */
-import { canSpeak, type CastMember } from './cast.js';
+import { canSpeak, nameMatchForms, type CastMember } from './cast.js';
 import type { PartyCatalog } from './applySceneDelta.js';
 import type { Scene } from '../types.js';
 
@@ -82,7 +82,7 @@ export function targetedIds(text: string, cast: CastMember[]): string[] {
   const hits: string[] = [];
   for (const m of cast) {
     if (!canSpeak(m)) continue;
-    const forms = [m.id, m.name, ...(m.aliases ?? [])].filter((f) => f);
+    const forms = nameMatchForms(m);
     if (forms.some((f) => tokens.has(f)) && !hits.includes(m.id)) hits.push(m.id);
   }
   return hits;

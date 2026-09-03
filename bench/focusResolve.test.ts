@@ -106,6 +106,27 @@ t('Korean particles are stripped, so 나리가 / 나리에게 / 나리를 all ta
   }
 });
 
+t('유키-smoke is targeted by 유키야; the -smoke suffix is not a shared match', () => {
+  const yuki = member({ id: 'yuki-smoke', name: '유키-smoke', aliases: ['유키쨩'], place: '' });
+  const soyeon = member({ id: 'soyeon-smoke', name: '한소연-smoke', aliases: ['소연'], place: '' });
+  const cast = [yuki, soyeon];
+  const scene: Scene = { present_ids: ['yuki-smoke', 'soyeon-smoke'] };
+  assert.deepEqual(targetedIds('대화하자 유키야', cast), ['yuki-smoke']);
+  assert.equal(
+    resolveFocus({ user_text: '대화하자 유키야', scene, cast }).focus_id,
+    'yuki-smoke',
+  );
+  assert.equal(
+    resolveFocus({ user_text: '한소연, 담배 있어?', scene, cast }).focus_id,
+    'soyeon-smoke',
+  );
+  assert.equal(
+    resolveFocus({ user_text: '안녕하세요', scene, cast, main_character_id: 'yuki-smoke' }).focus_id,
+    'yuki-smoke',
+  );
+  assert.deepEqual(targetedIds('smoke', cast), []);
+});
+
 t('matching is exact, never a substring: 세라 does not match 세라핌', () => {
   const cast = [...CAST, member({ id: 'seraphim', name: '세라핌' })];
   const r = resolveFocus({ user_text: '세라핌, 이리 와', scene: { present_ids: ['sera', 'seraphim'] }, cast, catalog: CAT });

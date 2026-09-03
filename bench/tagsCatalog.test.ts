@@ -105,6 +105,25 @@ function main() {
     assert.equal(castFromCharacters([], 'x'), null);
   });
 
+  t('castFromCharacters: hyphenated display names expose the spoken head as an alias', () => {
+    const yuki = ch('c_yuki_smoke', '유키-smoke', [
+      'party:role=secondary',
+      'party:place=bureau_lobby',
+      'party:alias=유키쨩',
+    ]);
+    const soyeon = ch('c_soyeon_smoke', '한소연-smoke', [
+      'party:role=main',
+      'party:place=bureau_lobby',
+      'party:alias=소연',
+    ]);
+    const cast = castFromCharacters([yuki, soyeon], yuki.id)!;
+    assert.ok(cast.find((c) => c.id === yuki.id)!.aliases.includes('유키'));
+    assert.ok(cast.find((c) => c.id === soyeon.id)!.aliases.includes('한소연'));
+    const focus = resolveFocus({ user_text: '대화하자 유키야', scene: {}, cast });
+    assert.equal(focus.focus_id, yuki.id);
+    assert.equal(focus.reason, 'targeted');
+  });
+
   t('castFromCharacters: untagged rows are excluded from a real party', () => {
     const cast = castFromCharacters([SOYEON, YUKI, SEORI], 'c_soyeon');
     assert.notEqual(cast, null);

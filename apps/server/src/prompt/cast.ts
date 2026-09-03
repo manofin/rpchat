@@ -68,3 +68,28 @@ export function talkativenessOf(m: CastMember): number {
   if (typeof v !== 'number' || !Number.isFinite(v)) return DEFAULT_TALKATIVENESS;
   return Math.min(1, Math.max(0, v));
 }
+
+/**
+ * Spoken form of a hyphenated display name. Live smoke fixtures are tagged
+ * `유키-smoke` / `한소연-smoke`; the user says `유키야`, not the suffix.
+ * This is the head before the first `-`, never a substring (세라 ≠ 세라핌).
+ */
+export function hyphenHead(name: string): string | null {
+  const i = name.indexOf('-');
+  if (i <= 0) return null;
+  const head = name.slice(0, i).trim();
+  return head ? head : null;
+}
+
+/** Id, display name, aliases, and hyphen heads — the exact tokens §4.1 matches. */
+export function nameMatchForms(m: Pick<CastMember, 'id' | 'name' | 'aliases'>): string[] {
+  const forms: string[] = [];
+  const add = (f: string | null | undefined) => {
+    if (f && !forms.includes(f)) forms.push(f);
+  };
+  add(m.id);
+  add(m.name);
+  for (const a of m.aliases ?? []) add(a);
+  for (const f of [...forms]) add(hyphenHead(f));
+  return forms;
+}
