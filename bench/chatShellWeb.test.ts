@@ -88,6 +88,14 @@ t('no Tailwind/Next and CSS fences stay unique for .msg/.bubble', () => {
   assert.match(panel, /position: absolute/);
   assert.match(panel, /top: 0/);
   assert.match(panel, /bottom: 0/);
+  assert.match(panel, /width: min\(320px, 75vw\)/);
+  // The overlay is a containing block for the panel. A 0-width overlay makes
+  // max-width:100% resolve to 0px, so CJK titles stack as a vertical strip
+  // and translateX(±100%) is a no-op — the "closed" drawer stays on screen.
+  const drawer = /\.overlay-drawer \{[^}]*\}/.exec(css)?.[0] ?? '';
+  assert.match(drawer, /position: fixed/);
+  assert.match(drawer, /inset: 0/);
+  assert.ok(!/width:\s*0/.test(drawer), 'overlay width:0 collapses the slide-in panel');
   const pkg = src('apps/web/package.json');
   assert.equal(pkg.includes('tailwindcss'), false);
   assert.equal(pkg.includes('"next"'), false);

@@ -623,15 +623,14 @@ textarea { resize: none; }
   .chat-menu-btn { display: none; }
 }
 
+/* position:fixed + inset:0 이면 .chat-shell 플렉스 흐름에서 이미 빠진다.
+   width:0 을 주면 패널의 max-width:100% 가 0 으로 접히고, translateX(±100%)
+   도 0 이라 닫힌 제목이 화면 왼쪽에 세로로 쌓인다. */
 .overlay-drawer {
   position: fixed;
   inset: 0;
   z-index: 30;
   pointer-events: none;
-  flex: 0 0 0;
-  width: 0;
-  min-width: 0;
-  overflow: visible;
 }
 .overlay-drawer.is-open { pointer-events: auto; }
 .overlay-drawer-backdrop {
