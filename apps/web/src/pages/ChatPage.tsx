@@ -301,7 +301,7 @@ export function ChatPage({ id }: { id: string }) {
         onClose={() => setToolsOpen(false)}
         side="right"
         mode={desktop ? 'rail' : 'overlay'}
-        title="대화 도구"
+        title="세계관 인스펙터"
       >
         <ConversationTools conversationId={id} onChanged={chat.reload} />
       </OverlayDrawer>

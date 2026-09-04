@@ -43,6 +43,37 @@
   --kami-line: rgba(232,230,220,0.18);
   --kami-line-soft: rgba(232,230,220,0.10);
   --kami-whisper: 0 4px 24px rgba(0,0,0,0.05);
+
+  /* design-role-tokens — 의미 기반 역할색.
+     색을 늘리는 장치가 아니라, --accent 하나가 겸하던 상태들을 가르는 장치다:
+     Coral=주 CTA·활성 장면, Violet=AI 생성, Teal=저장·완료·시스템 확인,
+     Gold=추천·중요. --danger 는 여기 병합하지 않는다 — 주 CTA와 파괴적 동작이
+     같은 색이 되면 경고성이 사라진다. 링크(--accent), 아바타 그라디언트,
+     예산 게이지는 상태가 아니라 식별·계측이므로 역할색으로 바꾸지 않는다. */
+  --role-coral: #E4574F;
+  --role-violet: #7667C8;
+  --role-teal: #2C9C91;
+  --role-gold: #C9963E;
+  /* 텍스트용 보정값. 원본은 밝은 다크 표면(--kami-surface #3A3935) 위에서
+     3.18 / 2.50 / 3.45 / 4.36 으로 4.5:1 에 미달한다. 아래 값은 색상·채도를
+     유지한 채 명도만 올려 최악 표면에서 4.51 / 4.52 / 4.53 / 4.50 을 낸다. */
+  --role-coral-text: #EB857F;
+  --role-violet-text: #A49ADA;
+  --role-teal-text: #33B4A7;
+  --role-gold-text: #CB9944;
+  /* Violet 원본은 선으로도 charcoal 2.86 / surface 2.50 이라 3:1 미달이다.
+     밝은 표면 위 violet 선은 보정값을 쓴다. */
+  --role-violet-line: var(--role-violet-text);
+  /* 역할색 채움 위의 라벨. #fff 는 coral 위 3.64 로 미달, 이 잉크는 5.09 다. */
+  --role-on-fill: #1A1113;
+
+  /* 중립 표면 3단: 본문(--bg) < 얕은 크롬(--panel-1) < 시트(--panel-2).
+     아래 세 이름은 beat/hunter 크롬이 계속 참조해 왔는데 정의가 없어
+     그동안 폴백 값으로만 렌더됐다(--muted 는 color 에서 inherit 로 무효화). */
+  --panel-1: #17171A;
+  --panel-2: #202024;
+  --border: var(--kami-line);
+  --muted: var(--kami-text-muted);
   color-scheme: dark;
 }
 
@@ -71,7 +102,8 @@ textarea { resize: none; }
 .btn { appearance: none; border: 1px solid var(--bg-3); background: var(--bg-2); border-radius: 10px; padding: 9px 14px; cursor: pointer; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn.primary { background: var(--accent); border-color: var(--accent-2); color: #fff; }
+.btn:focus-visible { outline: 2px solid var(--role-coral); outline-offset: 2px; }
+.btn.primary { background: var(--role-coral); border-color: var(--role-coral); color: var(--role-on-fill); }
 .btn.danger { border-color: var(--danger); color: var(--danger); }
 .btn.ghost { background: transparent; border-color: transparent; }
 .btn.icon { width: 40px; padding: 0; font-size: 18px; }
@@ -93,9 +125,9 @@ textarea { resize: none; }
 .banner { padding: 8px 12px; font-size: 13px; border-radius: 10px; margin-bottom: 10px; }
 .banner.warn { background: rgba(255, 180, 84, 0.14); color: var(--warn); }
 .banner.err { background: rgba(255, 92, 108, 0.14); color: var(--danger); }
-.banner.ok { background: rgba(61, 220, 151, 0.12); color: var(--ok); }
+.banner.ok { background: rgba(44, 156, 145, 0.14); color: var(--role-teal-text); }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--fg-3); }
-.dot.ok { background: var(--ok); }
+.dot.ok { background: var(--role-teal); }
 .dot.bad { background: var(--danger); }
 .dot.busy { background: var(--warn); animation: pulse 1s infinite; }
 @keyframes pulse { 50% { opacity: 0.3; } }
@@ -123,24 +155,37 @@ textarea { resize: none; }
 
 /* ---- 채팅 ---- */
 .chat-scroll { flex: 1 1 auto; overflow-y: auto; padding: 12px 12px 8px; display: flex; flex-direction: column; gap: 10px; }
+/* 읽기 폭 720px. align-items 를 바꾸면 .msg.user 의 align-self 의미가 깨지므로
+   패딩으로 가운데 열을 만든다. */
+@media (min-width: 768px) {
+  .chat-scroll { padding-left: max(12px, calc((100% - 720px) / 2)); padding-right: max(12px, calc((100% - 720px) / 2)); }
+}
 .msg { display: flex; flex-direction: column; max-width: 88%; }
 .msg.user { align-self: flex-end; align-items: flex-end; }
 .msg.assistant { align-self: flex-start; align-items: flex-start; touch-action: pan-y; }
 .bubble { padding: 10px 13px; border-radius: 16px; white-space: pre-wrap; word-break: break-word; line-height: 1.5; -webkit-user-select: text; user-select: text; }
 .msg.user .bubble { background: var(--kami-charcoal); border: 0; border-right: 2px solid var(--kami-ink); border-radius: 4px; font-family: "Noto Serif KR", serif; font-weight: 400; color: var(--kami-text); }
-.msg.assistant .bubble { background: var(--kami-surface); border: 1px solid var(--kami-line-soft); border-radius: 8px; box-shadow: none; font-family: "Noto Serif KR", serif; font-weight: 400; color: var(--kami-text-strong); }
+.msg.assistant .bubble { background: var(--kami-surface); border: 1px solid var(--kami-line-soft); border-radius: 8px; box-shadow: none; font-family: "Noto Serif KR", serif; font-weight: 400; color: var(--kami-text-strong); font-size: 16px; line-height: 1.85; }
 .msg.ooc .bubble { border: 1px dashed var(--fg-3); opacity: 0.85; }
 .bubble.interrupted { border: 1px solid var(--warn); }
 .bubble.error { border: 1px solid var(--danger); }
 .bubble em { font-style: italic; color: var(--kami-text-muted); }
-.cursor::after { content: '▍'; animation: pulse 0.9s infinite; color: var(--accent); }
+.cursor::after { content: '▍'; animation: pulse 0.9s infinite; color: var(--role-violet-text); }
 .msg-meta { display: flex; gap: 6px; align-items: center; margin-top: 4px; font-size: 12px; color: var(--kami-text-faint); font-family: system-ui, sans-serif; }
 .msg-meta button { background: none; border: none; color: var(--kami-text-muted); padding: 2px 6px; cursor: pointer; border-radius: 6px; }
 .msg-meta button:active { background: var(--bg-3); }
 .msg-meta .swipe { display: inline-flex; align-items: center; gap: 2px; font-variant-numeric: tabular-nums; color: var(--kami-text-faint); }
+/* 추천 선택지 = Gold. 항목별로 다른 색을 주지 않는다 — 색은 "이건 추천이다"를
+   한 번 말하고, 어느 것을 고를지는 말하지 않는다. 채움 대신 왼쪽 선. */
 .chips { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; width: 100%; }
-.chip { border: 1px solid var(--kami-line); background: var(--kami-charcoal); color: var(--kami-text); border-radius: 12px; padding: 10px 12px; font-size: 13px; cursor: pointer; text-align: left; white-space: normal; overflow-wrap: anywhere; line-height: 1.45; width: 100%; box-sizing: border-box; }
-.chip:active, .chip:focus-visible { border-color: var(--kami-ink); }
+@media (max-width: 767px) {
+  .chips { flex-direction: row; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 2px; }
+  .chips .chip { flex: 0 0 78%; scroll-snap-align: start; }
+}
+.chip { border: 1px solid var(--kami-line); border-left: 3px solid var(--role-gold); background: var(--kami-charcoal); color: var(--kami-text); border-radius: 12px; padding: 10px 12px; font-size: 13px; cursor: pointer; text-align: left; white-space: normal; overflow-wrap: anywhere; line-height: 1.45; width: 100%; box-sizing: border-box; }
+.chip:hover { background: rgba(201, 150, 62, 0.10); }
+.chip:active { background: rgba(201, 150, 62, 0.16); }
+.chip:focus-visible { outline: 2px solid var(--role-gold-text); outline-offset: 2px; }
 .inputbar { flex: 0 0 auto; display: flex; gap: 8px; align-items: flex-end; padding: 8px 10px calc(8px + var(--safe-bottom)); border-top: 1px solid var(--bg-3); background: var(--bg); }
 .inputbar textarea { flex: 1; background: var(--bg-2); border: 1px solid var(--bg-3); border-radius: 18px; padding: 10px 14px; max-height: 132px; min-height: 42px; line-height: 1.4; }
 .inputbar .btn.icon { width: 42px; height: 42px; border-radius: 50%; }
@@ -240,7 +285,7 @@ textarea { resize: none; }
   cursor: pointer;
 }
 .settings-row:last-child { border-bottom: 0; }
-.settings-row:focus-visible { outline: 2px solid var(--kami-ink); outline-offset: -2px; }
+.settings-row:focus-visible { outline: 2px solid var(--role-coral); outline-offset: -2px; }
 .settings-row-disabled,
 .settings-row[aria-disabled="true"],
 .settings-row:disabled {
@@ -359,21 +404,29 @@ textarea { resize: none; }
 /* f9-swap-passes — §6 beat blocks. The bubble stays for `line`; the other slots
    are chrome around it, so they deliberately do not look like speech. */
 .beat-header {
-  align-self: center;
-  margin: 10px 0 2px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--panel-2, rgba(127, 127, 127, 0.12));
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 4px;
   color: var(--muted);
   font-size: 12px;
   letter-spacing: 0.02em;
 }
+/* 장면 전환은 알약이 아니라 구분선이다 — 카드가 하나 더 쌓이지 않는다. */
+.beat-header::before,
+.beat-header::after {
+  content: '';
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--border);
+}
 .beat-narration {
   align-self: stretch;
   margin: 4px 8px;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.65;
+  color: var(--kami-text);
+  font-size: 16px;
+  line-height: 1.85;
   white-space: pre-wrap;
 }
 /* dialog-format — the INFO sheet. A monospaced label column so 정보/계약/침식/목표
@@ -382,10 +435,10 @@ textarea { resize: none; }
   align-self: stretch;
   margin: 10px 8px 6px;
   padding: 8px 10px;
-  border: 1px solid var(--border, rgba(127, 127, 127, 0.25));
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--panel-2, rgba(127, 127, 127, 0.08));
-  color: var(--muted);
+  background: var(--panel-2);
+  color: var(--kami-text);
   font-size: 12.5px;
   line-height: 1.6;
 }
@@ -410,10 +463,10 @@ textarea { resize: none; }
   align-self: stretch;
   margin: 10px 8px 12px;
   padding: 8px 10px;
-  border: 1px solid var(--border, rgba(127, 127, 127, 0.25));
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--panel-2, rgba(127, 127, 127, 0.08));
-  color: var(--muted);
+  background: var(--panel-2);
+  color: var(--kami-text);
   font-size: 12.5px;
   line-height: 1.55;
   white-space: pre-wrap;
@@ -422,16 +475,16 @@ textarea { resize: none; }
 .beat-system {
   align-self: stretch;
   margin: 4px 8px;
-  color: var(--muted);
+  color: var(--role-teal-text);
   font-size: 13px;
-  opacity: 0.85;
+  opacity: 0.9;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 .beat-narration.hunter {
   color: var(--kami-text);
   font-family: "Noto Serif KR", serif;
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: 16px;
+  line-height: 1.85;
 }
 .beat-line-hunter {
   align-self: stretch;
@@ -455,7 +508,7 @@ textarea { resize: none; }
   align-items: baseline;
   margin: 2px 8px 6px;
   padding-left: 8px;
-  border-left: 2px solid var(--border, rgba(127, 127, 127, 0.25));
+  border-left: 2px solid var(--border);
   color: var(--muted);
   font-size: 13px;
   font-style: italic;
@@ -470,20 +523,20 @@ textarea { resize: none; }
   align-items: center;
   margin: 6px 8px 12px;
   padding: 6px 8px;
-  border-top: 1px solid var(--border, rgba(127, 127, 127, 0.2));
+  border-top: 1px solid var(--border);
   font-size: 12px;
   color: var(--muted);
 }
 .beat-ui-badge {
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--panel-2, rgba(127, 127, 127, 0.12));
+  background: var(--panel-1);
 }
 .beat-ui-roster { display: flex; flex-wrap: wrap; gap: 4px; }
 .beat-chip {
   padding: 1px 7px;
   border-radius: 999px;
-  border: 1px solid var(--border, rgba(127, 127, 127, 0.25));
+  border: 1px solid var(--border);
   white-space: nowrap;
 }
 .beat-chip.locked { opacity: 0.5; }
@@ -563,8 +616,8 @@ textarea { resize: none; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.chat-list-item.active { background: var(--bg-3); }
-.chat-list-item:focus-visible { outline: 2px solid var(--kami-ink); outline-offset: -2px; }
+.chat-list-item.active { background: rgba(228, 87, 79, 0.10); box-shadow: inset 3px 0 0 var(--role-coral); }
+.chat-list-item:focus-visible { outline: 2px solid var(--role-coral); outline-offset: -2px; }
 .chat-menu-btn, .chat-tools-btn { flex: 0 0 auto; }
 @media (min-width: 768px) {
   .chat-menu-btn { display: none; }
@@ -601,7 +654,7 @@ textarea { resize: none; }
   flex-direction: column;
   width: min(320px, 75vw);
   max-width: 100%;
-  background: var(--bg);
+  background: var(--panel-1);
   transform: translateX(-100%);
   transition: transform 0.2s ease-out;
 }

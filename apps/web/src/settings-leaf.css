@@ -1,3 +1,7 @@
 .settings-leaf-tabs { display: flex; gap: 4px; padding: 6px 10px; overflow-x: auto; }
-.settings-leaf-tabs button { flex: 0 0 auto; border: none; background: transparent; color: var(--fg-2); padding: 8px 12px; border-radius: 10px; cursor: pointer; }
-.settings-leaf-tabs button.active { background: var(--bg-3); color: var(--fg); }
+.settings-leaf-tabs button { flex: 0 0 auto; border: 1px solid transparent; background: transparent; color: var(--fg-2); padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+/* 도구 패널의 "지금 선택된 것" = Gold 하나로 통일한다. 채움이 아니라 테두리와
+   옅은 틴트 — 탭 하나가 CTA 처럼 보이지 않게. 저장 성공은 Teal, 파괴적 동작은
+   --danger 가 계속 맡는다. */
+.settings-leaf-tabs button.active { background: rgba(201, 150, 62, 0.10); border-color: var(--role-gold); color: var(--role-gold-text); }
+.settings-leaf-tabs button:focus-visible { outline: 2px solid var(--role-gold-text); outline-offset: 2px; }

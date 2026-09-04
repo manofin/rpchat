@@ -24,14 +24,25 @@ import { ConversationProfilePage } from './ConversationProfilePage';
 import { ConversationStylePage } from './ConversationStylePage';
 import { ConversationUserNotePage } from './ConversationUserNotePage';
 
+/**
+ * World Inspector — 같은 카탈로그, 다른 위계.
+ *
+ * 첨부 설계안의 핵심은 이 패널이 "설정 메뉴"가 아니라 창작 도구로 읽혀야 한다는
+ * 것이다. 그래서 현재 장면 정보(`start` = 장소·시간·목표 요약)를 맨 위로 올리고
+ * 나머지를 이야기·보조·정보 순으로 둔다.
+ *
+ * 섹션 이름과 순서만 바꾼다. 항목이 어느 섹션에 속하는지는 `buildHubItems` 의
+ * 계약이고, 허브 페이지와의 동치를 `bench/settingsSheetInventory.test.ts` 가
+ * 잠그고 있다 — 여기서 항목을 옮기면 두 화면이 갈라진다.
+ */
 const SECTION_TITLE: Record<SettingsHubItem['section'], string> = {
-  room: '채팅방 설정',
-  global: '전체 설정',
-  start: '시작 설정',
-  about: '업데이트 정보',
+  start: '현재 장면',
+  room: '이야기와 기억',
+  global: '창작 보조',
+  about: '정보',
 };
 
-const SECTION_ORDER: SettingsHubItem['section'][] = ['room', 'global', 'start', 'about'];
+const SECTION_ORDER: SettingsHubItem['section'][] = ['start', 'room', 'global', 'about'];
 
 export function ConversationTools({
   conversationId,

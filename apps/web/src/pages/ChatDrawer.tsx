@@ -351,7 +351,7 @@ export function SummaryTab({ conversationId, open, onApplied, onClose }: { conve
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 6 }}>
           <span className="row" style={{ gap: 6 }}>
             <span className="tag" style={{ background: 'var(--bg-3)', color: 'var(--fg-2)' }}>{kind}</span>
-            <span className={`tag`} style={{ background: s.status === 'approved' ? 'rgba(61,220,151,0.15)' : 'var(--bg-3)', color: s.status === 'approved' ? 'var(--ok)' : 'var(--fg-2)' }}>{s.status === 'approved' ? '승인됨' : '초안'}</span>
+            <span className={`tag`} style={{ background: s.status === 'approved' ? 'rgba(44,156,145,0.16)' : 'var(--bg-3)', color: s.status === 'approved' ? 'var(--role-teal-text)' : 'var(--fg-2)' }}>{s.status === 'approved' ? '승인됨' : '초안'}</span>
           </span>
           <span className="small muted">{new Date(s.created_at).toLocaleString('ko-KR')}</span>
         </div>
