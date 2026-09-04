@@ -3199,3 +3199,117 @@ HEAD/describe into this block after any docs commit.
   잔여 문구를 제거. 본문에 2026-09-03 무효 표시를 사실로 추가.
 - 라이브 무접촉: PID `130631`, stories 2 / characters 10 / conversations 8,
   school 스토리 0행, 교실 캐스트 0행.
+
+## [2026-09-04 설정 드로어 + 데스크톱 레일] `chat-shell / drawer+rails`
+- HEAD `v0.0.19-104-ge2d66a9`. 17 files, +1050/-60. 대화 화면을 단일 컬럼에서 반응형으로:
+  768px 미만은 대화 목록(☰)·설정 허브(⚙) 오버레이 드로어, 그 이상은 260px/300px 고정 레일 +
+  전체폭 채팅 컬럼.
+- 인챗 설정 진입점이 `navigate('/chat/:id/settings')`에서 오른쪽 드로어로 이동. 허브 라우트
+  (`ConversationSettingsPage`)는 딥링크·뒤로가기 보존을 위해 그대로 유지. 6개 리프 페이지가
+  `onBack` optional prop으로 두 host(드로어/허브) 공용.
+- `ConversationTools`가 `buildHubItems`를 그대로 읽어 행 손실 없음. 모바일 hunter/dialog 턴은
+  본문 블록을 먼저, INFO/panel 블록을 뒤에 렌더(퍼시스트 순서 자체는 불변, beat 턴은 이 뷰
+  전환을 타지 않음).
+- `OverlayDrawer`의 키보드 트랩을 `chatLayout.drawerKeydown`으로 분리(DOM 없이 테스트 가능) —
+  기존 `activeElement === first || === last` 체크가 backdrop 클릭 후 포커스가 패널 밖으로
+  나간 상태에서는 아무 것도 잡지 않아 Tab이 열린 드로어를 빠져나가던 결함을 고침.
+- `.overlay-drawer-panel`의 `inset-y: 0`이 Tailwind 클래스명이라 CSS 속성이 아니어서
+  브라우저가 무시하고 있었음 — `top`/`bottom`으로 교체, `chatShellWeb`이 이후 Tailwind-shaped
+  선언을 거부하도록 잠금.
+- 벤치: `chatLayout.test.ts`(80줄) 신규, `chatShellWeb.test.ts`(159줄) 신규,
+  `settingsSheetInventory.test.ts`(134줄, 드로어 계약 재기술 — 라우트 생존 + 기존 시트
+  write-path 어설션 유지), `hunterRenderWeb.test.ts` 소폭 조정. 전체 83/83, 서버·웹
+  typecheck 클린. `apps/server` 무변경, 빌드·배포·라이브 DB 쓰기 없음.
+
+## [2026-09-04 역할색 semantic token 1~3단계] `design-role-tokens`
+- HEAD `v0.0.19-105-g35be25d`. 6 files, +352/-42.
+  `planning_documents/design-role-tokens-spec.md` 1~3단계(토큰·공통 컴포넌트 / Scene Canvas /
+  World Inspector) 구현. 4단계(라이트 테마)는 그 사양서 §6이 스스로 별도 슬라이스로 미룸.
+- `--accent` 하나가 겸하던 CTA·링크·아바타 그라디언트·스트리밍 커서·예산 게이지를 역할 기반
+  4토큰(Coral/Violet/Teal/Gold)으로 분리, 역할마다 선·채움용 원본값 + 텍스트용 보정값 2단
+  구조(다크 최악 표면 `--kami-surface` 기준 텍스트 4.5:1 확보 — 원본 그대로는 3.18/2.50/3.45/4.36
+  로 전부 미달).
+- Violet 원본은 charcoal/surface 위 선으로 3:1 미달(2.86/2.50)이라 `--role-violet-line`이
+  text 값을 가리키도록 함. CTA 라벨은 `--role-on-fill`(#1A1113, coral 위 5.09)로 `#fff`(3.64,
+  미달) 대체.
+- 매핑: Coral=주 CTA·포커스링·활성 대화 rail(3px inset shadow), Violet=스트리밍 커서 전용,
+  Teal=hunter 시스템 보이스·ok 배지·"승인됨", Gold=추천 선택 규칙·설정 드로어 활성 탭.
+  `--danger`/`--accent`(링크)/아바타 그라디언트/예산 게이지는 의도적으로 미변경 — 상태가
+  아니라 식별·계측이라서.
+- World Inspector: `ConversationTools` 섹션 순서만 변경("지금 이 장면" 먼저), 읽는 카탈로그는
+  여전히 `buildHubItems` 그대로 — `settingsSheetInventory`가 허브/드로어 항목 동치를 계속
+  잠금. 서술·대사·INFO 시트는 역할색 미사용(색은 상태 표시이지 서술이 아님). 어시스턴트
+  버블·서술 16px/1.85로, 데스크톱 읽기 폭 720px.
+- 신규 `bench/designTokens.test.ts`(242줄) — 대비를 스타일시트에서 실측 재계산(하드코딩 아님).
+  전체 83/84 — `partyBeatPersist` 클린 스태시 1/6 재현, 이 슬라이스 파일과 무관(서버 전용
+  벤치, `apps/server` diff 0). `apps/server` 무변경.
+
+## [2026-09-04 오버레이 드로어 width:0 접힘 수정] `chat-shell fix`
+- HEAD `v0.0.19-106-gc4475b5`. 2 files, +11/-4. `.overlay-drawer`에 `width:0`이 남아
+  있어(`e2d66a9`에서 도입, `35be25d` 라이브 배포 때 처음 노출) 패널의 `max-width:100%`가
+  그 0을 상속 — 한글 제목이 세로로 한 글자씩 쌓이고, 닫힌 드로어가 `translateX`도 0이라
+  화면 왼쪽에 그대로 남는 결함.
+- `apps/web/src/app.css` 3곳 수정, `bench/chatShellWeb.test.ts`에 overlay 규칙에 `width:0`이
+  없음을 잠그는 어설션 추가.
+- `apps/server` 무변경, 라이브 DB 쓰기 없음.
+
+## [2026-09-04 라이트 페이퍼 테마 + 수동 토글] `light-paper-theme-toggle`
+- HEAD `v0.0.19-107-g1a52ef2`(부모 `c4475b5`, 브랜치 `f9-beat-seal`). 6 files, +334/-7.
+  잠금 `코드`+`커밋`(사용자 지정). `배포`/`재시작`/무관 문서/`partyBeatPersist` 조사는
+  이 슬라이스 밖 — 별도 `deploy-light-paper-theme` 슬라이스로 분리.
+  `design-role-tokens-spec.md` §6이 "별도 슬라이스"로 미뤄둔 항목의 자연스러운 후속.
+- 베이스는 그 사양서 §1에 인용된 StoryForge 원본 라이트 팔레트(Ink `#201D24` / Paper
+  `#F8F5F0` / Panel `#FFFDF9`) — 그대로 옮기지 않고, 다크 role-text를 도출했던 것과 같은
+  원리로(색상·채도 유지, 명도만 재조정) 이 앱의 토큰 구조에 맞춰 다시 도출함. 대비는 전부
+  WCAG 실측, 근사값이 아님.
+- `:root[data-theme='light']` 오버라이드 블록 1개가 surface/text/line 계열 토큰만 재정의.
+  Raw role 채움(coral/violet/teal/gold)·`--role-on-fill`·`--accent-2`·`--kami-ink`는 이
+  블록에 없음 = 두 테마 동일 — CTA는 자기 라벨과, 아바타는 자기 텍스트와 짝이라 페이지
+  배경과 무관하고, kami-ink는 라이트 페이지 위에서 이미 6.57로 통과.
+- 다크용으로 밝힌 role-text 값은 라이트 표면에서 전부 실패(2.35대, 다크 role-text가 원본
+  raw 채움으로는 실패했던 것과 대칭) → 같은 색상·채도를 유지한 채 명도만 낮춘 라이트 전용
+  값으로 교체(최악 표면 `--kami-charcoal` 기준 4.78/6.65/4.83/5.94). `--danger`/`--warn`/
+  `--accent`도 텍스트로 쓰일 때 같은 문제(2.76/1.62/4.00 → 재도출 후 4.86/4.81/6.64).
+- Gold는 선(칩의 추천 규칙 `border-left`)으로도 쓰이는데 원본 채움이 라이트 칩 배경 위
+  3:1 미달(2.04) — 기존 `--role-violet-line` 패턴을 그대로 확장해 `--role-gold-line`을
+  신설(다크에서는 `var(--role-gold)`를 가리켜 렌더 완전 불변, 라이트에서는 gold-text를
+  가리킴). `.chip` 셀렉터 1곳만 `var(--role-gold)` → `var(--role-gold-line)`로 교체.
+- 토글: `apps/web/src/lib/theme.ts`가 기존 `conversationFont.ts` 프리셋 패턴을 그대로
+  따름(localStorage 키 `rpchat.theme`, `document.documentElement.dataset.theme` 조작).
+  `main.tsx`가 부팅 시 `applyTheme(readTheme())`를 font 프리셋과 같은 호출부에서 적용.
+  `SettingsPage.tsx`(전역 설정, 대화별 허브 아님)에 다크/라이트 라디오 두 개 —
+  `buildHubItems`/허브 행 세트 무접촉.
+- 신규 `bench/lightTheme.test.ts`(12건) — 라이트 대비를 실측 스타일시트에서 재계산 +
+  다크 `:root`가 이 슬라이스가 건드릴 수 있었던 모든 토큰에서 바이트 동일함을 스냅샷으로
+  잠금. `bench/designTokens.test.ts`의 "라이트 테마 없음" 부정 단언을 "베이스 `:root`는
+  여전히 다크뿐, `color-scheme` 무조건부 선언은 여전히 하나뿐"이라는 긍정 단언으로 교체
+  (12/12 유지).
+- 게이트: 전체 스위트 84/85(직후 재실행 85/85) — 유일한 실패는 `partyBeatPersist` 기록형
+  플레이크, 단독 재실행 3회 중 1회 재현(fail/pass/pass), 이 슬라이스가 건드린 파일과
+  겹치지 않는 서버 생성 테스트. 양쪽 typecheck EXIT 0. `settingsRegression` 6/6,
+  `apps/server` diff 0. `apps/server` 무변경, 빌드·배포·재시작 없음.
+
+## [2026-09-04 라이트 페이퍼 테마 배포+재시작] `deploy-light-paper-theme`
+- 잠금 `배포`+`재시작`만(사용자 지정). `코드`/`커밋`/무관 문서/`partyBeatPersist` 조사는
+  이 슬라이스 밖 — 이 슬라이스의 코드 변경은 0.
+- 배포 전 확인: HEAD `1a52ef2`, 워킹트리 clean, 라이브 디스크가 부모 커밋 `c4475b5` 산출물
+  (`index-BZUquzwS.css` / `index-DZbTUSWZ.js`, `2026-09-04T13:40Z` 빌드)에 머물러 있었고,
+  그 CSS에 `data-theme` 0건으로 격차를 먼저 확인.
+- 빌드 `2026-09-04T22:45:08Z` `npm run build` EXIT 0. 신규 산출물 `index-Dr8a1RXA.css` /
+  `index-DG2Aad1p.js`. 산출물 검증: `:root[data-theme=light]` 1건, `color-scheme:dark`와
+  `color-scheme:light` 둘 다 존재, `.overlay-drawer{...}`에 `width:0` 없음(`c4475b5` 수정
+  유지 확인), `role-gold-line` 1건.
+- 재시작: `rpchat.service` PID `9341`→`31587`, `2026-09-04T22:46:04Z`
+  (KST `2026-09-05T07:46:04+09:00`). journal: 구 PID SIGTERM 정상 종료 → 신규 PID 정상
+  기동("기동 설정" 로그로 `authMode:tailscale`/`dataDir`/모델 URL 재확인), 이후 요청 전부
+  200(의도된 `/api/characters` 401 1건 제외), 에러 0건.
+- 라이브 검증: `/api/health` 200 `db:ok` `promptVersion` 불변, `localhost /api/characters`
+  401(tailscale 모드에서는 정상), 서빙된 CSS/JS의 sha256이 디스크 산출물과 바이트 동일.
+- **미실시(실패 아님)**: 브라우저 승인 체크리스트 7항목(다크 기본 렌더링 / 라이트 즉시
+  전환 / 새로고침 후 유지 / 다크 복귀 후 유지 / Scene Canvas·World Inspector 역할색 /
+  설정 드로어·데스크톱 레일 배치 / 콘솔·네트워크 오류) — 이 세션에 `chromium-cli`가
+  없고 `playwright` 설치는 레지스트리에 `1.63.0` 메타데이터는 있으나 tarball 자체가
+  404로 막혀 시도를 중단함. 사람이 Tailscale 인증 브라우저로 직접 확인해야 닫히는
+  항목이며, 문제가 발견되면 이 배포 슬라이스에 덧붙이지 않고 `light-paper-theme-hotfix`
+  같은 별도 코드 잠금으로 분리한다.
+- 배포 커밋 = 라이브 HEAD = `1a52ef2`. 배포 후 워킹트리 clean, 코드 변경 없음.
