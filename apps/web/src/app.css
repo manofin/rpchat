@@ -404,6 +404,50 @@ textarea { resize: none; }
 }
 .beat-info-value { flex: 1 1 auto; word-break: break-word; }
 
+/* hunter-format — the turn-final INFO panel. Pre-wrapped: the server owns every
+   row, including the blank-line groups the transcript uses as section breaks. */
+.beat-panel {
+  align-self: stretch;
+  margin: 10px 8px 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.25));
+  border-radius: 8px;
+  background: var(--panel-2, rgba(127, 127, 127, 0.08));
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.beat-system {
+  align-self: stretch;
+  margin: 4px 8px;
+  color: var(--muted);
+  font-size: 13px;
+  opacity: 0.85;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.beat-narration.hunter {
+  color: var(--kami-text);
+  font-family: "Noto Serif KR", serif;
+  font-size: 15px;
+  line-height: 1.7;
+}
+.beat-line-hunter {
+  align-self: stretch;
+  margin: 2px 8px;
+  font-size: 15px;
+  line-height: 1.65;
+  font-family: "Noto Serif KR", serif;
+  color: var(--kami-text-strong);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.beat-line-hunter-mark { font-family: system-ui, sans-serif; }
+.beat-line-hunter-name { font-weight: 500; }
+.beat-line-hunter-sep { opacity: 0.7; padding: 0 1px; }
+.beat-line-hunter-text { white-space: pre-wrap; }
+
 .beat-thought {
   align-self: stretch;
   display: flex;

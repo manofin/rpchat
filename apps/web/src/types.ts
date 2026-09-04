@@ -64,6 +64,8 @@ export interface Scene {
   genre?: string;
   conflict?: string;
   mood?: string;
+  /** Per-conversation output shape. Absent means the ordinary bubble / beat path. */
+  format?: 'beat' | 'dialog' | 'hunter';
 }
 
 export interface Conversation {
@@ -114,7 +116,7 @@ export interface Message {
      * f9-swap-passes: which §6 slot this row is. Absent on 1:1 messages and on
      * anything written before the beat engine — those keep the ordinary bubble.
      */
-    block_kind?: 'header' | 'narration' | 'line' | 'thought' | 'ui' | 'info';
+    block_kind?: 'header' | 'narration' | 'line' | 'thought' | 'ui' | 'info' | 'panel' | 'system';
     beat_seq?: number;
     /** Server-chosen local asset path. Never a model-written URL. */
     image_url?: string;

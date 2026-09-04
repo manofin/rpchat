@@ -3,7 +3,7 @@ import { get, patch } from '../lib/api';
 import { back, navigate } from '../lib/router';
 import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, PromptPreview, Summary } from '../types';
 import {
-  Avatar, BeatHeader, BeatInfoSheet, BeatNarration, BeatThought, BeatUiPanel, parseBeatUi,
+  Avatar, BeatHeader, BeatHunterLine, BeatHunterPanel, BeatInfoSheet, BeatNarration, BeatSystem, BeatThought, BeatUiPanel, parseBeatUi,
   renderContent, SpeakerHeader,
 } from '../components/view';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
@@ -165,6 +165,7 @@ export function ChatPage({ id }: { id: string }) {
             domId={`msg-${m.id}`}
             charName={char.name}
             userName={persona?.name ?? '나'}
+            sceneFormat={conv.scene.format}
             streaming={chat.streamingId === m.id}
             isLastAssistant={m.id === lastAssistant?.id}
             generating={chat.generating}
@@ -247,6 +248,7 @@ function MessageView(props: {
   m: Message;
   charName: string;
   userName: string;
+  sceneFormat?: 'beat' | 'dialog' | 'hunter';
   streaming: boolean;
   isLastAssistant: boolean;
   generating: boolean;
@@ -337,7 +339,9 @@ function MessageView(props: {
     let body: ReactNode = null;
     if (kind === 'header') body = <BeatHeader text={m.content} />;
     else if (kind === 'info') body = <BeatInfoSheet text={m.content} />;
-    else if (kind === 'narration') body = <BeatNarration text={m.content} />;
+    else if (kind === 'panel') body = <BeatHunterPanel text={m.content} />;
+    else if (kind === 'system') body = <BeatSystem text={m.content} />;
+    else if (kind === 'narration') body = <BeatNarration text={m.content} variant={props.sceneFormat === 'hunter' ? 'hunter' : undefined} />;
     else if (kind === 'thought') body = <BeatThought name={m.meta.speaker_name ?? props.charName} text={m.content} />;
     else { const ui = parseBeatUi(m.content); body = ui ? <BeatUiPanel ui={ui} /> : null; }
     // dialog-format: choices ride on whichever block a turn actually ends on
@@ -346,6 +350,21 @@ function MessageView(props: {
     return (
       <>
         {body}
+        {!props.streaming && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
+          <div className="chips">
+            {m.meta.choices.map((c, i) => <button key={i} className="chip" onClick={() => props.onChoice(c)}>{c}</button>)}
+          </div>
+        )}
+      </>
+    );
+  }
+
+  // hunter-format: a `line` is a `💬 이름│대사` script row, not a chat bubble.
+  // Gated on scene.format so beat/dialog keep SpeakerHeader + bubble.
+  if (!isUser && kind === 'line' && props.sceneFormat === 'hunter') {
+    return (
+      <>
+        <BeatHunterLine name={m.meta.speaker_name ?? props.charName} text={m.content} />
         {!props.streaming && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
           <div className="chips">
             {m.meta.choices.map((c, i) => <button key={i} className="chip" onClick={() => props.onChoice(c)}>{c}</button>)}
@@ -498,7 +517,7 @@ function ConversationSettings({ open, conversationId, onClose, onChanged, onOpen
   }
 
   const sceneLine = Object.entries(conv.scene)
-    .filter(([, v]) => (v ?? '').trim())
+    .filter(([, v]) => typeof v === 'string' && v.trim())
     .map(([k, v]) => `${k}:${v}`)
     .join(' · ');
 

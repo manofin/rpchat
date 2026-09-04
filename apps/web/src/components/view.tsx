@@ -30,8 +30,8 @@ export function BeatHeader({ text }: { text: string }) {
   return <div className="beat-header">{text}</div>;
 }
 
-export function BeatNarration({ text }: { text: string }) {
-  return <div className="beat-narration">{text}</div>;
+export function BeatNarration({ text, variant }: { text: string; variant?: 'hunter' }) {
+  return <div className={`beat-narration${variant === 'hunter' ? ' hunter' : ''}`}>{text}</div>;
 }
 
 export function BeatThought({ name, text }: { name: string; text: string }) {
@@ -66,6 +66,40 @@ export function BeatInfoSheet({ text }: { text: string }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * hunter-format — the Huntt.txt-class INFO panel.
+ *
+ * The server already assembled every row. The client keeps the line breaks and
+ * does not parse a grade, a quest or a 속마음 out of the text — those are scene
+ * state and a fenced model proposal, both decided server-side.
+ */
+export function BeatHunterPanel({ text }: { text: string }) {
+  return <div className="beat-panel">{text}</div>;
+}
+
+/** hunter-format — bracketed machine voice (`[가호 및 스킬 생성 완료]`). */
+export function BeatSystem({ text }: { text: string }) {
+  return <div className="beat-system">{text}</div>;
+}
+
+/**
+ * hunter-format — a `💬 이름│대사` script row.
+ *
+ * Name comes from `meta.speaker_name` (server allow-list). The spoken text is
+ * printed as stored; the client does not re-parse a 💬 line out of the body.
+ */
+export function BeatHunterLine({ name, text }: { name: string; text: string }) {
+  return (
+    <div className="beat-line-hunter">
+      <span className="beat-line-hunter-mark" aria-hidden>💬</span>
+      {' '}
+      <span className="beat-line-hunter-name">{name}</span>
+      <span className="beat-line-hunter-sep" aria-hidden>│</span>
+      <span className="beat-line-hunter-text">{renderContent(text)}</span>
     </div>
   );
 }

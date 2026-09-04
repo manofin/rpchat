@@ -114,8 +114,11 @@ export interface Scene {
    * renders exactly as before, and `scene_json` stays byte-identical until someone
    * opts in. The switch is scene state, so it is per-conversation and never a
    * global flag.
+   *
+   * hunter-format — the Huntt.txt-class shape: `『』` 서술 + `💬 이름│"대사"` +
+   * 턴 끝의 INFO 패널. Same opt-in rule, same byte-stability guarantee.
    */
-  format?: 'beat' | 'dialog';
+  format?: 'beat' | 'dialog' | 'hunter';
   /** The `[T-n]` counter. Server-incremented, one per committed dialog beat. */
   turn_no?: number;
   /** `[이틀 뒤·오전 11시 35분]` — a written phrase, not a clock the server can do math on. */
@@ -136,6 +139,40 @@ export interface Scene {
     goals?: string[];
     /** Extra labeled rows, appended in order after 목표. */
     extra?: Array<{ label: string; value: string }>;
+  };
+  /**
+   * hunter-format — the identity half of the INFO panel. Server/user-owned: none
+   * of this is in applySceneDelta's APPLY_KEYS, so the model can never promote
+   * itself a grade, a patron or a skill. The panel's written half (표정·감정·
+   * 속마음·일정·상황) is not stored here at all — it is produced per turn by
+   * `hunterScript.parseHunterState` and lives only in the rendered panel block,
+   * which keeps `scene_json` free of per-turn churn.
+   *
+   * 💼/💰 deliberately have no field here: they are `user_sheet.inventory` and
+   * `user_sheet.money`, so the existing `inventory_add`/`money_delta` deltas keep
+   * working in this format instead of being forked.
+   */
+  hunter?: {
+    /** `🗓 26.03.02.` — a written date. The weekday comes from `scene.weekday`. */
+    date?: string;
+    /** `🪪` row: 남 / 여 / … */
+    gender?: string;
+    /** `🪪` row: 무소속, 방주 길드 … */
+    affiliation?: string;
+    /** `✨️ 금강불괴│-│육체 강도·정신 내성 극대화` */
+    trait?: { name?: string; grade?: string; note?: string };
+    /** `💠 달마│골수 통찰·요마 제도의 가호` */
+    patron?: { name?: string; note?: string };
+    /** `📚: [나한복마인]` */
+    skills?: string[];
+    /** `🎯퀘스트` — survives turns, so it is state and not a per-turn field. */
+    quest?: string;
+    /** `📝일정` fallback for a turn whose state block proposed none. */
+    schedule?: string;
+    /** `📖상황` fallback. */
+    situation?: string;
+    /** `💬`/`⚔️` default mark. MODE_ICONS is the allow-list. */
+    mode?: string;
   };
 }
 
@@ -187,7 +224,7 @@ export interface MessageMeta {
    * every row written before the beat engine, so the client keeps rendering those
    * as ordinary bubbles.
    */
-  block_kind?: 'header' | 'narration' | 'line' | 'thought' | 'ui' | 'info';
+  block_kind?: 'header' | 'narration' | 'line' | 'thought' | 'ui' | 'info' | 'panel' | 'system';
   /** Position within the beat. The client sorts on this, not on arrival order. */
   beat_seq?: number;
   /** Server-chosen local asset path, or absent. Never a model-written URL. */

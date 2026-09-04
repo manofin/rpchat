@@ -63,7 +63,7 @@ const sceneSchema = z.object({
   // strips unknown keys, so an unlisted field is silently erased the first time
   // the client PATCHes a scene back — the failure `f9-catalog-write` closed on
   // the stories side.
-  format: z.enum(['beat', 'dialog']).optional(),
+  format: z.enum(['beat', 'dialog', 'hunter']).optional(),
   turn_no: z.number().int().min(0).max(100000).optional(),
   time_phrase: z.string().max(120).optional(),
   info: z.object({
@@ -75,6 +75,28 @@ const sceneSchema = z.object({
       label: z.string().min(1).max(20),
       value: z.string().max(300),
     })).max(6).optional(),
+  }).optional(),
+  // hunter-format: identity half of the INFO panel. Same strip-vs-preserve
+  // reason as `info` above — a client PATCH that echoes the scene must not
+  // silently drop the grade, the patron or the quest.
+  hunter: z.object({
+    date: z.string().max(40).optional(),
+    gender: z.string().max(20).optional(),
+    affiliation: z.string().max(60).optional(),
+    trait: z.object({
+      name: z.string().max(40).optional(),
+      grade: z.string().max(20).optional(),
+      note: z.string().max(200).optional(),
+    }).optional(),
+    patron: z.object({
+      name: z.string().max(40).optional(),
+      note: z.string().max(200).optional(),
+    }).optional(),
+    skills: z.array(z.string().max(40)).max(12).optional(),
+    quest: z.string().max(200).optional(),
+    schedule: z.string().max(200).optional(),
+    situation: z.string().max(200).optional(),
+    mode: z.string().max(8).optional(),
   }).optional(),
 });
 

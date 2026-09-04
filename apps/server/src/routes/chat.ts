@@ -13,6 +13,9 @@ import {
 import {
   finishDialogBeat, planDialogBeat, type DialogPlanInput,
 } from '../prompt/composeDialog.js';
+import {
+  finishHunterBeat, planHunterBeat, type HunterPlanInput,
+} from '../prompt/composeHunter.js';
 import type { PartyTagRow } from '../prompt/tagsCatalog.js';
 import { catalogFromStory } from '../prompt/sceneCatalog.js';
 import { currentSceneVersion, parseSceneDelta, renderSceneDeltaPrompt } from '../prompt/sceneDeltaPrompt.js';
@@ -69,6 +72,13 @@ const PASS_E_TIMEOUT_MS = 15_000;
  * that turn, which is why one budget this size still costs less than the mix.
  */
 const PASS_S_MAX_TOKENS = 900;
+/**
+ * hunter-format: Pass H writes the whole turn (narration-dominant — Huntt.txt is
+ * 83 『』 blocks vs 42 lines) plus a trailing state fence. Same "one call instead
+ * of N+F+E" trade as Pass S; the budget is a little larger because a hunter turn
+ * is mostly prose.
+ */
+const PASS_H_MAX_TOKENS = 1200;
 
 /**
  * Per-pass deadline. The model client has one global timeout tuned for a full 1:1
@@ -158,6 +168,9 @@ export function chatRoutes(ctx: Ctx) {
       const fmt = (JSON.parse(convNow.scene_json || '{}') as Scene).format;
       if (fmt === 'dialog') {
         return generateDialog(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage);
+      }
+      if (fmt === 'hunter') {
+        return generateHunter(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage);
       }
       return generateBeat(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage);
     }
@@ -843,6 +856,251 @@ export function chatRoutes(ctx: Ctx) {
         }
       } else {
         ctx.log.error({ err, generationId }, '대본 생성 실패');
+        sse.send({ type: 'error', message: msg });
+      }
+    } finally {
+      ctx.queue.unregister(generationId);
+      sse.close();
+    }
+  }
+
+  /**
+   * hunter-format — the Huntt.txt-class path. One user input, one script, panel last.
+   *
+   * Same skeleton as `generateDialog`: scene apply, server-only focus, one streamed
+   * pass. The two differences that matter at this layer are:
+   *   - The panel is not sent up front. `📖상황` describes the turn that just
+   *     happened, so the stored copy is serialized last by `finishHunterBeat`.
+   *   - Blocks include `system` (bracketed machine voice) and `panel` (INFO sheet).
+   *
+   * `generateBeat` is not entered. Failure policy matches dialog / A-6:
+   *   delta   → scene unchanged, turn continues
+   *   Pass H  → status='error', same as an empty Pass F
+   */
+  async function generateHunter(
+    req: FastifyRequest,
+    reply: FastifyReply,
+    conv: ConversationRow,
+    parentId: string | null,
+    convNow: ConversationRow,
+    cast: NonNullable<ReturnType<typeof partyCastForGenerate>>,
+    roster: PartyTagRow[],
+    generationId: string,
+    userMessage?: MessageRow,
+  ) {
+    const model = ctx.resolvedModel();
+    if (!model) return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
+
+    const scene: Scene = JSON.parse(convNow.scene_json || '{}');
+    const storyCatalogRow = one<{ scene_catalog: string }>(
+      db, 'SELECT scene_catalog FROM stories WHERE id = ?', convNow.story_id,
+    );
+    const catalog = catalogFromStory(storyCatalogRow?.scene_catalog ?? '{}');
+    const baseVersion = currentSceneVersion(scene);
+    const userText = userMessage?.content ?? '';
+
+    let patch: Record<string, unknown> | null = null;
+    const passMs: { delta: number; h: number } = { delta: 0, h: 0 };
+    const t0delta = Date.now();
+    try {
+      const proposal = await ctx.queue.run(() =>
+        ctx.model.complete({
+          model,
+          messages: [{ role: 'user', content: renderSceneDeltaPrompt({ scene, catalog: { ...catalog, cast }, userText }) }],
+          temperature: 0.2,
+          top_p: 0.9,
+          max_tokens: SCENE_DELTA_MAX_TOKENS,
+          stop: [],
+        }),
+      );
+      patch = parseSceneDelta(proposal.text);
+    } catch (err) {
+      req.log.warn({ err, conversationId: conv.id }, 'scene delta proposal failed; scene unchanged');
+    }
+    passMs.delta = Date.now() - t0delta;
+
+    const cards: Record<string, PassCard> = {};
+    for (const row of many<CharacterRow>(
+      db,
+      `SELECT * FROM characters WHERE id IN (${roster.map(() => '?').join(',')})`,
+      ...roster.map((r) => r.id),
+    )) {
+      cards[row.id] = {
+        name: row.name,
+        tagline: row.tagline,
+        description: row.description,
+        personality: row.personality,
+        speech_style: row.speech_style,
+        taboos: row.taboos,
+      };
+    }
+
+    const persona = resolvePersona(db, convNow);
+    const planInput: HunterPlanInput = {
+      conversation_id: conv.id,
+      scene,
+      patch: patch ?? undefined,
+      catalog,
+      current_version: baseVersion,
+      user_text: userText,
+      user_name: persona?.name || '나',
+      cast,
+      cards,
+      main_character_id: convNow.character_id,
+      message_id: userMessage?.id ?? null,
+      content_policy: getSetting(db, 'content_policy', ''),
+    };
+    const plan = planHunterBeat(planInput);
+
+    if (!plan.applied.discarded && plan.applied.applied.length > 0) {
+      run(db, `UPDATE conversations SET scene_json = ?, updated_at = ? WHERE id = ?`,
+        JSON.stringify(plan.applied.state), nowIso(), conv.id);
+    }
+
+    const profileName = convNow.profile_name;
+    const sse = openSse(reply);
+    const controller = new AbortController();
+
+    let head = parentId;
+    const emitted: MessageRow[] = [];
+    const addBlock = (
+      kind: 'panel' | 'narration' | 'line' | 'system',
+      content: string,
+      meta: Record<string, unknown> = {},
+    ): MessageRow => {
+      const row = insertMessage(db, conv.id, head, 'assistant', content, 'complete', {
+        generation_id: generationId, profile: profileName, prompt_version: PROMPT_VERSION,
+        block_kind: kind, beat_seq: emitted.length, ...meta,
+      });
+      setHead(db, conv.id, row.id);
+      head = row.id;
+      emitted.push(row);
+      return row;
+    };
+    const send = (row: MessageRow) =>
+      sse.send({ type: 'aux', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', row.id)!) });
+
+    ctx.queue.register({ id: generationId, conversationId: conv.id, messageId: '', startedAt: nowIso(), controller });
+
+    let scriptRow: MessageRow | null = null;
+    let scriptSeq = 0;
+    let buffer = '';
+    const tBeat = Date.now();
+
+    try {
+      if (userMessage) sse.send({ type: 'aux', message: messageOut(db, userMessage) });
+
+      // Pass H streams into one row so the reader sees text arriving; that row
+      // then becomes the script's first block, and the rest (including the panel)
+      // chain after it. No insert and no reorder.
+      scriptSeq = emitted.length;
+      scriptRow = insertMessage(db, conv.id, head, 'assistant', '', 'streaming', {
+        generation_id: generationId, profile: profileName, prompt_version: PROMPT_VERSION,
+        beat_seq: scriptSeq,
+      });
+      setHead(db, conv.id, scriptRow.id);
+      head = scriptRow.id;
+      emitted.push(scriptRow);
+      sse.send({ type: 'start', generationId, messageId: scriptRow.id, userMessage: userMessage ? messageOut(db, userMessage) : undefined });
+
+      const tH = Date.now();
+      let lastPersist = Date.now();
+      const result = await ctx.queue.run(() => ctx.model.stream(
+        {
+          model, messages: [{ role: 'user', content: plan.pass_h }],
+          temperature: 0.9, top_p: 0.95, max_tokens: PASS_H_MAX_TOKENS, stop: [], signal: controller.signal,
+        },
+        (delta) => {
+          buffer += delta;
+          sse.send({ type: 'token', text: delta });
+          if (Date.now() - lastPersist > PERSIST_INTERVAL_MS) {
+            lastPersist = Date.now();
+            updateMessage(db, scriptRow!.id, { content: buffer });
+          }
+        },
+      ), controller.signal);
+      passMs.h = Date.now() - tH;
+
+      const finished = finishHunterBeat(planInput, plan, result.text);
+
+      // A turn whose script parsed to nothing is a failed turn. The panel alone
+      // is not a turn — it would otherwise commit an empty ⏳️ increment.
+      if (!finished.parsed.items.length) throw new ModelError('대본을 만들지 못했습니다');
+
+      const [first, ...rest] = finished.blocks;
+      const choices = finished.choices && finished.choices.length ? finished.choices : undefined;
+      updateMessage(db, scriptRow.id, {
+        content: first.text,
+        status: 'complete',
+        meta: {
+          block_kind: first.kind, beat_seq: scriptSeq,
+          speaker_character_id: first.speaker_character_id ?? undefined,
+          speaker_name: first.speaker_name ?? undefined,
+          image_url: first.asset_path ?? undefined,
+          ...(rest.length === 0 ? { choices } : {}),
+        },
+      });
+      rest.forEach((block, i) => {
+        send(addBlock(block.kind as 'panel' | 'narration' | 'line' | 'system', block.text, {
+          speaker_character_id: block.speaker_character_id ?? undefined,
+          speaker_name: block.speaker_name ?? undefined,
+          image_url: block.asset_path ?? undefined,
+          ...(i === rest.length - 1 ? { choices } : {}),
+        }));
+      });
+
+      run(db, `UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?`,
+        JSON.stringify(finished.scene), nowIso(), nowIso(), conv.id);
+
+      run(
+        db,
+        `INSERT INTO generation_log (id, conversation_id, message_id, profile_name, prompt_version, est_prompt_tokens, actual_prompt_tokens, completion_tokens, ttft_ms, total_ms, finish_reason, status, budget_json, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        uid(), conv.id, scriptRow.id, profileName, PROMPT_VERSION,
+        estimateTokens(plan.pass_h, 1), null, null, null,
+        Date.now() - tBeat, 'hunter', 'complete',
+        JSON.stringify({
+          hunter_log: {
+            focus_id: plan.focus.focus_id,
+            focus_reason: plan.focus.reason,
+            allowed_ids: plan.speakers.map((sp) => sp.id),
+            spoke_ids: finished.parsed.spoke_ids,
+            rejected_names: finished.parsed.rejected_names,
+            dropped_lines: finished.parsed.dropped_lines,
+            dropped_panel_rows: finished.parsed.dropped_panel_rows,
+            state_rejected: finished.state_rejected,
+            ambient_ids: plan.ambient.map((a) => a.character_id),
+            turn_no: finished.scene.turn_no ?? null,
+            blocks: finished.blocks.length,
+            choices_count: choices?.length ?? 0,
+            pass_ms: passMs,
+          },
+        }),
+        nowIso(),
+      );
+
+      sse.send({
+        type: 'done',
+        message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', scriptRow.id)!),
+        usage: null, ttftMs: null, totalMs: Date.now() - tBeat,
+      });
+    } catch (err) {
+      const aborted = controller.signal.aborted;
+      const msg = err instanceof ModelError ? err.message : (err as Error)?.name === 'TimeoutError' ? '모델 응답 시간 초과' : (err as Error).message;
+      if (scriptRow) {
+        updateMessage(db, scriptRow.id, {
+          content: buffer.trim(),
+          status: aborted ? 'interrupted' : 'error',
+          meta: aborted ? { finish_reason: 'aborted' } : { error: msg },
+        });
+        if (aborted) {
+          sse.send({ type: 'done', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', scriptRow.id)!), usage: null, ttftMs: null, totalMs: Date.now() - tBeat });
+        } else {
+          ctx.log.error({ err, generationId }, '헌터 대본 생성 실패');
+          sse.send({ type: 'error', message: msg, messageId: scriptRow.id });
+        }
+      } else {
+        ctx.log.error({ err, generationId }, '헌터 대본 생성 실패');
         sse.send({ type: 'error', message: msg });
       }
     } finally {
