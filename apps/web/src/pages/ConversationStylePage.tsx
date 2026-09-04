@@ -42,9 +42,9 @@ export function StyleView({
   );
 }
 
-export function ConversationStylePage({ conversationId }: { conversationId: string }) {
+export function ConversationStylePage({ conversationId, onBack }: { conversationId: string; onBack?: () => void }) {
   const [preset, setPreset] = useState<FontPreset>(() => readFontPreset());
-  const onBack = () => back(settingsBackFallback(conversationId, 'leaf'));
+  const goBack = onBack ?? (() => back(settingsBackFallback(conversationId, 'leaf')));
 
   function onChange(next: FontPreset) {
     setPreset(next);
@@ -52,5 +52,5 @@ export function ConversationStylePage({ conversationId }: { conversationId: stri
     persistFontPreset(next);
   }
 
-  return <StyleView preset={preset} onChange={onChange} onBack={onBack} />;
+  return <StyleView preset={preset} onChange={onChange} onBack={goBack} />;
 }

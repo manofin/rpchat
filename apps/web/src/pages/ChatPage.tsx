@@ -6,9 +6,14 @@ import {
   Avatar, BeatHeader, BeatHunterLine, BeatHunterPanel, BeatInfoSheet, BeatNarration, BeatSystem, BeatThought, BeatUiPanel, parseBeatUi,
   renderContent, SpeakerHeader,
 } from '../components/view';
+import { OverlayDrawer } from '../components/OverlayDrawer';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
+import { groupChatTurns, shouldReorderTurn, turnChoicesHost, visualAssistantOrder } from '../lib/chatLayout';
+import { useDesktopLayout } from '../lib/useDesktopLayout';
 import { useChat } from './useChat';
 import { ChatDrawer } from './ChatDrawer';
+import { ChatListRail } from './ChatListRail';
+import { ConversationTools } from './ConversationTools';
 
 export function ChatPage({ id }: { id: string }) {
   const ui = useUi();
@@ -17,6 +22,9 @@ export function ChatPage({ id }: { id: string }) {
   const [drawer, setDrawer] = useState(false);
   const [drawerTab, setDrawerTab] = useState<'budget' | 'memory' | 'summary' | undefined>(undefined);
   const [settings, setSettings] = useState(false);
+  const desktop = useDesktopLayout();
+  const [listOpen, setListOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(desktop);
   const [previewDropped, setPreviewDropped] = useState<number | null>(null);
   const [previewIncluded, setPreviewIncluded] = useState<number | null>(null);
   const [hasDraft, setHasDraft] = useState(false);
@@ -70,6 +78,15 @@ export function ChatPage({ id }: { id: string }) {
     ta.style.height = `${Math.min(132, ta.scrollHeight)}px`;
   }
   useEffect(grow, [draft]);
+
+  useEffect(() => {
+    if (desktop) {
+      setListOpen(false);
+      return;
+    }
+    setListOpen(false);
+    setToolsOpen(false);
+  }, [desktop]);
 
   const headId = chat.messages[chat.messages.length - 1]?.id ?? '';
   const dropped = chat.budgetAtHead === headId && chat.lastBudget
@@ -138,12 +155,47 @@ export function ChatPage({ id }: { id: string }) {
   const lastAssistant = [...chat.messages].reverse().find((m) => m.role === 'assistant');
   const lastMsg = chat.messages[chat.messages.length - 1];
 
+  const reorderTurns = !desktop && shouldReorderTurn(conv.scene.format);
+  const onChoice = (c: string) => { setDraft(c); taRef.current?.focus(); };
+  const messageViewProps = (m: Message, opts?: { hideChoices?: boolean }) => ({
+    m,
+    domId: `msg-${m.id}`,
+    charName: char.name,
+    userName: persona?.name ?? '나',
+    sceneFormat: conv.scene.format,
+    streaming: chat.streamingId === m.id,
+    isLastAssistant: m.id === lastAssistant?.id,
+    generating: chat.generating,
+    hideChoices: opts?.hideChoices,
+    onRegenerate: () => chat.regenerate(m.id),
+    onSwipeLeft: () => { const i = m.siblings.index; if (i > 0) chat.selectSibling(m.siblings.ids[i - 1]); },
+    onSwipeRight: () => { const i = m.siblings.index; if (i < m.siblings.count - 1) chat.selectSibling(m.siblings.ids[i + 1]); else chat.regenerate(m.id); },
+    onEdit: (content: string) => chat.editMessage(m.id, content),
+    onBranchEdit: (content: string) => chat.branchEdit(m.id, content),
+    onDelete: async () => { if (await ui.confirm('이 메시지를 삭제할까요?', { danger: true, okLabel: '삭제' })) chat.deleteMessage(m.id); },
+    onBookmark: () => chat.toggleBookmark(m.id, !m.bookmarked),
+    onChoice,
+  });
+
   return (
-    <div className="screen">
+    <div className="chat-shell">
+      <OverlayDrawer
+        open={desktop ? true : listOpen}
+        onClose={() => setListOpen(false)}
+        side="left"
+        mode={desktop ? 'rail' : 'overlay'}
+        title="대화"
+      >
+        {desktop ? <div className="chat-rail-head">대화</div> : null}
+        <ChatListRail characterId={char.id} activeId={id} onPick={() => setListOpen(false)} />
+      </OverlayDrawer>
+
+      <div className="chat-main">
       <div className="topbar">
+        <button className="btn ghost icon chat-menu-btn" onClick={() => setListOpen(true)} aria-label="대화 목록 열기" aria-expanded={listOpen}>☰</button>
         <button className="btn ghost icon" onClick={() => back(`/character/${char.id}`)} aria-label="뒤로">‹</button>
         <Avatar name={char.name} avatar={char.avatar} size="sm" />
-        <div className="title" onClick={() => navigate(`/chat/${id}/settings`)} style={{ cursor: 'pointer' }}>
+        <div className="title" onClick={() => setToolsOpen(true)} style={{ cursor: 'pointer' }}>
           <h1>{char.name}</h1>
           <div className="sub">{conv.profile_name} · {persona?.name ?? '나'}</div>
         </div>
@@ -154,31 +206,33 @@ export function ChatPage({ id }: { id: string }) {
           aria-label="컨텍스트 인스펙터 열기"
           onClick={() => { setDrawerTab('budget'); setDrawer(true); }}
         >▤ 컨텍스트</button>
+        <button
+          className="btn ghost icon chat-tools-btn"
+          data-test="chat-tools"
+          aria-label="대화 도구 열기"
+          aria-expanded={toolsOpen}
+          onClick={() => setToolsOpen((v) => !v)}
+        >⚙</button>
       </div>
 
       <div className="chat-scroll" ref={scrollRef} onScroll={onScroll}>
         {chat.messages.length === 0 && <div className="sysline" style={{ margin: 'auto' }}>첫 메시지를 보내 대화를 시작하세요.</div>}
-        {chat.messages.map((m) => (
-          <MessageView
-            key={m.id}
-            m={m}
-            domId={`msg-${m.id}`}
-            charName={char.name}
-            userName={persona?.name ?? '나'}
-            sceneFormat={conv.scene.format}
-            streaming={chat.streamingId === m.id}
-            isLastAssistant={m.id === lastAssistant?.id}
-            generating={chat.generating}
-            onRegenerate={() => chat.regenerate(m.id)}
-            onSwipeLeft={() => { const i = m.siblings.index; if (i > 0) chat.selectSibling(m.siblings.ids[i - 1]); }}
-            onSwipeRight={() => { const i = m.siblings.index; if (i < m.siblings.count - 1) chat.selectSibling(m.siblings.ids[i + 1]); else chat.regenerate(m.id); }}
-            onEdit={(content) => chat.editMessage(m.id, content)}
-            onBranchEdit={(content) => chat.branchEdit(m.id, content)}
-            onDelete={async () => { if (await ui.confirm('이 메시지를 삭제할까요?', { danger: true, okLabel: '삭제' })) chat.deleteMessage(m.id); }}
-            onBookmark={() => chat.toggleBookmark(m.id, !m.bookmarked)}
-            onChoice={(c) => { setDraft(c); taRef.current?.focus(); }}
-          />
-        ))}
+        {reorderTurns
+          ? groupChatTurns(chat.messages).map((turn, ti) => {
+              const visual = visualAssistantOrder(turn.assistants, true);
+              const host = turnChoicesHost(turn.assistants);
+              const showTurnChoices = !!(host && host.id === lastAssistant?.id && host.meta.choices && host.meta.choices.length > 0 && !chat.generating);
+              return (
+                <div key={turn.user?.id ?? visual[0]?.id ?? `turn-${ti}`} className="chat-turn">
+                  {turn.user ? <MessageView {...messageViewProps(turn.user)} /> : null}
+                  {visual.map((m) => <MessageView key={m.id} {...messageViewProps(m, { hideChoices: true })} />)}
+                  {showTurnChoices && host?.meta.choices ? <ChoiceChips choices={host.meta.choices} onChoice={onChoice} /> : null}
+                </div>
+              );
+            })
+          : chat.messages.map((m) => (
+            <MessageView key={m.id} {...messageViewProps(m)} />
+          ))}
         {chat.error && chat.detail && <div className="banner err" style={{ margin: '4px 0' }}>{chat.error}</div>}
       </div>
 
@@ -240,6 +294,27 @@ export function ChatPage({ id }: { id: string }) {
 
       <ChatDrawer open={drawer} conversationId={id} draft={draft} initialTab={drawerTab} onClose={() => { setDrawer(false); setDrawerTab(undefined); }} onApplied={() => { /* 미리보기는 열 때마다 재계산 */ }} />
       <ConversationSettings open={settings} conversationId={id} onClose={() => setSettings(false)} onChanged={chat.reload} onOpenMemory={() => { setSettings(false); setDrawerTab(undefined); setDrawer(true); }} />
+      </div>
+
+      <OverlayDrawer
+        open={toolsOpen}
+        onClose={() => setToolsOpen(false)}
+        side="right"
+        mode={desktop ? 'rail' : 'overlay'}
+        title="대화 도구"
+      >
+        <ConversationTools conversationId={id} onChanged={chat.reload} />
+      </OverlayDrawer>
+    </div>
+  );
+}
+
+function ChoiceChips({ choices, onChoice }: { choices: string[]; onChoice: (c: string) => void }) {
+  return (
+    <div className="chips">
+      {choices.map((c, i) => (
+        <button key={i} type="button" className="chip" onClick={() => onChoice(c)}>{c}</button>
+      ))}
     </div>
   );
 }
@@ -261,6 +336,7 @@ function MessageView(props: {
   onDelete: () => void;
   onBookmark: () => void;
   onChoice: (c: string) => void;
+  hideChoices?: boolean;
 }) {
   const { m } = props;
   const [editing, setEditing] = useState(false);
@@ -350,7 +426,7 @@ function MessageView(props: {
     return (
       <>
         {body}
-        {!props.streaming && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
+        {!props.hideChoices && !props.streaming && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
           <div className="chips">
             {m.meta.choices.map((c, i) => <button key={i} className="chip" onClick={() => props.onChoice(c)}>{c}</button>)}
           </div>
@@ -365,7 +441,7 @@ function MessageView(props: {
     return (
       <>
         <BeatHunterLine name={m.meta.speaker_name ?? props.charName} text={m.content} />
-        {!props.streaming && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
+        {!props.hideChoices && !props.streaming && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
           <div className="chips">
             {m.meta.choices.map((c, i) => <button key={i} className="chip" onClick={() => props.onChoice(c)}>{c}</button>)}
           </div>
@@ -398,7 +474,7 @@ function MessageView(props: {
       </div>
 
       {/* 스토리 선택지: 최신 assistant 턴에서만 노출 — 다음 턴이 시작되면 이전 선택지는 사라진다 */}
-      {!props.streaming && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
+      {!props.hideChoices && !props.streaming && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
         <div className="chips">
           {m.meta.choices.map((c, i) => <button key={i} className="chip" onClick={() => props.onChoice(c)}>{c}</button>)}
         </div>

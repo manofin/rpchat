@@ -26,10 +26,10 @@ export function GuideView({ text, onBack }: { text: string; onBack: () => void }
   );
 }
 
-export function ConversationGuidePage({ conversationId }: { conversationId: string }) {
+export function ConversationGuidePage({ conversationId, onBack }: { conversationId: string; onBack?: () => void }) {
   const [text, setText] = useState<string | null>(null);
   const [missing, setMissing] = useState(false);
-  const onBack = () => back(settingsBackFallback(conversationId, 'leaf'));
+  const goBack = onBack ?? (() => back(settingsBackFallback(conversationId, 'leaf')));
 
   useEffect(() => {
     let live = true;
@@ -49,7 +49,7 @@ export function ConversationGuidePage({ conversationId }: { conversationId: stri
 
   if (missing) {
     return (
-      <SettingsPageLayout header={<SettingsPageHeader title="플레이 가이드" onBack={onBack} />}>
+      <SettingsPageLayout header={<SettingsPageHeader title="플레이 가이드" onBack={goBack} />}>
         <SettingsEmptyState message="대화를 찾을 수 없습니다." />
       </SettingsPageLayout>
     );
@@ -57,11 +57,11 @@ export function ConversationGuidePage({ conversationId }: { conversationId: stri
 
   if (text === null) {
     return (
-      <SettingsPageLayout header={<SettingsPageHeader title="플레이 가이드" onBack={onBack} />}>
+      <SettingsPageLayout header={<SettingsPageHeader title="플레이 가이드" onBack={goBack} />}>
         <Spinner />
       </SettingsPageLayout>
     );
   }
 
-  return <GuideView text={text} onBack={onBack} />;
+  return <GuideView text={text} onBack={goBack} />;
 }

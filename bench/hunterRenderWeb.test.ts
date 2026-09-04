@@ -73,7 +73,7 @@ t('ChatPage wires panel / system / hunter line, gated on scene.format', () => {
   assert.ok(s.includes('BeatHunterPanel'));
   assert.ok(s.includes('BeatSystem'));
   assert.ok(s.includes('BeatHunterLine'));
-  assert.ok(s.includes('sceneFormat={conv.scene.format}'));
+  assert.ok(s.includes('sceneFormat: conv.scene.format') || s.includes('sceneFormat={conv.scene.format}'));
   assert.match(code('apps/web/src/pages/ChatPage.tsx'), /kind === 'line' && props\.sceneFormat === 'hunter'/);
 });
 

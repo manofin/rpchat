@@ -174,7 +174,7 @@ export function UserNoteView({
   );
 }
 
-export function ConversationUserNotePage({ conversationId }: { conversationId: string }) {
+export function ConversationUserNotePage({ conversationId, onBack }: { conversationId: string; onBack?: () => void }) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [draft, setDraft] = useState('');
   const [conversationError, setConversationError] = useState(false);
@@ -208,7 +208,7 @@ export function ConversationUserNotePage({ conversationId }: { conversationId: s
     };
   }, [conversationId, loadTick]);
 
-  const onBack = () => back(`/chat/${conversationId}/settings`);
+  const goBack = onBack ?? (() => back(`/chat/${conversationId}/settings`));
 
   const save = async () => {
     if (!conversation) return;
@@ -240,7 +240,7 @@ export function ConversationUserNotePage({ conversationId }: { conversationId: s
 
   if (!conversation && !conversationError) {
     return (
-      <SettingsPageLayout header={<SettingsPageHeader title="유저노트" onBack={onBack} />}>
+      <SettingsPageLayout header={<SettingsPageHeader title="유저노트" onBack={goBack} />}>
         <Spinner />
       </SettingsPageLayout>
     );
@@ -253,7 +253,7 @@ export function ConversationUserNotePage({ conversationId }: { conversationId: s
       pending={pending}
       conversationError={conversationError}
       statusMessage={statusMessage}
-      onBack={onBack}
+      onBack={goBack}
       onDraftChange={setDraft}
       onSave={() => {
         void save();

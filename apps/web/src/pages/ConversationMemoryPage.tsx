@@ -6,12 +6,12 @@ import { MemoryTab, SummaryTab } from './ChatDrawer';
 
 type MemoryLeafTab = 'memory' | 'summary';
 
-export function ConversationMemoryPage({ conversationId }: { conversationId: string }) {
+export function ConversationMemoryPage({ conversationId, onBack }: { conversationId: string; onBack?: () => void }) {
   const [tab, setTab] = useState<MemoryLeafTab>('summary');
-  const onBack = () => back(settingsBackFallback(conversationId, 'leaf'));
+  const goBack = onBack ?? (() => back(settingsBackFallback(conversationId, 'leaf')));
   return (
     <SettingsPageLayout
-      header={<SettingsPageHeader title="요약 메모리" onBack={onBack} />}
+      header={<SettingsPageHeader title="요약 메모리" onBack={goBack} />}
     >
       <div className="settings-leaf-tabs">
         <button type="button" className={tab === 'memory' ? 'active' : ''} onClick={() => setTab('memory')}>기억</button>

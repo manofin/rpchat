@@ -54,12 +54,12 @@ export function OutputView({
   );
 }
 
-export function ConversationOutputPage({ conversationId }: { conversationId: string }) {
+export function ConversationOutputPage({ conversationId, onBack }: { conversationId: string; onBack?: () => void }) {
   const [profileName, setProfileName] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<ModelProfile[] | null>(null);
   const [missing, setMissing] = useState(false);
   const [pending, setPending] = useState(false);
-  const onBack = () => back(settingsBackFallback(conversationId, 'leaf'));
+  const goBack = onBack ?? (() => back(settingsBackFallback(conversationId, 'leaf')));
 
   useEffect(() => {
     let live = true;
@@ -100,7 +100,7 @@ export function ConversationOutputPage({ conversationId }: { conversationId: str
 
   if (missing) {
     return (
-      <SettingsPageLayout header={<SettingsPageHeader title="최대 출력량 조절" onBack={onBack} />}>
+      <SettingsPageLayout header={<SettingsPageHeader title="최대 출력량 조절" onBack={goBack} />}>
         <SettingsEmptyState message="대화를 찾을 수 없습니다." />
       </SettingsPageLayout>
     );
@@ -108,7 +108,7 @@ export function ConversationOutputPage({ conversationId }: { conversationId: str
 
   if (profileName === null || profiles === null) {
     return (
-      <SettingsPageLayout header={<SettingsPageHeader title="최대 출력량 조절" onBack={onBack} />}>
+      <SettingsPageLayout header={<SettingsPageHeader title="최대 출력량 조절" onBack={goBack} />}>
         <Spinner />
       </SettingsPageLayout>
     );
@@ -120,7 +120,7 @@ export function ConversationOutputPage({ conversationId }: { conversationId: str
       profiles={profiles}
       pending={pending}
       onChange={onChange}
-      onBack={onBack}
+      onBack={goBack}
     />
   );
 }

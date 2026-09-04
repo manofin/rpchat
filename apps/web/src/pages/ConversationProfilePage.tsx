@@ -274,7 +274,7 @@ export function ProfileView({
   );
 }
 
-export function ConversationProfilePage({ conversationId }: { conversationId: string }) {
+export function ConversationProfilePage({ conversationId, onBack }: { conversationId: string; onBack?: () => void }) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [candidates, setCandidates] = useState<Persona[]>([]);
   const [conversationError, setConversationError] = useState(false);
@@ -310,7 +310,7 @@ export function ConversationProfilePage({ conversationId }: { conversationId: st
     return () => ac.abort();
   }, [conversationId, loadTick]);
 
-  const onBack = () => back(`/chat/${conversationId}/settings`);
+  const goBack = onBack ?? (() => back(`/chat/${conversationId}/settings`));
 
   const mutate = async (candidateId: string) => {
     const body = buildPersonaPatch(candidateId);
@@ -342,7 +342,7 @@ export function ConversationProfilePage({ conversationId }: { conversationId: st
 
   if (!conversation && !conversationError) {
     return (
-      <SettingsPageLayout header={<ProfileHeader onBack={onBack} />}>
+      <SettingsPageLayout header={<ProfileHeader onBack={goBack} />}>
         <Spinner />
       </SettingsPageLayout>
     );
@@ -350,7 +350,7 @@ export function ConversationProfilePage({ conversationId }: { conversationId: st
 
   if (!conversation) {
     return (
-      <SettingsPageLayout header={<ProfileHeader onBack={onBack} />}>
+      <SettingsPageLayout header={<ProfileHeader onBack={goBack} />}>
         <p role="alert">대화를 불러오지 못했습니다.</p>
         <button type="button" className="btn" onClick={() => setLoadTick((n) => n + 1)}>
           다시 시도
@@ -370,7 +370,7 @@ export function ConversationProfilePage({ conversationId }: { conversationId: st
       catalogError={catalogError}
       conversationError={false}
       statusMessage={statusMessage}
-      onBack={onBack}
+      onBack={goBack}
       onApply={(id) => {
         void mutate(id);
       }}
