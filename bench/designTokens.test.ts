@@ -170,23 +170,27 @@ t('one turn shows at most two role colors, and never one per choice', () => {
   assert.ok(!/\.chip:nth-child|\.chip\.coral|\.chip\.violet|\.chip\.teal/.test(cssCode),
     'the three choices must not be painted one colour each');
   const chip = /^\.chip \{[^}]*\}/m.exec(cssCode)?.[0] ?? '';
-  assert.match(chip, /border-left: 3px solid var\(--role-gold\)/, 'recommendation is a rule, not a fill');
+  // light-paper-theme-toggle: the raw fill would fail 3:1 on the light chip
+  // background, so the rule now goes through the line alias (dark: same hex).
+  assert.match(chip, /border-left: 3px solid var\(--role-gold-line\)/, 'recommendation is a rule, not a fill');
   assert.ok(!/background: var\(--role-gold\)/.test(chip), 'the chip body stays neutral');
 });
 
 // ── 6·7. what must not have arrived ─────────────────────────────────────────
 
-t('no Tailwind, no framework, and no light theme or toggle came with the palette', () => {
+t('no Tailwind or framework, and KAMI dark is still the base :root', () => {
   assert.ok(!/@tailwind|@apply/.test(css));
   assert.ok(!/^\s*inset-[xy]\s*:/m.test(css), 'Tailwind utility names are not CSS properties');
   const pkg = src('apps/web/package.json');
   for (const dep of ['tailwindcss', '"next"', 'styled-components', '@emotion']) {
     assert.ok(!pkg.includes(dep), dep);
   }
-  assert.equal((css.match(/color-scheme:\s*dark/g) ?? []).length, 1, 'KAMI dark stays the only scheme');
-  assert.ok(!/color-scheme:\s*light/.test(css));
-  assert.ok(!/prefers-color-scheme/.test(css), 'no theme switching in this slice');
-  assert.ok(!/data-theme|\.theme-light|toggleTheme/.test(css + src('apps/web/src/pages/ChatPage.tsx')));
+  // A light theme now ships (bench/lightTheme.test.ts owns its contract), but the
+  // base :root — no attribute selector — must still be exactly the KAMI dark
+  // scheme, and it must still be the only unconditional color-scheme declaration.
+  const root = /:root\s*\{([\s\S]*?)\n\}/.exec(cssCode)![1];
+  assert.match(root, /color-scheme:\s*dark/);
+  assert.ok(!/prefers-color-scheme/.test(css), 'the toggle is explicit, not OS-driven');
 });
 
 // ── 8·9. contracts this slice must not have moved ───────────────────────────

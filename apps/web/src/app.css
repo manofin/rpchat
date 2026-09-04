@@ -64,6 +64,9 @@
   /* Violet 원본은 선으로도 charcoal 2.86 / surface 2.50 이라 3:1 미달이다.
      밝은 표면 위 violet 선은 보정값을 쓴다. */
   --role-violet-line: var(--role-violet-text);
+  /* light-paper-theme-toggle — chip 의 gold rule 은 다크에서 원본 그대로,
+     라이트에서만 role-gold-text 로 갈아탄다(원본은 라이트 chip 배경 위 2.04 로 3:1 미달). */
+  --role-gold-line: var(--role-gold);
   /* 역할색 채움 위의 라벨. #fff 는 coral 위 3.64 로 미달, 이 잉크는 5.09 다. */
   --role-on-fill: #1A1113;
 
@@ -75,6 +78,51 @@
   --border: var(--kami-line);
   --muted: var(--kami-text-muted);
   color-scheme: dark;
+}
+
+/* light-paper-theme-toggle — design-role-tokens-spec.md §6 의 별도 슬라이스.
+   Ink #201D24 / Paper #F8F5F0 / Panel #FFFDF9 (StoryForge 추천안 원본, §1 인용값)를
+   출발점으로 삼되, 이 세 값을 그대로 옮기지 않고 위 :root 와 같은 토큰 구조에
+   맞춰 다시 도출했다 — 대비는 WCAG 실측(하단 표), 근사값이 아니다.
+
+   role-coral/violet/teal/gold 원본 채움과 --role-on-fill, --accent-2, --kami-ink,
+   --user-bubble/--char-bubble 는 이 블록에 없다 = 두 테마에서 동일하다. CTA 배경
+   (coral)과 아바타 그라디언트(accent-2)는 페이지가 아니라 자기 자신 위의 라벨과
+   짝이므로 테마와 무관하고, kami-ink 는 라이트 Paper 위에서도 6.57 로 이미 통과한다.
+   role-*-text 는 다크용으로 밝힌 값이라 라이트에서 전부 실패(2.35 대)하므로 여기서
+   같은 색상·채도를 유지한 채 명도만 낮춰 재도출했다(최악 표면 kami-charcoal 기준
+   4.78 / 6.65 / 4.83 / 5.94). gold 는 rule(선)으로도 쓰이는데 원본 gold 는 라이트
+   chip 배경 위 2.04 로 3:1 미달이라 --role-gold-line 이 라이트에서만 gold-text 를
+   가리키게 했다(다크에서는 위 :root 정의대로 원본과 동일 — 렌더 불변).
+   danger/warn/accent 도 다크용 밝은 값이 라이트에서 텍스트로 쓰이면 실패
+   (2.76 / 1.62 / 4.00)하므로 동일 원리로 재도출했다(4.86 / 4.81 / 6.64). */
+:root[data-theme='light'] {
+  --bg: #F8F5F0;
+  --bg-2: #FFFDF9;
+  --bg-3: #E4DDCB;
+  --fg: #211E17;
+  --fg-2: #544E42;
+  --fg-3: #8B8474;
+  --accent: #5A3FC0;
+  --danger: #C7333F;
+  --warn: #9A5F0A;
+  --kami-deep: #F8F5F0;
+  --kami-charcoal: #ECE5D6;
+  --kami-surface: #FFFDF9;
+  --kami-text-strong: #211E17;
+  --kami-text: #4A4438;
+  --kami-text-muted: #544E42;
+  --kami-text-faint: #8B8474;
+  --kami-line: rgba(33, 30, 23, 0.16);
+  --kami-line-soft: rgba(33, 30, 23, 0.09);
+  --panel-1: #F1EBDD;
+  --panel-2: #FFFDF9;
+  --role-coral-text: #B23830;
+  --role-violet-text: #4F4098;
+  --role-teal-text: #1A6E66;
+  --role-gold-text: #6E5012;
+  --role-gold-line: var(--role-gold-text);
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
@@ -182,7 +230,7 @@ textarea { resize: none; }
   .chips { flex-direction: row; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 2px; }
   .chips .chip { flex: 0 0 78%; scroll-snap-align: start; }
 }
-.chip { border: 1px solid var(--kami-line); border-left: 3px solid var(--role-gold); background: var(--kami-charcoal); color: var(--kami-text); border-radius: 12px; padding: 10px 12px; font-size: 13px; cursor: pointer; text-align: left; white-space: normal; overflow-wrap: anywhere; line-height: 1.45; width: 100%; box-sizing: border-box; }
+.chip { border: 1px solid var(--kami-line); border-left: 3px solid var(--role-gold-line); background: var(--kami-charcoal); color: var(--kami-text); border-radius: 12px; padding: 10px 12px; font-size: 13px; cursor: pointer; text-align: left; white-space: normal; overflow-wrap: anywhere; line-height: 1.45; width: 100%; box-sizing: border-box; }
 .chip:hover { background: rgba(201, 150, 62, 0.10); }
 .chip:active { background: rgba(201, 150, 62, 0.16); }
 .chip:focus-visible { outline: 2px solid var(--role-gold-text); outline-offset: 2px; }

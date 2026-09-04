@@ -3,6 +3,7 @@ import { del, get, post, put } from '../lib/api';
 import { back } from '../lib/router';
 import type { Health, ModelProfile, Persona } from '../types';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
+import { applyTheme, persistTheme, readTheme, type Theme } from '../lib/theme';
 
 export function SettingsPage() {
   const [health, setHealth] = useState<Health | null>(null);
@@ -49,6 +50,7 @@ export function SettingsPage() {
           )}
         </div>
 
+        <ThemeSection />
         <PersonasSection />
         <ProfilesSection />
         <ContentPolicySection />
@@ -62,6 +64,43 @@ export function SettingsPage() {
         <div style={{ height: 24 }} />
       </div>
     </div>
+  );
+}
+
+function ThemeSection() {
+  const [theme, setTheme] = useState<Theme>(() => readTheme());
+
+  function choose(next: Theme) {
+    if (next === theme) return;
+    persistTheme(next);
+    applyTheme(next);
+    setTheme(next);
+  }
+
+  return (
+    <>
+      <div className="section-title">화면</div>
+      <div className="row" style={{ gap: 8 }} role="radiogroup" aria-label="테마">
+        <button
+          type="button"
+          role="radio"
+          aria-checked={theme === 'dark'}
+          className={`btn sm block${theme === 'dark' ? ' primary' : ''}`}
+          onClick={() => choose('dark')}
+        >
+          다크
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={theme === 'light'}
+          className={`btn sm block${theme === 'light' ? ' primary' : ''}`}
+          onClick={() => choose('light')}
+        >
+          라이트
+        </button>
+      </div>
+    </>
   );
 }
 
