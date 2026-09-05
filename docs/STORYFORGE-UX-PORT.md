@@ -246,6 +246,6 @@ Choices는 메시지 `meta.choices?: string[]` (types). UI는 표시·composer �
 | S2 turn chrome | `7dfe30f` | stop / chips+pencil |
 | S3 tools hub | `ce5e391` | ConversationTools overflow |
 | S4 discovery | `23f6e16` | Home / Character / Search |
-| S5 polish / README / Galaxy | `49e46bd` | 체크리스트 슬롯 = 수동 확인; PASS≠증거 없음 |
+| S5 polish / README / Galaxy | `a57133e` | 체크리스트 슬롯 = 수동 확인; PASS≠증거 없음 |
 
 *S5까지 이식 트랙 완료. Galaxy 실기기 PASS는 위 체크리스트 증거 후에만.*
