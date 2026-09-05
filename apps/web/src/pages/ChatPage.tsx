@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { get, patch } from '../lib/api';
-import { back, navigate } from '../lib/router';
+import { back, navigate, useRoute } from '../lib/router';
+import { NAV_TABS } from '../lib/navTabs';
 import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, PromptPreview, Summary } from '../types';
 import {
   Avatar, BeatHeader, BeatHunterLine, BeatHunterPanel, BeatInfoSheet, BeatNarration, BeatSystem, BeatThought, BeatUiPanel, parseBeatUi,
@@ -23,6 +24,7 @@ export function ChatPage({ id }: { id: string }) {
   const [drawerTab, setDrawerTab] = useState<'budget' | 'memory' | 'summary' | undefined>(undefined);
   const [settings, setSettings] = useState(false);
   const desktop = useDesktopLayout();
+  const path = useRoute();
   const [listOpen, setListOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(desktop);
   const [previewDropped, setPreviewDropped] = useState<number | null>(null);
@@ -87,6 +89,16 @@ export function ChatPage({ id }: { id: string }) {
     setListOpen(false);
     setToolsOpen(false);
   }, [desktop]);
+
+  // Mobile: left/right overlays are mutually exclusive (StoryForge MobileShell).
+  useEffect(() => {
+    if (desktop || !listOpen) return;
+    setToolsOpen(false);
+  }, [listOpen, desktop]);
+  useEffect(() => {
+    if (desktop || !toolsOpen) return;
+    setListOpen(false);
+  }, [toolsOpen, desktop]);
 
   const headId = chat.messages[chat.messages.length - 1]?.id ?? '';
   const dropped = chat.budgetAtHead === headId && chat.lastBudget
@@ -186,14 +198,32 @@ export function ChatPage({ id }: { id: string }) {
         mode={desktop ? 'rail' : 'overlay'}
         title="대화"
       >
-        {desktop ? <div className="chat-rail-head">대화</div> : null}
+        {!desktop && (
+          <nav className="drawer-nav" aria-label="주요 메뉴">
+            {NAV_TABS.map((tab) => {
+              const active = tab.match(path);
+              return (
+                <button
+                  key={tab.href}
+                  type="button"
+                  className={`drawer-nav-item${active ? ' is-active' : ''}`}
+                  onClick={() => {
+                    setListOpen(false);
+                    navigate(tab.href);
+                  }}
+                >{tab.label}</button>
+              );
+            })}
+          </nav>
+        )}
+        {desktop ? <div className="chat-rail-head">대화</div> : <div className="drawer-section-label">이 캐릭터의 대화</div>}
         <ChatListRail characterId={char.id} activeId={id} onPick={() => setListOpen(false)} />
       </OverlayDrawer>
 
       <div className="chat-main">
-      <div className="topbar">
+      <div className="topbar chat-topbar">
         <button className="btn ghost icon chat-menu-btn" onClick={() => setListOpen(true)} aria-label="대화 목록 열기" aria-expanded={listOpen}>☰</button>
-        <button className="btn ghost icon" onClick={() => back(`/character/${char.id}`)} aria-label="뒤로">‹</button>
+        <button className="btn ghost icon chat-back-btn" onClick={() => back(`/character/${char.id}`)} aria-label="뒤로">‹</button>
         <Avatar name={char.name} avatar={char.avatar} size="sm" />
         <div className="title" onClick={() => setToolsOpen(true)} style={{ cursor: 'pointer' }}>
           <h1>{char.name}</h1>
@@ -201,7 +231,7 @@ export function ChatPage({ id }: { id: string }) {
         </div>
         {/* P5-R1: 인스펙터는 이미 드로어에 있다 — 없던 것은 '여기로 들어간다'는 표시. 새 표면 추가 금지. */}
         <button
-          className="btn ghost sm"
+          className="btn ghost sm chat-ci-btn"
           data-test="context-inspector"
           aria-label="컨텍스트 인스펙터 열기"
           onClick={() => { setDrawerTab('budget'); setDrawer(true); }}
@@ -212,7 +242,7 @@ export function ChatPage({ id }: { id: string }) {
           aria-label="대화 도구 열기"
           aria-expanded={toolsOpen}
           onClick={() => setToolsOpen((v) => !v)}
-        >⚙</button>
+        >{desktop ? '⚙' : '⋯'}</button>
       </div>
 
       <div className="chat-scroll" ref={scrollRef} onScroll={onScroll}>

@@ -6,6 +6,7 @@ import { Avatar, relTime } from '../components/view';
 import { CharacterEditor } from '../components/CharacterEditor';
 import { StoryEditor } from '../components/StoryEditor';
 import { Spinner, useUi } from '../components/ui';
+import { TopNav } from '../components/TopNav';
 
 type HomeTab = 'story' | 'character';
 
@@ -76,23 +77,25 @@ export function HomePage() {
 
   return (
     <div className="screen">
-      <div className="topbar">
-        <div className="title"><h1>{tab === 'story' ? '스토리' : '캐릭터'}</h1><div className="sub">{modelLine(health)}</div></div>
-        <button className="btn ghost icon" onClick={() => navigate('/search')} aria-label="검색">🔍</button>
-        <button className="btn ghost icon" onClick={() => navigate('/settings')} aria-label="설정">⚙</button>
-        {tab === 'character' && (
+      <TopNav
+        actions={
           <>
-            <button className="btn ghost icon" onClick={() => fileRef.current?.click()} disabled={importing} aria-label="카드 가져오기">{importing ? '…' : '📥'}</button>
-            <button className="btn primary icon" onClick={() => setEditor({ open: true, character: null })} aria-label="새 캐릭터">＋</button>
+            {tab === 'character' && (
+              <>
+                <button className="btn ghost icon" onClick={() => fileRef.current?.click()} disabled={importing} aria-label="카드 가져오기">{importing ? '…' : '📥'}</button>
+                <button className="btn primary icon" onClick={() => setEditor({ open: true, character: null })} aria-label="새 캐릭터">＋</button>
+              </>
+            )}
+            {tab === 'story' && (
+              <button className="btn primary icon" onClick={() => setStoryEditor(true)} aria-label="새 스토리">＋</button>
+            )}
           </>
-        )}
-        {tab === 'story' && (
-          <button className="btn primary icon" onClick={() => setStoryEditor(true)} aria-label="새 스토리">＋</button>
-        )}
-      </div>
+        }
+      />
       <div className="home-tabs">
         <button type="button" className={tab === 'story' ? 'active' : ''} onClick={() => setTab('story')}>스토리</button>
         <button type="button" className={tab === 'character' ? 'active' : ''} onClick={() => setTab('character')}>캐릭터</button>
+        <span className="home-tabs-meta">{modelLine(health)}</span>
       </div>
       <input ref={fileRef} type="file" accept="image/png,.png,.json,application/json" onChange={onPickFile} style={{ display: 'none' }} />
       <div className="content">
