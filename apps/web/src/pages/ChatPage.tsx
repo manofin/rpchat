@@ -168,7 +168,21 @@ export function ChatPage({ id }: { id: string }) {
   const lastMsg = chat.messages[chat.messages.length - 1];
 
   const reorderTurns = !desktop && shouldReorderTurn(conv.scene.format);
-  const onChoice = (c: string) => { setDraft(c); taRef.current?.focus(); };
+  /** Chip tap → send immediately (StoryForge RecommendationChoices onSend). */
+  const onChoice = (c: string) => {
+    const text = c.trim();
+    if (!text || chat.generating) return;
+    setDraft('');
+    requestAnimationFrame(grow);
+    stickyRef.current = true;
+    void chat.send(text);
+  };
+  /** Pencil → fill composer only; user edits then sends. */
+  const onEditChoice = (c: string) => {
+    setDraft(c);
+    requestAnimationFrame(grow);
+    taRef.current?.focus();
+  };
   const messageViewProps = (m: Message, opts?: { hideChoices?: boolean }) => ({
     m,
     domId: `msg-${m.id}`,
@@ -187,6 +201,7 @@ export function ChatPage({ id }: { id: string }) {
     onDelete: async () => { if (await ui.confirm('이 메시지를 삭제할까요?', { danger: true, okLabel: '삭제' })) chat.deleteMessage(m.id); },
     onBookmark: () => chat.toggleBookmark(m.id, !m.bookmarked),
     onChoice,
+    onEditChoice,
   });
 
   return (
@@ -256,7 +271,7 @@ export function ChatPage({ id }: { id: string }) {
                 <div key={turn.user?.id ?? visual[0]?.id ?? `turn-${ti}`} className="chat-turn">
                   {turn.user ? <MessageView {...messageViewProps(turn.user)} /> : null}
                   {visual.map((m) => <MessageView key={m.id} {...messageViewProps(m, { hideChoices: true })} />)}
-                  {showTurnChoices && host?.meta.choices ? <ChoiceChips choices={host.meta.choices} onChoice={onChoice} /> : null}
+                  {showTurnChoices && host?.meta.choices ? <ChoiceChips choices={host.meta.choices} onChoice={onChoice} onEdit={onEditChoice} disabled={chat.generating} /> : null}
                 </div>
               );
             })
@@ -298,32 +313,37 @@ export function ChatPage({ id }: { id: string }) {
         );
       })()}
 
+      {chat.generating && (
+        <div className="gen-status" aria-live="polite">
+          <span className="gen-dots" aria-hidden="true"><i /><i /><i /></span>
+          세계관에 반영 중…
+        </div>
+      )}
       <div className="inputbar">
+        <textarea
+          ref={taRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+              e.preventDefault();
+              submit();
+            }
+          }}
+          placeholder={`${char.name}에게 메시지…`}
+          rows={1}
+          enterKeyHint="send"
+          disabled={chat.generating}
+        />
         {chat.generating ? (
-          <button className="btn danger block" onClick={chat.stop}>■ 생성 중단</button>
+          <button type="button" className="btn danger icon" onClick={() => void chat.stop()} aria-label="생성 중단" title="생성 중단">■</button>
         ) : (
-          <>
-            <textarea
-              ref={taRef}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                  e.preventDefault();
-                  submit();
-                }
-              }}
-              placeholder={`${char.name}에게 메시지…`}
-              rows={1}
-              enterKeyHint="send"
-            />
-            <button className="btn primary icon" onClick={submit} disabled={!draft.trim()} aria-label="보내기">↑</button>
-          </>
+          <button type="button" className="btn primary icon" onClick={submit} disabled={!draft.trim()} aria-label="보내기">↑</button>
         )}
       </div>
 
       <ChatDrawer open={drawer} conversationId={id} draft={draft} initialTab={drawerTab} onClose={() => { setDrawer(false); setDrawerTab(undefined); }} onApplied={() => { /* 미리보기는 열 때마다 재계산 */ }} />
-      <ConversationSettings open={settings} conversationId={id} onClose={() => setSettings(false)} onChanged={chat.reload} onOpenMemory={() => { setSettings(false); setDrawerTab(undefined); setDrawer(true); }} />
+      <ConversationSettings open={settings} conversationId={id} generating={chat.generating} onClose={() => setSettings(false)} onChanged={chat.reload} onOpenMemory={() => { setSettings(false); setDrawerTab(undefined); setDrawer(true); }} />
       </div>
 
       <OverlayDrawer
@@ -339,11 +359,34 @@ export function ChatPage({ id }: { id: string }) {
   );
 }
 
-function ChoiceChips({ choices, onChoice }: { choices: string[]; onChoice: (c: string) => void }) {
+/** StoryForge RecommendationChoices pattern: tap=send, pencil=composer draft. Cap ~3 for scan. */
+function ChoiceChips({
+  choices,
+  onChoice,
+  onEdit,
+  disabled,
+}: {
+  choices: string[];
+  onChoice: (c: string) => void;
+  onEdit: (c: string) => void;
+  disabled?: boolean;
+}) {
+  const shown = choices.slice(0, 3);
+  if (shown.length === 0) return null;
   return (
-    <div className="chips">
-      {choices.map((c, i) => (
-        <button key={i} type="button" className="chip" onClick={() => onChoice(c)}>{c}</button>
+    <div className="chips" aria-disabled={disabled || undefined}>
+      {shown.map((c, i) => (
+        <div key={i} className="chip-row">
+          <button
+            type="button"
+            className="chip-edit"
+            disabled={disabled}
+            aria-label="추천 답변 편집"
+            title="추천 답변 편집"
+            onClick={() => onEdit(c)}
+          >✎</button>
+          <button type="button" className="chip" disabled={disabled} onClick={() => onChoice(c)}>{c}</button>
+        </div>
       ))}
     </div>
   );
@@ -366,6 +409,7 @@ function MessageView(props: {
   onDelete: () => void;
   onBookmark: () => void;
   onChoice: (c: string) => void;
+  onEditChoice: (c: string) => void;
   hideChoices?: boolean;
 }) {
   const { m } = props;
@@ -456,10 +500,8 @@ function MessageView(props: {
     return (
       <>
         {body}
-        {!props.hideChoices && !props.streaming && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
-          <div className="chips">
-            {m.meta.choices.map((c, i) => <button key={i} className="chip" onClick={() => props.onChoice(c)}>{c}</button>)}
-          </div>
+        {!props.hideChoices && !props.streaming && !props.generating && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
+          <ChoiceChips choices={m.meta.choices} onChoice={props.onChoice} onEdit={props.onEditChoice} disabled={props.generating} />
         )}
       </>
     );
@@ -471,16 +513,14 @@ function MessageView(props: {
     return (
       <>
         <BeatHunterLine name={m.meta.speaker_name ?? props.charName} text={m.content} />
-        {!props.hideChoices && !props.streaming && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
-          <div className="chips">
-            {m.meta.choices.map((c, i) => <button key={i} className="chip" onClick={() => props.onChoice(c)}>{c}</button>)}
-          </div>
+        {!props.hideChoices && !props.streaming && !props.generating && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
+          <ChoiceChips choices={m.meta.choices} onChoice={props.onChoice} onEdit={props.onEditChoice} disabled={props.generating} />
         )}
       </>
     );
   }
 
-  const showActions = !props.streaming;
+  const showActions = !props.streaming && !props.generating;
   return (
     <div id={props.domId} className={`msg ${isUser ? 'user' : 'assistant'} ${m.meta.ooc ? 'ooc' : ''}`}>
       {!isUser && m.meta.speaker_character_id ? (
@@ -504,10 +544,8 @@ function MessageView(props: {
       </div>
 
       {/* 스토리 선택지: 최신 assistant 턴에서만 노출 — 다음 턴이 시작되면 이전 선택지는 사라진다 */}
-      {!props.hideChoices && !props.streaming && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
-        <div className="chips">
-          {m.meta.choices.map((c, i) => <button key={i} className="chip" onClick={() => props.onChoice(c)}>{c}</button>)}
-        </div>
+      {!props.hideChoices && !props.streaming && !props.generating && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
+        <ChoiceChips choices={m.meta.choices} onChoice={props.onChoice} onEdit={props.onEditChoice} disabled={props.generating} />
       )}
 
       {showActions && (
@@ -530,7 +568,7 @@ function MessageView(props: {
   );
 }
 
-function ConversationSettings({ open, conversationId, onClose, onChanged, onOpenMemory }: { open: boolean; conversationId: string; onClose: () => void; onChanged: () => void; onOpenMemory: () => void }) {
+function ConversationSettings({ open, conversationId, generating, onClose, onChanged, onOpenMemory }: { open: boolean; conversationId: string; generating?: boolean; onClose: () => void; onChanged: () => void; onOpenMemory: () => void }) {
   const ui = useUi();
   const [profiles, setProfiles] = useState<ModelProfile[]>([]);
   const [conv, setConv] = useState<Conversation | null>(null);
@@ -647,7 +685,7 @@ function ConversationSettings({ open, conversationId, onClose, onChanged, onOpen
         </div>
         <div className="field">
           <label>최대 출력량</label>
-          <select value={conv.profile_name} onChange={(e) => { setConv({ ...conv, profile_name: e.target.value }); save({ profileName: e.target.value }); }}>
+          <select value={conv.profile_name} disabled={!!generating} onChange={(e) => { setConv({ ...conv, profile_name: e.target.value }); save({ profileName: e.target.value }); }}>
             {profiles.filter((p) => p.name.startsWith('rp-')).map((p) => <option key={p.name} value={p.name}>{p.name} · temp {p.temperature} · max {p.max_tokens}</option>)}
           </select>
           <span className="hint">모델 프로필의 max_tokens 를 따릅니다. summary·memory-extract 는 내부 전용입니다.</span>

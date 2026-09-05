@@ -164,4 +164,30 @@ t('a closed overlay is inert and out of the tab order', () => {
   assert.ok(code('apps/web/src/components/OverlayDrawer.tsx').includes('inert: true'));
 });
 
+
+t('S2 turn chrome: generating status, stop wired to useChat.stop, ChoiceChips pencil+send', () => {
+  const page = code('apps/web/src/pages/ChatPage.tsx');
+  assert.ok(page.includes('세계관에 반영 중'), 'loading copy matches StoryForge tone');
+  assert.ok(page.includes('chat.stop'), 'stop uses useChat.stop');
+  assert.ok(page.includes("aria-label=\"생성 중단\""), 'send slot becomes stop while generating');
+  assert.ok(page.includes('function ChoiceChips'), 'ChoiceChips stays the single chips surface');
+  assert.ok(page.includes('onEdit'), 'pencil fills composer via onEdit');
+  assert.ok(page.includes('choices.slice(0, 3)'), 'chips stay scannable (~3)');
+  assert.ok(page.includes('chip-edit'), 'pencil control class present');
+  // Inline beat/hunter/bubble chip maps must go through ChoiceChips (no duplicate raw chip maps).
+  assert.equal((page.match(/m\.meta\.choices\.map\(/g) ?? []).length, 0, 'no raw choices.map chip rows');
+  assert.ok(page.includes('<ChoiceChips'), 'ChoiceChips rendered');
+  const css = src('apps/web/src/app.css');
+  assert.ok(css.includes('.chip-row'));
+  assert.ok(css.includes('.chip-edit'));
+  assert.ok(css.includes('.gen-status'));
+  assert.match(css, /\.chip \{[^}]*border-left: 3px solid var\(--role-gold-line\)/);
+});
+
+t('S2 hides recommendation chips while generating/streaming', () => {
+  const page = code('apps/web/src/pages/ChatPage.tsx');
+  assert.ok(page.includes('!chat.generating'), 'turn-level choices gated on generating');
+  assert.ok(page.includes('!props.generating'), 'message-level choices gated on generating');
+});
+
 console.log(`\n${passed} passed`);
