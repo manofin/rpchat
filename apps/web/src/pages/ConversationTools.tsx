@@ -25,31 +25,42 @@ import { ConversationStylePage } from './ConversationStylePage';
 import { ConversationUserNotePage } from './ConversationUserNotePage';
 
 /**
- * World Inspector — 같은 카탈로그, 다른 위계.
+ * Utilities hub (StoryForge UtilitiesPanel tone) — same catalog as the settings
+ * hub page (`buildHubItems`), different chrome: icon rows + denser cards.
  *
- * 첨부 설계안의 핵심은 이 패널이 "설정 메뉴"가 아니라 창작 도구로 읽혀야 한다는
- * 것이다. 그래서 현재 장면 정보(`start` = 장소·시간·목표 요약)를 맨 위로 올리고
- * 나머지를 이야기·보조·정보 순으로 둔다.
- *
- * 섹션 이름과 순서만 바꾼다. 항목이 어느 섹션에 속하는지는 `buildHubItems` 의
- * 계약이고, 허브 페이지와의 동치를 `bench/settingsSheetInventory.test.ts` 가
- * 잠그고 있다 — 여기서 항목을 옮기면 두 화면이 갈라진다.
+ * Section membership stays in `buildHubItems`; do not move items between
+ * sections here or the hub/drawer inventory benches will diverge.
  */
 const SECTION_TITLE: Record<SettingsHubItem['section'], string> = {
   start: '현재 장면',
-  room: '이야기와 기억',
-  global: '창작 보조',
+  room: '대화 도구',
+  global: '표시 · 보조',
   about: '정보',
 };
 
 const SECTION_ORDER: SettingsHubItem['section'][] = ['start', 'room', 'global', 'about'];
 
+const TOOL_ICON: Record<string, string> = {
+  guide: '📖',
+  profile: '👤',
+  'user-note': '📝',
+  output: '📏',
+  memory: '🧠',
+  style: '🔤',
+  'scene-image': '🖼',
+  start: '📍',
+  about: 'ℹ',
+};
+
 export function ConversationTools({
   conversationId,
   onChanged,
+  onOpenContextInspector,
 }: {
   conversationId: string;
   onChanged: () => void;
+  /** Mobile: header CI is CSS-hidden; surface the same drawer from this hub. */
+  onOpenContextInspector?: () => void;
 }) {
   const [detail, setDetail] = useState<ConversationDetail | null>(null);
   const [missing, setMissing] = useState(false);
@@ -90,51 +101,81 @@ export function ConversationTools({
 
   return (
     <div className="tools-hub">
-      <div className="row" style={{ alignItems: 'center', gap: 10, padding: '4px 8px 12px' }}>
+      <div className="tools-hub-identity">
         <Avatar name={summary.subtitle} avatar={summary.avatar} size="sm" />
         <div className="title" style={{ minWidth: 0 }}>
           <strong>{summary.title}</strong>
           <div className="sub">{summary.subtitle}</div>
         </div>
       </div>
+
+      {onOpenContextInspector ? (
+        <button
+          type="button"
+          className="tools-row tools-row-action"
+          data-test="tools-context-inspector"
+          aria-label="컨텍스트 인스펙터 열기"
+          onClick={onOpenContextInspector}
+        >
+          <span className="tools-row-icon" aria-hidden="true">▤</span>
+          <span className="tools-row-copy">
+            <span className="tools-row-title">컨텍스트 인스펙터</span>
+            <span className="tools-row-desc">예산 · 기억 · 요약</span>
+          </span>
+          <span className="tools-row-chevron" aria-hidden="true">›</span>
+        </button>
+      ) : null}
+
       {SECTION_ORDER.map((section) => {
         const rows = items.filter((item) => item.section === section);
         if (rows.length === 0) return null;
         return (
           <SettingsSection key={section} title={SECTION_TITLE[section]}>
             {rows.map((item) => {
+              const icon = TOOL_ICON[item.id] ?? '·';
               if (item.control === 'toggle') {
                 return (
-                  <SettingsToggleRow
-                    key={item.id}
-                    title={item.title}
-                    checked={false}
-                    disabled={item.state === 'disabled'}
-                  />
+                  <div key={item.id} className="tools-row-wrap" data-tools-id={item.id}>
+                    <span className="tools-row-icon" aria-hidden="true">{icon}</span>
+                    <SettingsToggleRow
+                      title={item.title}
+                      checked={false}
+                      disabled={item.state === 'disabled'}
+                    />
+                  </div>
                 );
               }
               if (item.control === 'value' || item.state === 'read-only') {
-                return <SettingsValueRow key={item.id} title={item.title} value={item.value} />;
+                return (
+                  <div key={item.id} className="tools-row-wrap" data-tools-id={item.id}>
+                    <span className="tools-row-icon" aria-hidden="true">{icon}</span>
+                    <SettingsValueRow title={item.title} value={item.value} />
+                  </div>
+                );
               }
               return (
-                <SettingsNavigationRow
-                  key={item.id}
-                  title={item.title}
-                  value={item.value}
-                  href={item.href}
-                  disabled={item.state === 'disabled'}
-                  onNavigate={() => {
-                    const id = item.id as SettingsLeaf;
-                    if (id === 'guide' || id === 'profile' || id === 'user-note' || id === 'memory' || id === 'output' || id === 'style') {
-                      setLeaf(id);
-                    }
-                  }}
-                />
+                <div key={item.id} className="tools-row-wrap" data-tools-id={item.id}>
+                  <span className="tools-row-icon" aria-hidden="true">{icon}</span>
+                  <SettingsNavigationRow
+                    title={item.title}
+                    value={item.value}
+                    href={item.href}
+                    disabled={item.state === 'disabled'}
+                    onNavigate={() => {
+                      const id = item.id as SettingsLeaf;
+                      if (id === 'guide' || id === 'profile' || id === 'user-note' || id === 'memory' || id === 'output' || id === 'style') {
+                        setLeaf(id);
+                      }
+                    }}
+                  />
+                </div>
               );
             })}
           </SettingsSection>
         );
       })}
+
+      <div className="tools-hub-foot">앱 v{summary.appVersion} · 대화 도구</div>
     </div>
   );
 }

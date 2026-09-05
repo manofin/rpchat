@@ -787,7 +787,126 @@ textarea { resize: none; }
   max-width: none;
   margin: 0;
 }
-.tools-hub { padding: 8px 8px calc(12px + var(--safe-bottom)); }
+.tools-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 10px calc(14px + var(--safe-bottom));
+}
+.tools-hub-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 4px 6px;
+}
+.tools-hub .settings-section {
+  margin-bottom: 4px;
+}
+.tools-hub .settings-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.tools-hub .section-title {
+  margin: 0 4px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--kami-text-muted);
+  text-transform: none;
+}
+.tools-row-wrap {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid var(--kami-line);
+  border-radius: 12px;
+  background: var(--panel-1);
+  overflow: hidden;
+}
+.tools-row-wrap .tools-row-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 40px;
+  width: 40px;
+  font-size: 15px;
+  background: var(--bg-3);
+  color: var(--kami-text-muted);
+}
+.tools-row-wrap .settings-row {
+  flex: 1 1 auto;
+  border-bottom: 0;
+  min-height: 44px;
+  padding: 10px 12px 10px 10px;
+}
+.tools-row,
+.tools-row-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--kami-line);
+  border-radius: 12px;
+  background: var(--panel-1);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tools-row:focus-visible,
+.tools-row-action:focus-visible {
+  outline: 2px solid var(--role-coral);
+  outline-offset: 2px;
+}
+.tools-row-action .tools-row-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--bg-3);
+  font-size: 14px;
+}
+.tools-row-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tools-row-title {
+  font-size: 13px;
+  font-weight: 650;
+}
+.tools-row-desc {
+  font-size: 11px;
+  color: var(--kami-text-muted);
+}
+.tools-row-chevron {
+  flex: 0 0 auto;
+  color: var(--fg-3);
+}
+.tools-hub-foot {
+  margin-top: 4px;
+  padding: 8px 4px 0;
+  border-top: 1px solid var(--kami-line-soft);
+  font-size: 11px;
+  color: var(--kami-text-muted);
+}
+.tools-rail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
 
 /* ---- S1: App TopNav (StoryForge-like chrome, theme tokens) ---- */
 .app-topnav {

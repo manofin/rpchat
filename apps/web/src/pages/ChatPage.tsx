@@ -351,9 +351,24 @@ export function ChatPage({ id }: { id: string }) {
         onClose={() => setToolsOpen(false)}
         side="right"
         mode={desktop ? 'rail' : 'overlay'}
-        title="세계관 인스펙터"
+        title="대화 도구"
       >
-        <ConversationTools conversationId={id} onChanged={chat.reload} />
+        {desktop ? (
+          <div className="chat-rail-head tools-rail-head">
+            <span>대화 도구</span>
+            <button
+              type="button"
+              className="btn ghost icon"
+              aria-label="패널 닫기"
+              onClick={() => setToolsOpen(false)}
+            >✕</button>
+          </div>
+        ) : null}
+        <ConversationTools
+          conversationId={id}
+          onChanged={chat.reload}
+          onOpenContextInspector={desktop ? undefined : () => { setDrawerTab('budget'); setDrawer(true); setToolsOpen(false); }}
+        />
       </OverlayDrawer>
     </div>
   );

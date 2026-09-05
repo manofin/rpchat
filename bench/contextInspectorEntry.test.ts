@@ -44,10 +44,18 @@ t('CI-02 it opens the existing drawer on the budget tab', () => {
   assert.ok(chatSrc.includes('initialTab={drawerTab}'), 'tab still travels through the existing prop');
 });
 
+
+t('CI-03b mobile tools hub links to the same inspector drawer', () => {
+  const toolsSrc = fs.readFileSync(path.join(ROOT, 'pages/ConversationTools.tsx'), 'utf8');
+  assert.ok(chatSrc.includes('onOpenContextInspector'), 'ChatPage passes mobile CI opener into tools');
+  assert.ok(toolsSrc.includes('data-test="tools-context-inspector"'), 'tools hub exposes a stable CI entry');
+  assert.ok(toolsSrc.includes('onOpenContextInspector'), 'tools hub accepts the opener prop');
+});
+
 t('CI-03 no second inspector surface was added', () => {
   assert.equal((chatSrc.match(/<ChatDrawer/g) ?? []).length, 1, 'exactly one drawer');
   assert.equal((chatSrc.match(/BottomSheet/g) ?? []).length, 9, 'no new BottomSheet in ChatPage');
-  assert.equal((chatSrc.match(/setDrawer\(true\)/g) ?? []).length, 3, 'header + 요약하기 + 설정→기억, no more');
+  assert.equal((chatSrc.match(/setDrawer\(true\)/g) ?? []).length, 4, 'header + 요약하기 + 설정→기억 + tools hub (mobile)');
   assert.equal((chatSrc.match(/prompt-preview/g) ?? []).length, 1, 'no new preview fetch for the entry');
   assert.equal(chatSrc.includes('inject-preview'), false, 'story pre-start preview is a different surface');
 });

@@ -190,4 +190,26 @@ t('S2 hides recommendation chips while generating/streaming', () => {
   assert.ok(page.includes('!props.generating'), 'message-level choices gated on generating');
 });
 
+
+t('S3 utilities hub: ConversationTools density + shared leaf catalog + mobile CI entry', () => {
+  const tools = src('apps/web/src/pages/ConversationTools.tsx');
+  const page = code('apps/web/src/pages/ChatPage.tsx');
+  const css = src('apps/web/src/app.css');
+  assert.ok(tools.includes('tools-hub'), 'hub root class');
+  assert.ok(tools.includes('tools-row-wrap'), 'UtilitiesPanel-density row wrap');
+  assert.ok(tools.includes('buildHubItems'), 'same settings catalog');
+  assert.ok(tools.includes('onOpenContextInspector'), 'mobile CI surfaced from hub');
+  assert.ok(tools.includes('data-test="tools-context-inspector"'));
+  assert.ok(page.includes('title="대화 도구"'), 'overflow drawer title matches utilities panel');
+  assert.ok(page.includes('tools-rail-head'), 'desktop rail has unified tools chrome');
+  assert.ok(page.includes('onOpenContextInspector={desktop ? undefined'), 'CI link is mobile-only');
+  assert.ok(css.includes('.tools-row-wrap'));
+  assert.ok(css.includes('.tools-hub-foot'));
+  // No StoryForge product surfaces in the hub.
+  assert.ok(!tools.includes('ImageStudio'));
+  assert.ok(!tools.includes('credits'));
+  assert.ok(!tools.includes('재화'));
+});
+
+
 console.log(`\n${passed} passed`);
