@@ -233,3 +233,19 @@ Choices는 메시지 `meta.choices?: string[]` (types). UI는 표시·composer �
 ---
 
 *이 문서는 이식 계약이다. 슬라이스 범위·제외·First PR=S1을 바꾸려면 문서를 먼저 고친다.*
+
+
+---
+
+## 상태 (S0–S5)
+
+| 슬라이스 | 커밋 | 비고 |
+|----------|------|------|
+| S0 docs/guards | `4c89943` | `docs/STORYFORGE-UX-PORT.md` |
+| S1 mobile shell + drawers | `6854b73` | `apps/server` diff 0 |
+| S2 turn chrome | `7dfe30f` | stop / chips+pencil |
+| S3 tools hub | `ce5e391` | ConversationTools overflow |
+| S4 discovery | `23f6e16` | Home / Character / Search |
+| S5 polish / README / Galaxy | `49e46bd` | 체크리스트 슬롯 = 수동 확인; PASS≠증거 없음 |
+
+*S5까지 이식 트랙 완료. Galaxy 실기기 PASS는 위 체크리스트 증거 후에만.*

@@ -31,6 +31,8 @@
   --app-height: 100dvh;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
   /* Kami After Hours — 시각 토큰만. 레이아웃/뷰포트/스크롤/애니메이션 규칙 금지 */
   --kami-ink: #2D5A8A;
   --kami-deep: #141413;
@@ -750,11 +752,14 @@ textarea { resize: none; }
   background: var(--panel-1);
   transform: translateX(-100%);
   transition: transform 0.2s ease-out;
+  padding-left: var(--safe-left);
 }
 .overlay-drawer-right .overlay-drawer-panel {
   left: auto;
   right: 0;
   transform: translateX(100%);
+  padding-left: 0;
+  padding-right: var(--safe-right);
 }
 .overlay-drawer.is-open .overlay-drawer-panel { transform: translateX(0); }
 .overlay-drawer-head {
@@ -998,6 +1003,7 @@ textarea { resize: none; }
     position: relative;
   }
   .app-topnav-tab:hover { color: var(--fg); background: var(--bg-3); }
+  .app-topnav-tab:focus-visible { outline: 2px solid var(--role-coral); outline-offset: 2px; }
   .app-topnav-tab.is-active { color: var(--kami-text-strong); }
   .app-topnav-tab-bar {
     display: block;
@@ -1063,6 +1069,7 @@ textarea { resize: none; }
   cursor: pointer;
 }
 .drawer-nav-item:hover { background: var(--bg-3); }
+.drawer-nav-item:focus-visible { outline: 2px solid var(--role-coral); outline-offset: -2px; }
 .drawer-nav-item.is-active {
   background: rgba(228, 87, 79, 0.12);
   color: var(--role-coral-text);

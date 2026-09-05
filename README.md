@@ -35,6 +35,13 @@ npm run dev --workspace @rpchat/web        # http://127.0.0.1:5173
 - [docs/NETWORKING.md](docs/NETWORKING.md) — Tailscale Serve 사설망·인증·모델 서버 게시
 - [docs/OPERATIONS.md](docs/OPERATIONS.md) — 컨텍스트 조립·기억 워크플로·튜닝·백업·문제 해결
 - [docs/GALAXY-CHECKLIST.md](docs/GALAXY-CHECKLIST.md) — 실기기(Galaxy) PWA 점검 체크리스트
+- [docs/STORYFORGE-UX-PORT.md](docs/STORYFORGE-UX-PORT.md) — StoryForge UX → apps/web 이식 계약 (S0–S5)
+
+## UI (StoryForge UX port)
+
+모바일·데스크톱 **셸/드로어·턴 크롬·도구 허브·디스커버리** UX는 StoryForge를 **참고(reference)** 로 삼아 `apps/web`(Vite + React)에만 이식했다 (슬라이스 S1–S4). **`apps/server` 계약·스트림·분기 API는 변경하지 않는다.** 범위·가드·제외 항목은 [docs/STORYFORGE-UX-PORT.md](docs/STORYFORGE-UX-PORT.md).
+
+출하 경로 스모크는 `bench/` 격리 테스트로 돌린다: `npx tsx bench/<파일>.test.ts`.
 
 ## 구조
 ```
