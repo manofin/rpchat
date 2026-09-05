@@ -69,13 +69,29 @@ await t('renderPassC shows the turn the reader saw: narration, line, thought —
   assert.equal(prompt.includes('user_sheet'), false);
 });
 
-await t('renderPassC carries the 1:1 <choices> contract verbatim, addressed to the persona', () => {
+await t('renderPassC carries the beat-short <choices> contract, addressed to the persona', () => {
   const prompt = renderPassC({ userName: '지명', userText: '안녕', blocks: [] });
-  const instruction = src('apps/server/src/prompt/templates.ts');
-  assert.ok(instruction.includes('STORY_CHOICES_INSTRUCTION'));
   assert.ok(prompt.includes('<choices>["초안 1","초안 2","초안 3"]</choices>'));
+  assert.ok(prompt.includes('한 문장만'), 'beat drafts are one sentence, not the 1:1 three');
+  assert.ok(prompt.includes('50자'));
+  assert.equal(prompt.includes('3문장 이상'), false, 'the long form must not leak into Pass C');
   assert.ok(prompt.includes('지명'), 'the persona name is substituted, not left as {{user}}');
   assert.equal(prompt.includes('{{user}}'), false);
+});
+
+await t('1:1 / dialog / hunter keep the long STORY_CHOICES_INSTRUCTION; beat does not import it', () => {
+  const templates = src('apps/server/src/prompt/templates.ts');
+  assert.ok(templates.includes('1인칭 대사를 3문장 이상 붙인다'));
+  const beat = src('apps/server/src/prompt/beatChoices.ts');
+  assert.ok(beat.includes('export const BEAT_CHOICES_INSTRUCTION'));
+  assert.equal(/import \{[^}]*STORY_CHOICES_INSTRUCTION/.test(beat), false);
+  for (const f of ['builder.ts', 'dialogScript.ts', 'hunterScript.ts']) {
+    const body = src(`apps/server/src/prompt/${f}`);
+    assert.ok(body.includes('STORY_CHOICES_INSTRUCTION'), f);
+    assert.equal(body.includes('BEAT_CHOICES_INSTRUCTION'), false, f);
+  }
+  assert.equal(src('apps/server/src/prompt/composeBeat.ts').includes('choicesPrompt'), false);
+  assert.ok(src('apps/server/src/prompt/composeBeat.ts').includes('renderPassC('));
 });
 
 await t('Pass C is given no character card — it cannot be talked into speaking as anyone', () => {
@@ -409,13 +425,23 @@ await t('dialog and hunter keep their own choices path — Pass C is beat-only',
   assert.ok(src('apps/server/src/prompt/composeHunter.ts').includes('extractChoices('));
   assert.equal(src('apps/server/src/prompt/composeDialog.ts').includes('renderPassC'), false);
   assert.equal(src('apps/server/src/prompt/composeHunter.ts').includes('renderPassC'), false);
-  // Pass C reuses 1:1 prompt text, so it lives outside passes.ts — which stays the
-  // import-free string builder passPrompts.test.ts fences. (That bench owns the
-  // rest of the fence; this only pins *why* Pass C is not in there.)
+  // Pass C is the one pass that touches 1:1 choices text at all, so it lives
+  // outside passes.ts — which stays the import-free string builder
+  // passPrompts.test.ts fences. (That bench owns the rest of the fence; this
+  // only pins *why* Pass C is not in there.)
   const passes = src('apps/server/src/prompt/passes.ts');
   assert.deepEqual((passes.match(/^import .*$/gm) ?? []).filter((l) => !l.startsWith('import type')), []);
   assert.equal(passes.includes('renderPassC'), false, 'the renderer is in beatChoices.ts');
-  assert.ok(src('apps/server/src/prompt/beatChoices.ts').includes('STORY_CHOICES_INSTRUCTION'));
+  assert.ok(src('apps/server/src/prompt/beatChoices.ts').includes('BEAT_CHOICES_INSTRUCTION'));
+});
+
+await t('Pass C max_tokens is the short-form cap, not the long-form 400', () => {
+  const chat = src('apps/server/src/routes/chat.ts');
+  const m = chat.match(/const PASS_C_MAX_TOKENS = (\d+)/);
+  assert.ok(m, 'PASS_C_MAX_TOKENS must be a named const');
+  const cap = Number(m[1]);
+  assert.ok(cap <= 200, `short-form cap expected ≤200, got ${cap}`);
+  assert.ok(cap >= 80, `too tight, parse-fail risk: ${cap}`);
 });
 
 await t('a stop during Pass C costs the chips, not the finished beat', () => {

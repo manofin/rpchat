@@ -68,10 +68,14 @@ const PASS_N_MAX_TOKENS = 300;
 const PASS_N_TIMEOUT_MS = 20_000;
 const PASS_E_TIMEOUT_MS = 15_000;
 /**
- * beat-post-extras-choices: three drafts of 별표 묘사 + 3문장 대사 — the same size
- * the 1:1 path already spends on `<choices>` inside its reply budget.
+ * optimize-beat-choices-latency: the beat's own short contract (별표 한 조각 +
+ * 한 문장, 50자). n=50 interleaved vs the long form: completion p50 64 / p95 70
+ * / max 71 (`bench/partyBench/results/choices-ab-2026-09-05T08-12-49-965Z.json`).
+ * 160 is ~2.2× that max — enough that a well-formed tag is not truncated, tight
+ * enough that a model ignoring the length rule cannot spend the 8s the long
+ * form did. The 1:1 path keeps the profile budget.
  */
-const PASS_C_MAX_TOKENS = 400;
+const PASS_C_MAX_TOKENS = 160;
 /**
  * Measured, not guessed: at n=50 the shipped prompt runs p50 8.14s / p95 10.26s /
  * max 11.69s (`bench/partyBench/results/beat-choices-2026-09-05T07-32-23-602Z.json`).
