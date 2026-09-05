@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export function Avatar({ name, avatar, size }: { name: string; avatar?: string | null; size?: 'sm' | 'lg' }) {
   const cls = `avatar${size ? ` ${size}` : ''}`;
@@ -184,4 +184,46 @@ export function renderContent(text: string): ReactNode {
   }
   if (last < text.length) parts.push(text.slice(last));
   return parts;
+}
+
+/** Soft hue 0–359 from name — Stable placeholder color without hardcoding per card. */
+export function softHue(name: string): number {
+  let h = 0;
+  const s = name || '?';
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h % 360;
+}
+
+/**
+ * StoryForge-style discovery cover: avatar as cover when present,
+ * otherwise soft wash + glyph/initial with name overlay (not a huge letter tile).
+ */
+export function DiscCover({
+  name,
+  avatar,
+  kind = 'character',
+}: {
+  name: string;
+  avatar?: string | null;
+  kind?: 'character' | 'story';
+}) {
+  const initial = (name || '?').trim().charAt(0).toUpperCase() || '?';
+  const hue = softHue(name);
+  return (
+    <div
+      className={`disc-cover${kind === 'story' ? ' is-story' : ''}`}
+      style={{ '--disc-hue': String(hue) } as CSSProperties}
+    >
+      {avatar ? (
+        <img className="disc-cover-img" src={avatar} alt="" loading="lazy" />
+      ) : (
+        <div className="disc-cover-soft" aria-hidden>
+          <span className="disc-cover-glyph">{kind === 'story' ? '📖' : initial}</span>
+        </div>
+      )}
+      <div className="disc-cover-scrim">
+        <div className="disc-card-name">{name}</div>
+      </div>
+    </div>
+  );
 }

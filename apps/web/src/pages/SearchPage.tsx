@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { get } from '../lib/api';
 import { navigate, query, useLocation } from '../lib/router';
 import type { Character, Story } from '../types';
-import { Avatar, relTime } from '../components/view';
+import { Avatar, DiscCover, relTime } from '../components/view';
 import { Spinner, useUi } from '../components/ui';
 import { TopNav } from '../components/TopNav';
 
@@ -212,17 +212,14 @@ export function SearchPage() {
             <div className="section-title">캐릭터</div>
             <div className="disc-grid">
               {charHits.map((c) => (
-                <button key={c.id} type="button" className="disc-card" onClick={() => navigate(`/character/${c.id}`)}>
-                  <div className="disc-card-top">
-                    <Avatar name={c.name} avatar={c.avatar} size="sm" />
-                    <div className="disc-card-head">
-                      <div className="disc-card-name">{c.name}</div>
-                      <div className="disc-card-tag">{c.tagline || ' '}</div>
+                <button key={c.id} type="button" className="disc-card disc-card--cover" onClick={() => navigate(`/character/${c.id}`)}>
+                  <DiscCover name={c.name} avatar={c.avatar} kind="character" />
+                  <div className="disc-card-body">
+                    <div className="disc-card-tag">{c.tagline || ' '}</div>
+                    <div className="disc-card-meta">
+                      <span>{c.conversation_count ? `대화 ${c.conversation_count}개` : '새 캐릭터'}</span>
+                      <span className="disc-card-cta">대화하기</span>
                     </div>
-                  </div>
-                  <div className="disc-card-meta">
-                    <span>{c.conversation_count ? `대화 ${c.conversation_count}개` : '새 캐릭터'}</span>
-                    <span className="disc-card-cta">대화하기</span>
                   </div>
                 </button>
               ))}
@@ -235,17 +232,14 @@ export function SearchPage() {
             <div className="section-title">스토리</div>
             <div className="disc-grid">
               {storyHits.map((s) => (
-                <button key={s.id} type="button" className="disc-card" onClick={() => navigate(`/story/${s.id}`)}>
-                  <div className="disc-card-top">
-                    <div className="disc-card-avatar story" aria-hidden>📖</div>
-                    <div className="disc-card-head">
-                      <div className="disc-card-name">{s.name}</div>
-                      <div className="disc-card-tag">{s.tagline || ' '}</div>
+                <button key={s.id} type="button" className="disc-card disc-card--cover" onClick={() => navigate(`/story/${s.id}`)}>
+                  <DiscCover name={s.name} kind="story" />
+                  <div className="disc-card-body">
+                    <div className="disc-card-tag">{s.tagline || ' '}</div>
+                    <div className="disc-card-meta">
+                      <span>{s.character_count ? `캐릭터 ${s.character_count}명` : '캐릭터 없음'}</span>
+                      <span className="disc-card-cta">시작 →</span>
                     </div>
-                  </div>
-                  <div className="disc-card-meta">
-                    <span>{s.character_count ? `캐릭터 ${s.character_count}명` : '캐릭터 없음'}</span>
-                    <span className="disc-card-cta">시작 →</span>
                   </div>
                 </button>
               ))}

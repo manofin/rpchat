@@ -2,10 +2,34 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { navigate, useRoute } from '../lib/router';
 import { NAV_TABS } from '../lib/navTabs';
 import { useDesktopLayout } from '../lib/useDesktopLayout';
+import { applyTheme, persistTheme, readTheme, type Theme } from '../lib/theme';
 import { OverlayDrawer } from './OverlayDrawer';
 
+function ThemeToggleButton({
+  theme,
+  onToggle,
+  className = '',
+}: {
+  theme: Theme;
+  onToggle: () => void;
+  className?: string;
+}) {
+  const toLight = theme === 'dark';
+  return (
+    <button
+      type="button"
+      className={`btn ghost icon theme-toggle${className ? ` ${className}` : ''}`}
+      onClick={onToggle}
+      aria-label={toLight ? '라이트 모드' : '다크 모드'}
+      title={toLight ? '라이트' : '다크'}
+    >
+      <span aria-hidden>{toLight ? '☀️' : '🌙'}</span>
+    </button>
+  );
+}
+
 /**
- * StoryForge-style compact header: logo + main entries + search.
+ * StoryForge-style compact header: logo + main entries + search + theme toggle.
  * Theme tokens only (coral accent). No Next/lucide — emoji/CSS.
  */
 export function TopNav({ actions }: { actions?: ReactNode }) {
@@ -14,6 +38,7 @@ export function TopNav({ actions }: { actions?: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState('');
+  const [theme, setTheme] = useState<Theme>(() => readTheme());
 
   useEffect(() => {
     setMenuOpen(false);
@@ -23,6 +48,13 @@ export function TopNav({ actions }: { actions?: ReactNode }) {
   useEffect(() => {
     if (desktop) setMenuOpen(false);
   }, [desktop]);
+
+  function toggleTheme() {
+    const next: Theme = theme === 'dark' ? 'light' : 'dark';
+    persistTheme(next);
+    applyTheme(next);
+    setTheme(next);
+  }
 
   function goSearch(e?: FormEvent) {
     e?.preventDefault();
@@ -42,8 +74,12 @@ export function TopNav({ actions }: { actions?: ReactNode }) {
             aria-label="메뉴 열기"
             aria-expanded={menuOpen}
           >☰</button>
-          <button type="button" className="app-logo" onClick={() => navigate('/')}>RP Chat</button>
+          <button type="button" className="app-logo" onClick={() => navigate('/')}>
+            <span className="app-logo-mark" aria-hidden />
+            RP Chat
+          </button>
           <div className="app-topnav-actions">
+            <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
             <button
               type="button"
               className="btn ghost icon"
@@ -69,7 +105,10 @@ export function TopNav({ actions }: { actions?: ReactNode }) {
         )}
 
         <div className="app-topnav-desktop">
-          <button type="button" className="app-logo" onClick={() => navigate('/')}>RP Chat</button>
+          <button type="button" className="app-logo" onClick={() => navigate('/')}>
+            <span className="app-logo-mark" aria-hidden />
+            RP Chat
+          </button>
           <nav className="app-topnav-tabs" aria-label="주요 메뉴">
             {NAV_TABS.map((tab) => {
               const active = tab.match(path);
@@ -95,7 +134,10 @@ export function TopNav({ actions }: { actions?: ReactNode }) {
               aria-label="검색어"
             />
           </form>
-          {actions ? <div className="app-topnav-actions">{actions}</div> : null}
+          <div className="app-topnav-actions">
+            <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
+            {actions}
+          </div>
         </div>
       </header>
 
@@ -121,6 +163,10 @@ export function TopNav({ actions }: { actions?: ReactNode }) {
             );
           })}
         </nav>
+        <div className="drawer-theme-row">
+          <span className="drawer-section-label">화면</span>
+          <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
+        </div>
       </OverlayDrawer>
     </>
   );

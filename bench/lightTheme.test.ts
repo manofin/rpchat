@@ -186,12 +186,17 @@ t('main.tsx applies the persisted theme at boot, the same way it applies the fon
   assert.match(main, /applyFontPreset\(readFontPreset\(\)\)/, 'existing boot-time preset application stays');
 });
 
-t('SettingsPage hosts the only theme toggle, wired to persist + apply', () => {
+t('SettingsPage and TopNav host theme toggles, wired to persist + apply', () => {
   const settings = src('apps/web/src/pages/SettingsPage.tsx');
   assert.match(settings, /persistTheme\(next\)/);
   assert.match(settings, /applyTheme\(next\)/);
   assert.match(settings, /readTheme\(\)/);
-  // No other page imports the theme lib — one control, not one per screen.
+  const topnav = src('apps/web/src/components/TopNav.tsx');
+  assert.match(topnav, /persistTheme\(/);
+  assert.match(topnav, /applyTheme\(/);
+  assert.match(topnav, /readTheme\(/);
+  assert.match(topnav, /theme-toggle/);
+  // Pages: Settings remains the only *page* importer; chrome toggle lives in TopNav.
   const pageFiles = fs.readdirSync(path.join(dir, '..', 'apps/web/src/pages')).filter((f) => f.endsWith('.tsx'));
   const importers = pageFiles.filter((f) => src(`apps/web/src/pages/${f}`).includes("from '../lib/theme'"));
   assert.deepEqual(importers, ['SettingsPage.tsx']);

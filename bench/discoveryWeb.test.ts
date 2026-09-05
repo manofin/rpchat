@@ -28,7 +28,11 @@ t('S4 home keeps story/character tabs and real character/story APIs', () => {
   assert.ok(home.includes('/api/stories'));
   assert.ok(home.includes('filter-chips'));
   assert.ok(home.includes('disc-card'));
+  assert.ok(home.includes('disc-card--cover'));
+  assert.ok(home.includes('DiscCover'));
   assert.ok(home.includes('대화하기'));
+  assert.ok(home.includes('shortModelLabel'));
+  assert.ok(home.includes('empty-state-hero'));
   assert.equal(home.includes('fixtures'), false);
   assert.equal(home.includes('likes'), false);
 });
@@ -70,9 +74,14 @@ t('S4 CSS ships discovery chips/cards/empty/hero; no Tailwind package', () => {
   const css = src('apps/web/src/app.css');
   assert.ok(css.includes('.filter-chip'));
   assert.ok(css.includes('.disc-card'));
+  assert.ok(css.includes('.disc-cover'));
+  assert.ok(css.includes('.disc-card--cover'));
   assert.ok(css.includes('.empty-state'));
+  assert.ok(css.includes('.empty-state-hero'));
   assert.ok(css.includes('.char-hero'));
   assert.ok(css.includes('.disc-start-cta'));
+  assert.ok(css.includes('.theme-toggle'));
+  assert.ok(css.includes('.app-logo-mark'));
   assert.ok(!/^\s*inset-[xy]\s*:/m.test(css));
   const pkg = src('apps/web/package.json');
   assert.equal(pkg.includes('tailwindcss'), false);
@@ -84,6 +93,25 @@ t('S4 leaves apps/server untouched in working tree intent (path inventory)', () 
   const home = src('apps/web/src/pages/HomePage.tsx');
   assert.ok(home.includes("from '../lib/api'"));
   assert.equal(home.includes('apps/server'), false);
+});
+
+
+t('S4+ TopNav exposes theme toggle using read/persist/applyTheme', () => {
+  const topnav = src('apps/web/src/components/TopNav.tsx');
+  assert.ok(topnav.includes("from '../lib/theme'"));
+  assert.ok(topnav.includes('ThemeToggleButton'));
+  assert.ok(topnav.includes('persistTheme'));
+  assert.ok(topnav.includes('applyTheme'));
+  assert.ok(topnav.includes('RP Chat'));
+  assert.ok(topnav.includes('aria-label="메뉴 열기"'));
+});
+
+t('S4+ modelLine never echoes filesystem paths', () => {
+  const home = src('apps/web/src/pages/HomePage.tsx');
+  assert.ok(home.includes('function shortModelLabel'));
+  assert.ok(home.includes('function modelLine'));
+  // Path strip: basename after last / or \\
+  assert.ok(home.includes('[/\\\\]') || home.includes('[/\\]'));
 });
 
 console.log(`passed ${passed}`);

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { get, post } from '../lib/api';
 import { navigate, useLocation } from '../lib/router';
 import type { Character, Health, Story } from '../types';
-import { Avatar, relTime } from '../components/view';
+import { DiscCover, relTime } from '../components/view';
 import { CharacterEditor } from '../components/CharacterEditor';
 import { StoryEditor } from '../components/StoryEditor';
 import { Spinner, useUi } from '../components/ui';
@@ -14,6 +14,23 @@ type CharFilter = 'all' | 'recent' | string;
 function tabFromSearch(search: string): HomeTab {
   const t = new URLSearchParams(search).get('tab');
   return t === 'story' ? 'story' : 'character';
+}
+
+/** Basename-only model label — never leak filesystem paths into chrome. */
+export function shortModelLabel(resolved: string | null | undefined): string {
+  const raw = (resolved || '').trim();
+  if (!raw) return '모델';
+  const base = raw.replace(/^.*[/\\]/, '').replace(/\.(gguf|bin|safetensors)$/i, '');
+  const label = (base || '모델').trim();
+  if (label.length > 28) return `${label.slice(0, 26)}…`;
+  return label;
+}
+
+export function modelLine(h: Health | null): string {
+  if (!h) return '연결 확인 중…';
+  if (!h.model.ok) return '모델 오프라인';
+  const k = Math.round(h.model.contextTokens / 1000);
+  return `${shortModelLabel(h.model.resolvedModel)} · ${k}K`;
 }
 
 export function HomePage() {
@@ -139,7 +156,7 @@ export function HomePage() {
         <span className="home-tabs-meta">{modelLine(health)}</span>
       </div>
       <input ref={fileRef} type="file" accept="image/png,.png,.json,application/json" onChange={onPickFile} style={{ display: 'none' }} />
-      <div className="content">
+      <div className="content home-disc">
         {health && !health.model.ok && (
           <div className="banner warn">모델 서버에 연결되지 않았습니다. 대화 전송이 비활성화됩니다. (설정에서 상태 확인)</div>
         )}
@@ -147,8 +164,10 @@ export function HomePage() {
           stories === null ? (
             <Spinner />
           ) : stories.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-ico" aria-hidden>📖</div>
+            <div className="empty-state empty-state-hero">
+              <div className="empty-state-hero-art" aria-hidden>
+                <span className="empty-state-ico">📖</span>
+              </div>
               <div className="empty-state-title">첫 스토리를 만드세요</div>
               <p className="empty-state-sub">파티·장면을 묶어 대화를 시작할 수 있어요</p>
               <button className="btn primary" onClick={() => setStoryEditor(true)}>새 스토리 만들기</button>
@@ -156,18 +175,15 @@ export function HomePage() {
           ) : (
             <div className="disc-grid">
               {stories.map((s) => (
-                <button key={s.id} type="button" className="disc-card" onClick={() => navigate(`/story/${s.id}`)}>
-                  <div className="disc-card-top">
-                    <div className="disc-card-avatar story" aria-hidden>📖</div>
-                    <div className="disc-card-head">
-                      <div className="disc-card-name">{s.name}</div>
-                      <div className="disc-card-tag">{s.tagline || ' '}</div>
+                <button key={s.id} type="button" className="disc-card disc-card--cover" onClick={() => navigate(`/story/${s.id}`)}>
+                  <DiscCover name={s.name} kind="story" />
+                  <div className="disc-card-body">
+                    <div className="disc-card-tag">{s.tagline || ' '}</div>
+                    {s.setting ? <p className="disc-card-desc">{s.setting}</p> : null}
+                    <div className="disc-card-meta">
+                      <span>{s.character_count ? `캐릭터 ${s.character_count}명` : '캐릭터 없음'}</span>
+                      <span className="disc-card-cta">시작 →</span>
                     </div>
-                  </div>
-                  {s.setting ? <p className="disc-card-desc">{s.setting}</p> : null}
-                  <div className="disc-card-meta">
-                    <span>{s.character_count ? `캐릭터 ${s.character_count}명` : '캐릭터 없음'}</span>
-                    <span className="disc-card-cta">시작 →</span>
                   </div>
                 </button>
               ))}
@@ -176,8 +192,10 @@ export function HomePage() {
         ) : chars === null ? (
           <Spinner />
         ) : chars.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-ico" aria-hidden>🎭</div>
+          <div className="empty-state empty-state-hero">
+            <div className="empty-state-hero-art" aria-hidden>
+              <span className="empty-state-ico">🎭</span>
+            </div>
             <div className="empty-state-title">첫 캐릭터를 만들어 대화를 시작하세요.</div>
             <p className="empty-state-sub">카드를 가져오거나 새로 만들 수 있어요</p>
             <button className="btn primary" onClick={() => setEditor({ open: true, character: null })}>새 캐릭터 만들기</button>
@@ -204,23 +222,20 @@ export function HomePage() {
             ) : (
               <div className="disc-grid">
                 {(filteredChars ?? []).map((c) => (
-                  <button key={c.id} type="button" className="disc-card" onClick={() => navigate(`/character/${c.id}`)}>
-                    <div className="disc-card-top">
-                      <Avatar name={c.name} avatar={c.avatar} size="sm" />
-                      <div className="disc-card-head">
-                        <div className="disc-card-name">{c.name}</div>
-                        <div className="disc-card-tag">{c.tagline || ' '}</div>
+                  <button key={c.id} type="button" className="disc-card disc-card--cover" onClick={() => navigate(`/character/${c.id}`)}>
+                    <DiscCover name={c.name} avatar={c.avatar} kind="character" />
+                    <div className="disc-card-body">
+                      <div className="disc-card-tag">{c.tagline || ' '}</div>
+                      {c.description ? <p className="disc-card-desc">{c.description}</p> : null}
+                      {(c.tags?.length ?? 0) > 0 && (
+                        <div className="disc-card-tags">
+                          {c.tags.slice(0, 4).map((t) => <span key={t} className="tag">#{t}</span>)}
+                        </div>
+                      )}
+                      <div className="disc-card-meta">
+                        <span>{c.conversation_count ? `대화 ${c.conversation_count}개 · ${relTime(c.last_chat_at)}` : '새 캐릭터'}</span>
+                        <span className="disc-card-cta">대화하기</span>
                       </div>
-                    </div>
-                    {c.description ? <p className="disc-card-desc">{c.description}</p> : null}
-                    {(c.tags?.length ?? 0) > 0 && (
-                      <div className="disc-card-tags">
-                        {c.tags.slice(0, 4).map((t) => <span key={t} className="tag">#{t}</span>)}
-                      </div>
-                    )}
-                    <div className="disc-card-meta">
-                      <span>{c.conversation_count ? `대화 ${c.conversation_count}개 · ${relTime(c.last_chat_at)}` : '새 캐릭터'}</span>
-                      <span className="disc-card-cta">대화하기</span>
                     </div>
                   </button>
                 ))}
@@ -243,12 +258,6 @@ export function HomePage() {
       />
     </div>
   );
-}
-
-function modelLine(h: Health | null): string {
-  if (!h) return '연결 확인 중…';
-  if (!h.model.ok) return '모델 오프라인';
-  return `${h.model.resolvedModel || '모델'} · ${Math.round(h.model.contextTokens / 1000)}K`;
 }
 
 function fileToBase64(file: File): Promise<string> {
