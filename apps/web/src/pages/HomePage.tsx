@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { get, post } from '../lib/api';
-import { navigate } from '../lib/router';
+import { navigate, useLocation } from '../lib/router';
 import type { Character, Health, Story } from '../types';
 import { Avatar, relTime } from '../components/view';
 import { CharacterEditor } from '../components/CharacterEditor';
@@ -9,17 +9,29 @@ import { Spinner, useUi } from '../components/ui';
 import { TopNav } from '../components/TopNav';
 
 type HomeTab = 'story' | 'character';
+type CharFilter = 'all' | 'recent' | string;
+
+function tabFromSearch(search: string): HomeTab {
+  const t = new URLSearchParams(search).get('tab');
+  return t === 'story' ? 'story' : 'character';
+}
 
 export function HomePage() {
   const ui = useUi();
-  const [tab, setTab] = useState<HomeTab>('character');
+  const loc = useLocation();
+  const [tab, setTab] = useState<HomeTab>(() => tabFromSearch(loc.search));
   const [chars, setChars] = useState<Character[] | null>(null);
   const [stories, setStories] = useState<Story[] | null>(null);
   const [health, setHealth] = useState<Health | null>(null);
+  const [charFilter, setCharFilter] = useState<CharFilter>('all');
   const [editor, setEditor] = useState<{ open: boolean; character: Character | null }>({ open: false, character: null });
   const [storyEditor, setStoryEditor] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
+
+  useEffect(() => {
+    setTab(tabFromSearch(loc.search));
+  }, [loc.search]);
 
   async function load() {
     try {
@@ -47,6 +59,35 @@ export function HomePage() {
   useEffect(() => {
     if (tab === 'story' && stories === null) void loadStories();
   }, [tab]);
+
+  const tagChips = useMemo(() => {
+    if (!chars?.length) return [] as string[];
+    const counts = new Map<string, number>();
+    for (const c of chars) {
+      for (const t of c.tags ?? []) {
+        const key = t.trim();
+        if (!key) continue;
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko'))
+      .slice(0, 12)
+      .map(([t]) => t);
+  }, [chars]);
+
+  const filteredChars = useMemo(() => {
+    if (!chars) return null;
+    let list = [...chars];
+    if (charFilter === 'recent') {
+      list = list
+        .filter((c) => c.conversation_count || c.last_chat_at)
+        .sort((a, b) => String(b.last_chat_at ?? '').localeCompare(String(a.last_chat_at ?? '')));
+    } else if (charFilter !== 'all') {
+      list = list.filter((c) => (c.tags ?? []).includes(charFilter));
+    }
+    return list;
+  }, [chars, charFilter]);
 
   async function onPickFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -93,8 +134,8 @@ export function HomePage() {
         }
       />
       <div className="home-tabs">
-        <button type="button" className={tab === 'story' ? 'active' : ''} onClick={() => setTab('story')}>스토리</button>
-        <button type="button" className={tab === 'character' ? 'active' : ''} onClick={() => setTab('character')}>캐릭터</button>
+        <button type="button" className={tab === 'story' ? 'active' : ''} onClick={() => { setTab('story'); navigate('/?tab=story', { replace: true }); }}>스토리</button>
+        <button type="button" className={tab === 'character' ? 'active' : ''} onClick={() => { setTab('character'); navigate('/?tab=character', { replace: true }); }}>캐릭터</button>
         <span className="home-tabs-meta">{modelLine(health)}</span>
       </div>
       <input ref={fileRef} type="file" accept="image/png,.png,.json,application/json" onChange={onPickFile} style={{ display: 'none' }} />
@@ -106,41 +147,86 @@ export function HomePage() {
           stories === null ? (
             <Spinner />
           ) : stories.length === 0 ? (
-            <div className="card" style={{ textAlign: 'center', padding: 28 }}>
-              <div style={{ fontSize: 40, marginBottom: 8 }}>📖</div>
-              <div style={{ marginBottom: 12 }}>첫 스토리를 만드세요</div>
-            <button className="btn primary" onClick={() => setStoryEditor(true)}>새 스토리 만들기</button>
+            <div className="empty-state">
+              <div className="empty-state-ico" aria-hidden>📖</div>
+              <div className="empty-state-title">첫 스토리를 만드세요</div>
+              <p className="empty-state-sub">파티·장면을 묶어 대화를 시작할 수 있어요</p>
+              <button className="btn primary" onClick={() => setStoryEditor(true)}>새 스토리 만들기</button>
             </div>
           ) : (
-            <div className="grid">
+            <div className="disc-grid">
               {stories.map((s) => (
-                <div key={s.id} className="card tap" onClick={() => navigate(`/story/${s.id}`)}>
-                  <div className="char-name">{s.name}</div>
-                  <div className="char-tag">{s.tagline || ' '}</div>
-                  <div className="small muted" style={{ marginTop: 6 }}>{s.character_count ? `캐릭터 ${s.character_count}명` : '캐릭터 없음'}</div>
-                </div>
+                <button key={s.id} type="button" className="disc-card" onClick={() => navigate(`/story/${s.id}`)}>
+                  <div className="disc-card-top">
+                    <div className="disc-card-avatar story" aria-hidden>📖</div>
+                    <div className="disc-card-head">
+                      <div className="disc-card-name">{s.name}</div>
+                      <div className="disc-card-tag">{s.tagline || ' '}</div>
+                    </div>
+                  </div>
+                  {s.setting ? <p className="disc-card-desc">{s.setting}</p> : null}
+                  <div className="disc-card-meta">
+                    <span>{s.character_count ? `캐릭터 ${s.character_count}명` : '캐릭터 없음'}</span>
+                    <span className="disc-card-cta">시작 →</span>
+                  </div>
+                </button>
               ))}
             </div>
           )
         ) : chars === null ? (
           <Spinner />
         ) : chars.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: 28 }}>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>🎭</div>
-            <div style={{ marginBottom: 12 }}>첫 캐릭터를 만들어 대화를 시작하세요.</div>
+          <div className="empty-state">
+            <div className="empty-state-ico" aria-hidden>🎭</div>
+            <div className="empty-state-title">첫 캐릭터를 만들어 대화를 시작하세요.</div>
+            <p className="empty-state-sub">카드를 가져오거나 새로 만들 수 있어요</p>
             <button className="btn primary" onClick={() => setEditor({ open: true, character: null })}>새 캐릭터 만들기</button>
           </div>
         ) : (
-          <div className="grid">
-            {chars.map((c) => (
-              <div key={c.id} className="card tap" onClick={() => navigate(`/character/${c.id}`)}>
-                <Avatar name={c.name} avatar={c.avatar} />
-                <div className="char-name">{c.name}</div>
-                <div className="char-tag">{c.tagline || ' '}</div>
-                <div className="small muted" style={{ marginTop: 6 }}>{c.conversation_count ? `대화 ${c.conversation_count}개 · ${relTime(c.last_chat_at)}` : '새 캐릭터'}</div>
+          <>
+            <div className="filter-chips" role="toolbar" aria-label="캐릭터 필터">
+              <button type="button" className={`filter-chip${charFilter === 'all' ? ' is-active' : ''}`} onClick={() => setCharFilter('all')}>전체</button>
+              <button type="button" className={`filter-chip${charFilter === 'recent' ? ' is-active' : ''}`} onClick={() => setCharFilter('recent')}>최근 대화</button>
+              {tagChips.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  className={`filter-chip${charFilter === t ? ' is-active' : ''}`}
+                  onClick={() => setCharFilter(t)}
+                >#{t}</button>
+              ))}
+            </div>
+            {filteredChars && filteredChars.length === 0 ? (
+              <div className="empty-state compact">
+                <div className="empty-state-title">필터에 맞는 캐릭터가 없어요</div>
+                <button type="button" className="btn ghost sm" onClick={() => setCharFilter('all')}>전체 보기</button>
               </div>
-            ))}
-          </div>
+            ) : (
+              <div className="disc-grid">
+                {(filteredChars ?? []).map((c) => (
+                  <button key={c.id} type="button" className="disc-card" onClick={() => navigate(`/character/${c.id}`)}>
+                    <div className="disc-card-top">
+                      <Avatar name={c.name} avatar={c.avatar} size="sm" />
+                      <div className="disc-card-head">
+                        <div className="disc-card-name">{c.name}</div>
+                        <div className="disc-card-tag">{c.tagline || ' '}</div>
+                      </div>
+                    </div>
+                    {c.description ? <p className="disc-card-desc">{c.description}</p> : null}
+                    {(c.tags?.length ?? 0) > 0 && (
+                      <div className="disc-card-tags">
+                        {c.tags.slice(0, 4).map((t) => <span key={t} className="tag">#{t}</span>)}
+                      </div>
+                    )}
+                    <div className="disc-card-meta">
+                      <span>{c.conversation_count ? `대화 ${c.conversation_count}개 · ${relTime(c.last_chat_at)}` : '새 캐릭터'}</span>
+                      <span className="disc-card-cta">대화하기</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
       <CharacterEditor

@@ -36,26 +36,53 @@ export function CharacterPage({ id }: { id: string }) {
 
   if (loading || !char) return <div className="screen"><div className="topbar"><button className="btn ghost icon" onClick={() => back('/')}>‹</button></div><Spinner /></div>;
 
+  const resume = convs.find((v) => !v.archived) ?? null;
+
   return (
     <div className="screen">
       <div className="topbar">
-        <button className="btn ghost icon" onClick={() => back('/')} aria-label="뒤로">‹</button>
+        <button className="btn ghost icon" onClick={() => back('/?tab=character')} aria-label="뒤로">‹</button>
         <div className="title"><h1>{char.name}</h1><div className="sub">{char.tagline}</div></div>
         <button className="btn ghost icon" onClick={() => setEditorOpen(true)} aria-label="편집">✎</button>
       </div>
       <div className="content">
-        <div style={{ textAlign: 'center', marginBottom: 12 }}>
-          <Avatar name={char.name} avatar={char.avatar} size="lg" />
-          {char.tags.length > 0 && <div className="tags" style={{ justifyContent: 'center', marginTop: 10 }}>{char.tags.map((t) => <span key={t} className="tag">{t}</span>)}</div>}
+        <div className="char-hero">
+          <div className="char-hero-main">
+            <Avatar name={char.name} avatar={char.avatar} size="lg" />
+            <div className="char-hero-copy">
+              <h2 className="char-hero-name">{char.name}</h2>
+              {char.tagline ? <p className="char-hero-tag">{char.tagline}</p> : null}
+              {char.tags.length > 0 && (
+                <div className="tags" style={{ marginTop: 10 }}>
+                  {char.tags.map((t) => <span key={t} className="tag">#{t}</span>)}
+                </div>
+              )}
+              <div className="char-hero-meta muted small">
+                {char.conversation_count
+                  ? `대화 ${char.conversation_count}개${char.last_chat_at ? ` · ${relTime(char.last_chat_at)}` : ''}`
+                  : '아직 대화 없음'}
+              </div>
+            </div>
+          </div>
+          {char.description && <p className="char-hero-desc">{char.description}</p>}
+          <div className="char-hero-actions">
+            <button className="btn primary block disc-start-cta" onClick={() => setStarter(true)}>
+              💬 대화하기
+            </button>
+            {resume && (
+              <button className="btn block" onClick={() => navigate(`/chat/${resume.id}`)}>
+                이어하기 · {resume.title || '최근 대화'}
+              </button>
+            )}
+          </div>
         </div>
-        {char.description && <div className="card" style={{ marginBottom: 12, whiteSpace: 'pre-wrap' }}>{char.description}</div>}
-
-        <button className="btn primary block" onClick={() => setStarter(true)} style={{ marginBottom: 8 }}>＋ 새 대화 시작</button>
-        <button className="btn danger block sm" onClick={archiveChar} style={{ marginBottom: 18 }}>캐릭터 보관</button>
 
         <div className="section-title">대화 {convs.length > 0 && `(${convs.length})`}</div>
         {convs.length === 0 ? (
-          <div className="muted small">아직 대화가 없습니다.</div>
+          <div className="empty-state compact">
+            <div className="empty-state-title">아직 대화가 없습니다.</div>
+            <p className="empty-state-sub">위에서 대화를 시작해 보세요</p>
+          </div>
         ) : (
           <div className="list">
             {convs.map((v) => (
@@ -63,6 +90,8 @@ export function CharacterPage({ id }: { id: string }) {
             ))}
           </div>
         )}
+
+        <button className="btn danger block sm" onClick={archiveChar} style={{ marginTop: 18 }}>캐릭터 보관</button>
       </div>
 
       <CharacterEditor open={editorOpen} character={char} onClose={() => setEditorOpen(false)} onSaved={() => { setEditorOpen(false); load(); }} />

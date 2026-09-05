@@ -1,13 +1,23 @@
 import { useEffect, useState } from 'react';
 
+function readLoc() {
+  return { pathname: window.location.pathname, search: window.location.search };
+}
+
+/** Pathname only — most screens. Re-renders when search changes too (tab/q sync). */
 export function useRoute(): string {
-  const [path, setPath] = useState(window.location.pathname);
+  return useLocation().pathname;
+}
+
+/** Pathname + search; updates on every navigate/popstate. */
+export function useLocation(): { pathname: string; search: string } {
+  const [loc, setLoc] = useState(readLoc);
   useEffect(() => {
-    const h = () => setPath(window.location.pathname);
+    const h = () => setLoc(readLoc());
     window.addEventListener('popstate', h);
     return () => window.removeEventListener('popstate', h);
   }, []);
-  return path;
+  return loc;
 }
 
 export function navigate(to: string, opts: { replace?: boolean } = {}): void {
