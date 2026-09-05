@@ -7,7 +7,7 @@ import { interruptOrphanStreaming } from '../db/generation.js';
 import { getPath, insertMessage, messageOut, setHead, updateMessage } from '../db/tree.js';
 import { ModelError } from '../model/adapter.js';
 import {
-  finishBeat, passFWith, planBeat, planPassE, partyCastForGenerate,
+  finishBeat, passCWith, passFWith, planBeat, planPassE, partyCastForGenerate,
   type BeatPlanInput,
 } from '../prompt/composeBeat.js';
 import {
@@ -20,6 +20,7 @@ import type { PartyTagRow } from '../prompt/tagsCatalog.js';
 import { catalogFromStory } from '../prompt/sceneCatalog.js';
 import { currentSceneVersion, parseSceneDelta, renderSceneDeltaPrompt } from '../prompt/sceneDeltaPrompt.js';
 import { PASS_E_MAX_SENTENCES } from '../prompt/passes.js';
+import { parseChoicesPass } from '../prompt/beatChoices.js';
 import { resolvePersona } from '../prompt/builder.js';
 import type { PassCard } from '../prompt/passes.js';
 import type { CharacterRow } from '../types.js';
@@ -66,6 +67,20 @@ const PASS_N_MAX_TOKENS = 300;
 /** Pass N failing must not cost the turn, so it gets a short leash. */
 const PASS_N_TIMEOUT_MS = 20_000;
 const PASS_E_TIMEOUT_MS = 15_000;
+/**
+ * beat-post-extras-choices: three drafts of 별표 묘사 + 3문장 대사 — the same size
+ * the 1:1 path already spends on `<choices>` inside its reply budget.
+ */
+const PASS_C_MAX_TOKENS = 400;
+/**
+ * Measured, not guessed: at n=50 the shipped prompt runs p50 8.14s / p95 10.26s /
+ * max 11.69s (`bench/partyBench/results/beat-choices-2026-09-05T07-32-23-602Z.json`).
+ * A 12s leash — the first value written here — sat 0.3s above the worst observed
+ * sample, which would have turned an ordinary long turn into a silent fail-open.
+ * 20s is Pass N's leash and roughly 1.7x the observed max. Past that the chips are
+ * not worth the wait, and the reader is already looking at a finished beat.
+ */
+const PASS_C_TIMEOUT_MS = 20_000;
 /**
  * dialog-format: Pass S writes the whole turn — narration and every line — so it
  * needs the room the beat path splits across N + F + E. It is also the only call
@@ -313,7 +328,7 @@ export function chatRoutes(ctx: Ctx) {
     // Turn Pipeline step 2-4: propose → validate → apply. One short call; any
     // failure leaves the scene untouched and the beat continues.
     let patch: Record<string, unknown> | null = null;
-    const passMs: { delta: number; n: number; f: number; e: number[] } = { delta: 0, n: 0, f: 0, e: [] };
+    const passMs: { delta: number; n: number; f: number; e: number[]; c: number } = { delta: 0, n: 0, f: 0, e: [], c: 0 };
     const t0delta = Date.now();
     try {
       const proposal = await ctx.queue.run(() =>
@@ -530,7 +545,39 @@ export function chatRoutes(ctx: Ctx) {
           image_url: block.asset_path ?? undefined,
         }));
       }
-      const uiRow = addBlock('ui', JSON.stringify(plan.ui));
+      // Pass C — the choices, after every voice in this turn has spoken. Running it
+      // here rather than inside Pass F is the whole point of this slice: a draft
+      // written before Pass E cannot answer what the extras just said. Fail-open —
+      // a beat that reached this line is already a complete, persisted turn, so a
+      // choices failure costs the chips, never the turn.
+      let choices: string[] | null = null;
+      const tC = Date.now();
+      const cDeadline = withDeadline(PASS_C_TIMEOUT_MS, controller.signal);
+      try {
+        const out = await ctx.queue.run(() => ctx.model.complete({
+          model,
+          messages: [{ role: 'user', content: passCWith(planInput, finished) }],
+          temperature: 0.9, top_p: 0.95, max_tokens: PASS_C_MAX_TOKENS, stop: [],
+          signal: cDeadline.signal,
+        }), controller.signal);
+        choices = parseChoicesPass(out.text);
+      } catch (err) {
+        // Deliberately no `if (aborted) throw` here, unlike Pass N and Pass E. Those
+        // run while the turn is still being written, so an abort there really is an
+        // interrupted turn. By Pass C every block is persisted and on screen, and
+        // the shared catch below would answer a stop by rewriting the focus row
+        // back to Pass F's raw buffer — thought marker and all — and marking a
+        // finished beat 'interrupted'. Stop costs the chips, not the beat.
+        req.log.warn({ err, conversationId: conv.id }, 'pass C failed; beat keeps its blocks without choices');
+      } finally {
+        cDeadline.done();
+      }
+      passMs.c = Date.now() - tC;
+
+      // The chips ride on the UI block because it is the turn's last assistant row,
+      // which is exactly what the client already reads them off (`isLastAssistant`).
+      // No web change: the existing ChoiceChips contract is met as-is.
+      const uiRow = addBlock('ui', JSON.stringify(plan.ui), choices ? { choices } : {});
 
       run(db, `UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?`,
         JSON.stringify(finished.scene), nowIso(), nowIso(), conv.id);
@@ -559,6 +606,11 @@ export function chatRoutes(ctx: Ctx) {
             ambient_as_speech: 0,
             asset_nulls: finished.blocks.filter((b) => b.kind === 'line' && !b.asset_path).length,
             unresolved: finished.scene.last_beat?.unresolved ?? [],
+            // beat-post-extras-choices: `false` is the fail-open reading — the turn
+            // shipped without chips. Counting it here is what makes the fail-open
+            // rate measurable instead of invisible.
+            choices_ok: choices !== null,
+            choices_count: choices?.length ?? 0,
             pass_ms: passMs,
           },
         }),

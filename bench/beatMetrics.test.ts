@@ -215,14 +215,26 @@ t('chat.ts writes one beat_log row per beat with every field', () => {
   assert.ok(beat.includes('INSERT INTO generation_log'));
 });
 
-t('per-pass latency is recorded, including one entry per Pass E', () => {
+t('per-pass latency is recorded, including one entry per Pass E and the choices pass', () => {
   const s = code('apps/server/src/routes/chat.ts');
   const beat = s.slice(s.indexOf('async function generateBeat'));
-  assert.ok(/passMs: \{ delta: number; n: number; f: number; e: number\[\] \}/.test(beat));
+  // beat-post-extras-choices: `c` joined this shape when Pass C did. It is the one
+  // pass whose cost is paid after the turn is already readable, so it is the one
+  // whose latency most needs to stay visible.
+  assert.ok(/passMs: \{ delta: number; n: number; f: number; e: number\[\]; c: number \}/.test(beat));
   assert.ok(beat.includes('passMs.delta ='));
   assert.ok(beat.includes('passMs.n ='));
   assert.ok(beat.includes('passMs.f ='));
   assert.ok(beat.includes('passMs.e.push('));
+  assert.ok(beat.includes('passMs.c ='));
+});
+
+t('the choices pass records whether it fell open, not only how long it took', () => {
+  const s = code('apps/server/src/routes/chat.ts');
+  const beat = s.slice(s.indexOf('async function generateBeat'));
+  for (const field of ['choices_ok', 'choices_count']) {
+    assert.ok(beat.includes(`${field}:`), `beat_log must record ${field}`);
+  }
 });
 
 t('the metrics row never blocks the turn: it is written after the beat is assembled', () => {

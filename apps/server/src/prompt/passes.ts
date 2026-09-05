@@ -11,7 +11,16 @@
  *   Pass N  서술·군중·카메라     focus card + short roster
  *   Pass F  focus 대사·속마음    focus card only
  *   Pass E  approved extra only  that card only, 2-4 sentences
+ *   Pass C  선택지               the finished turn, no card at all → beatChoices.ts
  *   Pass U  UI                   server template (renderBeat), no model
+ *
+ * Pass C is last on purpose. The 1:1 path gets its choices out of the same call
+ * that writes the reply, which works there because that call is the whole turn.
+ * Here it is not: a draft written inside Pass F cannot answer 세라 or 하연, because
+ * Pass E has not run yet. So choices are bought with one extra call rather than
+ * with a wrong answer. It lives in `beatChoices.ts` and not here because it is the
+ * one pass that reuses 1:1 prompt text, and this module is fenced against exactly
+ * that (`passPrompts.test.ts`).
  *
  * Nothing here calls a model or reads the DB; `chat.ts` runs these strings.
  * The header, the UI, the roster chips, the seat and the image path are NOT in

@@ -1,0 +1,2888 @@
+{
+  "token": "beat-post-extras-choices",
+  "bench": "Bench-Latency (beat + Pass C mix)",
+  "supersedes_mix_of": "nothing — the f9 beat mix result stays valid for its own mix",
+  "queue_depth": 1,
+  "live_db": 0,
+  "live_messages_post": 0,
+  "apps_product_code_changed": 0,
+  "prompts_from": "apps/server/src/prompt/passes.ts + beatChoices.ts (the shipped renderers)",
+  "model_name": "/Users/llm/models/Gemma-4-Dark-Thoughts-V2-31B.i1-Q4_K_M.gguf",
+  "model_base_url": "http://100.97.170.121:8083/v1",
+  "context_tokens": 16384,
+  "n_target": 50,
+  "cuts": {
+    "n": 50,
+    "p50_s": 90,
+    "p95_s": 120,
+    "overflow": 0,
+    "queue_depth": 1,
+    "context_tokens": 16384,
+    "p50_redesign_s": 150
+  },
+  "started_at": "2026-09-05T07:32:23.602Z",
+  "status": "complete",
+  "finished_at": "2026-09-05T07:47:44.312Z",
+  "n": 50,
+  "p50_s": 17.32,
+  "p95_s": 25.327,
+  "overflow": 0,
+  "verdict": true,
+  "f9_adoption": "PASS",
+  "redesign_trigger": false,
+  "per_pass": {
+    "delta": {
+      "n": 50,
+      "p50_s": 0.542,
+      "max_prompt_tokens": 477
+    },
+    "N": {
+      "n": 50,
+      "p50_s": 3.895,
+      "max_prompt_tokens": 397
+    },
+    "F": {
+      "n": 50,
+      "p50_s": 4.703,
+      "max_prompt_tokens": 1111
+    },
+    "C": {
+      "n": 50,
+      "p50_s": 8.156,
+      "max_prompt_tokens": 539
+    },
+    "E1": {
+      "n": 10,
+      "p50_s": 1.981,
+      "max_prompt_tokens": 356
+    },
+    "E2": {
+      "n": 10,
+      "p50_s": 2.493,
+      "max_prompt_tokens": 348
+    }
+  },
+  "turns": [
+    {
+      "i": 0,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 599,
+          "ttft_ms": 299,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3415,
+          "ttft_ms": 235,
+          "prompt_tokens": 397,
+          "completion_tokens": 88,
+          "finish": "stop",
+          "text_len": 135,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4684,
+          "ttft_ms": 269,
+          "prompt_tokens": 1111,
+          "completion_tokens": 118,
+          "finish": "stop",
+          "text_len": 200,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 7348,
+          "ttft_ms": 316,
+          "prompt_tokens": 489,
+          "completion_tokens": 193,
+          "finish": "stop",
+          "text_len": 356,
+          "error": null
+        }
+      ],
+      "turn_ms": 16046,
+      "overflow": false
+    },
+    {
+      "i": 1,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 553,
+          "ttft_ms": 256,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 4173,
+          "ttft_ms": 231,
+          "prompt_tokens": 397,
+          "completion_tokens": 109,
+          "finish": "stop",
+          "text_len": 158,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 3699,
+          "ttft_ms": 273,
+          "prompt_tokens": 1111,
+          "completion_tokens": 92,
+          "finish": "stop",
+          "text_len": 161,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 9084,
+          "ttft_ms": 306,
+          "prompt_tokens": 489,
+          "completion_tokens": 240,
+          "finish": "stop",
+          "text_len": 426,
+          "error": null
+        }
+      ],
+      "turn_ms": 17509,
+      "overflow": false
+    },
+    {
+      "i": 2,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 570,
+          "ttft_ms": 273,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3967,
+          "ttft_ms": 233,
+          "prompt_tokens": 397,
+          "completion_tokens": 103,
+          "finish": "stop",
+          "text_len": 155,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 3501,
+          "ttft_ms": 271,
+          "prompt_tokens": 1111,
+          "completion_tokens": 87,
+          "finish": "stop",
+          "text_len": 140,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 7832,
+          "ttft_ms": 347,
+          "prompt_tokens": 489,
+          "completion_tokens": 205,
+          "finish": "stop",
+          "text_len": 386,
+          "error": null
+        }
+      ],
+      "turn_ms": 15870,
+      "overflow": false
+    },
+    {
+      "i": 3,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 552,
+          "ttft_ms": 255,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 2927,
+          "ttft_ms": 233,
+          "prompt_tokens": 397,
+          "completion_tokens": 75,
+          "finish": "stop",
+          "text_len": 123,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4548,
+          "ttft_ms": 300,
+          "prompt_tokens": 1111,
+          "completion_tokens": 114,
+          "finish": "stop",
+          "text_len": 191,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8126,
+          "ttft_ms": 326,
+          "prompt_tokens": 489,
+          "completion_tokens": 213,
+          "finish": "stop",
+          "text_len": 409,
+          "error": null
+        }
+      ],
+      "turn_ms": 16153,
+      "overflow": false
+    },
+    {
+      "i": 4,
+      "extras": 2,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 538,
+          "ttft_ms": 240,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3412,
+          "ttft_ms": 230,
+          "prompt_tokens": 397,
+          "completion_tokens": 88,
+          "finish": "stop",
+          "text_len": 140,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4666,
+          "ttft_ms": 272,
+          "prompt_tokens": 1111,
+          "completion_tokens": 118,
+          "finish": "stop",
+          "text_len": 198,
+          "error": null
+        },
+        {
+          "pass": "E1",
+          "ok": true,
+          "ms": 1796,
+          "ttft_ms": 252,
+          "prompt_tokens": 356,
+          "completion_tokens": 43,
+          "finish": "stop",
+          "text_len": 65,
+          "error": null
+        },
+        {
+          "pass": "E2",
+          "ok": true,
+          "ms": 1783,
+          "ttft_ms": 224,
+          "prompt_tokens": 348,
+          "completion_tokens": 44,
+          "finish": "stop",
+          "text_len": 78,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 11686,
+          "ttft_ms": 2372,
+          "prompt_tokens": 539,
+          "completion_tokens": 255,
+          "finish": "stop",
+          "text_len": 459,
+          "error": null
+        }
+      ],
+      "turn_ms": 23881,
+      "overflow": false
+    },
+    {
+      "i": 5,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 532,
+          "ttft_ms": 236,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 4404,
+          "ttft_ms": 229,
+          "prompt_tokens": 397,
+          "completion_tokens": 115,
+          "finish": "stop",
+          "text_len": 181,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4459,
+          "ttft_ms": 271,
+          "prompt_tokens": 1111,
+          "completion_tokens": 112,
+          "finish": "stop",
+          "text_len": 198,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 6863,
+          "ttft_ms": 370,
+          "prompt_tokens": 489,
+          "completion_tokens": 179,
+          "finish": "stop",
+          "text_len": 326,
+          "error": null
+        }
+      ],
+      "turn_ms": 16258,
+      "overflow": false
+    },
+    {
+      "i": 6,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 536,
+          "ttft_ms": 239,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3991,
+          "ttft_ms": 231,
+          "prompt_tokens": 397,
+          "completion_tokens": 104,
+          "finish": "stop",
+          "text_len": 158,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4707,
+          "ttft_ms": 315,
+          "prompt_tokens": 1111,
+          "completion_tokens": 118,
+          "finish": "stop",
+          "text_len": 194,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8028,
+          "ttft_ms": 308,
+          "prompt_tokens": 489,
+          "completion_tokens": 212,
+          "finish": "stop",
+          "text_len": 393,
+          "error": null
+        }
+      ],
+      "turn_ms": 17262,
+      "overflow": false
+    },
+    {
+      "i": 7,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 536,
+          "ttft_ms": 239,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3955,
+          "ttft_ms": 230,
+          "prompt_tokens": 397,
+          "completion_tokens": 103,
+          "finish": "stop",
+          "text_len": 160,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4460,
+          "ttft_ms": 270,
+          "prompt_tokens": 1111,
+          "completion_tokens": 113,
+          "finish": "stop",
+          "text_len": 181,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 7359,
+          "ttft_ms": 379,
+          "prompt_tokens": 489,
+          "completion_tokens": 192,
+          "finish": "stop",
+          "text_len": 346,
+          "error": null
+        }
+      ],
+      "turn_ms": 16310,
+      "overflow": false
+    },
+    {
+      "i": 8,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 552,
+          "ttft_ms": 255,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3482,
+          "ttft_ms": 228,
+          "prompt_tokens": 397,
+          "completion_tokens": 90,
+          "finish": "stop",
+          "text_len": 139,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4062,
+          "ttft_ms": 329,
+          "prompt_tokens": 1111,
+          "completion_tokens": 100,
+          "finish": "stop",
+          "text_len": 177,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 7563,
+          "ttft_ms": 315,
+          "prompt_tokens": 489,
+          "completion_tokens": 199,
+          "finish": "stop",
+          "text_len": 367,
+          "error": null
+        }
+      ],
+      "turn_ms": 15659,
+      "overflow": false
+    },
+    {
+      "i": 9,
+      "extras": 2,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 548,
+          "ttft_ms": 255,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3672,
+          "ttft_ms": 231,
+          "prompt_tokens": 397,
+          "completion_tokens": 95,
+          "finish": "stop",
+          "text_len": 135,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4858,
+          "ttft_ms": 270,
+          "prompt_tokens": 1111,
+          "completion_tokens": 123,
+          "finish": "stop",
+          "text_len": 218,
+          "error": null
+        },
+        {
+          "pass": "E1",
+          "ok": true,
+          "ms": 1989,
+          "ttft_ms": 345,
+          "prompt_tokens": 356,
+          "completion_tokens": 46,
+          "finish": "stop",
+          "text_len": 68,
+          "error": null
+        },
+        {
+          "pass": "E2",
+          "ok": true,
+          "ms": 1678,
+          "ttft_ms": 219,
+          "prompt_tokens": 348,
+          "completion_tokens": 41,
+          "finish": "stop",
+          "text_len": 71,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8370,
+          "ttft_ms": 281,
+          "prompt_tokens": 539,
+          "completion_tokens": 222,
+          "finish": "stop",
+          "text_len": 395,
+          "error": null
+        }
+      ],
+      "turn_ms": 21115,
+      "overflow": false
+    },
+    {
+      "i": 10,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 539,
+          "ttft_ms": 241,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3177,
+          "ttft_ms": 240,
+          "prompt_tokens": 397,
+          "completion_tokens": 81,
+          "finish": "stop",
+          "text_len": 127,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4483,
+          "ttft_ms": 313,
+          "prompt_tokens": 1111,
+          "completion_tokens": 112,
+          "finish": "stop",
+          "text_len": 206,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 9426,
+          "ttft_ms": 2233,
+          "prompt_tokens": 489,
+          "completion_tokens": 198,
+          "finish": "stop",
+          "text_len": 370,
+          "error": null
+        }
+      ],
+      "turn_ms": 17625,
+      "overflow": false
+    },
+    {
+      "i": 11,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 526,
+          "ttft_ms": 231,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3589,
+          "ttft_ms": 231,
+          "prompt_tokens": 397,
+          "completion_tokens": 93,
+          "finish": "stop",
+          "text_len": 153,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 5603,
+          "ttft_ms": 294,
+          "prompt_tokens": 1111,
+          "completion_tokens": 142,
+          "finish": "stop",
+          "text_len": 252,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 6808,
+          "ttft_ms": 345,
+          "prompt_tokens": 489,
+          "completion_tokens": 178,
+          "finish": "stop",
+          "text_len": 333,
+          "error": null
+        }
+      ],
+      "turn_ms": 16526,
+      "overflow": false
+    },
+    {
+      "i": 12,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 552,
+          "ttft_ms": 254,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3594,
+          "ttft_ms": 229,
+          "prompt_tokens": 397,
+          "completion_tokens": 93,
+          "finish": "stop",
+          "text_len": 147,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4659,
+          "ttft_ms": 294,
+          "prompt_tokens": 1111,
+          "completion_tokens": 117,
+          "finish": "stop",
+          "text_len": 206,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8452,
+          "ttft_ms": 353,
+          "prompt_tokens": 489,
+          "completion_tokens": 223,
+          "finish": "stop",
+          "text_len": 422,
+          "error": null
+        }
+      ],
+      "turn_ms": 17257,
+      "overflow": false
+    },
+    {
+      "i": 13,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 535,
+          "ttft_ms": 240,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3898,
+          "ttft_ms": 232,
+          "prompt_tokens": 397,
+          "completion_tokens": 101,
+          "finish": "stop",
+          "text_len": 165,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 5049,
+          "ttft_ms": 370,
+          "prompt_tokens": 1111,
+          "completion_tokens": 126,
+          "finish": "stop",
+          "text_len": 226,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 7639,
+          "ttft_ms": 369,
+          "prompt_tokens": 489,
+          "completion_tokens": 200,
+          "finish": "stop",
+          "text_len": 364,
+          "error": null
+        }
+      ],
+      "turn_ms": 17121,
+      "overflow": false
+    },
+    {
+      "i": 14,
+      "extras": 2,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 549,
+          "ttft_ms": 253,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3999,
+          "ttft_ms": 249,
+          "prompt_tokens": 397,
+          "completion_tokens": 104,
+          "finish": "stop",
+          "text_len": 164,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 5340,
+          "ttft_ms": 313,
+          "prompt_tokens": 1111,
+          "completion_tokens": 135,
+          "finish": "stop",
+          "text_len": 237,
+          "error": null
+        },
+        {
+          "pass": "E1",
+          "ok": true,
+          "ms": 3288,
+          "ttft_ms": 1601,
+          "prompt_tokens": 356,
+          "completion_tokens": 47,
+          "finish": "stop",
+          "text_len": 69,
+          "error": null
+        },
+        {
+          "pass": "E2",
+          "ok": true,
+          "ms": 3910,
+          "ttft_ms": 1563,
+          "prompt_tokens": 348,
+          "completion_tokens": 65,
+          "finish": "stop",
+          "text_len": 111,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8241,
+          "ttft_ms": 271,
+          "prompt_tokens": 539,
+          "completion_tokens": 218,
+          "finish": "stop",
+          "text_len": 386,
+          "error": null
+        }
+      ],
+      "turn_ms": 25327,
+      "overflow": false
+    },
+    {
+      "i": 15,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 540,
+          "ttft_ms": 243,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 4858,
+          "ttft_ms": 245,
+          "prompt_tokens": 397,
+          "completion_tokens": 127,
+          "finish": "stop",
+          "text_len": 190,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4066,
+          "ttft_ms": 271,
+          "prompt_tokens": 1111,
+          "completion_tokens": 102,
+          "finish": "stop",
+          "text_len": 174,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8088,
+          "ttft_ms": 309,
+          "prompt_tokens": 489,
+          "completion_tokens": 213,
+          "finish": "stop",
+          "text_len": 387,
+          "error": null
+        }
+      ],
+      "turn_ms": 17552,
+      "overflow": false
+    },
+    {
+      "i": 16,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 548,
+          "ttft_ms": 250,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3149,
+          "ttft_ms": 232,
+          "prompt_tokens": 397,
+          "completion_tokens": 81,
+          "finish": "stop",
+          "text_len": 135,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4811,
+          "ttft_ms": 271,
+          "prompt_tokens": 1111,
+          "completion_tokens": 122,
+          "finish": "stop",
+          "text_len": 212,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8248,
+          "ttft_ms": 337,
+          "prompt_tokens": 489,
+          "completion_tokens": 216,
+          "finish": "stop",
+          "text_len": 402,
+          "error": null
+        }
+      ],
+      "turn_ms": 16756,
+      "overflow": false
+    },
+    {
+      "i": 17,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 532,
+          "ttft_ms": 240,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3895,
+          "ttft_ms": 237,
+          "prompt_tokens": 397,
+          "completion_tokens": 101,
+          "finish": "stop",
+          "text_len": 155,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 5289,
+          "ttft_ms": 289,
+          "prompt_tokens": 1111,
+          "completion_tokens": 134,
+          "finish": "stop",
+          "text_len": 232,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8098,
+          "ttft_ms": 399,
+          "prompt_tokens": 489,
+          "completion_tokens": 211,
+          "finish": "stop",
+          "text_len": 391,
+          "error": null
+        }
+      ],
+      "turn_ms": 17814,
+      "overflow": false
+    },
+    {
+      "i": 18,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 537,
+          "ttft_ms": 240,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3857,
+          "ttft_ms": 231,
+          "prompt_tokens": 397,
+          "completion_tokens": 100,
+          "finish": "stop",
+          "text_len": 154,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 3989,
+          "ttft_ms": 332,
+          "prompt_tokens": 1111,
+          "completion_tokens": 98,
+          "finish": "stop",
+          "text_len": 163,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 7532,
+          "ttft_ms": 303,
+          "prompt_tokens": 489,
+          "completion_tokens": 198,
+          "finish": "stop",
+          "text_len": 355,
+          "error": null
+        }
+      ],
+      "turn_ms": 15915,
+      "overflow": false
+    },
+    {
+      "i": 19,
+      "extras": 2,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 569,
+          "ttft_ms": 272,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3886,
+          "ttft_ms": 230,
+          "prompt_tokens": 397,
+          "completion_tokens": 101,
+          "finish": "stop",
+          "text_len": 150,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4703,
+          "ttft_ms": 281,
+          "prompt_tokens": 1111,
+          "completion_tokens": 119,
+          "finish": "stop",
+          "text_len": 197,
+          "error": null
+        },
+        {
+          "pass": "E1",
+          "ok": true,
+          "ms": 1715,
+          "ttft_ms": 284,
+          "prompt_tokens": 356,
+          "completion_tokens": 40,
+          "finish": "stop",
+          "text_len": 68,
+          "error": null
+        },
+        {
+          "pass": "E2",
+          "ok": true,
+          "ms": 2493,
+          "ttft_ms": 222,
+          "prompt_tokens": 348,
+          "completion_tokens": 63,
+          "finish": "stop",
+          "text_len": 109,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 11376,
+          "ttft_ms": 2383,
+          "prompt_tokens": 539,
+          "completion_tokens": 247,
+          "finish": "stop",
+          "text_len": 439,
+          "error": null
+        }
+      ],
+      "turn_ms": 24742,
+      "overflow": false
+    },
+    {
+      "i": 20,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 569,
+          "ttft_ms": 272,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 4256,
+          "ttft_ms": 257,
+          "prompt_tokens": 397,
+          "completion_tokens": 110,
+          "finish": "stop",
+          "text_len": 166,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 3933,
+          "ttft_ms": 330,
+          "prompt_tokens": 1111,
+          "completion_tokens": 97,
+          "finish": "stop",
+          "text_len": 180,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8705,
+          "ttft_ms": 374,
+          "prompt_tokens": 489,
+          "completion_tokens": 229,
+          "finish": "stop",
+          "text_len": 401,
+          "error": null
+        }
+      ],
+      "turn_ms": 17463,
+      "overflow": false
+    },
+    {
+      "i": 21,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 596,
+          "ttft_ms": 299,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 4135,
+          "ttft_ms": 230,
+          "prompt_tokens": 397,
+          "completion_tokens": 108,
+          "finish": "stop",
+          "text_len": 177,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 3228,
+          "ttft_ms": 326,
+          "prompt_tokens": 1111,
+          "completion_tokens": 78,
+          "finish": "stop",
+          "text_len": 134,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8384,
+          "ttft_ms": 324,
+          "prompt_tokens": 489,
+          "completion_tokens": 221,
+          "finish": "stop",
+          "text_len": 403,
+          "error": null
+        }
+      ],
+      "turn_ms": 16343,
+      "overflow": false
+    },
+    {
+      "i": 22,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 532,
+          "ttft_ms": 239,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 4320,
+          "ttft_ms": 228,
+          "prompt_tokens": 397,
+          "completion_tokens": 113,
+          "finish": "stop",
+          "text_len": 170,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 5225,
+          "ttft_ms": 273,
+          "prompt_tokens": 1111,
+          "completion_tokens": 133,
+          "finish": "stop",
+          "text_len": 234,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 7243,
+          "ttft_ms": 352,
+          "prompt_tokens": 489,
+          "completion_tokens": 190,
+          "finish": "stop",
+          "text_len": 351,
+          "error": null
+        }
+      ],
+      "turn_ms": 17320,
+      "overflow": false
+    },
+    {
+      "i": 23,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 587,
+          "ttft_ms": 295,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3764,
+          "ttft_ms": 241,
+          "prompt_tokens": 397,
+          "completion_tokens": 97,
+          "finish": "stop",
+          "text_len": 155,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4888,
+          "ttft_ms": 308,
+          "prompt_tokens": 1111,
+          "completion_tokens": 123,
+          "finish": "stop",
+          "text_len": 218,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 7893,
+          "ttft_ms": 312,
+          "prompt_tokens": 489,
+          "completion_tokens": 209,
+          "finish": "stop",
+          "text_len": 397,
+          "error": null
+        }
+      ],
+      "turn_ms": 17132,
+      "overflow": false
+    },
+    {
+      "i": 24,
+      "extras": 2,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 554,
+          "ttft_ms": 257,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3423,
+          "ttft_ms": 231,
+          "prompt_tokens": 397,
+          "completion_tokens": 88,
+          "finish": "stop",
+          "text_len": 135,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4550,
+          "ttft_ms": 270,
+          "prompt_tokens": 1111,
+          "completion_tokens": 115,
+          "finish": "stop",
+          "text_len": 206,
+          "error": null
+        },
+        {
+          "pass": "E1",
+          "ok": true,
+          "ms": 1701,
+          "ttft_ms": 251,
+          "prompt_tokens": 356,
+          "completion_tokens": 41,
+          "finish": "stop",
+          "text_len": 65,
+          "error": null
+        },
+        {
+          "pass": "E2",
+          "ok": true,
+          "ms": 1890,
+          "ttft_ms": 243,
+          "prompt_tokens": 348,
+          "completion_tokens": 46,
+          "finish": "stop",
+          "text_len": 77,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8156,
+          "ttft_ms": 287,
+          "prompt_tokens": 539,
+          "completion_tokens": 216,
+          "finish": "stop",
+          "text_len": 383,
+          "error": null
+        }
+      ],
+      "turn_ms": 20274,
+      "overflow": false
+    },
+    {
+      "i": 25,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 537,
+          "ttft_ms": 242,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3524,
+          "ttft_ms": 234,
+          "prompt_tokens": 397,
+          "completion_tokens": 91,
+          "finish": "stop",
+          "text_len": 148,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 5060,
+          "ttft_ms": 297,
+          "prompt_tokens": 1111,
+          "completion_tokens": 128,
+          "finish": "stop",
+          "text_len": 225,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 9565,
+          "ttft_ms": 2195,
+          "prompt_tokens": 489,
+          "completion_tokens": 203,
+          "finish": "stop",
+          "text_len": 357,
+          "error": null
+        }
+      ],
+      "turn_ms": 18686,
+      "overflow": false
+    },
+    {
+      "i": 26,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 527,
+          "ttft_ms": 234,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 4533,
+          "ttft_ms": 226,
+          "prompt_tokens": 397,
+          "completion_tokens": 119,
+          "finish": "stop",
+          "text_len": 177,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 3919,
+          "ttft_ms": 269,
+          "prompt_tokens": 1111,
+          "completion_tokens": 98,
+          "finish": "stop",
+          "text_len": 178,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 7341,
+          "ttft_ms": 332,
+          "prompt_tokens": 489,
+          "completion_tokens": 193,
+          "finish": "stop",
+          "text_len": 345,
+          "error": null
+        }
+      ],
+      "turn_ms": 16320,
+      "overflow": false
+    },
+    {
+      "i": 27,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 544,
+          "ttft_ms": 246,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 4623,
+          "ttft_ms": 229,
+          "prompt_tokens": 397,
+          "completion_tokens": 121,
+          "finish": "stop",
+          "text_len": 192,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4262,
+          "ttft_ms": 288,
+          "prompt_tokens": 1111,
+          "completion_tokens": 107,
+          "finish": "stop",
+          "text_len": 188,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 7164,
+          "ttft_ms": 338,
+          "prompt_tokens": 489,
+          "completion_tokens": 188,
+          "finish": "stop",
+          "text_len": 348,
+          "error": null
+        }
+      ],
+      "turn_ms": 16593,
+      "overflow": false
+    },
+    {
+      "i": 28,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 535,
+          "ttft_ms": 238,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3091,
+          "ttft_ms": 230,
+          "prompt_tokens": 397,
+          "completion_tokens": 79,
+          "finish": "stop",
+          "text_len": 131,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 5087,
+          "ttft_ms": 318,
+          "prompt_tokens": 1111,
+          "completion_tokens": 128,
+          "finish": "stop",
+          "text_len": 220,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8749,
+          "ttft_ms": 301,
+          "prompt_tokens": 489,
+          "completion_tokens": 232,
+          "finish": "stop",
+          "text_len": 422,
+          "error": null
+        }
+      ],
+      "turn_ms": 17462,
+      "overflow": false
+    },
+    {
+      "i": 29,
+      "extras": 2,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 535,
+          "ttft_ms": 239,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 4032,
+          "ttft_ms": 231,
+          "prompt_tokens": 397,
+          "completion_tokens": 105,
+          "finish": "stop",
+          "text_len": 162,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 6487,
+          "ttft_ms": 274,
+          "prompt_tokens": 1111,
+          "completion_tokens": 167,
+          "finish": "stop",
+          "text_len": 299,
+          "error": null
+        },
+        {
+          "pass": "E1",
+          "ok": true,
+          "ms": 3062,
+          "ttft_ms": 1677,
+          "prompt_tokens": 356,
+          "completion_tokens": 39,
+          "finish": "stop",
+          "text_len": 60,
+          "error": null
+        },
+        {
+          "pass": "E2",
+          "ok": true,
+          "ms": 3753,
+          "ttft_ms": 1563,
+          "prompt_tokens": 348,
+          "completion_tokens": 61,
+          "finish": "stop",
+          "text_len": 99,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 9330,
+          "ttft_ms": 272,
+          "prompt_tokens": 539,
+          "completion_tokens": 247,
+          "finish": "stop",
+          "text_len": 426,
+          "error": null
+        }
+      ],
+      "turn_ms": 27199,
+      "overflow": false
+    },
+    {
+      "i": 30,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 542,
+          "ttft_ms": 242,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 4469,
+          "ttft_ms": 229,
+          "prompt_tokens": 397,
+          "completion_tokens": 117,
+          "finish": "stop",
+          "text_len": 185,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4582,
+          "ttft_ms": 331,
+          "prompt_tokens": 1111,
+          "completion_tokens": 114,
+          "finish": "stop",
+          "text_len": 199,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 7533,
+          "ttft_ms": 303,
+          "prompt_tokens": 489,
+          "completion_tokens": 198,
+          "finish": "stop",
+          "text_len": 351,
+          "error": null
+        }
+      ],
+      "turn_ms": 17126,
+      "overflow": false
+    },
+    {
+      "i": 31,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 546,
+          "ttft_ms": 254,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 4339,
+          "ttft_ms": 229,
+          "prompt_tokens": 397,
+          "completion_tokens": 113,
+          "finish": "stop",
+          "text_len": 169,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4704,
+          "ttft_ms": 272,
+          "prompt_tokens": 1111,
+          "completion_tokens": 119,
+          "finish": "stop",
+          "text_len": 199,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8362,
+          "ttft_ms": 398,
+          "prompt_tokens": 489,
+          "completion_tokens": 218,
+          "finish": "stop",
+          "text_len": 391,
+          "error": null
+        }
+      ],
+      "turn_ms": 17951,
+      "overflow": false
+    },
+    {
+      "i": 32,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 552,
+          "ttft_ms": 255,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3772,
+          "ttft_ms": 234,
+          "prompt_tokens": 397,
+          "completion_tokens": 98,
+          "finish": "stop",
+          "text_len": 159,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4529,
+          "ttft_ms": 324,
+          "prompt_tokens": 1111,
+          "completion_tokens": 113,
+          "finish": "stop",
+          "text_len": 193,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 7476,
+          "ttft_ms": 318,
+          "prompt_tokens": 489,
+          "completion_tokens": 196,
+          "finish": "stop",
+          "text_len": 360,
+          "error": null
+        }
+      ],
+      "turn_ms": 16329,
+      "overflow": false
+    },
+    {
+      "i": 33,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 542,
+          "ttft_ms": 246,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3479,
+          "ttft_ms": 230,
+          "prompt_tokens": 397,
+          "completion_tokens": 90,
+          "finish": "stop",
+          "text_len": 148,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4752,
+          "ttft_ms": 272,
+          "prompt_tokens": 1111,
+          "completion_tokens": 120,
+          "finish": "stop",
+          "text_len": 213,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8314,
+          "ttft_ms": 342,
+          "prompt_tokens": 489,
+          "completion_tokens": 218,
+          "finish": "stop",
+          "text_len": 404,
+          "error": null
+        }
+      ],
+      "turn_ms": 17087,
+      "overflow": false
+    },
+    {
+      "i": 34,
+      "extras": 2,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 536,
+          "ttft_ms": 240,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3847,
+          "ttft_ms": 229,
+          "prompt_tokens": 397,
+          "completion_tokens": 100,
+          "finish": "stop",
+          "text_len": 158,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 7096,
+          "ttft_ms": 288,
+          "prompt_tokens": 1111,
+          "completion_tokens": 182,
+          "finish": "stop",
+          "text_len": 310,
+          "error": null
+        },
+        {
+          "pass": "E1",
+          "ok": true,
+          "ms": 1981,
+          "ttft_ms": 306,
+          "prompt_tokens": 356,
+          "completion_tokens": 47,
+          "finish": "stop",
+          "text_len": 74,
+          "error": null
+        },
+        {
+          "pass": "E2",
+          "ok": true,
+          "ms": 3411,
+          "ttft_ms": 1582,
+          "prompt_tokens": 348,
+          "completion_tokens": 51,
+          "finish": "stop",
+          "text_len": 87,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 9304,
+          "ttft_ms": 2380,
+          "prompt_tokens": 539,
+          "completion_tokens": 192,
+          "finish": "stop",
+          "text_len": 325,
+          "error": null
+        }
+      ],
+      "turn_ms": 26175,
+      "overflow": false
+    },
+    {
+      "i": 35,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 529,
+          "ttft_ms": 234,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3802,
+          "ttft_ms": 246,
+          "prompt_tokens": 397,
+          "completion_tokens": 98,
+          "finish": "stop",
+          "text_len": 156,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 5142,
+          "ttft_ms": 335,
+          "prompt_tokens": 1111,
+          "completion_tokens": 129,
+          "finish": "stop",
+          "text_len": 224,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8070,
+          "ttft_ms": 367,
+          "prompt_tokens": 489,
+          "completion_tokens": 212,
+          "finish": "stop",
+          "text_len": 390,
+          "error": null
+        }
+      ],
+      "turn_ms": 17543,
+      "overflow": false
+    },
+    {
+      "i": 36,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 580,
+          "ttft_ms": 280,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3531,
+          "ttft_ms": 235,
+          "prompt_tokens": 397,
+          "completion_tokens": 91,
+          "finish": "stop",
+          "text_len": 143,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 6043,
+          "ttft_ms": 314,
+          "prompt_tokens": 1111,
+          "completion_tokens": 154,
+          "finish": "stop",
+          "text_len": 261,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8207,
+          "ttft_ms": 318,
+          "prompt_tokens": 489,
+          "completion_tokens": 217,
+          "finish": "stop",
+          "text_len": 395,
+          "error": null
+        }
+      ],
+      "turn_ms": 18361,
+      "overflow": false
+    },
+    {
+      "i": 37,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 559,
+          "ttft_ms": 264,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 4033,
+          "ttft_ms": 228,
+          "prompt_tokens": 397,
+          "completion_tokens": 105,
+          "finish": "stop",
+          "text_len": 165,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 5053,
+          "ttft_ms": 275,
+          "prompt_tokens": 1111,
+          "completion_tokens": 128,
+          "finish": "stop",
+          "text_len": 237,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8860,
+          "ttft_ms": 382,
+          "prompt_tokens": 489,
+          "completion_tokens": 233,
+          "finish": "stop",
+          "text_len": 433,
+          "error": null
+        }
+      ],
+      "turn_ms": 18505,
+      "overflow": false
+    },
+    {
+      "i": 38,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 539,
+          "ttft_ms": 239,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3704,
+          "ttft_ms": 235,
+          "prompt_tokens": 397,
+          "completion_tokens": 96,
+          "finish": "stop",
+          "text_len": 153,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 6890,
+          "ttft_ms": 323,
+          "prompt_tokens": 1111,
+          "completion_tokens": 176,
+          "finish": "stop",
+          "text_len": 321,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8759,
+          "ttft_ms": 343,
+          "prompt_tokens": 489,
+          "completion_tokens": 231,
+          "finish": "stop",
+          "text_len": 428,
+          "error": null
+        }
+      ],
+      "turn_ms": 19892,
+      "overflow": false
+    },
+    {
+      "i": 39,
+      "extras": 2,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 536,
+          "ttft_ms": 240,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3918,
+          "ttft_ms": 231,
+          "prompt_tokens": 397,
+          "completion_tokens": 102,
+          "finish": "stop",
+          "text_len": 158,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 5038,
+          "ttft_ms": 301,
+          "prompt_tokens": 1111,
+          "completion_tokens": 127,
+          "finish": "stop",
+          "text_len": 224,
+          "error": null
+        },
+        {
+          "pass": "E1",
+          "ok": true,
+          "ms": 1664,
+          "ttft_ms": 269,
+          "prompt_tokens": 356,
+          "completion_tokens": 39,
+          "finish": "stop",
+          "text_len": 59,
+          "error": null
+        },
+        {
+          "pass": "E2",
+          "ok": true,
+          "ms": 2229,
+          "ttft_ms": 250,
+          "prompt_tokens": 348,
+          "completion_tokens": 55,
+          "finish": "stop",
+          "text_len": 95,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8275,
+          "ttft_ms": 275,
+          "prompt_tokens": 539,
+          "completion_tokens": 220,
+          "finish": "stop",
+          "text_len": 378,
+          "error": null
+        }
+      ],
+      "turn_ms": 21660,
+      "overflow": false
+    },
+    {
+      "i": 40,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 540,
+          "ttft_ms": 242,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 4206,
+          "ttft_ms": 228,
+          "prompt_tokens": 397,
+          "completion_tokens": 110,
+          "finish": "stop",
+          "text_len": 176,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 5795,
+          "ttft_ms": 271,
+          "prompt_tokens": 1111,
+          "completion_tokens": 148,
+          "finish": "stop",
+          "text_len": 249,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 10457,
+          "ttft_ms": 2198,
+          "prompt_tokens": 489,
+          "completion_tokens": 227,
+          "finish": "stop",
+          "text_len": 421,
+          "error": null
+        }
+      ],
+      "turn_ms": 20998,
+      "overflow": false
+    },
+    {
+      "i": 41,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 533,
+          "ttft_ms": 235,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 4217,
+          "ttft_ms": 229,
+          "prompt_tokens": 397,
+          "completion_tokens": 110,
+          "finish": "stop",
+          "text_len": 173,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 3877,
+          "ttft_ms": 269,
+          "prompt_tokens": 1111,
+          "completion_tokens": 97,
+          "finish": "stop",
+          "text_len": 173,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 6488,
+          "ttft_ms": 302,
+          "prompt_tokens": 489,
+          "completion_tokens": 171,
+          "finish": "stop",
+          "text_len": 321,
+          "error": null
+        }
+      ],
+      "turn_ms": 15115,
+      "overflow": false
+    },
+    {
+      "i": 42,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 534,
+          "ttft_ms": 238,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3595,
+          "ttft_ms": 232,
+          "prompt_tokens": 397,
+          "completion_tokens": 93,
+          "finish": "stop",
+          "text_len": 148,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4939,
+          "ttft_ms": 270,
+          "prompt_tokens": 1111,
+          "completion_tokens": 125,
+          "finish": "stop",
+          "text_len": 217,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 7816,
+          "ttft_ms": 308,
+          "prompt_tokens": 489,
+          "completion_tokens": 207,
+          "finish": "stop",
+          "text_len": 379,
+          "error": null
+        }
+      ],
+      "turn_ms": 16884,
+      "overflow": false
+    },
+    {
+      "i": 43,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 537,
+          "ttft_ms": 239,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 4366,
+          "ttft_ms": 232,
+          "prompt_tokens": 397,
+          "completion_tokens": 114,
+          "finish": "stop",
+          "text_len": 173,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 3907,
+          "ttft_ms": 272,
+          "prompt_tokens": 1111,
+          "completion_tokens": 98,
+          "finish": "stop",
+          "text_len": 177,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8024,
+          "ttft_ms": 300,
+          "prompt_tokens": 489,
+          "completion_tokens": 212,
+          "finish": "stop",
+          "text_len": 395,
+          "error": null
+        }
+      ],
+      "turn_ms": 16834,
+      "overflow": false
+    },
+    {
+      "i": 44,
+      "extras": 2,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 536,
+          "ttft_ms": 238,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 4230,
+          "ttft_ms": 231,
+          "prompt_tokens": 397,
+          "completion_tokens": 110,
+          "finish": "stop",
+          "text_len": 172,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 5383,
+          "ttft_ms": 272,
+          "prompt_tokens": 1111,
+          "completion_tokens": 137,
+          "finish": "stop",
+          "text_len": 242,
+          "error": null
+        },
+        {
+          "pass": "E1",
+          "ok": true,
+          "ms": 3109,
+          "ttft_ms": 1682,
+          "prompt_tokens": 356,
+          "completion_tokens": 40,
+          "finish": "stop",
+          "text_len": 60,
+          "error": null
+        },
+        {
+          "pass": "E2",
+          "ok": true,
+          "ms": 3896,
+          "ttft_ms": 1566,
+          "prompt_tokens": 348,
+          "completion_tokens": 65,
+          "finish": "stop",
+          "text_len": 112,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 7593,
+          "ttft_ms": 294,
+          "prompt_tokens": 539,
+          "completion_tokens": 200,
+          "finish": "stop",
+          "text_len": 341,
+          "error": null
+        }
+      ],
+      "turn_ms": 24747,
+      "overflow": false
+    },
+    {
+      "i": 45,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 723,
+          "ttft_ms": 244,
+          "prompt_tokens": 477,
+          "completion_tokens": 14,
+          "finish": "stop",
+          "text_len": 31,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3604,
+          "ttft_ms": 279,
+          "prompt_tokens": 397,
+          "completion_tokens": 92,
+          "finish": "stop",
+          "text_len": 146,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 3884,
+          "ttft_ms": 322,
+          "prompt_tokens": 1111,
+          "completion_tokens": 96,
+          "finish": "stop",
+          "text_len": 169,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 9127,
+          "ttft_ms": 299,
+          "prompt_tokens": 489,
+          "completion_tokens": 241,
+          "finish": "stop",
+          "text_len": 447,
+          "error": null
+        }
+      ],
+      "turn_ms": 17338,
+      "overflow": false
+    },
+    {
+      "i": 46,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 564,
+          "ttft_ms": 268,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3380,
+          "ttft_ms": 231,
+          "prompt_tokens": 397,
+          "completion_tokens": 87,
+          "finish": "stop",
+          "text_len": 135,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4935,
+          "ttft_ms": 278,
+          "prompt_tokens": 1111,
+          "completion_tokens": 125,
+          "finish": "stop",
+          "text_len": 220,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 6950,
+          "ttft_ms": 321,
+          "prompt_tokens": 489,
+          "completion_tokens": 182,
+          "finish": "stop",
+          "text_len": 333,
+          "error": null
+        }
+      ],
+      "turn_ms": 15829,
+      "overflow": false
+    },
+    {
+      "i": 47,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 549,
+          "ttft_ms": 254,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3152,
+          "ttft_ms": 229,
+          "prompt_tokens": 397,
+          "completion_tokens": 81,
+          "finish": "stop",
+          "text_len": 126,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 3570,
+          "ttft_ms": 271,
+          "prompt_tokens": 1111,
+          "completion_tokens": 89,
+          "finish": "stop",
+          "text_len": 158,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 8823,
+          "ttft_ms": 316,
+          "prompt_tokens": 489,
+          "completion_tokens": 233,
+          "finish": "stop",
+          "text_len": 438,
+          "error": null
+        }
+      ],
+      "turn_ms": 16094,
+      "overflow": false
+    },
+    {
+      "i": 48,
+      "extras": 0,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 536,
+          "ttft_ms": 240,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 3936,
+          "ttft_ms": 229,
+          "prompt_tokens": 397,
+          "completion_tokens": 102,
+          "finish": "stop",
+          "text_len": 165,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 3968,
+          "ttft_ms": 334,
+          "prompt_tokens": 1111,
+          "completion_tokens": 98,
+          "finish": "stop",
+          "text_len": 183,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 7740,
+          "ttft_ms": 378,
+          "prompt_tokens": 489,
+          "completion_tokens": 202,
+          "finish": "stop",
+          "text_len": 371,
+          "error": null
+        }
+      ],
+      "turn_ms": 16180,
+      "overflow": false
+    },
+    {
+      "i": 49,
+      "extras": 2,
+      "calls": [
+        {
+          "pass": "delta",
+          "ok": true,
+          "ms": 568,
+          "ttft_ms": 272,
+          "prompt_tokens": 477,
+          "completion_tokens": 9,
+          "finish": "stop",
+          "text_len": 19,
+          "error": null
+        },
+        {
+          "pass": "N",
+          "ok": true,
+          "ms": 4011,
+          "ttft_ms": 239,
+          "prompt_tokens": 397,
+          "completion_tokens": 104,
+          "finish": "stop",
+          "text_len": 157,
+          "error": null
+        },
+        {
+          "pass": "F",
+          "ok": true,
+          "ms": 4171,
+          "ttft_ms": 335,
+          "prompt_tokens": 1111,
+          "completion_tokens": 103,
+          "finish": "stop",
+          "text_len": 170,
+          "error": null
+        },
+        {
+          "pass": "E1",
+          "ok": true,
+          "ms": 1886,
+          "ttft_ms": 360,
+          "prompt_tokens": 356,
+          "completion_tokens": 43,
+          "finish": "stop",
+          "text_len": 63,
+          "error": null
+        },
+        {
+          "pass": "E2",
+          "ok": true,
+          "ms": 1868,
+          "ttft_ms": 222,
+          "prompt_tokens": 348,
+          "completion_tokens": 46,
+          "finish": "stop",
+          "text_len": 83,
+          "error": null
+        },
+        {
+          "pass": "C",
+          "ok": true,
+          "ms": 10012,
+          "ttft_ms": 2383,
+          "prompt_tokens": 539,
+          "completion_tokens": 210,
+          "finish": "stop",
+          "text_len": 382,
+          "error": null
+        }
+      ],
+      "turn_ms": 22516,
+      "overflow": false
+    }
+  ],
+  "note": "Cuts are the sealed f9-bench-latency numbers, unchanged. Only the call mix differs."
+}

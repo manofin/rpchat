@@ -463,9 +463,26 @@ t('the 1:1 generate path kept its stream/choices contract', () => {
   assert.ok(oneToOne.includes('extractChoices('));
   assert.ok(oneToOne.includes('dumpGenerationPrompt('));
   assert.ok(oneToOne.includes('updateCalibration('));
-  // and the beat path deliberately does none of those
+
+  // The beat path still does none of the 1:1 turn's bookkeeping.
   const beat = chat.slice(beatAt);
-  assert.equal(beat.includes('extractChoices('), false);
+  assert.equal(beat.includes('dumpGenerationPrompt('), false);
+  assert.equal(beat.includes('updateCalibration('), false);
+
+  // Choices, though, it now does — beat-post-extras-choices. This assertion used
+  // to read `beat.includes('extractChoices(') === false` under the heading "the
+  // beat path deliberately does none of those", and that is no longer true of the
+  // *behaviour*: a beat ends with chips. What stayed true, and what is worth
+  // locking, is that it does not get them the 1:1 way. The 1:1 path pulls the tag
+  // out of the same streamed reply the reader is watching; the beat runs a
+  // dedicated call after Pass E, so `extractChoices` is reached through
+  // `parseChoicesPass` and never applied to Pass F's stream.
+  assert.equal(beat.includes('extractChoices('), false, 'not on the streamed focus text');
+  assert.ok(beat.includes('parseChoicesPass('), 'through the dedicated pass instead');
+  assert.ok(beat.includes('passCWith('));
+  const fAt = beat.indexOf('const passF = passFWith(');
+  const cAt = beat.indexOf('passCWith(');
+  assert.ok(fAt > 0 && cAt > fAt, 'Pass C is built after Pass F, not inside it');
 });
 
 console.log(`\n${passed} passed`);

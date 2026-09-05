@@ -28,6 +28,7 @@ import { resolveFocus, type FocusResult } from './resolveFocus.js';
 import {
   renderPassE, renderPassF, renderPassN, splitFocusText, type PassCard,
 } from './passes.js';
+import { renderPassC } from './beatChoices.js';
 import {
   assetPathFor, renderHeader, renderUi, serializeBeat,
   type BeatBlock, type BeatLine, type BeatUi,
@@ -251,6 +252,22 @@ export function passFWith(input: BeatPlanInput, plan: BeatPlan, narration: strin
     header: plan.header,
     narration,
     contentPolicy: input.content_policy,
+  });
+}
+
+/**
+ * The Pass C prompt, built from the beat that was actually serialized.
+ *
+ * Taking `finished` rather than the raw pass outputs is the point: the drafts are
+ * written against the blocks the reader is looking at, so an extra whose Pass E
+ * failed (and therefore has no block) cannot be answered by a choice, and the
+ * order the user reads is the order the model reads.
+ */
+export function passCWith(input: BeatPlanInput, finished: FinishedBeat): string {
+  return renderPassC({
+    userName: userNameOf(input),
+    userText: input.user_text,
+    blocks: finished.blocks,
   });
 }
 
