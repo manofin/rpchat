@@ -426,12 +426,11 @@ export function chatRoutes(ctx: Ctx) {
     };
     const plan = planBeat(planInput);
 
-    // Persist the applied scene before generating, so the passes and any concurrent
-    // reader see the same world the focus was resolved against.
-    if (!plan.applied.discarded && plan.applied.applied.length > 0) {
-      run(db, `UPDATE conversations SET scene_json = ?, updated_at = ? WHERE id = ?`,
-        JSON.stringify(plan.applied.state), nowIso(), conv.id);
-    }
+    // scene-commit-on-success (ADR-F9c §2): the applied scene is NOT written here.
+    // `conversations.scene_json` means "the last successfully committed turn", so an
+    // interrupted turn must leave it alone. Nothing downstream needs the row written
+    // first — the passes receive the scene through `planInput` in memory, and no code
+    // between here and the finish below reads `scene_json` back.
 
     const profileName = convNow.profile_name;
     const sse = openSse(reply);
@@ -625,9 +624,14 @@ export function chatRoutes(ctx: Ctx) {
       // No web change: the existing ChoiceChips contract is met as-is.
       const uiRow = addBlock('ui', JSON.stringify(plan.ui), choices ? { choices } : {});
 
+      // Order is fixed by bench/sceneCommitOnSuccess.test.ts: the snapshot is written
+      // first because it is the authoritative record and the conversation row is a
+      // cache of it. If the process dies between the two, the next successful turn
+      // rewrites the cache from the branch; a missing snapshot would never be
+      // backfilled and would leave that turn regenerating off the cache again.
+      stampTurnScene(emitted[0]?.id, scene, finished.scene);
       run(db, `UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?`,
         JSON.stringify(finished.scene), nowIso(), nowIso(), conv.id);
-      stampTurnScene(emitted[0]?.id, scene, finished.scene);
 
       // f9-beat-metrics: one row per beat. `k_opened === 0` is the expected reading
       // of a quiet turn, so it is recorded rather than treated as a miss.
@@ -801,10 +805,11 @@ export function chatRoutes(ctx: Ctx) {
     };
     const plan = planDialogBeat(planInput);
 
-    if (!plan.applied.discarded && plan.applied.applied.length > 0) {
-      run(db, `UPDATE conversations SET scene_json = ?, updated_at = ? WHERE id = ?`,
-        JSON.stringify(plan.applied.state), nowIso(), conv.id);
-    }
+    // scene-commit-on-success (ADR-F9c §2): the applied scene is NOT written here.
+    // `conversations.scene_json` means "the last successfully committed turn", so an
+    // interrupted turn must leave it alone. Nothing downstream needs the row written
+    // first — the passes receive the scene through `planInput` in memory, and no code
+    // between here and the finish below reads `scene_json` back.
 
     const profileName = convNow.profile_name;
     const sse = openSse(reply);
@@ -912,9 +917,14 @@ export function chatRoutes(ctx: Ctx) {
         }));
       });
 
+      // Order is fixed by bench/sceneCommitOnSuccess.test.ts: the snapshot is written
+      // first because it is the authoritative record and the conversation row is a
+      // cache of it. If the process dies between the two, the next successful turn
+      // rewrites the cache from the branch; a missing snapshot would never be
+      // backfilled and would leave that turn regenerating off the cache again.
+      stampTurnScene(emitted[0]?.id, scene, finished.scene);
       run(db, `UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?`,
         JSON.stringify(finished.scene), nowIso(), nowIso(), conv.id);
-      stampTurnScene(emitted[0]?.id, scene, finished.scene);
 
       run(
         db,
@@ -1070,10 +1080,11 @@ export function chatRoutes(ctx: Ctx) {
     };
     const plan = planHunterBeat(planInput);
 
-    if (!plan.applied.discarded && plan.applied.applied.length > 0) {
-      run(db, `UPDATE conversations SET scene_json = ?, updated_at = ? WHERE id = ?`,
-        JSON.stringify(plan.applied.state), nowIso(), conv.id);
-    }
+    // scene-commit-on-success (ADR-F9c §2): the applied scene is NOT written here.
+    // `conversations.scene_json` means "the last successfully committed turn", so an
+    // interrupted turn must leave it alone. Nothing downstream needs the row written
+    // first — the passes receive the scene through `planInput` in memory, and no code
+    // between here and the finish below reads `scene_json` back.
 
     const profileName = convNow.profile_name;
     const sse = openSse(reply);
@@ -1167,9 +1178,14 @@ export function chatRoutes(ctx: Ctx) {
         }));
       });
 
+      // Order is fixed by bench/sceneCommitOnSuccess.test.ts: the snapshot is written
+      // first because it is the authoritative record and the conversation row is a
+      // cache of it. If the process dies between the two, the next successful turn
+      // rewrites the cache from the branch; a missing snapshot would never be
+      // backfilled and would leave that turn regenerating off the cache again.
+      stampTurnScene(emitted[0]?.id, scene, finished.scene);
       run(db, `UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?`,
         JSON.stringify(finished.scene), nowIso(), nowIso(), conv.id);
-      stampTurnScene(emitted[0]?.id, scene, finished.scene);
 
       run(
         db,
