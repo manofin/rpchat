@@ -3477,3 +3477,118 @@ HEAD/describe into this block after any docs commit.
   더 긴 라이브 표본의 반복률 추적. 다음 우선순위는 **clock/state progression** — Pass N은
   주어진 재료 안에서 연속성을 지키지만, 장면 상태가 고정인 한 장기 대화에서 재료가 고갈된다.
 - push: `cc0dd12..54a6244` fast-forward(force 아님, 2커밋), 로컬 HEAD = `origin/master`.
+
+## [2026-09-06 clock/state 추적] `clock-state-progression-trace`
+- 읽기 전용. 소스·스키마·문서·라이브 DB 변경 **0**. 시계를 움직이는 것이 목적이 아니라,
+  재생성으로 분기된 대화에서 시간을 안전하게 움직일 소유권과 기준 상태가 있는지 확인하는 것.
+- **앞선 진단의 정정**: 「`clock_minutes`가 `applySceneDelta` allow-list 밖」은 **틀렸다.**
+  직접 설정은 불가하지만 `advance_minutes`가 `APPLY_KEYS`에 있고(`applySceneDelta.ts:317`
+  증분 적용), 델타 프롬프트에 허용값·예시가 둘 다 있다(`sceneDeltaPrompt.ts:92,108`).
+- **소유권은 계약돼 있다**: ADR 소유권 표 「`scene.time` 정본 소유자 server, 모델은
+  `advance_minutes` 제안만」, `0010_scene_state.sql` 주석 「server SoT; model proposes
+  advance_minutes at F9E」. 서버는 계약의 **검증·저장** 절반만 구현했고 **진행** 절반이 없다.
+  델타 프롬프트가 「사용자 입력으로 장면 상태가 바뀌었는지만 판정」을 묻는데 시간은 입력이
+  *바꾸는* 것이 아니라 *흐르는* 것이라, 평범한 대화에서 판정기는 늘 「아니오」를 답한다.
+  실측: 전 라이브 DB에서 `clock_minutes`가 움직인 적 0회 — 델타가 6회 적용된 대화(`ver=6`)
+  조차 시계는 초기값.
+- **`day_index`는 소유자가 아예 없다**: `initScene` 1회 쓰기뿐, `APPLY_KEYS`·델타 프롬프트·
+  증가 코드 전부 없음. 세 렌더러가 시계를 `% 1440`로 감으므로 하루를 넘기면 시각만 감기고
+  일차는 그대로다 — 시계가 안 움직여서 **도달 불가능한 잠복 결함**.
+- **`archiveSnapshot`은 생산되지만 어떤 제품 코드도 소비하지 않는다**(`applySceneDelta:265`).
+  스냅샷 형태의 유일한 장치가 미사용이었다.
+- **결함 ③(미수정)**: 델타는 생성 **전에** 저장되고(`chat.ts:400`) 최종 catch가 `scene_json`을
+  되돌리지 않는다 → 중단된 턴이 세계를 움직인 채로 남는다. 주석에 근거가 있는 의도적
+  트레이드오프라 이번에 바꾸지 않았으나, 시간이 도입되면 증상이 커진다.
+- **결함 ④(다음 슬라이스로)**: `base_version` 가드는 낙관적 동시성이지 멱등성이 아니다.
+  regenerate가 버려질 턴의 결과를 기준으로 다시 델타를 적용한다.
+- 결론: 시간 진행보다 **분기 정합성이 선행**. 순서를 `regenerate-turn-boundary` →
+  `scene-branch-snapshot` → `clock-advance`로 재배치.
+
+## [2026-09-06 multi-row 턴 경계] `regenerate-turn-boundary`
+- 커밋 `30d0420`. 3 files, +443/-3. `db/tree.ts` `resolveTurnStart` 신설 + `/regenerate` 배선
+  + `bench/regenerateTurnBoundary.test.ts`(15).
+- **프로브로 드러난 결함**: 1:1은 턴이 한 행이라 「이 메시지 재생성」과 「이 턴 재생성」이 같은
+  말이지만, beat/dialog/hunter는 턴이 5~6행이라 마지막 행의 `parent_id`가 **자기 턴 한가운데**다.
+  거기서 재생성하면 옛 턴 앞 네 행이 활성 경로에 남은 채 header·narration·line·thought가
+  뒤에 또 붙어, 한 사용자 입력에 두 벌이 이어진 경로가 만들어졌다.
+- 판별자는 `block_kind`의 **유무**(1:1 작성 경로는 `generation_id`만 넣고 `block_kind`를 넣지
+  않는다). `beat_seq` 유무를 쓰지 않은 이유는 부분 기록된 multi-row 행도 그게 없을 수 있어서.
+- 대화에서 「가장 최근 `beat_seq=0`」을 조회하지 않고 **조상 체인**을 따라간다 — 재생성이 한 번
+  이라도 있으면 그런 행이 여럿이고 그중 하나만 호출자의 가지에 있다. 가드: 순환, 탐색 상한 64,
+  대화 교차, user 행 교차, **`generation_id` 교차**(옛 결함이 만든 오염 형태를 정확히 잡아
+  이웃 턴 시작을 잘못 집는 대신 409로 거절).
+- 뮤테이션 검증: 라우트를 옛 `m.parent_id`로 되돌리면 narration/line/thought/ui 대상이 실패하고
+  **header 대상만 통과** — header가 옛 코드에서 유일하게 온전했던 대상이라
+  `bench/narrationContinuity.test.ts`가 이걸 못 잡았던 이유이기도 하다.
+- **UI 도달 불가**(`ChatPage.tsx:503`이 컨트롤 행 앞에서 반환, 재생성 버튼은 `isLastAssistant`인
+  `ui` 블록에만 붙는데 그 블록은 컨트롤을 렌더하지 않음). API 계약을 바로잡은 것이고 노출은
+  별도 프런트 슬라이스.
+
+## [2026-09-06 분기 scene 스냅샷] `scene-branch-snapshot`
+- 커밋 `15ec2c7`. 4 files, +857/-11. `db/sceneBase.ts` 신설(150) + 세 경로 배선 + `types.ts`
+  `scene_state` + `bench/sceneBranchSnapshot.test.ts`(25).
+- 턴 시작 블록 meta에 `before_delta`/`after_delta`/`schema_version`을 저장하고,
+  정상 생성은 활성 조상 턴 시작의 `after_delta`, regenerate는 **대상 턴의 `before_delta`**,
+  그 외는 `conversations.scene_json` 폴백.
+- **설계 교정**: `after_delta`는 `plan.applied.state`가 아니라 `finishBeat`/`finishDialogBeat`/
+  `finishHunterBeat`까지 반영된 **커밋된 scene**(`last_beat`, `turn_no` 포함)이다. 그 키들은
+  첫 블록 insert 시점에 알 수 없으므로 finish 성공 후 시작 행을 stamp한다 — **완료 턴당
+  UPDATE 1회**. 부수 효과로 **중단된 턴은 스냅샷을 남기지 않고 폴백**한다(반쯤 쓰인 생성을
+  완료된 세계로 취급하지 않음).
+- 첫 블록은 `emitted[0]`으로 잡는다. `plan.header`가 조건부이고, 헤더·서술이 둘 다 없으면
+  스트리밍 focus 행이 `beat_seq 0`인데 그 행은 `addBlock`을 타지 않는다.
+- 조상 탐색은 첫 **스냅샷**이 아니라 첫 **턴 시작**에서 멈춘다. 스냅샷 없는 레거시 턴을
+  건너뛰면 더 과거 상태로 조용히 되돌아가는데, 그건 대화 행보다 나쁜 답이다.
+- 뮤테이션 검증: `resolveSceneBase`를 대화 행 반환으로 되돌리면 `source`가 `prev_after`에서
+  `conversation`으로 떨어져 실패.
+- 비용: 모델 호출·출력 토큰 **불변**, 완료 턴당 UPDATE 1, 조상 탐색 SELECT 후속 6 / regen 1 /
+  첫 턴 0(대화 길이와 무관), 첫 블록 meta 939 B(일반 블록 157 B). 라이브 `scene_json`
+  2 B min / 273 B median / 539 B max (n=23).
+- 게이트: 커밋 후 전체 **90/90**, typecheck EXIT 0 양쪽, 슬라이스 벤치 25/25 · 15/15.
+
+## [2026-09-06 배포] `scene-branch-regeneration-push-deploy`
+- push `d0601da..15ec2c7` fast-forward(force 아님, 2커밋, merge 0). local == origin == `15ec2c7`.
+- 빌드 `14:43:36Z` EXIT 0. **dist 실행 산출물에서 확인**: `resolveTurnStart` 존재 + 409 경로,
+  옛 `m.role === 'assistant' ? m.parent_id : m.id` **0건**, `resolveSceneBase` 4건 + source 3종,
+  `before_delta`/`after_delta`/`schema_version` 존재, `stampTurnScene` 세 경로 호출 3건,
+  레거시 폴백 존재. 웹 산출물 해시 불변(의도된 웹 변경 없음 — 판정 근거로 쓰지 않음).
+- 재시작 PID `113457`→`148511` `14:44:04Z`. journal 오류 0, health ok/db ok/model ok,
+  promptVersion 불변. **배포로 인한 DB 쓰기 0**(conversations 23 / messages 342 불변).
+- 레거시 자연 전환: 배포 직후 `scene_state` 보유 행 **0**이 정상. 기존 대화는 다음 생성에서
+  대화 scene 폴백으로 시작하고 그 턴이 성공하면 stamp된다. 마이그레이션·백필 없음.
+
+## [2026-09-06 라이브 1+3 검증] `scene-branch-regeneration-live-1plus3`
+- 대상 `0067a0b5-5dad-42ae-8ffc-da16113d903b` 유키-smoke · rp-balanced · F9-LIVE-PARTY.
+  UUID·이름·캐릭터·story 일치 확인 후 진행. Serve HTTPS, 헤더 위조 없음.
+- 사전 동결: scene sha `44c22642898fb81d` · ver 1 · clock 578 · stage scan · arc entry,
+  conversations 23 / messages 342 / 대상 49, `scene_state` 보유 0, active 0 queued 0, PID `148511`.
+- **최초 생성 1회**: blocks `[header, narration, line, thought, ui]`, `beat_seq` 0–4, generation 1종.
+  `scene_state.schema_version 1`, `before_delta` = `44c22642…` ver 1 clock 578 (**사전 동결과
+  바이트 일치**), `after_delta` = `3e14e51a…` ver 2 clock **588** (`last_beat` 포함) =
+  conversation scene. **델타가 no-op이 아니었다** — `advance_minutes` 실제 적용(`578→588`).
+- **regenerate 정확히 3회**(매 회차 직전 활성 결과의 마지막 블록 대상):
+
+| 회차 | turn-start | before | after | conv scene |
+|---|---|---|---|---|
+| 1 | `35a149e0…` | `44c22642` | `44c22642` | ver 1 · 578 |
+| 2 | `c054b44a…` | `44c22642` | `44c22642` | ver 1 · 578 |
+| 3 | `bbecf7e8…` | `44c22642` | `267f2127` | ver 1 · 578 |
+
+- **A 턴 경계 PASS**: 매 회차 대상 구간 `beat_seq=0` 1개 · `generation_id` 1종 · 새 head =
+  새 턴 마지막 블록. 활성 경로 39→45(+6), DB `beat_seq=0` 12개 중 활성 경로 7개 —
+  비활성 형제 5개가 보존되되 경로에서 격리.
+- **B 기준 상태 PASS**: `original`/`regen1`/`regen2`/`regen3`의 `before_delta`가 **4개 전부
+  `44c22642898fb81d`로 동일**. `after_delta`는 회차마다 달라도 됨(실제로 달랐다).
+- **C 멱등성 PASS**: 회차별 델타가 달랐으므로 「최종 == 마지막 활성 형제 `after_delta`」로 판정.
+  최종 `267f2127` ver 1 clock 578 = `regen3.after_delta`. 누적이었다면 `588+10×3=618`,
+  `scene_version 2→5`. **`scene_version`이 재생성 4회를 거쳐 1로 돌아온 것**이 직접 증거이며,
+  이는 회귀가 아니라 활성 분기 상태 버전의 올바른 복원이다.
+- **회귀 베이스라인 종료**: 수정 전 `2턴 후 598/ver 2 → regen 3회 후 628/ver 5`,
+  수정 후 라이브 `원본 +10 → 588/ver 2, regen 1·2·3 → 578/ver 1`.
+- 쓰기 안전성: conversations 23 불변, messages 342→363(**+21, 예상치와 정확히 일치**),
+  대상 대화 외 message 증가 0 · scene 변경 0, active/queued 0, journal 오류·경고 0,
+  코드 변경 0, 워킹트리 clean, HEAD `15ec2c7`, PID `148511` 불변.
+- **전체 판정 PASS**(CONDITIONAL 아님 — 실제 증분 델타가 발생한 조건에서 관측).
+- 남은 경계: multi-row regenerate는 현재 UI에서 여전히 도달 불가 · 자동 시간 진행 미구현 ·
+  `day_index` 롤오버 소유권이 ADR에 미정의 · 중단 턴 scene 잔존 정책 불변 ·
+  레거시 대화는 다음 완료 생성 후 자연 전환(마이그레이션·백필 없음).
