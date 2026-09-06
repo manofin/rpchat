@@ -3313,3 +3313,93 @@ HEAD/describe into this block after any docs commit.
   항목이며, 문제가 발견되면 이 배포 슬라이스에 덧붙이지 않고 `light-paper-theme-hotfix`
   같은 별도 코드 잠금으로 분리한다.
 - 배포 커밋 = 라이브 HEAD = `1a52ef2`. 배포 후 워킹트리 clean, 코드 변경 없음.
+
+## [2026-09-05 StoryForge UX 이식 S0–S5] `storyforge-ux-port`
+- 작업 브랜치가 `f9-beat-seal` → **`master`로 이동**했다. `f9-beat-seal`은 `5b1dea2`에
+  멈춘 채 남아 있고, 이후 커밋은 전부 `master` 위에 쌓인다.
+- 계획서는 저장소 안에 있다: `docs/STORYFORGE-UX-PORT.md`(`4c89943`, 235줄). §5가 S0–S5
+  슬라이스를, 말미 「상태」표가 슬라이스별 커밋 SHA를 들고 있으므로 **여기서 중복 기술하지
+  않는다**. 이 블록은 PROGRESS 쪽 색인일 뿐이다.
+
+| 슬라이스 | 커밋 | 내용 |
+|---|---|---|
+| S1 | `6854b73` | 모바일 셸 + 드로어. 5 files, +382/-24 |
+| S2 | `7dfe30f` | 턴 크롬 — 로딩·정지·선택지 연필. 3 files, +154/-45 (`chatShellWeb` +26) |
+| S3 | `ce5e391` | 대화 도구 허브 + 오버플로 드로어. 5 files, +240/-35 |
+| S4 | `23f6e16` | discovery — 홈·캐릭터·검색. 7 files, +730/-66 (`discoveryWeb.test.ts` 신규 89) |
+| S5 | `a57133e` · `d9deca5` | README·Galaxy 체크리스트, 상태 푸터 SHA 고정 |
+
+- S5 문서가 Galaxy 체크리스트 슬롯을 **수동 확인용으로만** 열어 뒀다("PASS≠증거 없음").
+  에이전트가 체크할 수 없는 항목이라는 기존 규칙 그대로다.
+- 후속 2건: `0433e1c` discovery 비주얼 + **테마 토글 노출**(7 files, +326/-87 —
+  `light-paper-theme-toggle`이 만든 토글이 이때 UI에 실제로 붙었다), `9ecfdce` 라이트
+  테마에서 커버 스크림 대비 수정(`app.css` 4줄).
+- 여기까지 **origin/master에 push 완료**(`9ecfdce`).
+
+## [2026-09-05 beat 선택지 — Pass C] `beat-post-extras-choices`
+- 커밋 `fdedff1`. 사용자 요구는 「스토리로 들어가도 format 지정 없이 choices가 나올 것」.
+  진단 결과 choices는 1:1(`chat.ts` `extractChoices`)·dialog·hunter에만 있었고 **beat에만
+  없었다**. `scene.format` 부재 = `'beat'`가 기본이라, 스토리 대화는 아무 설정 없이 이
+  구멍으로 떨어졌다.
+- 채택안: **Pass E 뒤 전용 Pass C**. Pass F 안에서 뽑는 대안은 버렸다 — 초안이 엑스트라가
+  말하기 *전에* 쓰이므로 "방금 낀 화자에게 답하는 선택지"가 구조적으로 불가능해진다.
+  파티 엔진의 존재 이유가 정작 사용자가 누르는 지점에서 결함이 되는 셈.
+- 신규 `apps/server/src/prompt/beatChoices.ts`(127줄) — `renderPassC`/`choicesPrompt`/
+  `parseChoicesPass`. `passes.ts`가 아니라 별도 파일인 이유는 그 모듈이 런타임 import를
+  갖지 않도록 `passPrompts.test.ts`로 봉인돼 있기 때문. Pass C에는 **캐릭터 카드를 넘기지
+  않는다** — 누구의 목소리로도 말할 수 없게 만드는 것이 설계.
+- 칩은 턴의 마지막 행인 **`ui` 블록 meta**에 실린다(`chat.ts:584`). 클라이언트가 이미
+  `isLastAssistant`로 위치 기반 조회를 하므로 **웹 변경 0**.
+- **fail-open**: 실패·빈 응답·파싱 불가·중단은 전부 칩만 잃고 비트는 남는다. Pass N/E와
+  달리 abort를 다시 던지지 않는데, Pass C 시점엔 모든 블록이 이미 퍼시스트돼 있어 공용
+  catch를 타면 포커스 행이 Pass F 원본 버퍼(속마음 마커 포함)로 되감기고 완성된 비트가
+  `interrupted`로 표시되기 때문.
+- `generation_log` 메타에 `choices_ok`/`choices_count` 기록(별도 `beat_log` 테이블 아님) —
+  fail-open 비율이 보이지 않게 되는 것을 막는다.
+- 저자 실측(n=50, 동일 세션): 봉인 믹스 p50 9.98s / p95 14.83s → Pass C 포함 p50 17.32s /
+  p95 25.33s(**+74%**). Pass C 단독 p50 8.14s / max 11.69s. 봉인 컷(p50≤90 / p95≤120 /
+  overflow 0) 안에는 들어감.
+- 신규 `bench/beatChoices.test.ts` **19건**. 잠그는 것이 「칩이 3개 나왔다」가 아니라
+  **호출 순서**라는 점이 요점 — Pass C를 Pass F 안으로 되돌리면 칩은 여전히 나오지만
+  ok 9(narration → focus → extras → choices)가 깨진다.
+
+## [2026-09-05 Pass C 레이턴시 최적화] `optimize-beat-choices-latency`
+- 커밋 `c1c58a7`. +74%는 과했다. 원인 분해: Pass C 입력은 이미 489토큰·ttft 0.33s로 작았고
+  디코딩이 다른 패스와 같은 ~26 tok/s였다 → **출력 길이가 곧 지연**. 프롬프트 쪽에 자를 것이
+  없었고 유일한 레버는 "모델에게 얼마나 쓰게 하느냐"였다.
+- beat 전용 단축 계약 `BEAT_CHOICES_INSTRUCTION` 신설(별표 한 조각 + **한 문장**, 50자 이내).
+  **와이어 계약은 불변** — 같은 `<choices>` 태그, 같은 파서, 같은 3개, 같은 태도 상이 규칙.
+  줄어든 건 각 초안이 요구받는 분량뿐이고 이는 **beat 한정 제품 변경**이다.
+  `STORY_CHOICES_INSTRUCTION`은 무수정이고 1:1·dialog·hunter가 장문을 그대로 쓴다.
+- `PASS_C_MAX_TOKENS` 400 → **160**(`chat.ts:78`), `PASS_C_TIMEOUT_MS` 20s.
+- 저자 실측(n=50 interleaved A/B, 같은 세션·같은 래퍼): Pass C p50 7.918s → **2.534s**
+  (−68%, −5.384s), out 211 → 64 토큰. parse 49/50(fail-open 1건, 닫는 `]` 누락), trunc 0.
+  합성 턴 p50 12.514s = 봉인 9.98s 대비 **+25.4%**. 목표 13.0s / +30% 둘 다 충족.
+- 길이 규칙을 지시문에 두 번(한 문장 / 50자) 적은 것은 의도적 — `<choices>` 계약 자체가
+  「긍정 지시만으로는 ~80%만 안착한다」는 이 프로젝트의 사례이고, 여기서 초안이 길면
+  미관이 아니라 실제 1초가 든다.
+
+## [2026-09-05 배포+재시작] `deploy` *(사후 재구성 기록)*
+- **이 블록은 배포 시점에 기록된 것이 아니라 2026-09-06에 디스크·journal에서 역으로
+  재구성한 것이다.** 두 beat 커밋 메시지에는 "배포·재시작 없음"이라 적혀 있으나, 그 뒤
+  별도 배포가 실제로 일어났다. 당시 절차 증거(빌드 EXIT 코드, 산출물 검증 순서)는 남아
+  있지 않다.
+- journal 실측: PID `38914` SIGTERM 정상 종료 → PID **`84062`** 기동,
+  `2026-09-05T12:59:39Z`. "기동 설정" 로그에 `authMode:tailscale` /
+  `promptVersion:2026.08.22-r1+story` / `dataDir:/home/hermes/rpchat/data`, `modelOk:true`.
+  기동 직후 `/api/health` 200, `/` 200, 자산 200.
+- 배포 내용 확인(09-06 실측): `apps/server/dist/prompt/beatChoices.js` 존재(09-05 12:59),
+  dist `chat.js`에 `PASS_C_MAX_TOKENS = 160`, dist `beatChoices.js`에 「50자 이내」 2회
+  → **`c1c58a7`까지 반영**. 웹 `index-C7XMMN0F.js` / `index-aow0FVul.css`, 서빙 sha256이
+  디스크와 일치(`f12095e1…`).
+- **라이브에서 아직 한 번도 실행되지 않았다**: `block_kind='ui'` 행 중 `choices`가 붙은
+  것 0건이고, 최신 `ui` 블록이 `2026-09-05T05:48:12Z`로 배포(12:59)보다 앞선다. 즉 Pass C는
+  배포는 됐으나 실제 턴으로 검증된 바 없다. 파티 대화에서 턴 1회를 돌려야 닫힌다.
+
+## [2026-09-06 09-05 기록 보강] `progress-2026-09-05`
+- 문서 전용. `apps/**`·`bench/**` 변경 0. 위 다섯 블록을 append-only로 추가.
+- 착수 시점 실측: HEAD `c1c58a7` `v0.0.19-120-gc1c58a7`, 워킹트리 clean,
+  전체 스위트 **86/87**(유일 실패 `partyBeatPersist` = 기록형 플레이크, 단독 3회 전부 PASS),
+  `bench/beatChoices.test.ts` 19/19, 라이브 PID `84062` health ok/db ok/model ok.
+- 브랜치 실측: `master` = `beat-post-extras-choices` = `c1c58a7`(origin/master 대비 ahead 2),
+  `f9-beat-seal` = `5b1dea2`로 정지. origin에는 `9ecfdce`까지 올라가 있었다.
