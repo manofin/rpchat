@@ -3403,3 +3403,77 @@ HEAD/describe into this block after any docs commit.
   `bench/beatChoices.test.ts` 19/19, 라이브 PID `84062` health ok/db ok/model ok.
 - 브랜치 실측: `master` = `beat-post-extras-choices` = `c1c58a7`(origin/master 대비 ahead 2),
   `f9-beat-seal` = `5b1dea2`로 정지. origin에는 `9ecfdce`까지 올라가 있었다.
+
+## [2026-09-06 Pass N 서술 연속성 A+B] `narration-continuity`
+- 사용자 신고: 「rp 시작 시 배경 설명이 너무 획일적이고 반복적」. 라이브 서술 38개 실측 —
+  **`카메라` 25/38(66%)**, **첫 문장이 천장·창밖·구름·빛 계열 23/38(61%)**. 헤더가
+  `1일차 · 09:38 · cloudy · bureau_lobby`로 세 턴 내내 고정인데도 매 턴 같은 로비를
+  처음 보여주듯 다시 세우고 있었다.
+- 원인 둘. (1) 역할 문장이 `배경·군중·카메라만 쓴다`로 **세 산출물을 나열** — 모델이
+  체크리스트로 읽었고 `PASS_N_MAX_SENTENCES = 4`에서 3문장이 턴 시작 전에 배정됐다.
+  (2) **Pass N만 자기 출력을 되받지 못했다** — 입력이 focusCard/cast/scene/header/
+  userText/ambientNames뿐이라, 이미 천장과 구름을 세워놨다는 걸 알 방법이 없었다.
+  Pass F·E는 만들어지는 중인 턴을, Pass C는 완성된 블록을 받는데 Pass N만 예외였다.
+  (3) 장면 자체가 안 변한다(`clock_minutes` 578 고정)는 세 번째 원인은 **범위 밖**으로 분리.
+- 조치 A: `renderPassN`에 `recentNarrations` 추가(`PASS_N_RECENT_NARRATIONS = 2`, 오래된 것
+  먼저). 서술이 있을 때만 「앞서 이미 서술된 것」 블록과 금지 규칙 2개(배경 재소개 / 같은
+  구도 표현만 바꿔 되풀이)가 붙고, **첫 턴 프롬프트는 이전과 같은 형태로 남는다**.
+- 조치 B: 역할 문장을 「이번 턴에 새로 달라진 것만 쓴다」로, 카메라는 규칙에서
+  「도움이 될 때만. 매 턴 쓰지 않아도 된다」로 강등. 금지가 아니라 필수에서 제외.
+- 수집은 `getPath`(활성 브랜치 리더)로 한다. 비트는 턴당 5~6행을 쓰고 regenerate는 버려진
+  턴을 통째로 테이블에 남기므로, `created_at` 정렬로 뽑으면 **사용자가 본 적 없는 서술을
+  반복하지 말라고 지시**하게 된다. `bench/narrationContinuity.test.ts`(6)가 실제 라우트로
+  턴을 돌려 모델이 받은 프롬프트를 읽는다 — **뮤테이션 검증**: 리더를
+  `ORDER BY created_at DESC LIMIT 2`로 되돌리면 regenerate 케이스가 실패하고, 되돌리니
+  통과했다(결함을 잡는 테스트이지 기능을 확인하는 테스트가 아니다).
+- 커밋: `48b0647` fix(narration) — 5 files +382/-6, `54a6244` bench(narration) — 2 files +2022.
+  전체 스위트 커밋 후 **88/88**(펜스 `settingsRegression` 포함), typecheck EXIT 0 양쪽.
+- **지연 A/B**: 기존 러너 셋은 전부 `renderPassN`을 `recentNarrations` 없이 호출해 이
+  슬라이스를 측정하지 못한다 → 네 번째 러너 `run-bench-latency-narration-ab.ts` 신설
+  (기존 셋 바이트 불변, 인터리브, Pass N만 측정, 턴 총합은 공표치와 합성하고 그 사실을
+  출력에 명시). n=50/팔: Pass N p50 **3.311s → 3.706s**(+0.395s, +11.9%), p95 4.054 → 4.288,
+  trunc 0/100. 합성 턴 p50 **12.514 → 12.909s(+3.2%)**, 봉인 컷 p50≤90 / p95≤120 **통과**.
+  **비용 원인이 예측과 달랐다** — ttft는 −8ms로 사실상 불변(입력 +260토큰의 prefill은
+  측정 노이즈 아래)이고, +0.395s는 **출력 +10토큰**이 이 호스트의 ~26 tok/s로 디코딩된 값이다.
+  입력 크기를 걱정한 것이 틀렸다.
+- 러너가 세는 `카메라`/establishing 열은 **효과의 증거가 아니다**: 양 팔이 둘 다 수정된
+  역할 문장을 쓰므로 A/B가 그것을 분리하지 못하고, `room_a`/`clear` 픽스처가 라이브의
+  흐린 로비 어휘를 재현하지 못한다. 효과는 라이브로만 닫힌다.
+- **배포**: 빌드 `2026-09-06T08:20:59Z` EXIT 0. dist 검증 — `passes.js`에 「앞서 이미 서술된 것」
+  2건·「매 턴 쓰지 않아도 된다」 1건, `chat.js`에 리더 3건, 역할 문장이 새 문구
+  (옛 `배경·군중·카메라` 1건은 변경 사유를 적은 주석). 웹 산출물
+  `index-C7XMMN0F.js`/`index-aow0FVul.css` **불변**(서버 전용 슬라이스). 재시작 PID
+  `84062`→`113457` `08:21:31Z`, journal 오류 0, health ok/db ok/model ok, localhost 401.
+
+## [2026-09-06 라이브 3턴 검증] `narration-continuity-live-3turn`
+- **대상 확인에서 불일치를 잡았다**: 지시된 축약 ID `7d2ab1ff…`는 유일하게 식별되지만
+  캐릭터가 **한소연-smoke**였고, 신고 전사(轉寫)의 방은 **유키-smoke**
+  `0067a0b5-5dad-42ae-8ffc-da16113d903b`였다. 임의 진행하지 않고 확인 후 유키-smoke로 확정.
+- 인증은 **헤더 위조 없이** Serve HTTPS(`https://hermes.tailf2217c.ts.net`)로. Tailscale이
+  이 노드를 `manofin@github`로 인증한다(`/api/auth/me` `authenticated:true`).
+- 기준선을 DB 전체(66%/61%)가 아니라 **같은 대화·같은 활성 브랜치의 직전 3턴**으로 잡았다.
+  장면 조건 전후 불변: `bureau_lobby / cloudy / clock 578 / 1일차`.
+
+| 지표 | 배포 전 3턴 | 배포 후 3턴 |
+|---|---|---|
+| establishing 반복 | 3/3 | **0/3** |
+| 첫 문장 교체 가능 패턴 | 3/3 | **0/3** |
+| 카메라·시점 표현 | 3/3 | **0/3** |
+| 행동·반응 중심 턴 | 0/3 | **3/3** |
+
+- 판정 근거: 세 서술 모두 첫 문장이 인물 동작(`넘긴다`/`툭툭 친다`/`회수한다`)이고, 로비·천장·
+  구름을 다시 소개하지 않으며 `카메라는 ~ 비춘다`가 없다. 턴3은 자동문 쪽 이동으로 장면을 민다.
+  **표본 3턴이므로 비율이 아니라 방향성**으로 읽는다.
+- 무결성: 정확히 3턴. messages **324 → 342 (+18 = 3×6행)**, conversations 23 불변,
+  **다른 대화 쓰기 0건**. 블록 구성 header/narration/line/thought/ui, `beat_seq` 0–4,
+  전부 `status=complete`. `choices_ok=true`·`choices_count=3` × 3턴, fail-open/parse 실패 0.
+  journal 오류·경고 0. 턴 총 시간 25.2 / 25.1 / 25.3초(봉인 컷 안).
+- **`recent_narrations`는 라이브에서 직접 관측되지 않는다** — `beat_log`에 해당 필드가 없다.
+  간접 증거는 (a) 실제 라우트를 도는 격리 벤치 6/6, (b) 각 턴 시점 활성 브랜치에 선행 서술이
+  3→4→5개 존재했다는 전제 충족. 확정하려면 `beat_log` 필드 추가가 필요하며 별도 관측성 작업이다.
+- **`clock_minutes` 578 고정 유지** — 관찰 사항으로만 기록하며 이번 슬라이스 실패로 보지 않는다.
+  `stage`는 `reg → scan`으로 진행했다.
+- 남은 백로그: `clock_minutes`·장면 상태 진행 / `recent_narrations`의 `beat_log` 관측성 /
+  더 긴 라이브 표본의 반복률 추적. 다음 우선순위는 **clock/state progression** — Pass N은
+  주어진 재료 안에서 연속성을 지키지만, 장면 상태가 고정인 한 장기 대화에서 재료가 고갈된다.
+- push: `cc0dd12..54a6244` fast-forward(force 아님, 2커밋), 로컬 HEAD = `origin/master`.
