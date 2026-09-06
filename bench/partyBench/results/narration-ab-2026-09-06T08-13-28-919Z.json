@@ -1,0 +1,1682 @@
+{
+  "token": "narration-continuity",
+  "bench": "Bench-Latency (Pass N continuity A/B, interleaved)",
+  "base_commit": "c1c58a7",
+  "queue_depth": 1,
+  "live_db": 0,
+  "live_messages_post": 0,
+  "apps_product_code_changed": 1,
+  "measures": "Pass N only; delta/F/E/C are byte-identical across arms by construction",
+  "prompts_from": "apps/server/src/prompt/passes.ts (renderPassN, both arms)",
+  "recent_narrations_cap": 2,
+  "published_baseline": {
+    "sealed_mix_p50_s": 9.98,
+    "sealed_pass_n_p50_s": 3.65,
+    "pass_c_p50_s": 2.534,
+    "shipped_turn_p50_s": 12.514
+  },
+  "cut": {
+    "p50_s": 90,
+    "p95_s": 120
+  },
+  "model_name": "/Users/llm/models/Gemma-4-Dark-Thoughts-V2-31B.i1-Q4_K_M.gguf",
+  "model_base_url": "http://100.97.170.121:8083/v1",
+  "n_target_per_arm": 50,
+  "started_at": "2026-09-06T08:13:28.919Z",
+  "status": "complete",
+  "finished_at": "2026-09-06T08:19:17.645Z",
+  "A_no_context": {
+    "n": 50,
+    "p50_s": 3.311,
+    "p95_s": 4.054,
+    "max_s": 4.161,
+    "ttft_p50_ms": 242,
+    "in_tokens_p50": 445,
+    "out_tokens_p50": 85,
+    "out_tokens_max": 109,
+    "truncated": 0,
+    "camera_sentences": 0,
+    "establishing_openers": 0
+  },
+  "B_continuity": {
+    "n": 50,
+    "p50_s": 3.706,
+    "p95_s": 4.288,
+    "max_s": 4.375,
+    "ttft_p50_ms": 234,
+    "in_tokens_p50": 705,
+    "out_tokens_p50": 95,
+    "out_tokens_max": 114,
+    "truncated": 0,
+    "camera_sentences": 1,
+    "establishing_openers": 0
+  },
+  "delta": {
+    "pass_n_p50_s": 0.395,
+    "pass_n_p50_pct": 11.9,
+    "pass_n_p95_s": 0.234,
+    "ttft_p50_ms": -8,
+    "in_tokens_p50": 260,
+    "out_tokens_p50": 10
+  },
+  "verdict": {
+    "composed_turn_p50_s": 12.909,
+    "vs_shipped_pct": 3.2,
+    "cut_p50_ok": true,
+    "note": "composed by swapping the Pass N term in the 2026-09-05 shipped turn p50; only Pass N was measured today"
+  },
+  "samples": {
+    "A": [
+      "민아가 차분한 표정으로 고개를 끄덕이며 책상 위에 놓인 등록 서류 뭉치를 끌어당긴다. 그녀는 규정집을 훑어본 뒤 정해진 순서대로 서류를 한 장씩 정리해 내민다. 옆에 서 있던 설화가 가만히 서서 그 과정을 지켜본다. 지우의 앞자리로 의자가 바짝 당겨진다.",
+      "민아가 서류 뭉치를 챙겨 들고 자리에서 일어난다. 그녀는 빈 책상 하나를 가리키며 지우를 안내한다. 옆에서 지켜보던 설화가 가볍게 고개를 끄덕인다. 지우가 안내받은 자리에 짐을 내려놓는다.",
+      "민아가 책상 위에 놓인 등록 안내 책자를 들어 지우 쪽으로 밀어준다. 그녀는 손가락으로 신청서 작성란을 정확히 짚어 보이며 절차를 설명한다. 설화는 그 옆에서 가만히 고개를 끄덕이며 상황을 지켜본다. 책상 위에는 세 사람이 앉을 수 있도록 의자가 나란히 정렬된다."
+    ],
+    "B": [
+      "민아가 가지런히 놓인 서류 뭉치에서 명단 한 장을 꺼내 지우 쪽으로 밀어 놓는다. 무표정한 얼굴로 손가락을 짚어 지정된 좌석 번호를 가리킨다. 설화가 그 광경을 보며 짧게 헛웃음을 짓고는 고개를 돌린다. 지우가 명단에 적힌 숫자를 확인하며 천천히 발걸음을 옮긴다.",
+      "민아가 정돈된 동작으로 안내 책자를 꺼내어 지우 쪽으로 밀어 놓는다. 이어 명단이 적힌 태블릿 화면을 가리키며 배정된 좌석 번호를 확인시켜 준다. 설화가 그 광경을 지켜보며 가볍게 턱을 괸다. 지우의 시선이 민아의 손끝을 따라 안내서의 문구로 옮겨간다.",
+      "민아가 서류 뭉치에서 명단 한 장을 꺼내어 책상 위에 가지런히 내려놓는다. 그녀는 펜 끝으로 명단 속 빈칸들을 짚으며 절차를 안내하는 손짓을 한다. 지우는 벽에서 몸을 떼어 접수대 쪽으로 한 걸음 다가온다. 설화가 그들 뒤에서 조용히 옷깃을 매만지며 순서를 기다린다."
+    ]
+  },
+  "rows": [
+    {
+      "i": 0,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3653,
+        "ttft_ms": 279,
+        "prompt_tokens": 445,
+        "completion_tokens": 94,
+        "finish": "stop",
+        "text_len": 142,
+        "text": "민아가 차분한 표정으로 고개를 끄덕이며 책상 위에 놓인 등록 서류 뭉치를 끌어당긴다. 그녀는 규정집을 훑어본 뒤 정해진 순서대로 서류를 한 장씩 정리해 내민다. 옆에 서 있던 설화가 가만히 서서 그 과정을 지켜본다. 지우의 앞자리로 의자가 바짝 당겨진다.",
+        "error": null
+      }
+    },
+    {
+      "i": 0,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3864,
+        "ttft_ms": 262,
+        "prompt_tokens": 705,
+        "completion_tokens": 99,
+        "finish": "stop",
+        "text_len": 147,
+        "text": "민아가 가지런히 놓인 서류 뭉치에서 명단 한 장을 꺼내 지우 쪽으로 밀어 놓는다. 무표정한 얼굴로 손가락을 짚어 지정된 좌석 번호를 가리킨다. 설화가 그 광경을 보며 짧게 헛웃음을 짓고는 고개를 돌린다. 지우가 명단에 적힌 숫자를 확인하며 천천히 발걸음을 옮긴다.",
+        "error": null
+      }
+    },
+    {
+      "i": 1,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3705,
+        "ttft_ms": 217,
+        "prompt_tokens": 705,
+        "completion_tokens": 95,
+        "finish": "stop",
+        "text_len": 141,
+        "text": "민아가 정돈된 동작으로 안내 책자를 꺼내어 지우 쪽으로 밀어 놓는다. 이어 명단이 적힌 태블릿 화면을 가리키며 배정된 좌석 번호를 확인시켜 준다. 설화가 그 광경을 지켜보며 가볍게 턱을 괸다. 지우의 시선이 민아의 손끝을 따라 안내서의 문구로 옮겨간다.",
+        "error": null
+      }
+    },
+    {
+      "i": 1,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 2785,
+        "ttft_ms": 263,
+        "prompt_tokens": 445,
+        "completion_tokens": 70,
+        "finish": "stop",
+        "text_len": 105,
+        "text": "민아가 서류 뭉치를 챙겨 들고 자리에서 일어난다. 그녀는 빈 책상 하나를 가리키며 지우를 안내한다. 옆에서 지켜보던 설화가 가볍게 고개를 끄덕인다. 지우가 안내받은 자리에 짐을 내려놓는다.",
+        "error": null
+      }
+    },
+    {
+      "i": 2,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3312,
+        "ttft_ms": 202,
+        "prompt_tokens": 445,
+        "completion_tokens": 86,
+        "finish": "stop",
+        "text_len": 147,
+        "text": "민아가 책상 위에 놓인 등록 안내 책자를 들어 지우 쪽으로 밀어준다. 그녀는 손가락으로 신청서 작성란을 정확히 짚어 보이며 절차를 설명한다. 설화는 그 옆에서 가만히 고개를 끄덕이며 상황을 지켜본다. 책상 위에는 세 사람이 앉을 수 있도록 의자가 나란히 정렬된다.",
+        "error": null
+      }
+    },
+    {
+      "i": 2,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3781,
+        "ttft_ms": 246,
+        "prompt_tokens": 705,
+        "completion_tokens": 97,
+        "finish": "stop",
+        "text_len": 149,
+        "text": "민아가 서류 뭉치에서 명단 한 장을 꺼내어 책상 위에 가지런히 내려놓는다. 그녀는 펜 끝으로 명단 속 빈칸들을 짚으며 절차를 안내하는 손짓을 한다. 지우는 벽에서 몸을 떼어 접수대 쪽으로 한 걸음 다가온다. 설화가 그들 뒤에서 조용히 옷깃을 매만지며 순서를 기다린다.",
+        "error": null
+      }
+    },
+    {
+      "i": 3,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3673,
+        "ttft_ms": 216,
+        "prompt_tokens": 705,
+        "completion_tokens": 95,
+        "finish": "stop",
+        "text_len": 138,
+        "text": "민아가 정돈된 동작으로 책상 위에 놓인 안내 책자와 배정표를 지우 쪽으로 밀어낸다. 그녀의 손끝이 규정된 좌석 번호가 적힌 칸을 정확히 짚어낸다. 지우는 밀려온 서류를 내려다보며 팔짱을 푼다. 설화가 그들 뒤에서 무심하게 턱을 괴며 상황을 살핀다.",
+        "error": null
+      }
+    },
+    {
+      "i": 3,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3250,
+        "ttft_ms": 242,
+        "prompt_tokens": 445,
+        "completion_tokens": 84,
+        "finish": "stop",
+        "text_len": 125,
+        "text": "민아가 차분하게 고개를 끄덕이며 책상 위에 놓인 서류 뭉치를 지우 쪽으로 밀어낸다. 이어 손가락으로 명단 위 특정 구역을 짚어내며 자리 배정 위치를 안내한다. 그 옆에서 설화가 지루한 듯 턱을 괸 채 손톱 끝을 만지작거린다.",
+        "error": null
+      }
+    },
+    {
+      "i": 4,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 2932,
+        "ttft_ms": 205,
+        "prompt_tokens": 445,
+        "completion_tokens": 76,
+        "finish": "stop",
+        "text_len": 113,
+        "text": "민아가 정중하게 고개를 끄덕이며 서류 뭉치를 지우 쪽으로 밀어 놓는다. 손가락으로 작성해야 할 칸들을 하나하나 짚어내며 절차를 안내한다. 그 옆에서 설화가 지루한 듯 턱을 괸 채 손톱 끝을 만지작거린다.",
+        "error": null
+      }
+    },
+    {
+      "i": 4,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 4006,
+        "ttft_ms": 249,
+        "prompt_tokens": 705,
+        "completion_tokens": 103,
+        "finish": "stop",
+        "text_len": 168,
+        "text": "민아가 정돈된 자세로 서류 뭉치를 들어 올리며 지우를 응시한다. 그녀의 손가락이 명단 위 특정 이름을 정확하게 짚어내고, 곧이어 빈 좌석이 표시된 안내도를 앞으로 밀어낸다. 지우는 그 움직임을 따라 시선을 옮기며 자세를 고쳐 잡는다. 대기하던 설화가 무심하게 머리카락을 귀 뒤로 넘기며 상황을 살핀다.",
+        "error": null
+      }
+    },
+    {
+      "i": 5,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 4127,
+        "ttft_ms": 214,
+        "prompt_tokens": 705,
+        "completion_tokens": 107,
+        "finish": "stop",
+        "text_len": 159,
+        "text": "민아가 가지런히 놓인 서류 뭉치 위로 손을 얹으며 고개를 살짝 끄덕인다. 그녀가 접수대 아래에서 이름표가 붙은 자리 배치도를 꺼내어 탁자 위에 펼쳐 보인다. 지우가 벽에서 몸을 떼어 민아의 손끝이 가리키는 도면 쪽으로 한 걸음 다가선다. 설화는 그들의 움직임을 보며 가볍게 턱을 괸다.",
+        "error": null
+      }
+    },
+    {
+      "i": 5,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3221,
+        "ttft_ms": 247,
+        "prompt_tokens": 445,
+        "completion_tokens": 82,
+        "finish": "stop",
+        "text_len": 129,
+        "text": "민아가 차분하게 고개를 끄덕이며 테이블 위에 놓인 등록 서류 뭉치를 지우 쪽으로 밀어준다. 그녀의 손가락이 작성해야 할 칸들을 정확하게 짚어내며 안내한다. 그 옆에서 설화가 무심하게 턱을 괸 채 손가락 끝으로 책상을 톡톡 두드린다.",
+        "error": null
+      }
+    },
+    {
+      "i": 6,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 4074,
+        "ttft_ms": 203,
+        "prompt_tokens": 445,
+        "completion_tokens": 107,
+        "finish": "stop",
+        "text_len": 176,
+        "text": "민아가 차분한 표정으로 고개를 끄덕이며 책상 위의 서류 뭉치를 정리한다. 그녀는 규정에 따라 배정된 명단과 빈 좌석을 하나씩 대조하며 손가락으로 가리킨다. 지우는 안내에 따라 자신의 이름이 적힌 자리를 확인하고 조심스럽게 가방을 내려놓는다. 구석에 서 있던 설화가 가볍게 어깨를 으쓱하며 자신의 자리를 찾아 옮긴다.",
+        "error": null
+      }
+    },
+    {
+      "i": 6,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3610,
+        "ttft_ms": 251,
+        "prompt_tokens": 705,
+        "completion_tokens": 92,
+        "finish": "stop",
+        "text_len": 143,
+        "text": "민아가 고개를 살짝 끄덕이며 접수대 위에 놓인 등록 명부를 지우 쪽으로 밀어낸다. 손끝이 서류의 모서리를 정확하게 짚어내며 다음 절차를 안내하는 준비를 마친다. 지우의 시선이 명부 위의 빈칸으로 향하고, 그 뒤에서 설화가 지루한 듯 손톱 끝을 만지작거린다.",
+        "error": null
+      }
+    },
+    {
+      "i": 7,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3624,
+        "ttft_ms": 215,
+        "prompt_tokens": 705,
+        "completion_tokens": 93,
+        "finish": "stop",
+        "text_len": 136,
+        "text": "민아가 서류 더미에서 배정표를 꺼내어 책상 위에 가지런히 내려놓는다. 그녀의 손가락이 명단 위 특정 지점을 정확히 짚어낸다. 지우가 팔짱을 풀고 한 걸음 다가오며 시선을 배정표로 옮긴다. 설화는 입술을 살짝 내민 채 무심하게 발끝을 툭툭 친다.",
+        "error": null
+      }
+    },
+    {
+      "i": 7,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3312,
+        "ttft_ms": 242,
+        "prompt_tokens": 445,
+        "completion_tokens": 85,
+        "finish": "stop",
+        "text_len": 138,
+        "text": "민아가 차분한 표정으로 고개를 돌려 지우를 바라본다. 그녀는 책상 위에 놓인 등록 안내서를 집어 들어 지우가 보기 편한 각도로 밀어 놓는다. 옆에 서 있던 설화가 가만히 고개를 끄덕인다. 민아의 손가락이 안내서의 첫 페이지, 접수 순서를 가리킨다.",
+        "error": null
+      }
+    },
+    {
+      "i": 8,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3478,
+        "ttft_ms": 201,
+        "prompt_tokens": 445,
+        "completion_tokens": 91,
+        "finish": "stop",
+        "text_len": 152,
+        "text": "민아가 품 안에서 안내 책자를 꺼내 지우에게 건넨다. 차분한 손길로 책자의 특정 페이지를 펼쳐 보이며 등록 절차를 가리킨다. 옆에 서 있던 설화가 가볍게 고개를 끄덕이며 두 사람의 대화를 경청한다. 민아가 책상 위에 놓인 좌석 배치표를 확인하며 지우의 자리를 지정해 준다.",
+        "error": null
+      }
+    },
+    {
+      "i": 8,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3688,
+        "ttft_ms": 249,
+        "prompt_tokens": 705,
+        "completion_tokens": 94,
+        "finish": "stop",
+        "text_len": 134,
+        "text": "민아가 서류 뭉치를 정돈해 내려놓고 정면을 응시한다. 지우가 팔짱을 푼 채 한 걸음 다가오며 접수대 끝을 톡톡 두드린다. 설화는 입술을 살짝 내민 채 발끝으로 바닥을 툭툭 친다. 민아가 자리 배정표가 적힌 명단을 펼쳐 지우 쪽으로 밀어낸다.",
+        "error": null
+      }
+    },
+    {
+      "i": 9,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3836,
+        "ttft_ms": 213,
+        "prompt_tokens": 705,
+        "completion_tokens": 99,
+        "finish": "stop",
+        "text_len": 148,
+        "text": "민아가 서류 뭉치에서 이름표가 붙은 명단을 빠르게 찾아내어 책상 위에 펼친다. 지우가 벽에서 몸을 떼어 민아의 손끝을 따라 시선을 옮긴다. 설화는 무심한 표정으로 손톱 끝을 만지작거리며 대기 줄 뒤편에 서 있다. 민아의 손가락이 특정 구역의 자리 배정표를 짚어낸다.",
+        "error": null
+      }
+    },
+    {
+      "i": 9,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3311,
+        "ttft_ms": 244,
+        "prompt_tokens": 445,
+        "completion_tokens": 85,
+        "finish": "stop",
+        "text_len": 129,
+        "text": "민아가 책상 위에 놓인 등록 안내 책자를 집어 들어 지우 쪽으로 밀어준다. 그녀의 손끝이 책자 끝을 정확히 짚으며 절차의 순서를 가리킨다. 설화가 턱을 괸 채 지루한 표정으로 손가락을 까딱인다. 지우가 안내 책자의 내용을 훑어본다.",
+        "error": null
+      }
+    },
+    {
+      "i": 10,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3346,
+        "ttft_ms": 204,
+        "prompt_tokens": 445,
+        "completion_tokens": 87,
+        "finish": "stop",
+        "text_len": 140,
+        "text": "민아가 책상 위에 놓인 서류 뭉치를 가지런히 정리하며 고개를 든다. 그녀는 안내 책자를 펼쳐 특정 페이지를 손가락으로 가리킨다. 옆에 서 있던 설화가 가만히 고개를 끄덕이며 민아의 설명을 기다린다. 지우의 시선이 민아가 가리킨 지점과 서류로 옮겨간다.",
+        "error": null
+      }
+    },
+    {
+      "i": 10,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 4060,
+        "ttft_ms": 248,
+        "prompt_tokens": 705,
+        "completion_tokens": 104,
+        "finish": "stop",
+        "text_len": 156,
+        "text": "민아가 옅은 미소를 띠며 데스크 아래에서 서류 뭉치와 이름표가 든 바구니를 꺼낸다. 지우는 기대고 있던 벽에서 몸을 떼어 민아의 손끝을 유심히 살핀다. 설화가 옆에서 작게 헛기침을 하며 옷깃을 매만진다. 민아가 정해진 순서대로 이름표를 하나씩 분류해 책상 위에 나란히 내려놓는다.",
+        "error": null
+      }
+    },
+    {
+      "i": 11,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 4203,
+        "ttft_ms": 217,
+        "prompt_tokens": 705,
+        "completion_tokens": 109,
+        "finish": "stop",
+        "text_len": 156,
+        "text": "민아가 가지런히 놓인 서류 뭉치 위로 손을 얹으며 지우를 응시한다. 그녀가 규정집의 페이지를 넘겨 특정 지점을 손가락으로 짚어내고, 그 옆에 명단이 적힌 태블릿을 밀어 놓는다. 지우의 시선이 화면 속 좌석 배치도로 옮겨간다. 설화는 그 광경을 무심하게 훔쳐보며 가볍게 턱을 괸다.",
+        "error": null
+      }
+    },
+    {
+      "i": 11,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3375,
+        "ttft_ms": 245,
+        "prompt_tokens": 445,
+        "completion_tokens": 87,
+        "finish": "stop",
+        "text_len": 141,
+        "text": "민아가 차분하게 고개를 끄덕이며 책상 위에 놓인 안내 서류를 가리킨다. 그녀는 규정에 따라 절차를 설명하기 위해 서류의 첫 페이지를 정갈하게 펼친다. 옆에 있던 설화가 흥미로운 듯 몸을 살짝 기울인다. 지우는 민아의 손끝을 따라 서류의 내용을 훑어본다.",
+        "error": null
+      }
+    },
+    {
+      "i": 12,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 2946,
+        "ttft_ms": 203,
+        "prompt_tokens": 445,
+        "completion_tokens": 76,
+        "finish": "stop",
+        "text_len": 120,
+        "text": "민아가 차분하게 고개를 끄덕이며 탁자 위에 놓인 서류 뭉치를 지우 쪽으로 밀어준다. 규정에 따라 작성해야 할 항목을 손가락으로 하나하나 짚어주며 안내한다. 옆에 서 있던 설화가 가볍게 턱을 괴고 그 광경을 지켜본다.",
+        "error": null
+      }
+    },
+    {
+      "i": 12,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3347,
+        "ttft_ms": 248,
+        "prompt_tokens": 705,
+        "completion_tokens": 85,
+        "finish": "stop",
+        "text_len": 124,
+        "text": "민아가 서류 뭉치를 정돈해 앞에 내려놓으며 고개를 끄덕인다. 지우가 벽에서 몸을 떼어 민아의 곁으로 한 걸음 다가온다. 설화는 흥미로운 듯 턱을 괸 채 두 사람을 가만히 응시한다. 민아가 안내판을 가리키며 자리를 지정한다.",
+        "error": null
+      }
+    },
+    {
+      "i": 13,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3635,
+        "ttft_ms": 218,
+        "prompt_tokens": 705,
+        "completion_tokens": 94,
+        "finish": "stop",
+        "text_len": 144,
+        "text": "민아가 가지런히 놓여 있던 서류 뭉치 위로 손을 얹으며 정중하게 고개를 끄덕인다. 그녀의 시선이 매뉴얼의 특정 페이지에 머물렀다 빠르게 움직이며 절차를 확인한다. 지우는 턱을 괴고 민아의 움직임을 좇는다. 설화가 지루한 듯 손가락으로 허벅지를 톡톡 두드린다.",
+        "error": null
+      }
+    },
+    {
+      "i": 13,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3711,
+        "ttft_ms": 244,
+        "prompt_tokens": 445,
+        "completion_tokens": 96,
+        "finish": "stop",
+        "text_len": 151,
+        "text": "민아가 지우의 질문에 고개를 끄덕이며 책상 위에 놓인 등록 서류 뭉치를 정돈한다. 이어 안내 문구가 적힌 배정표를 손끝으로 짚으며 지우에게 보여준다. 설화는 그 옆에서 팔짱을 낀 채 무심하게 고개를 까닥인다. 민아가 빈 좌석을 가리키며 지우에게 다가오라는 손짓을 보낸다.",
+        "error": null
+      }
+    },
+    {
+      "i": 14,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3494,
+        "ttft_ms": 202,
+        "prompt_tokens": 445,
+        "completion_tokens": 91,
+        "finish": "stop",
+        "text_len": 148,
+        "text": "민아가 차분하게 고개를 끄덕이며 책상 위에 놓인 등록 안내 책자를 펼친다. 손가락으로 절차의 첫 단계를 짚어내며 설명할 준비를 한다. 옆에 서 있던 설화가 조용히 고개를 끄덕이며 두 사람의 대화를 경청한다. 지우의 시선이 민아의 손끝을 따라 안내문의 내용을 훑는다.",
+        "error": null
+      }
+    },
+    {
+      "i": 14,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 4219,
+        "ttft_ms": 249,
+        "prompt_tokens": 705,
+        "completion_tokens": 109,
+        "finish": "stop",
+        "text_len": 165,
+        "text": "민아가 정돈된 서류 뭉치에서 명단이 적힌 종이 한 장을 꺼내어 탁자 위에 내려놓는다. 그녀의 손가락이 이름 옆의 빈칸을 차분하게 짚어내며 지우를 향한다. 지우는 팔짱을 푼 채 민아가 가리킨 자리를 확인하며 천천히 발을 뗀다. 설화가 그들 사이에서 가볍게 어깨를 으쓱이며 제 자리를 찾아 움직인다.",
+        "error": null
+      }
+    },
+    {
+      "i": 15,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3131,
+        "ttft_ms": 214,
+        "prompt_tokens": 705,
+        "completion_tokens": 80,
+        "finish": "stop",
+        "text_len": 129,
+        "text": "민아가 책상 위에 놓인 안내 책자를 펼쳐 지우 쪽으로 밀어 놓는다. 규정에 따라 작성해야 할 서류 뭉치를 정갈하게 정렬해 내민다. 설화가 그 광경을 보며 작게 코웃음을 친다. 지우의 시선이 민아의 손끝을 따라 안내 책자로 옮겨간다.",
+        "error": null
+      }
+    },
+    {
+      "i": 15,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 2787,
+        "ttft_ms": 242,
+        "prompt_tokens": 445,
+        "completion_tokens": 71,
+        "finish": "stop",
+        "text_len": 112,
+        "text": "민아가 차분한 태도로 책상 위에 놓인 등록 서류 뭉치를 지우 쪽으로 밀어낸다. 손가락 끝으로 작성해야 할 칸들을 정확하게 짚어내며 안내한다. 옆에 서 있던 설화가 지루한 듯 턱을 괴고 발끝을 까딱인다.",
+        "error": null
+      }
+    },
+    {
+      "i": 16,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3302,
+        "ttft_ms": 204,
+        "prompt_tokens": 445,
+        "completion_tokens": 86,
+        "finish": "stop",
+        "text_len": 131,
+        "text": "민아가 서류 뭉치를 정돈하며 차분하게 안내문을 내민다. 규정에 따라 절차를 설명하려는 듯 손끝으로 서류의 특정 항목을 짚는다. 곁에 있던 설화가 무심하게 턱을 괴며 그 광경을 지켜본다. 지우의 시선이 민아가 가리킨 서류 위로 옮겨간다.",
+        "error": null
+      }
+    },
+    {
+      "i": 16,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3717,
+        "ttft_ms": 252,
+        "prompt_tokens": 705,
+        "completion_tokens": 96,
+        "finish": "stop",
+        "text_len": 147,
+        "text": "민아가 서류 뭉치에서 이름표가 붙은 자리 배치도를 꺼내어 탁자 위에 펼친다. 지우가 벽에서 몸을 떼어 배치도 앞으로 다가와 시선을 내린다. 설화가 뒤에서 가만히 턱을 괴고 두 사람의 움직임을 살핀다. 민아의 손가락이 정해진 구역의 빈 좌석 하나를 정확히 짚어낸다.",
+        "error": null
+      }
+    },
+    {
+      "i": 17,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 2940,
+        "ttft_ms": 217,
+        "prompt_tokens": 705,
+        "completion_tokens": 75,
+        "finish": "stop",
+        "text_len": 106,
+        "text": "민아가 서류 뭉치에서 안내 책자 한 권을 꺼내 지우 쪽으로 정중히 밀어 놓는다. 그녀의 손끝이 정해진 구역을 가리키며 정확한 절차를 안내한다. 설화가 그 광경을 지켜보며 무심하게 턱을 괸다.",
+        "error": null
+      }
+    },
+    {
+      "i": 17,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3594,
+        "ttft_ms": 243,
+        "prompt_tokens": 445,
+        "completion_tokens": 93,
+        "finish": "stop",
+        "text_len": 153,
+        "text": "민아가 서류 뭉치를 챙겨 탁자 위에 가지런히 내려놓는다. 그녀가 안내서를 펼치며 손가락으로 등록 절차가 적힌 항목을 하나하나 짚어 보인다. 옆에 있던 설화가 무심하게 턱을 괴며 민아의 손끝을 따라 시선을 옮긴다. 지우가 안내서를 유심히 살피며 빈 의자 쪽으로 몸을 기울인다.",
+        "error": null
+      }
+    },
+    {
+      "i": 18,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 2839,
+        "ttft_ms": 203,
+        "prompt_tokens": 445,
+        "completion_tokens": 73,
+        "finish": "stop",
+        "text_len": 110,
+        "text": "민아가 고개를 들어 지우를 바라보며 차분하게 미소 짓는다. 그녀는 책상 위에 놓인 자리 배정표와 필기구를 정돈해 지우 쪽으로 민다. 설화는 뒤편에서 팔짱을 낀 채 턱을 괴고 이쪽을 가만히 응시한다.",
+        "error": null
+      }
+    },
+    {
+      "i": 18,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 4302,
+        "ttft_ms": 250,
+        "prompt_tokens": 705,
+        "completion_tokens": 111,
+        "finish": "stop",
+        "text_len": 162,
+        "text": "민아가 서류 뭉치를 내려놓고 지우를 향해 몸을 틀어 정중히 고개를 숙인다. 그녀의 시선이 안내 데스크 위에 놓인 좌석 배치도로 옮겨지며 손가락으로 특정 구역을 가리킨다. 지우는 턱을 괴고 배치도를 내려다보며 가볍게 콧방귀를 뀐다. 뒤편의 설화가 지루한 듯 발끝으로 대리석 바닥을 툭툭 친다.",
+        "error": null
+      }
+    },
+    {
+      "i": 19,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3904,
+        "ttft_ms": 215,
+        "prompt_tokens": 705,
+        "completion_tokens": 101,
+        "finish": "stop",
+        "text_len": 149,
+        "text": "민아가 정갈하게 놓여 있던 서류 뭉치에서 배정표 한 장을 꺼내어 책상 위에 펼친다. 지우가 벽에서 몸을 떼고 접수대 앞으로 천천히 다가온다. 설화가 뒤에서 무심하게 손톱 끝을 매만지며 두 사람의 움직임을 살핀다. 민아의 손가락이 배정표의 특정 구역을 정확히 짚어낸다.",
+        "error": null
+      }
+    },
+    {
+      "i": 19,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 2978,
+        "ttft_ms": 246,
+        "prompt_tokens": 445,
+        "completion_tokens": 76,
+        "finish": "stop",
+        "text_len": 122,
+        "text": "민아가 차분하게 고개를 끄덕이며 책상 위에 놓인 등록 서류 뭉치를 정돈한다. 그녀는 규정대로 안내하기 위해 서류의 첫 페이지를 펼쳐 지우 쪽으로 밀어 놓는다. 옆에 있던 설화가 조용히 팔짱을 낀 채 그 광경을 지켜본다.",
+        "error": null
+      }
+    },
+    {
+      "i": 20,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3409,
+        "ttft_ms": 200,
+        "prompt_tokens": 445,
+        "completion_tokens": 89,
+        "finish": "stop",
+        "text_len": 133,
+        "text": "민아가 차분하게 고개를 끄덕이며 책상 위에 놓인 등록 서류 뭉치를 지우 쪽으로 밀어낸다. 이어 민아는 손끝으로 작성해야 할 빈칸들을 하나씩 짚어내며 절차를 안내한다. 뒤에 서 있던 설화가 지루한 듯 턱을 괸 채 발끝으로 바닥을 툭툭 친다.",
+        "error": null
+      }
+    },
+    {
+      "i": 20,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 4081,
+        "ttft_ms": 249,
+        "prompt_tokens": 705,
+        "completion_tokens": 105,
+        "finish": "stop",
+        "text_len": 160,
+        "text": "민아가 서류 뭉치에서 배정표 한 장을 정갈하게 꺼내 지우 쪽으로 밀어 놓는다. 무표정한 얼굴로 절차를 안내하는 그녀의 손길에는 한 치의 흐트러짐이 없다. 지우는 테이블 위에 놓인 종이를 내려다보며 한쪽 눈썹을 까딱인다. 설화가 그들 뒤에서 턱을 괸 채 지루한 기색으로 발끝을 까닥거린다.",
+        "error": null
+      }
+    },
+    {
+      "i": 21,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3880,
+        "ttft_ms": 218,
+        "prompt_tokens": 705,
+        "completion_tokens": 101,
+        "finish": "stop",
+        "text_len": 156,
+        "text": "민아가 서류 뭉치에서 배정표 한 장을 꺼내 지우 앞에 내려놓는다. 지우가 표의 내용을 확인하며 고개를 끄덕이자 민아는 펜을 들어 명단 옆에 체크 표시를 남긴다. 설화는 그 광경을 보며 무심하게 어깨를 한 번 으쓱한다. 카메라는 배정표 위에 놓인 민아의 단정한 손끝을 클로즈업한다.",
+        "error": null
+      }
+    },
+    {
+      "i": 21,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3839,
+        "ttft_ms": 244,
+        "prompt_tokens": 445,
+        "completion_tokens": 100,
+        "finish": "stop",
+        "text_len": 156,
+        "text": "민아가 차분한 표정으로 고개를 끄덕이며 책상 위에 놓인 안내 서류를 집어 든다. 그녀는 규정에 따라 등록 순서가 적힌 페이지를 정확히 펼쳐 지우에게 보여준다. 옆에서 지켜보던 설화가 흥미로운 듯 턱을 괸 채 두 사람을 응시한다. 민아의 손끝이 서류상의 절차를 하나하나 짚어나간다.",
+        "error": null
+      }
+    },
+    {
+      "i": 22,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3563,
+        "ttft_ms": 204,
+        "prompt_tokens": 445,
+        "completion_tokens": 93,
+        "finish": "stop",
+        "text_len": 154,
+        "text": "민아가 차분한 표정으로 고개를 끄덕이며 책상 위에 놓인 서류 뭉치를 정리한다. 그녀는 규정에 따라 작성된 등록 안내서를 집어 들어 지우의 앞으로 밀어 놓는다. 곁에 있던 설화가 지루한 듯 손가락으로 책상을 톡톡 두드린다. 민아의 손끝이 안내서의 특정 항목을 정확하게 가리킨다.",
+        "error": null
+      }
+    },
+    {
+      "i": 22,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3665,
+        "ttft_ms": 250,
+        "prompt_tokens": 705,
+        "completion_tokens": 94,
+        "finish": "stop",
+        "text_len": 142,
+        "text": "민아가 정갈하게 정리된 서류 뭉치를 들어 올려 지우에게 보여준다. 그녀의 손가락이 지목한 서류 위로 각자의 이름이 적힌 자리 배치도가 드러난다. 설화가 무심한 표정으로 턱을 괸 채 그 광경을 지켜본다. 지우의 시선이 민아가 가리킨 좌석 번호 위로 멈춘다.",
+        "error": null
+      }
+    },
+    {
+      "i": 23,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 4348,
+        "ttft_ms": 216,
+        "prompt_tokens": 705,
+        "completion_tokens": 114,
+        "finish": "stop",
+        "text_len": 168,
+        "text": "민아가 정돈된 자세로 서류 뭉치를 들어 올리며 지우를 향해 살짝 고개를 숙인다. 그녀의 손가락이 규정된 순서대로 배치된 좌석 배치표의 한 지점을 정확히 짚어낸다. 지우는 안내받은 위치를 확인하며 무심하게 발끝을 톡톡 두드린다. 그 뒤에서 설화가 턱을 괸 채 지루한 듯 하품을 참으며 눈을 가늘게 뜬다.",
+        "error": null
+      }
+    },
+    {
+      "i": 23,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3279,
+        "ttft_ms": 245,
+        "prompt_tokens": 445,
+        "completion_tokens": 84,
+        "finish": "stop",
+        "text_len": 133,
+        "text": "민아가 책상 위에 놓인 안내 책자를 지우 쪽으로 밀어 놓는다. 그녀는 차분한 태도로 서류 작성 순서를 손가락으로 짚어준다. 설화가 옆에서 가만히 고개를 끄덕이며 지켜본다. 책상 위에는 배정될 좌석 번호가 적힌 이름표들이 나란히 놓여 있다.",
+        "error": null
+      }
+    },
+    {
+      "i": 24,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 2835,
+        "ttft_ms": 207,
+        "prompt_tokens": 445,
+        "completion_tokens": 73,
+        "finish": "stop",
+        "text_len": 113,
+        "text": "민아가 들고 있던 태블릿 PC의 화면을 켜서 지우 쪽으로 돌려 보여준다. 등록 절차가 안내된 화면 위로 민아의 곧은 손가락이 매끄럽게 움직인다. 설화는 그 옆에서 가만히 턱을 괸 채 두 사람을 지켜본다.",
+        "error": null
+      }
+    },
+    {
+      "i": 24,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3535,
+        "ttft_ms": 250,
+        "prompt_tokens": 705,
+        "completion_tokens": 90,
+        "finish": "stop",
+        "text_len": 143,
+        "text": "민아가 책상 위에 놓인 안내 책자와 배치도를 지우 쪽으로 밀어 놓는다. 차분한 손길로 서류 뭉치를 정리한 그녀가 손가락으로 구역이 표시된 지점을 짚어낸다. 지우가 상체를 숙여 배치도를 살핀다. 뒤에 서 있던 설화가 무심하게 턱을 괴며 두 사람을 내려다본다.",
+        "error": null
+      }
+    },
+    {
+      "i": 25,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3329,
+        "ttft_ms": 221,
+        "prompt_tokens": 705,
+        "completion_tokens": 86,
+        "finish": "stop",
+        "text_len": 125,
+        "text": "민아가 정돈된 동작으로 접수대 위에 배치된 안내 책자를 펼쳐 보이며 손가락으로 절차를 짚어낸다. 지우가 팔짱을 푼 채 몸을 일으켜 민아의 손끝을 따라 시선을 옮긴다. 설화는 뒤편에서 턱을 괸 채 무심하게 그 광경을 지켜본다.",
+        "error": null
+      }
+    },
+    {
+      "i": 25,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 2997,
+        "ttft_ms": 249,
+        "prompt_tokens": 445,
+        "completion_tokens": 76,
+        "finish": "stop",
+        "text_len": 112,
+        "text": "민아가 책상 위에 놓인 안내 책자를 펼쳐 지우 쪽으로 밀어 놓는다. 손가락으로 절차의 첫 단계를 짚어내며 차분하게 고개를 끄덕인다. 옆에 서 있던 설화가 흥미롭다는 듯 턱을 괸 채 그 광경을 지켜본다.",
+        "error": null
+      }
+    },
+    {
+      "i": 26,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 2974,
+        "ttft_ms": 202,
+        "prompt_tokens": 445,
+        "completion_tokens": 77,
+        "finish": "stop",
+        "text_len": 126,
+        "text": "민아가 서류 뭉치를 든 채로 고개를 끄덕인다. 그녀가 테이블 위에 안내문을 펼쳐놓으며 손가락으로 절차를 짚어준다. 설화는 그 옆에서 팔짱을 낀 채 무심하게 고개를 까딱인다. 지우가 안내문을 살피며 자신의 자리를 찾아 움직인다.",
+        "error": null
+      }
+    },
+    {
+      "i": 26,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3052,
+        "ttft_ms": 251,
+        "prompt_tokens": 705,
+        "completion_tokens": 77,
+        "finish": "stop",
+        "text_len": 122,
+        "text": "민아가 서류를 내려놓고 정중하게 허리를 숙인다. 이내 책상 위에 놓인 좌석 배치도를 손가락으로 가리키며 빈자리를 안내한다. 지우는 그 손끝을 따라 고개를 까딱인다. 뒤편에서 설화가 지루한 듯 하품을 하며 옷깃을 여민다.",
+        "error": null
+      }
+    },
+    {
+      "i": 27,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3718,
+        "ttft_ms": 218,
+        "prompt_tokens": 705,
+        "completion_tokens": 96,
+        "finish": "stop",
+        "text_len": 149,
+        "text": "민아가 정돈된 동작으로 책상 위에 놓인 안내 책자를 펼쳐 지우 쪽으로 밀어준다. 그녀의 손가락이 절차의 순서가 적힌 항목을 차분하게 짚어낸다. 설화가 그 광경을 무심하게 쳐다보며 뒷짐을 진다. 민아가 서류철에서 빈 좌석 배치도를 꺼내어 탁자 위에 가지런히 내려놓는다.",
+        "error": null
+      }
+    },
+    {
+      "i": 27,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3137,
+        "ttft_ms": 247,
+        "prompt_tokens": 445,
+        "completion_tokens": 80,
+        "finish": "stop",
+        "text_len": 124,
+        "text": "민아가 고개를 들어 지우를 바라보며 차분하게 미소 짓는다. 그녀는 책상 위에 놓인 등록 안내서를 집어 들어 펼친다. 설화가 옆에서 턱을 괸 채 무심하게 고개를 까닥인다. 민아의 손끝이 안내서의 절차 부분을 정확히 짚어낸다.",
+        "error": null
+      }
+    },
+    {
+      "i": 28,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3680,
+        "ttft_ms": 205,
+        "prompt_tokens": 445,
+        "completion_tokens": 96,
+        "finish": "stop",
+        "text_len": 148,
+        "text": "민아가 차분한 태도로 데스크 위에 놓인 서류 뭉치와 명단을 가리킨다. 지우가 그 방향을 따라 고개를 돌리며 서류 내용을 살핀다. 뒤에 서 있던 설화가 가볍게 헛기침을 하며 발끝을 툭툭 친다. 민아가 정해진 절차에 따라 자리 배정표를 하나씩 짚어내며 안내를 시작한다.",
+        "error": null
+      }
+    },
+    {
+      "i": 28,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3432,
+        "ttft_ms": 251,
+        "prompt_tokens": 705,
+        "completion_tokens": 87,
+        "finish": "stop",
+        "text_len": 133,
+        "text": "민아가 들고 있던 서류 뭉치를 내려놓고 지우를 향해 몸을 튼다. 그녀가 책상 위에 놓인 자리 배치도를 손가락으로 짚어 보이며 절차를 안내한다. 지우는 팔짱을 푼 채 배치도에 시선을 고정한다. 설화가 그들 뒤에서 발끝으로 바닥을 툭툭 친다.",
+        "error": null
+      }
+    },
+    {
+      "i": 29,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3715,
+        "ttft_ms": 220,
+        "prompt_tokens": 705,
+        "completion_tokens": 96,
+        "finish": "stop",
+        "text_len": 146,
+        "text": "민아가 서류 뭉치를 쥔 손에 힘을 주며 고개를 살짝 숙여 인사한다. 이내 책상 위에 놓인 배정표를 펼쳐 손가락으로 특정 구역을 짚어낸다. 지우는 여전히 벽에 기댄 채 무심한 눈길로 그 손끝을 따라간다. 설화가 그들 뒤에서 가만히 발끝을 까딱이며 순서를 기다린다.",
+        "error": null
+      }
+    },
+    {
+      "i": 29,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3322,
+        "ttft_ms": 250,
+        "prompt_tokens": 445,
+        "completion_tokens": 85,
+        "finish": "stop",
+        "text_len": 148,
+        "text": "민아가 정중하게 허리를 숙여 인사하며 책상 위에 놓인 안내 서류를 가리킨다. 그녀는 매뉴얼대로 절차를 설명하기 위해 차분하게 서류 뭉치를 정리한다. 옆에 있던 설화가 흥미로운 듯 고개를 살짝 기울인다. 지우의 앞자리로 안내하기 위해 민아가 손짓하며 방향을 제시한다.",
+        "error": null
+      }
+    },
+    {
+      "i": 30,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 2770,
+        "ttft_ms": 208,
+        "prompt_tokens": 445,
+        "completion_tokens": 71,
+        "finish": "stop",
+        "text_len": 116,
+        "text": "민아가 품에서 안내 책자를 꺼내어 지우에게 건넨다. 책자의 특정 페이지를 손가락으로 짚어내며 차분하게 설명하는 태도를 취한다. 옆에 서 있던 설화가 가볍게 고개를 끄덕인다. 지우의 책상 위에 배치표가 놓인다.",
+        "error": null
+      }
+    },
+    {
+      "i": 30,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3128,
+        "ttft_ms": 250,
+        "prompt_tokens": 705,
+        "completion_tokens": 80,
+        "finish": "stop",
+        "text_len": 120,
+        "text": "민아가 가지런히 놓인 서류 뭉치 위로 손을 얹으며 몸을 일으킨다. 무표정한 얼굴로 책상 위에 배치된 좌석 배치도를 지우 쪽으로 밀어낸다. 설화가 그 움직임을 보며 작게 혀를 찬다. 지우의 시선이 배치도 위로 꽂힌다.",
+        "error": null
+      }
+    },
+    {
+      "i": 31,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3750,
+        "ttft_ms": 222,
+        "prompt_tokens": 705,
+        "completion_tokens": 97,
+        "finish": "stop",
+        "text_len": 146,
+        "text": "민아가 가지런히 놓인 서류 뭉치에서 배정표 한 장을 꺼내어 지우 쪽으로 민다. 무표정하게 절차를 안내하는 그녀의 손길에는 흐트러짐이 없다. 그 옆에서 설화가 흥미롭다는 듯 턱을 괸 채 두 사람의 움직임을 살핀다. 지우의 시선이 민아가 제시한 서류 위로 떨어진다.",
+        "error": null
+      }
+    },
+    {
+      "i": 31,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3439,
+        "ttft_ms": 244,
+        "prompt_tokens": 445,
+        "completion_tokens": 88,
+        "finish": "stop",
+        "text_len": 138,
+        "text": "민아가 서류 뭉치를 정돈하며 차분하게 고개를 끄덕인다. 그녀가 책상 위에 놓인 명단과 빈 좌석 배치도를 손가락으로 짚어 보인다. 옆에 서 있던 설화가 조용히 팔짱을 낀 채 그 움직임을 지켜본다. 지우의 시선이 민아의 손끝을 따라 배치도로 옮겨간다.",
+        "error": null
+      }
+    },
+    {
+      "i": 32,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3419,
+        "ttft_ms": 205,
+        "prompt_tokens": 445,
+        "completion_tokens": 89,
+        "finish": "stop",
+        "text_len": 138,
+        "text": "민아가 정중하게 허리를 숙이며 안내 서류를 꺼낸다. 그녀는 규정에 따라 준비된 서류들을 순서대로 책상 위에 나열한다. 지우는 민아의 손끝을 따라 시선을 옮기며 서류의 내용을 살핀다. 설화는 그들 뒤에서 턱을 괸 채 나른한 표정으로 상황을 지켜본다.",
+        "error": null
+      }
+    },
+    {
+      "i": 32,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3594,
+        "ttft_ms": 251,
+        "prompt_tokens": 705,
+        "completion_tokens": 92,
+        "finish": "stop",
+        "text_len": 148,
+        "text": "민아가 서류 뭉치에서 명단이 적힌 종이를 한 장 꺼내 책상 위에 가지런히 내려놓는다. 그녀의 손가락이 배정된 좌석 번호를 정확히 짚으며 안내한다. 지우가 벽에서 몸을 떼고 민아가 가리킨 방향으로 시선을 옮긴다. 설화는 가만히 고개를 끄덕이며 자신의 순서를 기다린다.",
+        "error": null
+      }
+    },
+    {
+      "i": 33,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3094,
+        "ttft_ms": 218,
+        "prompt_tokens": 705,
+        "completion_tokens": 79,
+        "finish": "stop",
+        "text_len": 122,
+        "text": "민아가 서류 뭉치를 정돈하며 지우에게 안내 서류 한 장을 내민다. 그녀의 손끝이 규정에 맞게 가지런히 정렬된 종이 끝을 가리킨다. 지우가 서류를 받아드는 사이, 설화는 무표정한 얼굴로 발끝을 톡톡 치며 순서를 기다린다.",
+        "error": null
+      }
+    },
+    {
+      "i": 33,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 4093,
+        "ttft_ms": 248,
+        "prompt_tokens": 445,
+        "completion_tokens": 106,
+        "finish": "stop",
+        "text_len": 158,
+        "text": "민아가 서류 뭉치를 든 채 지우를 바라보며 가볍게 고개를 끄덕인다. 그녀는 책상 위에 놓인 배정표를 손가락으로 짚으며 정해진 절차를 안내하듯 차분하게 손짓한다. 옆에 서 있던 설화가 지루한 듯 턱을 괸 채 발끝을 까닥인다. 민아가 펜을 들어 비어 있는 좌석 칸에 이름을 적어 넣는다.",
+        "error": null
+      }
+    },
+    {
+      "i": 34,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 4029,
+        "ttft_ms": 208,
+        "prompt_tokens": 445,
+        "completion_tokens": 106,
+        "finish": "stop",
+        "text_len": 161,
+        "text": "민아가 책상 위에 놓인 서류 뭉치를 정돈하며 지우를 향해 고개를 끄덕인다. 이어 그녀는 매뉴얼이 적힌 안내 책자를 펼쳐 지우가 보기 편한 각도로 밀어 놓는다. 설화는 그 옆에서 턱을 괸 채 무심하게 손가락으로 책상을 톡톡 두드린다. 민아가 펜을 들어 등록 서류의 작성란을 차례로 가리킨다.",
+        "error": null
+      }
+    },
+    {
+      "i": 34,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3661,
+        "ttft_ms": 254,
+        "prompt_tokens": 705,
+        "completion_tokens": 94,
+        "finish": "stop",
+        "text_len": 140,
+        "text": "민아가 책상 위에 놓인 서류 뭉치를 정돈하며 지우를 바라본다. 그녀의 손가락이 명단 위 특정 이름을 정확히 짚어내며 안내를 시작한다. 설화가 흥미롭다는 듯 턱을 괸 채 그들의 대화를 엿듣는다. 지우의 시선이 민아가 가리키는 배정표의 이름표로 옮겨간다.",
+        "error": null
+      }
+    },
+    {
+      "i": 35,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3727,
+        "ttft_ms": 216,
+        "prompt_tokens": 705,
+        "completion_tokens": 96,
+        "finish": "stop",
+        "text_len": 141,
+        "text": "민아가 서류 뭉치를 톡톡 쳐서 정돈한 뒤, 맨 앞장의 등록 명단을 가리킨다. 지우가 팔짱을 푼 채 한 걸음 다가와 안내판을 살핀다. 설화가 입술을 살짝 내밀며 지루한 듯 발끝을 까딱인다. 민아의 손끝이 명단 위 특정 구역을 짚으며 자리 배정을 시작한다.",
+        "error": null
+      }
+    },
+    {
+      "i": 35,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3502,
+        "ttft_ms": 247,
+        "prompt_tokens": 445,
+        "completion_tokens": 90,
+        "finish": "stop",
+        "text_len": 146,
+        "text": "민아가 고개를 들어 질문자를 바라보며 차분하게 미소 짓는다. 그녀는 책상 위에 놓인 등록 안내 서류를 집어 들어 정중하게 내민다. 옆에서 지우가 호기심 어린 표정으로 등록 절차를 살피며 몸을 기울인다. 설화는 가만히 서서 팔짱을 낀 채 무심하게 상황을 지켜본다.",
+        "error": null
+      }
+    },
+    {
+      "i": 36,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3060,
+        "ttft_ms": 204,
+        "prompt_tokens": 445,
+        "completion_tokens": 79,
+        "finish": "stop",
+        "text_len": 113,
+        "text": "민아가 차분한 손길로 서류 뭉치를 들어 올린다. 그녀는 정해진 순서에 따라 명단을 훑으며 빈 좌석을 가리킨다. 설화가 턱을 괸 채 무심하게 발끝을 까닥인다. 지우의 시선이 민아가 가리킨 자리로 옮겨간다.",
+        "error": null
+      }
+    },
+    {
+      "i": 36,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3351,
+        "ttft_ms": 252,
+        "prompt_tokens": 705,
+        "completion_tokens": 85,
+        "finish": "stop",
+        "text_len": 126,
+        "text": "민아가 정돈된 서류 뭉치 위로 손을 얹으며 자세를 바로잡는다. 지우가 벽에서 몸을 떼어 접수대 쪽으로 한 걸음 다가온다. 설화가 무심하게 손톱 끝을 매만지며 시선을 내린다. 민아가 책상 위에 놓인 자리 배정표를 천천히 펼친다.",
+        "error": null
+      }
+    },
+    {
+      "i": 37,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3336,
+        "ttft_ms": 217,
+        "prompt_tokens": 705,
+        "completion_tokens": 86,
+        "finish": "stop",
+        "text_len": 129,
+        "text": "민아가 서류 뭉치에서 좌석 배치도를 꺼내어 탁자 위에 펼친다. 정돈된 손길로 특정 구역을 손가락으로 짚어내며 지우를 응시한다. 설화가 그 손끝을 따라 시선을 옮기며 작게 고개를 끄덕인다. 지우의 시선이 배치도의 이름표 위에 머문다.",
+        "error": null
+      }
+    },
+    {
+      "i": 37,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 2778,
+        "ttft_ms": 247,
+        "prompt_tokens": 445,
+        "completion_tokens": 70,
+        "finish": "stop",
+        "text_len": 111,
+        "text": "민아가 책상 위에 놓인 서류 뭉치를 정돈하며 지우를 향해 고개를 끄덕인다. 그녀는 규정에 따라 배치된 이름표들을 하나씩 가리키며 자리를 안내한다. 설화가 뒤에서 조용히 팔짱을 낀 채 상황을 지켜본다.",
+        "error": null
+      }
+    },
+    {
+      "i": 38,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3060,
+        "ttft_ms": 206,
+        "prompt_tokens": 445,
+        "completion_tokens": 79,
+        "finish": "stop",
+        "text_len": 113,
+        "text": "민아가 차분한 손길로 안내 책자를 펼쳐 지우에게 내민다. 규정된 절차를 하나하나 짚어주는 민아의 손가락 끝이 서류의 특정 항목 위에서 멈춘다. 설화가 그 옆에서 지루한 듯 턱을 괸 채 발끝을 까딱거린다.",
+        "error": null
+      }
+    },
+    {
+      "i": 38,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3707,
+        "ttft_ms": 253,
+        "prompt_tokens": 705,
+        "completion_tokens": 95,
+        "finish": "stop",
+        "text_len": 146,
+        "text": "민아가 차분한 동작으로 데스크 위에 놓인 명단과 번호표 뭉치를 지우 쪽으로 민다. 지우가 팔짱을 푼 채 다가와 자신의 이름이 적힌 칸을 확인한다. 설화는 뒤에서 가만히 발끝을 톡톡 두드리며 순서를 기다린다. 민아의 손가락이 자리 배정표의 빈칸을 정확히 가리킨다.",
+        "error": null
+      }
+    },
+    {
+      "i": 39,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 2743,
+        "ttft_ms": 216,
+        "prompt_tokens": 705,
+        "completion_tokens": 70,
+        "finish": "stop",
+        "text_len": 101,
+        "text": "민아가 서류 더미에서 배정표 한 장을 꺼내어 정갈하게 내민다. 지우가 몸을 일으켜 민아가 가리키는 좌석 번호를 확인한다. 설화는 그들 뒤에서 턱을 괸 채 무심하게 손가락을 까닥인다.",
+        "error": null
+      }
+    },
+    {
+      "i": 39,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3687,
+        "ttft_ms": 246,
+        "prompt_tokens": 445,
+        "completion_tokens": 95,
+        "finish": "stop",
+        "text_len": 150,
+        "text": "민아가 고개를 들어 지우를 바라보며 차분하게 미소 짓는다. 그녀는 책상 위에 놓인 서류 뭉치를 정돈하여 지우 쪽으로 밀어 놓는다. 설화는 그 옆에서 가만히 턱을 괸 채 두 사람의 움직임을 눈으로 좇는다. 민아가 손가락으로 서류의 첫 장을 가리키며 작성 위치를 안내한다.",
+        "error": null
+      }
+    },
+    {
+      "i": 40,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3069,
+        "ttft_ms": 207,
+        "prompt_tokens": 445,
+        "completion_tokens": 79,
+        "finish": "stop",
+        "text_len": 129,
+        "text": "민아가 차분한 태도로 안내 책자를 펼쳐 보이며 절차를 설명하기 시작한다. 지우는 그 설명을 경청하며 고개를 끄덕인다. 설화는 구석에서 조용히 팔짱을 낀 채 상황을 지켜본다. 책상 위에는 자리 배정표와 필기도구가 가지런히 놓여 있다.",
+        "error": null
+      }
+    },
+    {
+      "i": 40,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 4375,
+        "ttft_ms": 250,
+        "prompt_tokens": 705,
+        "completion_tokens": 113,
+        "finish": "stop",
+        "text_len": 169,
+        "text": "민아가 정중하게 고개를 숙이며 안내 책자를 지우 쪽으로 밀어 보낸다. 그녀의 손가락이 서류 뭉치 위에서 정확한 위치를 짚어내고, 곧이어 명단이 적힌 태블릿 화면을 켜서 보여준다. 설화가 그들 뒤에서 턱을 괸 채 지루한 표정으로 발끝을 까닥인다. 지우의 시선이 민아가 가리키는 좌석 배치표 위로 옮겨간다.",
+        "error": null
+      }
+    },
+    {
+      "i": 41,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3737,
+        "ttft_ms": 219,
+        "prompt_tokens": 705,
+        "completion_tokens": 97,
+        "finish": "stop",
+        "text_len": 145,
+        "text": "민아가 서류 뭉치를 정갈하게 정리하며 안내문을 지우 쪽으로 밀어 넣는다. 손끝이 매끄럽게 종이 위를 훑고, 그녀의 시선이 지우의 눈에 정확히 맞닿는다. 설화가 가만히 턱을 괸 채 두 사람의 움직임을 살핀다. 민아가 자리 배정표가 적힌 명단 위에 펜을 올려둔다.",
+        "error": null
+      }
+    },
+    {
+      "i": 41,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 2842,
+        "ttft_ms": 247,
+        "prompt_tokens": 445,
+        "completion_tokens": 72,
+        "finish": "stop",
+        "text_len": 114,
+        "text": "민아가 차분한 태도로 책상 위에 놓인 등록 서류 뭉치를 지우 쪽으로 밀어준다. 이어 펜 한 자루를 함께 건네며 작성해야 할 칸을 손끝으로 가리킨다. 설화는 옆에서 가만히 팔짱을 낀 채 그 과정을 지켜본다.",
+        "error": null
+      }
+    },
+    {
+      "i": 42,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3613,
+        "ttft_ms": 205,
+        "prompt_tokens": 445,
+        "completion_tokens": 94,
+        "finish": "stop",
+        "text_len": 150,
+        "text": "민아가 고개를 들어 지우를 바라보며 차분하게 미소 짓는다. 그녀는 책상 위에 놓인 등록 절차 안내서를 집어 들어 지우 쪽으로 밀어준다. 설화는 그 모습에 흥미를 느낀 듯 턱을 괸 채 가만히 지켜본다. 민아가 손가락으로 서류의 첫 페이지를 가리키며 자리 배정을 안내한다.",
+        "error": null
+      }
+    },
+    {
+      "i": 42,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 2830,
+        "ttft_ms": 251,
+        "prompt_tokens": 705,
+        "completion_tokens": 71,
+        "finish": "stop",
+        "text_len": 107,
+        "text": "민아가 책상 위에 놓인 안내 책자를 펼쳐 지우 쪽으로 밀어 놓는다. 이어 명단이 적힌 서류의 특정 칸을 손가락으로 짚으며 차분하게 시선을 맞춘다. 설화가 그 모습을 지켜보며 가볍게 턱을 괸다.",
+        "error": null
+      }
+    },
+    {
+      "i": 43,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3739,
+        "ttft_ms": 218,
+        "prompt_tokens": 705,
+        "completion_tokens": 97,
+        "finish": "stop",
+        "text_len": 146,
+        "text": "민아가 서류를 쥔 손을 가지런히 모으며 정면을 응시한다. 책상 위에 놓인 명단과 빈 좌석 배치도를 가리키는 손가락 끝이 정교하게 움직인다. 지우가 벽에서 몸을 떼어 접수대 쪽으로 한 걸음 다가온다. 설화는 그들의 대화를 엿듣듯 고개를 살짝 기울인 채 멈춰 선다.",
+        "error": null
+      }
+    },
+    {
+      "i": 43,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3245,
+        "ttft_ms": 243,
+        "prompt_tokens": 445,
+        "completion_tokens": 83,
+        "finish": "stop",
+        "text_len": 132,
+        "text": "민아가 차분한 손길로 서류 뭉치를 들어 올려 책상 위에 가지런히 내려놓는다. 지우가 그 서류들을 살피며 고개를 끄덕인다. 설화는 팔짱을 낀 채 무심한 표정으로 벽에 기대어 있다. 민아가 규정에 명시된 순서대로 자리 배정표를 펼쳐 보인다.",
+        "error": null
+      }
+    },
+    {
+      "i": 44,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 2876,
+        "ttft_ms": 207,
+        "prompt_tokens": 445,
+        "completion_tokens": 74,
+        "finish": "stop",
+        "text_len": 115,
+        "text": "민아가 차분한 표정으로 고개를 끄덕이며 책상 위에 놓인 등록 서류 뭉치를 끌어당긴다. 이어 지우의 앞에 빈 좌석 하나를 가리키며 안내한다. 설화는 그 옆에서 무심하게 손톱 끝을 만지작거리며 상황을 지켜본다.",
+        "error": null
+      }
+    },
+    {
+      "i": 44,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3320,
+        "ttft_ms": 251,
+        "prompt_tokens": 705,
+        "completion_tokens": 84,
+        "finish": "stop",
+        "text_len": 129,
+        "text": "민아가 서류 뭉치에서 명단 하나를 꺼내 책상 위에 정갈하게 내려놓는다. 그녀의 손가락이 명단의 특정 이름을 짚으며 고개를 끄덕인다. 설화가 지루한 듯 발끝으로 바닥을 톡톡 두드린다. 지우의 시선이 민아가 가리킨 종이 위로 옮겨간다.",
+        "error": null
+      }
+    },
+    {
+      "i": 45,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3922,
+        "ttft_ms": 215,
+        "prompt_tokens": 705,
+        "completion_tokens": 102,
+        "finish": "stop",
+        "text_len": 151,
+        "text": "민아가 정돈된 서류 뭉치 위로 손을 얹고 지우를 향해 가볍게 고개를 끄덕인다. 그녀는 안내 책자 한 권을 밀어내며 빈 좌석이 표시된 배치도를 가리킨다. 지우는 팔짱을 풀고 민아가 가리킨 방향으로 천천히 발걸음을 옮긴다. 설화가 그들의 움직임을 살피며 입술을 살짝 깨문다.",
+        "error": null
+      }
+    },
+    {
+      "i": 45,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3688,
+        "ttft_ms": 246,
+        "prompt_tokens": 445,
+        "completion_tokens": 95,
+        "finish": "stop",
+        "text_len": 146,
+        "text": "민아가 차분하게 고개를 끄덕이며 책상 위에 놓인 안내 책자를 펼친다. 규정된 절차를 안내하기 위해 손가락으로 순서도를 하나씩 짚어 내려간다. 옆에 서 있던 설화가 지루한 듯 턱을 괸 채 발끝을 까닥거린다. 지우가 민아의 손끝을 따라 시선을 옮기며 내용을 살핀다.",
+        "error": null
+      }
+    },
+    {
+      "i": 46,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 4161,
+        "ttft_ms": 205,
+        "prompt_tokens": 445,
+        "completion_tokens": 109,
+        "finish": "stop",
+        "text_len": 176,
+        "text": "민아가 차분한 태도로 데스크 위의 서류 뭉치를 정리하며 지우를 향해 고개를 끄덕인다. 그녀는 정해진 절차에 따라 등록 양식과 필기도구를 지우 앞에 가지런히 내려놓는다. 옆에 서 있던 설화가 가볍게 턱을 괴며 흥미로운 듯 상황을 지켜본다. 민아는 규정에 명시된 안내 사항을 가리키며 지우가 서류를 작성하도록 유도한다.",
+        "error": null
+      }
+    },
+    {
+      "i": 46,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 4270,
+        "ttft_ms": 251,
+        "prompt_tokens": 705,
+        "completion_tokens": 110,
+        "finish": "stop",
+        "text_len": 170,
+        "text": "민아가 가지런히 놓인 서류 뭉치에서 안내문을 한 장 꺼내 지우 쪽으로 밀어 놓는다. 그녀의 손길은 망설임 없이 정확하며, 시선은 규정에 적힌 순서대로 지우의 눈을 향한다. 설화가 그 광경을 지켜보며 턱을 괸 채 가볍게 발끝을 까닥인다. 민아가 빈 좌석이 표시된 배치도를 가리키며 지우에게 자리를 안내한다.",
+        "error": null
+      }
+    },
+    {
+      "i": 47,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3352,
+        "ttft_ms": 219,
+        "prompt_tokens": 705,
+        "completion_tokens": 86,
+        "finish": "stop",
+        "text_len": 128,
+        "text": "민아가 책상 위에 놓인 서류 뭉치를 정갈하게 맞춘 뒤 지우를 향해 고개를 끄덕인다. 그녀의 손가락이 명단 위 특정 구역을 정확히 짚어내며 자리 배정 안내를 시작한다. 설화는 뒤에서 가만히 턱을 괸 채 그 광경을 무심하게 바라본다.",
+        "error": null
+      }
+    },
+    {
+      "i": 47,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 2921,
+        "ttft_ms": 247,
+        "prompt_tokens": 445,
+        "completion_tokens": 74,
+        "finish": "stop",
+        "text_len": 120,
+        "text": "민아가 품에서 안내 책자를 꺼내어 지우에게 건넨다. 차분한 손길로 책자의 특정 페이지를 펼쳐 가리킨다. 설화는 옆에서 가만히 고개를 끄덕이며 두 사람을 지켜본다. 민아가 빈 테이블의 의자를 가리키며 자리를 안내한다.",
+        "error": null
+      }
+    },
+    {
+      "i": 48,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3498,
+        "ttft_ms": 205,
+        "prompt_tokens": 445,
+        "completion_tokens": 91,
+        "finish": "stop",
+        "text_len": 134,
+        "text": "민아가 차분한 동작으로 책상 위에 놓인 서류 뭉치를 정리해 앞으로 내민다. 지우는 그 서류를 받아들며 펜을 쥔 손을 움찔거린다. 설화가 무심하게 턱을 괸 채 그들의 움직임을 지켜본다. 민아가 손가락으로 서류 하단의 서명란을 정확히 가리킨다.",
+        "error": null
+      }
+    },
+    {
+      "i": 48,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3708,
+        "ttft_ms": 249,
+        "prompt_tokens": 705,
+        "completion_tokens": 95,
+        "finish": "stop",
+        "text_len": 142,
+        "text": "민아가 정돈된 자세로 서류 뭉치를 들어 올려 지우에게 건넨다. 그녀의 시선이 규정집의 안내 문구와 지우의 얼굴을 번갈아 훑는다. 지우는 서류를 받아 든 채 가볍게 어깨를 으쓱인다. 설화가 그들 뒤에서 지루한 듯 손톱 끝을 만지작거리며 무게 중심을 옮긴다.",
+        "error": null
+      }
+    },
+    {
+      "i": 49,
+      "arm": "B_continuity",
+      "call": {
+        "pass": "B_continuity",
+        "ok": true,
+        "ms": 3434,
+        "ttft_ms": 222,
+        "prompt_tokens": 705,
+        "completion_tokens": 89,
+        "finish": "stop",
+        "text_len": 137,
+        "text": "민아가 서류 뭉치에서 등록 신청서를 한 장 꺼내 책상 위에 가지런히 놓는다. 지우가 몸을 일으켜 민아가 내민 종이 쪽으로 한 걸음 다가온다. 설화는 그들의 움직임을 살피며 가만히 고개를 까딱인다. 민아의 손가락이 신청서의 빈칸을 차례로 짚어낸다.",
+        "error": null
+      }
+    },
+    {
+      "i": 49,
+      "arm": "A_no_context",
+      "call": {
+        "pass": "A_no_context",
+        "ok": true,
+        "ms": 3295,
+        "ttft_ms": 248,
+        "prompt_tokens": 445,
+        "completion_tokens": 84,
+        "finish": "stop",
+        "text_len": 130,
+        "text": "민아가 책상 위에 놓인 안내 책자를 집어 들어 펼쳐 보인다. 손끝으로 등록 절차가 적힌 페이지의 하단을 정확히 짚어낸다. 설화는 그 옆에서 턱을 괸 채 무심하게 고개를 끄덕인다. 지우가 민아의 손가락이 가리키는 곳으로 시선을 옮긴다.",
+        "error": null
+      }
+    }
+  ]
+}
