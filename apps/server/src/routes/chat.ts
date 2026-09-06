@@ -5,6 +5,7 @@ import { PROMPT_VERSION, config } from '../config.js';
 import { getSetting, many, nowIso, one, parseJson, run, uid } from '../db/index.js';
 import { interruptOrphanStreaming } from '../db/generation.js';
 import { getPath, insertMessage, messageOut, resolveTurnStart, setHead, updateMessage } from '../db/tree.js';
+import { buildSceneSnapshot, resolveSceneBase } from '../db/sceneBase.js';
 import { ModelError } from '../model/adapter.js';
 import {
   finishBeat, passCWith, passFWith, planBeat, planPassE, partyCastForGenerate,
@@ -124,6 +125,14 @@ function withDeadline(ms: number, parent: AbortSignal): { signal: AbortSignal; d
 export function chatRoutes(ctx: Ctx) {
   const { db } = ctx;
 
+  // scene-branch-snapshot: last_beat / turn_no are not known until finish, so the
+  // start row is stamped here rather than at insert. One extra UPDATE per successful
+  // multi-row turn; interrupted turns keep no snapshot and fall back.
+  const stampTurnScene = (startId: string | undefined, before: Scene, after: Scene) => {
+    if (!startId) return;
+    updateMessage(db, startId, { meta: { scene_state: buildSceneSnapshot(before, after) } });
+  };
+
   function openSse(reply: FastifyReply): { send: (e: SseEvent) => void; close: () => void; isOpen: () => boolean } {
     reply.hijack();
     reply.raw.writeHead(200, {
@@ -155,7 +164,20 @@ export function chatRoutes(ctx: Ctx) {
    * 공통 생성 경로. parentId 를 head 로 두고 그 아래에 assistant 메시지를 만들어 스트리밍한다.
    * 클라이언트가 끊겨도 생성은 계속되어 DB 에 저장된다(모바일 백그라운드 대응). 중단은 abort 엔드포인트로만.
    */
-  async function generate(req: FastifyRequest, reply: FastifyReply, conv: ConversationRow, parentId: string | null, userMessage?: MessageRow) {
+  async function generate(
+    req: FastifyRequest,
+    reply: FastifyReply,
+    conv: ConversationRow,
+    parentId: string | null,
+    userMessage?: MessageRow,
+    /**
+     * scene-branch-snapshot: set only by /regenerate, and only for a multi-row
+     * turn — the start block of the turn being replaced. It cannot be derived from
+     * `parentId`, because replacing a turn and continuing after one both arrive
+     * here with the same user message as the parent.
+     */
+    regenTurnStartId?: string | null,
+  ) {
     interruptOrphanStreaming(db, { keepMessageIds: ctx.queue.activeList.map((g) => g.messageId) });
     if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
 
@@ -186,12 +208,12 @@ export function chatRoutes(ctx: Ctx) {
       // state, so a conversation opts in without touching any other conversation.
       const fmt = (JSON.parse(convNow.scene_json || '{}') as Scene).format;
       if (fmt === 'dialog') {
-        return generateDialog(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage);
+        return generateDialog(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage, regenTurnStartId ?? null);
       }
       if (fmt === 'hunter') {
-        return generateHunter(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage);
+        return generateHunter(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage, regenTurnStartId ?? null);
       }
-      return generateBeat(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage);
+      return generateBeat(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage, regenTurnStartId ?? null);
     }
 
     const history = getPath(db, convNow);
@@ -313,12 +335,21 @@ export function chatRoutes(ctx: Ctx) {
     cast: NonNullable<ReturnType<typeof partyCastForGenerate>>,
     roster: PartyTagRow[],
     generationId: string,
-    userMessage?: MessageRow,
+    userMessage: MessageRow | undefined,
+    regenTurnStartId: string | null,
   ) {
     const model = ctx.resolvedModel();
     if (!model) return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
 
-    const scene = JSON.parse(convNow.scene_json || '{}');
+    // scene-branch-snapshot: plan against the branch this generation is on, not
+    // against the conversation row. On a regenerate the conversation row already
+    // holds the abandoned turn's delta, which is how repeats used to accumulate.
+    const sceneBase = resolveSceneBase(db, {
+      conversationScene: JSON.parse(convNow.scene_json || '{}') as Scene,
+      parentId,
+      regenTurnStartId,
+    });
+    const scene = sceneBase.scene;
     // f9-place-catalog: places/arcs/stages come from the Story layer, so the GM can
     // move the scene somewhere no cast member currently stands. Read live because
     // this is a server-side validation allow-list, not narrative text.
@@ -596,6 +627,7 @@ export function chatRoutes(ctx: Ctx) {
 
       run(db, `UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?`,
         JSON.stringify(finished.scene), nowIso(), nowIso(), conv.id);
+      stampTurnScene(emitted[0]?.id, scene, finished.scene);
 
       // f9-beat-metrics: one row per beat. `k_opened === 0` is the expected reading
       // of a quiet turn, so it is recorded rather than treated as a miss.
@@ -693,12 +725,21 @@ export function chatRoutes(ctx: Ctx) {
     cast: NonNullable<ReturnType<typeof partyCastForGenerate>>,
     roster: PartyTagRow[],
     generationId: string,
-    userMessage?: MessageRow,
+    userMessage: MessageRow | undefined,
+    regenTurnStartId: string | null,
   ) {
     const model = ctx.resolvedModel();
     if (!model) return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
 
-    const scene: Scene = JSON.parse(convNow.scene_json || '{}');
+    // scene-branch-snapshot: plan against the branch this generation is on, not
+    // against the conversation row. On a regenerate the conversation row already
+    // holds the abandoned turn's delta, which is how repeats used to accumulate.
+    const sceneBase = resolveSceneBase(db, {
+      conversationScene: JSON.parse(convNow.scene_json || '{}') as Scene,
+      parentId,
+      regenTurnStartId,
+    });
+    const scene: Scene = sceneBase.scene;
     const storyCatalogRow = one<{ scene_catalog: string }>(
       db, 'SELECT scene_catalog FROM stories WHERE id = ?', convNow.story_id,
     );
@@ -873,6 +914,7 @@ export function chatRoutes(ctx: Ctx) {
 
       run(db, `UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?`,
         JSON.stringify(finished.scene), nowIso(), nowIso(), conv.id);
+      stampTurnScene(emitted[0]?.id, scene, finished.scene);
 
       run(
         db,
@@ -953,12 +995,21 @@ export function chatRoutes(ctx: Ctx) {
     cast: NonNullable<ReturnType<typeof partyCastForGenerate>>,
     roster: PartyTagRow[],
     generationId: string,
-    userMessage?: MessageRow,
+    userMessage: MessageRow | undefined,
+    regenTurnStartId: string | null,
   ) {
     const model = ctx.resolvedModel();
     if (!model) return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
 
-    const scene: Scene = JSON.parse(convNow.scene_json || '{}');
+    // scene-branch-snapshot: plan against the branch this generation is on, not
+    // against the conversation row. On a regenerate the conversation row already
+    // holds the abandoned turn's delta, which is how repeats used to accumulate.
+    const sceneBase = resolveSceneBase(db, {
+      conversationScene: JSON.parse(convNow.scene_json || '{}') as Scene,
+      parentId,
+      regenTurnStartId,
+    });
+    const scene: Scene = sceneBase.scene;
     const storyCatalogRow = one<{ scene_catalog: string }>(
       db, 'SELECT scene_catalog FROM stories WHERE id = ?', convNow.story_id,
     );
@@ -1118,6 +1169,7 @@ export function chatRoutes(ctx: Ctx) {
 
       run(db, `UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?`,
         JSON.stringify(finished.scene), nowIso(), nowIso(), conv.id);
+      stampTurnScene(emitted[0]?.id, scene, finished.scene);
 
       run(
         db,
@@ -1206,6 +1258,7 @@ export function chatRoutes(ctx: Ctx) {
       // 지정하든 턴 시작 블록으로 정규화한다. 클라이언트가 보내는 것은 여전히 메시지 id
       // 하나이고, 경계 해석은 서버가 한다.
       let parentId: string | null;
+      let regenTurnStartId: string | null = null;
       if (m.role === 'assistant') {
         const turn = resolveTurnStart(db, m);
         // 경계를 확정할 수 없으면 부분 재생성으로 경로를 오염시키느니 거절한다.
@@ -1213,10 +1266,11 @@ export function chatRoutes(ctx: Ctx) {
           return reply.code(409).send({ error: `턴 경계를 확정할 수 없음 (${turn.reason})` });
         }
         parentId = turn.parentId;
+        regenTurnStartId = turn.kind === 'multi' ? turn.startId : null;
       } else {
         parentId = m.id;
       }
-      return generate(req, reply, conv, parentId);
+      return generate(req, reply, conv, parentId, undefined, regenTurnStartId);
     });
 
     // 사용자 메시지 수정 후 재생성 = 같은 부모 아래 새 user 분기 + 생성

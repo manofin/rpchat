@@ -229,6 +229,22 @@ export interface MessageMeta {
   beat_seq?: number;
   /** Server-chosen local asset path, or absent. Never a model-written URL. */
   image_url?: string;
+  /**
+   * scene-branch-snapshot: on a turn's first block (`beat_seq: 0`) only — the scene
+   * this generation planned against and the scene it committed (validated delta
+   * plus server-owned `last_beat` / `turn_no`). Stamped after a successful finish,
+   * so an interrupted turn has none. Absent on every 1:1 row, every later block,
+   * and every turn written before that slice, all of which fall back to
+   * `conversations.scene_json`.
+   *
+   * Shape is validated on read (`db/sceneBase.ts`), not by this type: these rows
+   * come back from a JSON column that older builds also wrote to.
+   */
+  scene_state?: {
+    schema_version: number;
+    before_delta: Scene;
+    after_delta: Scene;
+  };
 }
 
 export interface MessageRow {
