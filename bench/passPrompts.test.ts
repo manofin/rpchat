@@ -11,7 +11,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  PASS_E_MAX_SENTENCES, PASS_E_MIN_SENTENCES, PASS_N_MAX_SENTENCES, THOUGHT_MARKER,
+  PASS_E_MAX_SENTENCES, PASS_E_MIN_SENTENCES, PASS_N_MAX_SENTENCES,
+  PASS_N_RECENT_NARRATIONS, THOUGHT_MARKER,
   renderPassE, renderPassF, renderPassN,
 } from '../apps/server/src/prompt/passes.ts';
 import type { CastMember } from '../apps/server/src/prompt/cast.ts';
@@ -99,6 +100,67 @@ t('Pass N stays in the header place even when the card describes another world',
 
 t('Pass N carries the beat goal so narration can move toward it', () => {
   assert.ok(passN().includes('자리에 앉히기'));
+});
+
+// ── narration-continuity ────────────────────────────────────────────────────
+// Measured on 38 live narrations before this slice: 66% ended on a `카메라는 …`
+// sentence and 61% opened on the same unchanged ceiling. Both halves of the cause
+// are asserted here — the checklist role line, and the pass never seeing its own
+// earlier output.
+
+t('camera is offered as a device, not listed as a required output', () => {
+  const p = passN();
+  // The old role line read '배경·군중·카메라만 쓴다', which spends three of the four
+  // allowed sentences before the turn has happened.
+  assert.equal(p.includes('배경·군중·카메라'), false, 'camera must not be a listed deliverable');
+  assert.ok(p.includes('새로 달라진 것만 쓴다'), 'the role line names change, not a checklist');
+  assert.ok(p.includes('매 턴 쓰지 않아도 된다'), 'camera work stays permitted, just not required');
+  // Demoting it must not have loosened the one prohibition the role line carries.
+  assert.ok(p.includes('어떤 인물의 대사도 쓰지 않는다'));
+});
+
+t('an opening turn has no continuity block and no repeat rule', () => {
+  // Nothing is on screen yet, so the establishing shot is correct here and the
+  // prompt must not tell the pass to avoid one.
+  for (const p of [passN(), passN({ recentNarrations: [] }), passN({ recentNarrations: ['  ', ''] })]) {
+    assert.equal(p.includes('앞서 이미 서술된 것'), false);
+    assert.equal(p.includes('처음 보여주듯'), false);
+    assert.ok(p.includes(`${PASS_N_MAX_SENTENCES}문장 이내`), 'the rest of the contract is unchanged');
+  }
+});
+
+t('a later turn is shown what is already on screen, and told not to re-establish it', () => {
+  const p = passN({ recentNarrations: ['흐린 빛이 교실에 깔린다.', '나리가 창가에서 돌아선다.'] });
+  assert.ok(p.includes('앞서 이미 서술된 것'));
+  assert.ok(p.includes('흐린 빛이 교실에 깔린다.'));
+  assert.ok(p.includes('나리가 창가에서 돌아선다.'));
+  // The two failure modes are named separately: re-introducing the room, and
+  // rewording the same shot.
+  assert.ok(p.includes('다시 소개하지 않는다'));
+  assert.ok(p.includes('처음 보여주듯 쓰지 않는다'));
+  assert.ok(p.includes('표현만 바꿔 되풀이하지 않는다'));
+});
+
+t('only the newest narrations are carried, oldest first, capped', () => {
+  const given = ['가장 오래된 서술.', '두 번째 서술.', '세 번째 서술.', '가장 최근 서술.'];
+  const p = passN({ recentNarrations: given.slice(-PASS_N_RECENT_NARRATIONS) });
+  assert.equal(PASS_N_RECENT_NARRATIONS, 2, 'the cap this test is written against');
+  assert.ok(p.includes('세 번째 서술.'));
+  assert.ok(p.includes('가장 최근 서술.'));
+  assert.equal(p.includes('가장 오래된 서술.'), false, 'anything past the cap must be dropped');
+  assert.equal(p.includes('두 번째 서술.'), false);
+  // Chronological, so the newest sits closest to the rules that talk about it.
+  assert.ok(p.indexOf('세 번째 서술.') < p.indexOf('가장 최근 서술.'));
+  // And the newest still comes before the user input the turn is answering.
+  assert.ok(p.indexOf('가장 최근 서술.') < p.indexOf('## 사용자 입력'));
+});
+
+t('continuity context cannot smuggle a voice into the narration pass', () => {
+  // A prior narration is model output, so it is untrusted input on the way back in.
+  // The prohibitions must still be stated after it, not before.
+  const p = passN({ recentNarrations: ['나리: "괜찮아."'] });
+  assert.ok(p.indexOf('앞서 이미 서술된 것') < p.indexOf('**어떤 인물의 대사도 쓰지 않는다.**'));
+  assert.ok(p.includes('`이름:` 형식'));
 });
 
 // ── Pass F: one card, one voice ─────────────────────────────────────────────

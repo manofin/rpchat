@@ -8,7 +8,7 @@
  * survives — the `<choices>` contract already showed that a positive instruction
  * alone is honoured ~80% of the time.
  *
- *   Pass N  서술·군중·카메라     focus card + short roster
+ *   Pass N  서술·군중             focus card + short roster + 직전 서술
  *   Pass F  focus 대사·속마음    focus card only
  *   Pass E  approved extra only  that card only, 2-4 sentences
  *   Pass C  선택지               the finished turn, no card at all → beatChoices.ts
@@ -34,6 +34,16 @@ import type { Scene } from '../types.js';
 
 /** Line caps, stated in the prompt and enforced again by the server on persist. */
 export const PASS_N_MAX_SENTENCES = 4;
+
+/**
+ * narration-continuity: how many already-shown narrations Pass N is given back.
+ *
+ * Two, not more. The purpose is to let the pass recognise the stage it is standing
+ * on, not to re-read the scene: one is enough to stop the immediate repeat, and the
+ * second catches the "alternate between two openers" shape that one alone invites.
+ * Past that the input grows for a pass whose output is four sentences.
+ */
+export const PASS_N_RECENT_NARRATIONS = 2;
 export const PASS_E_MIN_SENTENCES = 2;
 export const PASS_E_MAX_SENTENCES = 4;
 
@@ -78,11 +88,25 @@ function sceneLines(scene: Scene, header: string | null): string[] {
 }
 
 /**
- * Pass N — narration, crowd, camera.
+ * Pass N — narration.
  *
  * The one prohibition that matters here is the `이름|` block: ambient existence
  * must stay narration. §4.4 is explicit that talkativeness buys a gesture, not a
  * line, and this is the prompt where that boundary is actually enforceable.
+ *
+ * narration-continuity: this pass used to be told it writes "배경·군중·카메라",
+ * and it read that list as a checklist rather than as a palette — measured over 38
+ * live narrations, 66% ended on a `카메라는 …` sentence and 61% opened on the same
+ * unchanged ceiling and clouds. With `PASS_N_MAX_SENTENCES = 4`, three of the four
+ * sentences were spoken for before the turn had happened. So the role line now
+ * names what actually moves the scene, and camera work is offered as a device.
+ *
+ * The deeper half is `recentNarrations`. Every other input here describes a world
+ * that has not changed between turns — same header, same roster, same weather — so
+ * a pass with no memory of what it already wrote had no way to *not* re-establish
+ * the room. It is the only pass in the beat that needed its own output back; Pass F
+ * and Pass E are handed the turn as it is being built, and Pass C is handed the
+ * finished blocks.
  */
 export function renderPassN(input: {
   focusCard: PassCard | null;
@@ -91,10 +115,17 @@ export function renderPassN(input: {
   header: string | null;
   userText: string;
   ambientNames: string[];
+  /**
+   * Already-shown narrations, oldest first, newest last — the newest sits closest
+   * to the rules that talk about it. Absent or empty is the opening turn, which
+   * still gets the full establishing shot: there is nothing to repeat yet.
+   */
+  recentNarrations?: string[];
 }): string {
   const ambient = input.ambientNames.length ? input.ambientNames.join(', ') : '(없음)';
+  const recent = (input.recentNarrations ?? []).map((s) => s.trim()).filter(Boolean);
   return [
-    '너는 장면 서술자다. 이번 턴의 배경·군중·카메라만 쓴다. 어떤 인물의 대사도 쓰지 않는다.',
+    '너는 장면 서술자다. 이번 턴에 새로 달라진 것만 쓴다 — 인물의 행동·반응, 공간에서 바뀐 것, 주변 사람들의 기척. 어떤 인물의 대사도 쓰지 않는다.',
     '',
     ...(input.focusCard ? [cardBlock(input.focusCard, '이번 턴의 중심 인물'), ''] : []),
     '## 장면',
@@ -102,11 +133,21 @@ export function renderPassN(input: {
     `- 이 자리에 있는 사람: ${rosterLine(input.cast, input.scene)}`,
     `- 이번 턴에 몸짓으로 존재감만 드러낼 사람: ${ambient}`,
     '',
+    ...(recent.length
+      ? ['## 앞서 이미 서술된 것 (화면에 남아 있다. 다시 쓰지 말 것)', ...recent, '']
+      : []),
     '## 사용자 입력',
     input.userText,
     '',
     '## 규칙',
     `- ${PASS_N_MAX_SENTENCES}문장 이내. 서술문만 쓴다.`,
+    ...(recent.length
+      ? [
+          '- 위 "앞서 이미 서술된 것"에서 이미 세워진 배경·날씨·조명·공간의 분위기를 다시 소개하지 않는다. 같은 장소가 이어지는 중이면 장소를 처음 보여주듯 쓰지 않는다.',
+          '- 위 서술의 문장을 그대로 옮기거나, 같은 구도를 표현만 바꿔 되풀이하지 않는다.',
+        ]
+      : []),
+    '- 시점·카메라 표현은 장면을 이해하는 데 실제로 도움이 될 때만 쓴다. 매 턴 쓰지 않아도 된다.',
     '- **어떤 인물의 대사도 쓰지 않는다.** 큰따옴표 대사, `이름|` 형식, `이름:` 형식 전부 금지.',
     '- 위 "몸짓으로 존재감만" 목록의 인물은 행동·표정 한 조각으로만 등장시킨다. 말하게 하지 않는다.',
     '- 그 목록에 없는 인물을 새로 등장시키거나 이름을 지어내지 않는다.',

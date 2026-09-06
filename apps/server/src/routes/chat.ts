@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../ctx.js';
 import { PROMPT_VERSION, config } from '../config.js';
-import { getSetting, many, nowIso, one, run, uid } from '../db/index.js';
+import { getSetting, many, nowIso, one, parseJson, run, uid } from '../db/index.js';
 import { interruptOrphanStreaming } from '../db/generation.js';
 import { getPath, insertMessage, messageOut, setHead, updateMessage } from '../db/tree.js';
 import { ModelError } from '../model/adapter.js';
@@ -19,7 +19,7 @@ import {
 import type { PartyTagRow } from '../prompt/tagsCatalog.js';
 import { catalogFromStory } from '../prompt/sceneCatalog.js';
 import { currentSceneVersion, parseSceneDelta, renderSceneDeltaPrompt } from '../prompt/sceneDeltaPrompt.js';
-import { PASS_E_MAX_SENTENCES } from '../prompt/passes.js';
+import { PASS_E_MAX_SENTENCES, PASS_N_RECENT_NARRATIONS } from '../prompt/passes.js';
 import { parseChoicesPass } from '../prompt/beatChoices.js';
 import { resolvePersona } from '../prompt/builder.js';
 import type { PassCard } from '../prompt/passes.js';
@@ -368,6 +368,16 @@ export function chatRoutes(ctx: Ctx) {
     }
 
     const persona = resolvePersona(db, convNow);
+    // narration-continuity: the last narrations already on screen, read off the
+    // active branch. `getPath` is the tree reader the 1:1 prompt uses for the same
+    // reason — after a regenerate or a swipe the abandoned sibling is still in the
+    // table, and feeding Pass N a narration the user never saw would make it avoid
+    // repeating something that is not there.
+    const recentNarrations = getPath(db, convNow)
+      .filter((m) => m.role === 'assistant' && parseJson<{ block_kind?: string }>(m.meta_json, {}).block_kind === 'narration')
+      .slice(-PASS_N_RECENT_NARRATIONS)
+      .map((m) => m.content.trim())
+      .filter(Boolean);
     const planInput: BeatPlanInput = {
       conversation_id: conv.id,
       scene,
@@ -381,6 +391,7 @@ export function chatRoutes(ctx: Ctx) {
       main_character_id: convNow.character_id,
       message_id: userMessage?.id ?? null,
       content_policy: getSetting(db, 'content_policy', ''),
+      recent_narrations: recentNarrations,
     };
     const plan = planBeat(planInput);
 

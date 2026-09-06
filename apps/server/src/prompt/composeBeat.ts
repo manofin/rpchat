@@ -56,6 +56,12 @@ export type BeatPlanInput = {
   content_policy?: string;
   /** World facts injected into Pass E as given, e.g. `empty_seat = beside(나리)`. */
   facts?: string[];
+  /**
+   * narration-continuity: narrations already on screen, oldest first. Read off the
+   * active branch by the caller (`getPath`), so a regenerate or a swipe never feeds
+   * Pass N a narration from a path the user abandoned. Absent = opening turn.
+   */
+  recent_narrations?: string[];
 };
 
 export type BeatPlan = {
@@ -221,6 +227,7 @@ export function planBeat(input: BeatPlanInput): BeatPlan {
       header,
       userText: input.user_text,
       ambientNames: ambient.map((a) => a.name),
+      recentNarrations: input.recent_narrations,
     }),
     pass_f: focusCard
       ? renderPassF({
