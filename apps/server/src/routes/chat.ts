@@ -4,7 +4,7 @@ import type { Ctx } from '../ctx.js';
 import { PROMPT_VERSION, config } from '../config.js';
 import { getSetting, many, nowIso, one, parseJson, run, uid } from '../db/index.js';
 import { interruptOrphanStreaming } from '../db/generation.js';
-import { getPath, insertMessage, messageOut, setHead, updateMessage } from '../db/tree.js';
+import { getPath, insertMessage, messageOut, resolveTurnStart, setHead, updateMessage } from '../db/tree.js';
 import { ModelError } from '../model/adapter.js';
 import {
   finishBeat, passCWith, passFWith, planBeat, planPassE, partyCastForGenerate,
@@ -1197,8 +1197,25 @@ export function chatRoutes(ctx: Ctx) {
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ? AND conversation_id = ?', p.data.messageId, conv.id);
       if (!m) return reply.code(404).send({ error: 'message not found' });
       if (m.status === 'streaming') return reply.code(409).send({ error: '생성 중' });
-      // assistant 메시지 재생성 = 그 부모 아래 새 형제. user 메시지(응답 없이 끝난 경우) = 그 아래로 이어서 생성.
-      const parentId = m.role === 'assistant' ? m.parent_id : m.id;
+      // assistant 메시지 재생성 = 그 **턴** 전체가 부모 아래 새 형제가 된다.
+      // user 메시지(응답 없이 끝난 경우) = 그 아래로 이어서 생성.
+      //
+      // regenerate-turn-boundary: 1:1은 턴이 한 행이라 예전처럼 그 행의 부모를 쓰지만,
+      // beat/dialog/hunter는 턴이 5~6행이라 대상 행의 부모가 자기 턴 한가운데다.
+      // 그대로 쓰면 옛 턴 앞부분이 활성 경로에 남은 채 새 턴이 뒤에 붙는다. 어느 블록을
+      // 지정하든 턴 시작 블록으로 정규화한다. 클라이언트가 보내는 것은 여전히 메시지 id
+      // 하나이고, 경계 해석은 서버가 한다.
+      let parentId: string | null;
+      if (m.role === 'assistant') {
+        const turn = resolveTurnStart(db, m);
+        // 경계를 확정할 수 없으면 부분 재생성으로 경로를 오염시키느니 거절한다.
+        if (turn.kind === 'unresolved') {
+          return reply.code(409).send({ error: `턴 경계를 확정할 수 없음 (${turn.reason})` });
+        }
+        parentId = turn.parentId;
+      } else {
+        parentId = m.id;
+      }
       return generate(req, reply, conv, parentId);
     });
 
