@@ -96,6 +96,11 @@ t('12 story 선택지는 장면 행동+1인칭 대사이며 성공을 예고하�
   assert.match(inst, /특정 선택지의 성공을 예고하지 않는다/);
   assert.doesNotMatch(inst, /자유 입력을 허용하는 표현/);
   assert.match(inst, /지명가 다음에 보낼/);
+  assert.match(inst, /초안의 화자는 항상 지명다/);
+  assert.match(inst, /카이의 대사·행동·생각·서술을 초안에 쓰지 않는다/);
+  assert.match(inst, /직전 본문을 카이 시점으로 이어 쓰지 않는다/);
+  assert.match(inst, /All choices must be written as messages spoken or acted by 지명/);
+  assert.match(inst, /Never write 카이 dialogue, actions, thoughts, or narration inside choices/);
 });
 
 t('13 extractChoices: 화자 마크다운 본문을 보존하고 태그 제거', () => {
