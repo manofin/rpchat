@@ -20,7 +20,11 @@ import {
 import type { PartyTagRow } from '../prompt/tagsCatalog.js';
 import { catalogFromStory } from '../prompt/sceneCatalog.js';
 import { currentSceneVersion, parseSceneDelta, renderSceneDeltaPrompt } from '../prompt/sceneDeltaPrompt.js';
-import { holdClockProposal, type ClockObserve } from '../prompt/clockObserve.js';
+import {
+  decorateClockObserve, holdClockProposal, isCanaryTitle,
+  type ClockObserve, type ClockObserveCore, type ClockObserveOutcome, type ClockObservePath,
+  type ClockParseStatus,
+} from '../prompt/clockObserve.js';
 import { PASS_E_MAX_SENTENCES, PASS_N_RECENT_NARRATIONS } from '../prompt/passes.js';
 import { parseChoicesPass } from '../prompt/beatChoices.js';
 import { resolvePersona } from '../prompt/builder.js';
@@ -106,6 +110,25 @@ function wasAborted(controller: AbortController, err: unknown): boolean {
   return controller.signal.aborted || (err as { name?: string } | undefined)?.name === 'AbortError';
 }
 
+function sealClockObserve(
+  core: ClockObserveCore,
+  path: ClockObservePath,
+  scene: Scene,
+  convNow: ConversationRow,
+  regenTurnStartId: string | null,
+  outcome: ClockObserveOutcome,
+  discarded: boolean,
+): ClockObserve {
+  return decorateClockObserve(core, {
+    path,
+    stage: typeof scene.stage === 'string' ? scene.stage : null,
+    discarded,
+    regenerate: Boolean(regenTurnStartId),
+    canary: isCanaryTitle(convNow.title),
+    outcome,
+  });
+}
+
 /**
  * Per-pass deadline. The model client has one global timeout tuned for a full 1:1
  * turn, which is far too generous for a four-sentence narration — and §7's whole
@@ -137,6 +160,26 @@ export function chatRoutes(ctx: Ctx) {
   const stampTurnScene = (startId: string | undefined, before: Scene, after: Scene) => {
     if (!startId) return;
     updateMessage(db, startId, { meta: { scene_state: buildSceneSnapshot(before, after) } });
+  };
+
+  /** Failure/interrupt path: a clock_observe row with no beat_log, no scene write. */
+  const logClockObserve = (
+    convId: string,
+    messageId: string | null | undefined,
+    profileName: string,
+    outcome: ClockObserveOutcome,
+    totalMs: number,
+    observe: ClockObserve,
+  ) => {
+    run(
+      db,
+      `INSERT INTO generation_log (id, conversation_id, message_id, profile_name, prompt_version, est_prompt_tokens, actual_prompt_tokens, completion_tokens, ttft_ms, total_ms, finish_reason, status, budget_json, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      uid(), convId, messageId ?? null, profileName, PROMPT_VERSION,
+      null, null, null, null, totalMs, outcome, outcome,
+      JSON.stringify({ clock_observe: observe }),
+      nowIso(),
+    );
   };
 
   function openSse(reply: FastifyReply): { send: (e: SseEvent) => void; close: () => void; isOpen: () => boolean } {
@@ -369,6 +412,7 @@ export function chatRoutes(ctx: Ctx) {
     // Turn Pipeline step 2-4: propose → validate → apply. One short call; any
     // failure leaves the scene untouched and the beat continues.
     let patch: Record<string, unknown> | null = null;
+    let clockParse: ClockParseStatus = 'null';
     const passMs: { delta: number; n: number; f: number; e: number[]; c: number } = { delta: 0, n: 0, f: 0, e: [], c: 0 };
     const t0delta = Date.now();
     try {
@@ -383,15 +427,17 @@ export function chatRoutes(ctx: Ctx) {
         }),
       );
       patch = parseSceneDelta(proposal.text);
+      clockParse = patch === null ? 'null' : 'ok';
     } catch (err) {
+      clockParse = 'fail';
       req.log.warn({ err, conversationId: conv.id }, 'scene delta proposal failed; scene unchanged');
     }
     passMs.delta = Date.now() - t0delta;
 
     // clock-advance-observe: classify the proposal, then drop the time key so
     // apply cannot move the clock. Other scene keys still apply.
-    const heldClock = holdClockProposal(patch, userText);
-    const clockObserve: ClockObserve = heldClock.observe;
+    const heldClock = holdClockProposal(patch, userText, clockParse);
+    const clockCore: ClockObserveCore = heldClock.observe;
     patch = heldClock.patch ?? null;
 
     const cards: Record<string, PassCard> = {};
@@ -675,7 +721,7 @@ export function chatRoutes(ctx: Ctx) {
             choices_ok: choices !== null,
             choices_count: choices?.length ?? 0,
             pass_ms: passMs,
-            clock_observe: { ...clockObserve, discarded: plan.applied.discarded },
+            clock_observe: sealClockObserve(clockCore, 'beat', scene, convNow, regenTurnStartId, 'success', plan.applied.discarded),
           },
         }),
         nowIso(),
@@ -724,6 +770,11 @@ export function chatRoutes(ctx: Ctx) {
         ctx.log.error({ err, generationId }, '비트 생성 실패');
         sse.send({ type: 'error', message: msg });
       }
+      logClockObserve(
+        conv.id, focusRow?.id ?? emitted[emitted.length - 1]?.id ?? userMessage?.id,
+        profileName, aborted ? 'interrupt' : 'fail', Date.now() - tBeat,
+        sealClockObserve(clockCore, 'beat', scene, convNow, regenTurnStartId, aborted ? 'interrupt' : 'fail', plan.applied.discarded),
+      );
     } finally {
       ctx.queue.unregister(generationId);
       sse.close();
@@ -777,6 +828,7 @@ export function chatRoutes(ctx: Ctx) {
 
     // Scene delta — identical contract to the beat path, including the allow-list.
     let patch: Record<string, unknown> | null = null;
+    let clockParse: ClockParseStatus = 'null';
     const passMs: { delta: number; s: number } = { delta: 0, s: 0 };
     const t0delta = Date.now();
     try {
@@ -791,13 +843,15 @@ export function chatRoutes(ctx: Ctx) {
         }),
       );
       patch = parseSceneDelta(proposal.text);
+      clockParse = patch === null ? 'null' : 'ok';
     } catch (err) {
+      clockParse = 'fail';
       req.log.warn({ err, conversationId: conv.id }, 'scene delta proposal failed; scene unchanged');
     }
     passMs.delta = Date.now() - t0delta;
 
-    const heldClock = holdClockProposal(patch, userText);
-    const clockObserve: ClockObserve = heldClock.observe;
+    const heldClock = holdClockProposal(patch, userText, clockParse);
+    const clockCore: ClockObserveCore = heldClock.observe;
     patch = heldClock.patch ?? null;
 
     const cards: Record<string, PassCard> = {};
@@ -976,7 +1030,7 @@ export function chatRoutes(ctx: Ctx) {
             blocks: scriptBlocks.length,
             choices_count: choices?.length ?? 0,
             pass_ms: passMs,
-            clock_observe: { ...clockObserve, discarded: plan.applied.discarded },
+            clock_observe: sealClockObserve(clockCore, 'dialog', scene, convNow, regenTurnStartId, 'success', plan.applied.discarded),
           },
         }),
         nowIso(),
@@ -1015,6 +1069,11 @@ export function chatRoutes(ctx: Ctx) {
         ctx.log.error({ err, generationId }, '대본 생성 실패');
         sse.send({ type: 'error', message: msg });
       }
+      logClockObserve(
+        conv.id, scriptRow?.id ?? emitted[emitted.length - 1]?.id ?? userMessage?.id,
+        profileName, aborted ? 'interrupt' : 'fail', Date.now() - tBeat,
+        sealClockObserve(clockCore, 'dialog', scene, convNow, regenTurnStartId, aborted ? 'interrupt' : 'fail', plan.applied.discarded),
+      );
     } finally {
       ctx.queue.unregister(generationId);
       sse.close();
@@ -1066,6 +1125,7 @@ export function chatRoutes(ctx: Ctx) {
     const userText = userMessage?.content ?? '';
 
     let patch: Record<string, unknown> | null = null;
+    let clockParse: ClockParseStatus = 'null';
     const passMs: { delta: number; h: number } = { delta: 0, h: 0 };
     const t0delta = Date.now();
     try {
@@ -1080,13 +1140,15 @@ export function chatRoutes(ctx: Ctx) {
         }),
       );
       patch = parseSceneDelta(proposal.text);
+      clockParse = patch === null ? 'null' : 'ok';
     } catch (err) {
+      clockParse = 'fail';
       req.log.warn({ err, conversationId: conv.id }, 'scene delta proposal failed; scene unchanged');
     }
     passMs.delta = Date.now() - t0delta;
 
-    const heldClock = holdClockProposal(patch, userText);
-    const clockObserve: ClockObserve = heldClock.observe;
+    const heldClock = holdClockProposal(patch, userText, clockParse);
+    const clockCore: ClockObserveCore = heldClock.observe;
     patch = heldClock.patch ?? null;
 
     const cards: Record<string, PassCard> = {};
@@ -1251,7 +1313,7 @@ export function chatRoutes(ctx: Ctx) {
             blocks: finished.blocks.length,
             choices_count: choices?.length ?? 0,
             pass_ms: passMs,
-            clock_observe: { ...clockObserve, discarded: plan.applied.discarded },
+            clock_observe: sealClockObserve(clockCore, 'hunter', scene, convNow, regenTurnStartId, 'success', plan.applied.discarded),
           },
         }),
         nowIso(),
@@ -1290,6 +1352,11 @@ export function chatRoutes(ctx: Ctx) {
         ctx.log.error({ err, generationId }, '헌터 대본 생성 실패');
         sse.send({ type: 'error', message: msg });
       }
+      logClockObserve(
+        conv.id, scriptRow?.id ?? emitted[emitted.length - 1]?.id ?? userMessage?.id,
+        profileName, aborted ? 'interrupt' : 'fail', Date.now() - tBeat,
+        sealClockObserve(clockCore, 'hunter', scene, convNow, regenTurnStartId, aborted ? 'interrupt' : 'fail', plan.applied.discarded),
+      );
     } finally {
       ctx.queue.unregister(generationId);
       sse.close();

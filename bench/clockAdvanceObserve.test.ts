@@ -22,9 +22,15 @@ import { chatRoutes } from '../apps/server/src/routes/chat.ts';
 import { DEFAULT_STORY_CLOCK_MINUTES } from '../apps/server/src/prompt/initScene.ts';
 import { applySceneDelta } from '../apps/server/src/prompt/applySceneDelta.ts';
 import {
+  CANDIDATE_SERVER_DEFAULT_MINUTES,
   CLOCK_OBSERVE_FRAMING,
+  CLOCK_OBSERVE_MIN_N,
+  CLOCK_OBSERVE_TARGET_N,
+  CLOCK_OBSERVE_WINDOW_DAYS,
   classifyClockObserve,
+  decorateClockObserve,
   holdClockProposal,
+  isCanaryTitle,
   stripAdvanceMinutes,
 } from '../apps/server/src/prompt/clockObserve.ts';
 import { THOUGHT_MARKER } from '../apps/server/src/prompt/passes.ts';
@@ -135,13 +141,13 @@ await t('applySceneDelta still moves the clock when the key is passed (observe i
 
 await t('chat.ts holds the clock on all three multi-row paths and records clock_observe', () => {
   const s = code('apps/server/src/routes/chat.ts');
-  assert.equal((s.match(/holdClockProposal\(patch, userText\)/g) ?? []).length, 3);
+  assert.equal((s.match(/holdClockProposal\(patch, userText, clockParse\)/g) ?? []).length, 3);
   const beat = s.slice(s.indexOf('async function generateBeat'));
   const dialog = s.slice(s.indexOf('async function generateDialog'));
   const hunter = s.slice(s.indexOf('async function generateHunter'));
-  assert.ok(beat.includes('clock_observe:'));
-  assert.ok(dialog.includes('clock_observe:'));
-  assert.ok(hunter.includes('clock_observe:'));
+  assert.ok(beat.includes("sealClockObserve(clockCore, 'beat'"));
+  assert.ok(dialog.includes("sealClockObserve(clockCore, 'dialog'"));
+  assert.ok(hunter.includes("sealClockObserve(clockCore, 'hunter'"));
   assert.equal(s.includes('CLOCK_OBSERVE_FRAMING = '), false, 'framing is not redefined in chat.ts');
 });
 
@@ -151,7 +157,87 @@ await t('sceneDeltaPrompt is not reframed in this slice', () => {
   assert.ok(prompt.includes('advance_minutes": 5}'));
 });
 
-async function generatePath() {
+await t('2 is an evaluation-only candidate and the sample window is registered', () => {
+  assert.equal(CANDIDATE_SERVER_DEFAULT_MINUTES, 2);
+  assert.equal(CLOCK_OBSERVE_TARGET_N, 100);
+  assert.equal(CLOCK_OBSERVE_MIN_N, 50);
+  assert.equal(CLOCK_OBSERVE_WINDOW_DAYS, 14);
+  const src = code('apps/server/src/prompt/clockObserve.ts');
+  assert.ok(src.includes('evaluation-only'));
+  assert.equal(src.includes('clock_minutes +'), false);
+  assert.equal(src.includes('day_index'), false);
+});
+
+await t('parse throw and parse null are distinct from a missing key on a valid object', () => {
+  const threw = classifyClockObserve(null, '', 'fail');
+  const empty = classifyClockObserve(null, '', 'null');
+  const missing = classifyClockObserve({ base_version: 0 }, '', 'ok');
+  assert.equal(threw.kind, 'unparsed');
+  assert.equal(threw.parse, 'fail');
+  assert.equal(empty.kind, 'unparsed');
+  assert.equal(empty.parse, 'null');
+  assert.equal(missing.kind, 'missing');
+  assert.equal(missing.parse, 'ok');
+  assert.equal(missing.key_present, false);
+});
+
+await t('invalid type and invalid range are distinct', () => {
+  const type = classifyClockObserve({ advance_minutes: '30' }, '30분');
+  const range = classifyClockObserve({ advance_minutes: 1441 }, '');
+  assert.equal(type.kind, 'invalid');
+  assert.equal(type.invalid_reason, 'type');
+  assert.equal(type.value, null);
+  assert.equal(range.kind, 'invalid');
+  assert.equal(range.invalid_reason, 'range');
+  assert.equal(range.value, 1441);
+});
+
+await t('in_sample is success and not regen and not canary', () => {
+  const core = classifyClockObserve({ advance_minutes: 2 }, '안녕');
+  const sample = decorateClockObserve(core, {
+    path: 'beat', stage: 'reg', discarded: false, regenerate: false, canary: false, outcome: 'success',
+  });
+  assert.equal(sample.in_sample, true);
+  assert.equal(sample.path, 'beat');
+  assert.equal(sample.candidate_default, 2);
+  assert.equal(decorateClockObserve(core, {
+    path: 'beat', stage: 'reg', discarded: false, regenerate: true, canary: false, outcome: 'success',
+  }).in_sample, false);
+  assert.equal(decorateClockObserve(core, {
+    path: 'beat', stage: 'reg', discarded: false, regenerate: false, canary: true, outcome: 'success',
+  }).in_sample, false);
+  assert.equal(decorateClockObserve(core, {
+    path: 'beat', stage: 'reg', discarded: false, regenerate: false, canary: false, outcome: 'interrupt',
+  }).in_sample, false);
+  assert.equal(isCanaryTitle('CLOCK-OBSERVE-CANARY-20260907'), true);
+  assert.equal(isCanaryTitle('유키-smoke'), false);
+});
+
+await t('the observe payload never contains user or model text', () => {
+  const core = classifyClockObserve({ base_version: 0, advance_minutes: 10 }, '측정 끝났어요. 시간도 10분쯤 지났고');
+  const obs = decorateClockObserve(core, {
+    path: 'beat', stage: 'reg', discarded: false, regenerate: false, canary: false, outcome: 'success',
+  });
+  const json = JSON.stringify(obs);
+  assert.equal(json.includes('측정'), false);
+  assert.equal(json.includes('10분쯤'), false);
+  assert.equal(json.includes('content'), false);
+  assert.equal(json.includes('thought'), false);
+  for (const k of ['user_text', 'prompt', 'patch', 'scene']) {
+    assert.equal(Object.prototype.hasOwnProperty.call(obs, k), false, k);
+  }
+});
+
+await t('classify is cheap enough not to add a model-round latency', () => {
+  const t0 = process.hrtime.bigint();
+  for (let i = 0; i < 2000; i++) {
+    classifyClockObserve({ base_version: 0, advance_minutes: i % 2 === 0 ? 2 : undefined as unknown as number }, i % 3 === 0 ? '10분' : '안녕');
+  }
+  const ms = Number(process.hrtime.bigint() - t0) / 1e6;
+  assert.ok(ms < 50, `2000 classifies took ${ms.toFixed(2)}ms`);
+});
+
+async function generatePath(opts: { title?: string } = {}) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-clock-observe-'));
   const db = openDb(tmp, path.resolve('apps/server/migrations'));
   db.prepare(
@@ -226,7 +312,19 @@ async function generatePath() {
     const row = db.prepare(
       `SELECT budget_json FROM generation_log WHERE conversation_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 1`,
     ).get(id) as { budget_json: string };
-    return parseJson<{ beat_log?: { clock_observe?: Record<string, unknown> } }>(row.budget_json, {}).beat_log?.clock_observe;
+    const j = parseJson<{
+      clock_observe?: Record<string, unknown>;
+      beat_log?: { clock_observe?: Record<string, unknown> };
+      dialog_log?: { clock_observe?: Record<string, unknown> };
+      hunter_log?: { clock_observe?: Record<string, unknown> };
+    }>(row.budget_json, {});
+    return j.beat_log?.clock_observe ?? j.dialog_log?.clock_observe ?? j.hunter_log?.clock_observe ?? j.clock_observe;
+  };
+  const budgetRaw = (id: string) => {
+    const row = db.prepare(
+      `SELECT budget_json FROM generation_log WHERE conversation_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 1`,
+    ).get(id) as { budget_json: string };
+    return row.budget_json;
   };
 
   const char = async (name: string, tags: string[]) => {
@@ -244,10 +342,12 @@ async function generatePath() {
   for (const [id, order] of [[hayeon.id, 0], [nari.id, 1], [sera.id, 2]] as const) {
     await api('POST', `/api/stories/${story}/characters`, { characterId: id, sortOrder: order });
   }
-  const convRes = await api('POST', '/api/conversations', { characterId: hayeon.id, storyId: story, mode: 'story' });
+  const convRes = await api('POST', '/api/conversations', {
+    characterId: hayeon.id, storyId: story, mode: 'story', title: opts.title ?? '',
+  });
   const conv = (convRes.json as { id: string }).id;
 
-  return { app, db, tmp, conv, send, sceneOf, beatLogOf, setDelta: (b: Record<string, unknown> | 'garbage') => {
+  return { app, db, tmp, conv, send, sceneOf, beatLogOf, budgetRaw, setDelta: (b: Record<string, unknown> | 'garbage') => {
     if (b === 'garbage') { deltaGarbage = true; return; }
     deltaGarbage = false;
     deltaBody = b;
@@ -270,6 +370,17 @@ await t('a successful beat records the proposal and does not move the clock', as
     assert.equal(obs!.applied, false);
     assert.equal(obs!.discarded, false);
     assert.equal(obs!.user_time_expression, true);
+    assert.equal(obs!.path, 'beat');
+    assert.equal(obs!.parse, 'ok');
+    assert.equal(obs!.key_present, true);
+    assert.equal(obs!.candidate_default, 2);
+    assert.equal(obs!.outcome, 'success');
+    assert.equal(obs!.in_sample, true);
+    assert.equal(obs!.canary, false);
+    assert.equal(obs!.regenerate, false);
+    const raw = h.budgetRaw(h.conv);
+    assert.equal(raw.includes('10분쯤'), false);
+    assert.ok(Buffer.byteLength(JSON.stringify(obs), 'utf8') < 600, 'observe payload stays small');
   } finally {
     await h.app.close();
     h.db.close();
@@ -297,6 +408,42 @@ await t('explicit 0, missing, invalid, and unparsed all leave the clock frozen a
       assert.equal(obs.applied, false, c.kind);
       assert.equal(obs.user_time_expression, c.expr, c.kind);
     }
+  } finally {
+    await h.app.close();
+    h.db.close();
+    fs.rmSync(h.tmp, { recursive: true, force: true });
+  }
+});
+
+await t('a missing key does not receive the 2-minute candidate', async () => {
+  const h = await generatePath();
+  try {
+    h.setDelta({ weather: '맑음' });
+    const before = h.sceneOf(h.conv).clock_minutes;
+    await h.send(h.conv, '그냥 서 있는다');
+    assert.equal(h.sceneOf(h.conv).clock_minutes, before);
+    assert.notEqual(h.sceneOf(h.conv).clock_minutes, before + 2);
+    const obs = h.beatLogOf(h.conv)!;
+    assert.equal(obs.kind, 'missing');
+    assert.equal(obs.candidate_default, 2);
+    assert.equal(obs.applied, false);
+    assert.equal(obs.in_sample, true);
+  } finally {
+    await h.app.close();
+    h.db.close();
+    fs.rmSync(h.tmp, { recursive: true, force: true });
+  }
+});
+
+await t('a CANARY title is logged but excluded from the default sample', async () => {
+  const h = await generatePath({ title: 'CLOCK-OBSERVE-CANARY-20260907' });
+  try {
+    await h.send(h.conv, '10분쯤 지났어요');
+    const obs = h.beatLogOf(h.conv)!;
+    assert.equal(obs.canary, true);
+    assert.equal(obs.in_sample, false);
+    assert.equal(obs.outcome, 'success');
+    assert.equal(h.sceneOf(h.conv).clock_minutes, DEFAULT_STORY_CLOCK_MINUTES);
   } finally {
     await h.app.close();
     h.db.close();

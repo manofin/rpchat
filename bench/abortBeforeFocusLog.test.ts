@@ -187,6 +187,16 @@ await t('abort during Pass N is not logged as a generation failure and does not 
     const active = await api('GET', '/api/generations/active');
     assert.equal((active.json as { active: unknown[]; queued: number }).active.length, 0);
     assert.equal((active.json as { queued: number }).queued, 0);
+
+    const log = db.prepare(
+      `SELECT status, budget_json FROM generation_log WHERE conversation_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 1`,
+    ).get(conv) as { status: string; budget_json: string } | undefined;
+    assert.ok(log, 'interrupt still writes a clock_observe row');
+    const obs = parseJson<{ clock_observe?: { outcome?: string; in_sample?: boolean; applied?: boolean } }>(log!.budget_json, {}).clock_observe;
+    assert.equal(obs?.outcome, 'interrupt');
+    assert.equal(obs?.in_sample, false);
+    assert.equal(obs?.applied, false);
+    assert.equal(log!.status, 'interrupt');
   } finally {
     await app.close();
     db.close();
