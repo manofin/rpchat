@@ -3784,3 +3784,21 @@ BACKLOG:
   framing `pre-reframe` 3. MIN 50 미달 → **코드 슬라이스 미개방**.
 - 이 토큰 **spent**. 다음 합법 = 창 종료 선언 + 새 이름 `story-opening-schema`.
   침묵은 schema가 아님. F8c 슬라이스 이름 재사용 금지.
+
+## [2026-09-07 ADR] `story-peer-cast-adr`
+
+- 토큰 범위: 문서만. `apps/**` 0, 마이그레이션 0, 라이브 DB 쓰기 0, `PROMPT_VERSION` 불변, generate 0.
+  `STATUS.md` / `lock-state.md` 미수정. 헤더 재바인딩 없음.
+- HEAD bind `v0.0.19-139-gb88635e-dirty` (`b88635e96302374f4e9f0ef35c14766be66c77e3`).
+  현재 제품 HEAD로 재바인딩하지 않음.
+- 파일: `planning_documents/ADR-F8e-story-peer-cast.md`
+  sha256 `8a34b6987082f06ba2aac74bf657511bf64d1f342f96242d9bc402548963925b`.
+- Status: **accepted** (문서). 주연/조연 계급 폐기. F8 호스팅 계약만 교체·한정.
+- 갈림 잠금: A1 / B1 / C1 / C-focus-β / focus=null→extra=0 / self_repeat 유지 / K=2 / D1 / E1 / F1.
+  1:1 캐릭터 방 유지.
+- `clock-observe` 창은 이 ADR이 닫지 않음. schema / start-ui / generate는 창 종료 후 새 이름.
+- 이 토큰 **spent**. 침묵은 extra-policy/schema가 아님.
+- 별도 커밋 `1343e419ae27347f4ffcf86e2b879b10749f8757`
+  `feat(rp): add story peer-cast extra policy` (parent `b88635e`).
+  `approveStoryExtras.ts` + `bench/approveStoryExtras.test.ts`. `chat.ts` import 0.
+  **`story-peer-cast-adr` 산출물이 아님.** 소급 귀속 금지.
