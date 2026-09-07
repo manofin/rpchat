@@ -75,13 +75,14 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
       open={open}
       title={character ? '캐릭터 편집' : '새 캐릭터'}
       onClose={onClose}
+      toolbar={
+        <div className="sheet tabs" style={{ padding: '0 0 10px' }}>
+          <button className={tab === 'card' ? 'active' : ''} onClick={() => setTab('card')}>카드</button>
+          <button className={tab === 'lore' ? 'active' : ''} onClick={() => setTab('lore')} disabled={!character}>로어{character ? ` (${lore.length})` : ' (저장 후)'}</button>
+        </div>
+      }
       footer={<><button className="btn" onClick={onClose}>취소</button><button className="btn primary" disabled={saving || uploading} onClick={save}>{saving ? '저장 중…' : '저장'}</button></>}
     >
-      <div className="sheet tabs" style={{ padding: '0 0 10px' }}>
-        <button className={tab === 'card' ? 'active' : ''} onClick={() => setTab('card')}>카드</button>
-        <button className={tab === 'lore' ? 'active' : ''} onClick={() => setTab('lore')} disabled={!character}>로어{character ? ` (${lore.length})` : ' (저장 후)'}</button>
-      </div>
-
       {tab === 'card' ? (
         <>
           <div className="field"><label>이름 *</label><input value={d.name} onChange={(e) => set('name', e.target.value)} maxLength={80} /></div>
