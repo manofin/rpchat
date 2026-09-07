@@ -6,12 +6,40 @@ export interface StoryCharacter {
   name: string;
 }
 
+/** f9-place-catalog — one entry of `stories.scene_catalog.places`. */
+export interface SceneCatalogPlace {
+  id: string;
+  name?: string;
+  tags?: string[];
+  default_focus?: string;
+}
+
+/**
+ * The full writable shape of `stories.scene_catalog` (`sceneCatalogSchema` on the
+ * server). A PUT that includes `scene_catalog` replaces the whole object — there
+ * is no per-key merge — so any editor that touches one slice (e.g. `places`) must
+ * round-trip everything else it received on GET, not just the slice it renders.
+ */
+export interface SceneCatalog {
+  places: SceneCatalogPlace[];
+  weathers: string[];
+  arcs: string[];
+  stagesByArc: Record<string, string[]>;
+  flags: Record<string, { owner_stage?: string; owner_duty?: string }>;
+  outfits: string[];
+  items: string[];
+  emotions: Record<string, number>;
+  stages: Record<string, { closer_duty?: string }>;
+  dutySlots: Record<string, string>;
+}
+
 export interface Story {
   id: string;
   name: string;
   tagline: string;
   setting: string;
   minor_cast: { name: string; note: string }[];
+  scene_catalog: SceneCatalog;
   archived: boolean;
   created_at: string;
   updated_at: string;

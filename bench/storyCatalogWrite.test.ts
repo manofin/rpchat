@@ -47,8 +47,14 @@ const SCHOOL = {
   duties: { 교칙: { slot: '질서' }, 수업: { slot: '질서' } },
 };
 
-/** The exact body StoryEditor.save() sends — note the absent scene_catalog. */
-const STORY_EDITOR_BODY = {
+/**
+ * A client that omits `scene_catalog` entirely — the shape StoryEditor.save()
+ * sent before `story-place-catalog-editor` gave it a places section. The server's
+ * preserve-on-omit contract this file locks still has to hold for whatever else
+ * calls the API without modelling catalogs, so the fixture stays even though the
+ * editor itself moved off this path.
+ */
+const OMITS_CATALOG_BODY = {
   name: '교실 (편집됨)',
   tagline: '',
   setting: '학교',
@@ -110,9 +116,9 @@ async function main() {
   });
 
   // ── 2. omission preserves, explicit {} clears ─────────────────────────────
-  await t('a PUT with the StoryEditor body preserves the catalog', async () => {
+  await t('a PUT that omits scene_catalog preserves the catalog', async () => {
     const before = stored(schoolId);
-    const res = await put(schoolId, STORY_EDITOR_BODY);
+    const res = await put(schoolId, OMITS_CATALOG_BODY);
     assert.equal(res.statusCode, 200, res.body);
     assert.equal(JSON.parse(res.body).name, '교실 (편집됨)', 'the fields it did send were written');
     assert.equal(stored(schoolId), before, 'scene_catalog is byte-identical after the save');
@@ -132,7 +138,7 @@ async function main() {
     const id = JSON.parse(res.body).id as string;
     assert.notEqual(catalogFromStory(stored(id)).outfits.length, 0);
 
-    const cleared = await put(id, { ...STORY_EDITOR_BODY, scene_catalog: {} });
+    const cleared = await put(id, { ...OMITS_CATALOG_BODY, scene_catalog: {} });
     assert.equal(cleared.statusCode, 200, cleared.body);
     const cat = catalogFromStory(stored(id));
     assert.deepEqual(cat.places, []);
@@ -148,7 +154,7 @@ async function main() {
     // storyOut returns the PARSED shape, so the duty map comes back as `dutySlots`.
     assert.ok('dutySlots' in (one.scene_catalog as object), 'GET returns dutySlots, not duties');
 
-    const res = await put(schoolId, { ...STORY_EDITOR_BODY, scene_catalog: one.scene_catalog });
+    const res = await put(schoolId, { ...OMITS_CATALOG_BODY, scene_catalog: one.scene_catalog });
     assert.equal(res.statusCode, 200, res.body);
     const cat = catalogFromStory(stored(schoolId));
     assert.deepEqual(cat.dutySlots, { 교칙: '질서', 수업: '질서' }, 'duty slots survive the alias round-trip');
@@ -174,7 +180,7 @@ async function main() {
       'not an object',
     ];
     for (const b of bad) {
-      const res = await put(id, { ...STORY_EDITOR_BODY, scene_catalog: b });
+      const res = await put(id, { ...OMITS_CATALOG_BODY, scene_catalog: b });
       assert.equal(res.statusCode, 400, `expected 400 for ${JSON.stringify(b).slice(0, 60)}`);
       assert.equal(stored(id), before, 'a rejected request wrote nothing');
     }
