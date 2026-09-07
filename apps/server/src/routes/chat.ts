@@ -20,6 +20,7 @@ import {
 import type { PartyTagRow } from '../prompt/tagsCatalog.js';
 import { catalogFromStory } from '../prompt/sceneCatalog.js';
 import { currentSceneVersion, parseSceneDelta, renderSceneDeltaPrompt } from '../prompt/sceneDeltaPrompt.js';
+import { holdClockProposal, type ClockObserve } from '../prompt/clockObserve.js';
 import { PASS_E_MAX_SENTENCES, PASS_N_RECENT_NARRATIONS } from '../prompt/passes.js';
 import { parseChoicesPass } from '../prompt/beatChoices.js';
 import { resolvePersona } from '../prompt/builder.js';
@@ -99,6 +100,11 @@ const PASS_S_MAX_TOKENS = 900;
  * is mostly prose.
  */
 const PASS_H_MAX_TOKENS = 1200;
+
+/** User abort, including the window before a focus/script row exists. */
+function wasAborted(controller: AbortController, err: unknown): boolean {
+  return controller.signal.aborted || (err as { name?: string } | undefined)?.name === 'AbortError';
+}
 
 /**
  * Per-pass deadline. The model client has one global timeout tuned for a full 1:1
@@ -382,6 +388,12 @@ export function chatRoutes(ctx: Ctx) {
     }
     passMs.delta = Date.now() - t0delta;
 
+    // clock-advance-observe: classify the proposal, then drop the time key so
+    // apply cannot move the clock. Other scene keys still apply.
+    const heldClock = holdClockProposal(patch, userText);
+    const clockObserve: ClockObserve = heldClock.observe;
+    patch = heldClock.patch ?? null;
+
     const cards: Record<string, PassCard> = {};
     for (const row of many<CharacterRow>(
       db,
@@ -663,6 +675,7 @@ export function chatRoutes(ctx: Ctx) {
             choices_ok: choices !== null,
             choices_count: choices?.length ?? 0,
             pass_ms: passMs,
+            clock_observe: { ...clockObserve, discarded: plan.applied.discarded },
           },
         }),
         nowIso(),
@@ -682,7 +695,7 @@ export function chatRoutes(ctx: Ctx) {
         usage: null, ttftMs: null, totalMs: Date.now() - tBeat,
       });
     } catch (err) {
-      const aborted = controller.signal.aborted;
+      const aborted = wasAborted(controller, err);
       const msg = err instanceof ModelError ? err.message : (err as Error)?.name === 'TimeoutError' ? '모델 응답 시간 초과' : (err as Error).message;
       if (focusRow) {
         updateMessage(db, focusRow.id, {
@@ -695,6 +708,17 @@ export function chatRoutes(ctx: Ctx) {
         } else {
           ctx.log.error({ err, generationId }, '비트 생성 실패');
           sse.send({ type: 'error', message: msg, messageId: focusRow.id });
+        }
+      } else if (aborted) {
+        // abort-before-focus-log-classification: a stop before Pass F has a row
+        // is still a user abort. Partial header/narration rows stay as written.
+        const closing = emitted[emitted.length - 1];
+        if (closing) {
+          sse.send({
+            type: 'done',
+            message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', closing.id)!),
+            usage: null, ttftMs: null, totalMs: Date.now() - tBeat,
+          });
         }
       } else {
         ctx.log.error({ err, generationId }, '비트 생성 실패');
@@ -771,6 +795,10 @@ export function chatRoutes(ctx: Ctx) {
       req.log.warn({ err, conversationId: conv.id }, 'scene delta proposal failed; scene unchanged');
     }
     passMs.delta = Date.now() - t0delta;
+
+    const heldClock = holdClockProposal(patch, userText);
+    const clockObserve: ClockObserve = heldClock.observe;
+    patch = heldClock.patch ?? null;
 
     const cards: Record<string, PassCard> = {};
     for (const row of many<CharacterRow>(
@@ -948,6 +976,7 @@ export function chatRoutes(ctx: Ctx) {
             blocks: scriptBlocks.length,
             choices_count: choices?.length ?? 0,
             pass_ms: passMs,
+            clock_observe: { ...clockObserve, discarded: plan.applied.discarded },
           },
         }),
         nowIso(),
@@ -959,7 +988,7 @@ export function chatRoutes(ctx: Ctx) {
         usage: null, ttftMs: null, totalMs: Date.now() - tBeat,
       });
     } catch (err) {
-      const aborted = controller.signal.aborted;
+      const aborted = wasAborted(controller, err);
       const msg = err instanceof ModelError ? err.message : (err as Error)?.name === 'TimeoutError' ? '모델 응답 시간 초과' : (err as Error).message;
       if (scriptRow) {
         updateMessage(db, scriptRow.id, {
@@ -972,6 +1001,15 @@ export function chatRoutes(ctx: Ctx) {
         } else {
           ctx.log.error({ err, generationId }, '대본 생성 실패');
           sse.send({ type: 'error', message: msg, messageId: scriptRow.id });
+        }
+      } else if (aborted) {
+        const closing = emitted[emitted.length - 1];
+        if (closing) {
+          sse.send({
+            type: 'done',
+            message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', closing.id)!),
+            usage: null, ttftMs: null, totalMs: Date.now() - tBeat,
+          });
         }
       } else {
         ctx.log.error({ err, generationId }, '대본 생성 실패');
@@ -1046,6 +1084,10 @@ export function chatRoutes(ctx: Ctx) {
       req.log.warn({ err, conversationId: conv.id }, 'scene delta proposal failed; scene unchanged');
     }
     passMs.delta = Date.now() - t0delta;
+
+    const heldClock = holdClockProposal(patch, userText);
+    const clockObserve: ClockObserve = heldClock.observe;
+    patch = heldClock.patch ?? null;
 
     const cards: Record<string, PassCard> = {};
     for (const row of many<CharacterRow>(
@@ -1209,6 +1251,7 @@ export function chatRoutes(ctx: Ctx) {
             blocks: finished.blocks.length,
             choices_count: choices?.length ?? 0,
             pass_ms: passMs,
+            clock_observe: { ...clockObserve, discarded: plan.applied.discarded },
           },
         }),
         nowIso(),
@@ -1220,7 +1263,7 @@ export function chatRoutes(ctx: Ctx) {
         usage: null, ttftMs: null, totalMs: Date.now() - tBeat,
       });
     } catch (err) {
-      const aborted = controller.signal.aborted;
+      const aborted = wasAborted(controller, err);
       const msg = err instanceof ModelError ? err.message : (err as Error)?.name === 'TimeoutError' ? '모델 응답 시간 초과' : (err as Error).message;
       if (scriptRow) {
         updateMessage(db, scriptRow.id, {
@@ -1233,6 +1276,15 @@ export function chatRoutes(ctx: Ctx) {
         } else {
           ctx.log.error({ err, generationId }, '헌터 대본 생성 실패');
           sse.send({ type: 'error', message: msg, messageId: scriptRow.id });
+        }
+      } else if (aborted) {
+        const closing = emitted[emitted.length - 1];
+        if (closing) {
+          sse.send({
+            type: 'done',
+            message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', closing.id)!),
+            usage: null, ttftMs: null, totalMs: Date.now() - tBeat,
+          });
         }
       } else {
         ctx.log.error({ err, generationId }, '헌터 대본 생성 실패');

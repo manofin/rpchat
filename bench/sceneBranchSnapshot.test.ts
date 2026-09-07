@@ -44,7 +44,7 @@ async function t(name: string, fn: () => Promise<void> | void) {
 
 const CATALOG = {
   places: [{ id: '교실', name: 'S반 교실', default_focus: 'nari' }],
-  weathers: ['맑음'],
+  weathers: ['맑음', '흐림'],
   arcs: ['entry'],
   duties: { 교칙: { slot: '질서' } },
 };
@@ -223,6 +223,7 @@ async function main() {
   ).run('rp-balanced', null, 0.8, 0.95, 400, '[]', 'system', null);
 
   let advance = 10;
+  let deltaWeather = '맑음';
   let completeCalls = 0;
   let streamCalls = 0;
   let deltaFail = false;
@@ -234,7 +235,7 @@ async function main() {
       if (prompt.includes('장면 진행 판정기')) {
         if (deltaFail) throw new Error('delta down');
         const v = deltaStale ? versionOf(prompt) - 1 : versionOf(prompt);
-        return ok(JSON.stringify({ base_version: v, advance_minutes: advance }));
+        return ok(JSON.stringify({ base_version: v, advance_minutes: advance, weather: deltaWeather }));
       }
       if (prompt.includes('입력 초안만 쓴다')) return ok('<choices>["가","나","다"]</choices>');
       if (prompt.includes('너는 장면 서술자다') || prompt.includes('군중') || prompt.startsWith('당신은 카메라')) {
@@ -357,10 +358,10 @@ async function main() {
     const snap1 = snapOf(startOf(turn));
     assert.ok(snap1);
     assert.equal(snap1!.before_delta.clock_minutes, DEFAULT_STORY_CLOCK_MINUTES);
-    assert.equal(snap1!.after_delta.clock_minutes, DEFAULT_STORY_CLOCK_MINUTES + 10);
+    assert.equal(snap1!.after_delta.clock_minutes, DEFAULT_STORY_CLOCK_MINUTES);
     assert.equal(snap1!.after_delta.scene_version, 1);
     assert.ok(snap1!.after_delta.last_beat, 'finishBeat last_beat is in after_delta');
-    assert.equal(sceneOf(conv).clock_minutes, DEFAULT_STORY_CLOCK_MINUTES + 10);
+    assert.equal(sceneOf(conv).clock_minutes, DEFAULT_STORY_CLOCK_MINUTES);
     for (const m of turn.slice(1)) {
       assert.equal(m.meta.scene_state, undefined, `${m.meta.block_kind} must not carry the snapshot`);
     }
@@ -385,9 +386,9 @@ async function main() {
     assert.equal(s2.before_delta.clock_minutes, s1.after_delta.clock_minutes);
     assert.equal(s2.before_delta.scene_version, s1.after_delta.scene_version);
     assert.deepEqual(s2.before_delta.last_beat, s1.after_delta.last_beat);
-    assert.equal(s2.after_delta.clock_minutes, DEFAULT_STORY_CLOCK_MINUTES + 20);
+    assert.equal(s2.after_delta.clock_minutes, DEFAULT_STORY_CLOCK_MINUTES);
     assert.equal(s2.after_delta.scene_version, 2);
-    assert.equal(sceneOf(conv).clock_minutes, 598);
+    assert.equal(sceneOf(conv).clock_minutes, DEFAULT_STORY_CLOCK_MINUTES);
     assert.equal(sceneOf(conv).scene_version, 2);
   });
 
@@ -406,7 +407,7 @@ async function main() {
   await t('repeating regenerate of the same logical turn does not accumulate the delta', async () => {
     const conv = await newConv();
     await twoTurns(conv);
-    assert.equal(sceneOf(conv).clock_minutes, 598);
+    assert.equal(sceneOf(conv).clock_minutes, DEFAULT_STORY_CLOCK_MINUTES);
     assert.equal(sceneOf(conv).scene_version, 2);
     const originalStart = startOf(lastTurn(await messagesOf(conv)));
     const originalBefore = snapOf(originalStart)!.before_delta;
@@ -416,12 +417,12 @@ async function main() {
       const res = await regen(conv, turn[turn.length - 1]!.id);
       assert.equal(res.status, 200, res.body);
       const scene = sceneOf(conv);
-      assert.equal(scene.clock_minutes, 598, `regen ${i} clock`);
+      assert.equal(scene.clock_minutes, DEFAULT_STORY_CLOCK_MINUTES, `regen ${i} clock`);
       assert.equal(scene.scene_version, 2, `regen ${i} version`);
       const sib = snapOf(startOf(lastTurn(await messagesOf(conv))))!;
       assert.equal(sib.before_delta.clock_minutes, originalBefore.clock_minutes);
       assert.equal(sib.before_delta.scene_version, originalBefore.scene_version);
-      assert.equal(sib.after_delta.clock_minutes, 598);
+      assert.equal(sib.after_delta.clock_minutes, DEFAULT_STORY_CLOCK_MINUTES);
     }
     const starts = db.prepare(
       `SELECT COUNT(*) AS n FROM messages WHERE conversation_id = ? AND json_extract(meta_json,'$.beat_seq') = 0`,
@@ -434,17 +435,21 @@ async function main() {
   await t('a regen whose delta differs from the original replaces, it does not add', async () => {
     const conv = await newConv();
     advance = 10;
+    deltaWeather = '맑음';
     await twoTurns(conv);
     const original = lastTurn(await messagesOf(conv));
     const before = snapOf(startOf(original))!.before_delta;
     advance = 20;
+    deltaWeather = '흐림';
     const res = await regen(conv, original[original.length - 1]!.id);
     assert.equal(res.status, 200, res.body);
     advance = 10;
+    deltaWeather = '맑음';
     const scene = sceneOf(conv);
-    assert.equal(scene.clock_minutes, before.clock_minutes! + 20);
-    assert.notEqual(scene.clock_minutes, before.clock_minutes! + 10 + 20);
-    assert.equal(scene.clock_minutes, 608);
+    assert.equal(scene.weather, '흐림');
+    assert.equal(before.weather, '맑음');
+    assert.equal(scene.clock_minutes, DEFAULT_STORY_CLOCK_MINUTES);
+    assert.equal(scene.scene_version, 2);
     const abandoned = db.prepare('SELECT id FROM messages WHERE id = ?').get(original[0]!.id);
     assert.ok(abandoned, 'original sibling is kept');
     const onPath = new Set((await messagesOf(conv)).map((m) => m.id));
@@ -454,17 +459,22 @@ async function main() {
   await t('swiping back to an abandoned sibling continues from that sibling, not the conversation cache', async () => {
     const conv = await newConv();
     advance = 10;
+    deltaWeather = '맑음';
     await twoTurns(conv);
     const originalTurn2 = lastTurn(await messagesOf(conv));
     advance = 20;
+    deltaWeather = '흐림';
     assert.equal((await regen(conv, originalTurn2[originalTurn2.length - 1]!.id)).status, 200);
-    assert.equal(sceneOf(conv).clock_minutes, 608, 'conversation cache now holds the +20 sibling');
+    assert.equal(sceneOf(conv).weather, '흐림', 'conversation cache now holds the 흐림 sibling');
+    assert.equal(sceneOf(conv).clock_minutes, DEFAULT_STORY_CLOCK_MINUTES);
     const sel = await api('POST', `/api/messages/${originalTurn2[0]!.id}/select`);
     assert.equal(sel.status, 200, sel.text);
     advance = 10;
+    deltaWeather = '맑음';
     await send(conv, '셋째 턴 from abandoned');
     const scene = sceneOf(conv);
-    assert.equal(scene.clock_minutes, 608, '598+10 from the abandoned sibling, not 608+10 from the cache');
+    assert.equal(scene.weather, '맑음', 'abandoned sibling weather, not the 흐림 cache');
+    assert.equal(scene.clock_minutes, DEFAULT_STORY_CLOCK_MINUTES);
     assert.equal(scene.scene_version, 3);
     const path = getPath(db, db.prepare('SELECT * FROM conversations WHERE id = ?').get(conv) as ConversationRow);
     const starts = path.filter((m) => parseJson<MessageMeta>(m.meta_json, {}).beat_seq === 0);
@@ -493,14 +503,14 @@ async function main() {
       const conv = await newConv(fmt);
       await twoTurns(conv);
       const afterTwo = sceneOf(conv);
-      assert.equal(afterTwo.clock_minutes, 598, `${fmt} two-turn clock`);
+      assert.equal(afterTwo.clock_minutes, DEFAULT_STORY_CLOCK_MINUTES, `${fmt} two-turn clock`);
       assert.equal(afterTwo.scene_version, 2);
       const start = startOf(lastTurn(await messagesOf(conv)));
       assert.ok(snapOf(start), `${fmt} start has scene_state`);
       for (let i = 0; i < 2; i++) {
         const turn = lastTurn(await messagesOf(conv));
         assert.equal((await regen(conv, turn[turn.length - 1]!.id)).status, 200);
-        assert.equal(sceneOf(conv).clock_minutes, 598, `${fmt} regen ${i + 1}`);
+        assert.equal(sceneOf(conv).clock_minutes, DEFAULT_STORY_CLOCK_MINUTES, `${fmt} regen ${i + 1}`);
         assert.equal(sceneOf(conv).scene_version, 2);
       }
     });
@@ -534,7 +544,7 @@ async function main() {
     delete meta.scene_state;
     db.prepare('UPDATE messages SET meta_json = ? WHERE id = ?').run(JSON.stringify(meta), startId);
     await send(conv, '둘째 턴 — fallback');
-    assert.equal(sceneOf(conv).clock_minutes, DEFAULT_STORY_CLOCK_MINUTES + 20);
+    assert.equal(sceneOf(conv).clock_minutes, DEFAULT_STORY_CLOCK_MINUTES);
     assert.ok(snapOf(startOf(lastTurn(await messagesOf(conv)))));
   });
 
@@ -555,7 +565,7 @@ async function main() {
     deltaStale = true;
     await send(conv, 'stale');
     deltaStale = false;
-    assert.equal(sceneOf(conv).clock_minutes, DEFAULT_STORY_CLOCK_MINUTES + 10);
+    assert.equal(sceneOf(conv).clock_minutes, DEFAULT_STORY_CLOCK_MINUTES);
     assert.equal(sceneOf(conv).scene_version, 1);
   });
 

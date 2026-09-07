@@ -208,7 +208,7 @@ t('chat.ts writes one beat_log row per beat with every field', () => {
   for (const field of [
     'focus_id', 'focus_reason', 'extra_ids', 'extra_count', 'eligible_ids', 'rejected',
     'ambient_ids', 'hard_events', 'k_opened', 'score_ran', 'ambient_as_speech',
-    'asset_nulls', 'unresolved', 'pass_ms',
+    'asset_nulls', 'unresolved', 'pass_ms', 'clock_observe',
   ]) {
     assert.ok(beat.includes(`${field}:`), `beat_log must record ${field}`);
   }

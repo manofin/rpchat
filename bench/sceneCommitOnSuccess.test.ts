@@ -141,7 +141,7 @@ async function main() {
         if (deltaFail) throw new Error('delta down');
         if (deltaGarbage) return ok('이건 JSON 이 아닙니다.');
         const v = deltaStale ? versionOf(prompt) - 1 : versionOf(prompt);
-        return ok(JSON.stringify({ base_version: v, advance_minutes: advance }));
+        return ok(JSON.stringify({ base_version: v, advance_minutes: advance, weather: '맑음' }));
       }
       if (prompt.includes('입력 초안만 쓴다')) {
         if (passCFail) throw new Error('pass C down');
@@ -387,7 +387,8 @@ async function main() {
 
     const turn = lastTurn(await messagesOf(conv));
     assert.equal(sceneWrites, 1, 'the turn succeeded, so the scene committed');
-    assert.notEqual(sceneOf(conv).clock_minutes, before.clock_minutes, 'time moved with the turn');
+    assert.equal(sceneOf(conv).clock_minutes, before.clock_minutes, 'clock-advance-observe holds time');
+    assert.notEqual(JSON.stringify(sceneOf(conv)), JSON.stringify(before), 'finish fields still committed');
     assert.ok(snapOf(startOf(turn)), 'and it is stamped');
     const withChips = turn.filter((m) => Array.isArray(m.meta.choices));
     assert.equal(withChips.length, 0, 'only the chips were lost');
@@ -399,7 +400,7 @@ async function main() {
     advance = 10;
     const conv = await newConv();
     await twoTurns(conv);
-    const base = DEFAULT_STORY_CLOCK_MINUTES + 10 * 2;
+    const base = DEFAULT_STORY_CLOCK_MINUTES;
     assert.equal(sceneOf(conv).clock_minutes, base);
     for (let i = 0; i < 3; i++) {
       const turn = lastTurn(await messagesOf(conv));
