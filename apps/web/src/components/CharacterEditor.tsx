@@ -16,9 +16,21 @@ const AVATAR_MAX_BYTES = 8 * 1024 * 1024;
 
 type Draft = Omit<Character, 'id' | 'created_at' | 'updated_at' | 'archived' | 'conversation_count' | 'last_chat_at'>;
 
+/**
+ * party-ready-default: every new character starts tagged for the beat engine.
+ * `role` only ever distinguishes `background` (never speaks) from everything
+ * else — `main` gets force-applied to whichever character opened the
+ * conversation regardless of its own tag (`withConversationStarter`), and no
+ * code path treats `main` differently from `secondary` — so `secondary` is a
+ * safe, inert default. It stays inert until the character is added to a story
+ * alongside a second `party:`-tagged character (`castFromCharacters`'s ≥2
+ * gate) and given a `party:place=<id>` that exists in that story's catalog.
+ */
+const DEFAULT_TAGS = ['party:role=secondary'];
+
 const EMPTY: Draft = {
   name: '', tagline: '', avatar: null, description: '', personality: '', speech_style: '', scenario: '',
-  first_message: '', example_dialogue: '', taboos: '', tags: [], // scene/voice optional
+  first_message: '', example_dialogue: '', taboos: '', tags: DEFAULT_TAGS, // scene/voice optional
 } as unknown as Draft;
 
 interface LoreEntry {
