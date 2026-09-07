@@ -94,4 +94,8 @@ t('H exactly max bytes jpeg still ok', () => {
   assert.equal(inspectAvatar(exact), 'jpeg');
 });
 
-console.log(`PASS ${passed}/8 avatarUpload.test.ts`);
+t('I cap is 8MB (Galaxy camera originals)', () => {
+  assert.equal(AVATAR_MAX_BYTES, 8 * 1024 * 1024);
+});
+
+console.log(`PASS ${passed}/9 avatarUpload.test.ts`);
