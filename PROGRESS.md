@@ -3717,3 +3717,54 @@ HEAD/describe into this block after any docs commit.
   F9-LIVE-PARTY-SMOKE 65 불변, gen `0/0`.
 - **판정**: observe PASS · abort classification PASS · write safety PASS.
   기본값·재framing·롤오버·clock-advance 적용은 열지 않음.
+
+## [2026-09-07 관측 표본 분류 확장] `clock-advance-observe-implement` (커밋 `8657489`)
+- `1231701`이 연 관측 골격(§8.2) 위에 표본 분류를 마무리한다. `advance_minutes` 보류와
+  델타 프롬프트 무변경은 그대로 — 이 커밋은 **기록 방법**만 바꾼다.
+- `clockObserve.ts`: `ClockObserveCore`에 `candidate_default`(=`2`, 평가용일 뿐 미적용)·
+  `parse`(ok/null/fail)·`key_present`·`invalid_reason`(type/range) 추가. `decorateClockObserve`가
+  호출부 컨텍스트(`path` beat/dialog/hunter, `stage`, `discarded`, `regenerate`, `canary`,
+  `outcome` success/fail/interrupt)를 얹어 `in_sample = outcome==='success' && !regenerate && !canary`를
+  계산한다 — 실패·중단·재생성·canary 턴은 기록은 되지만 기본값 표본에서 제외.
+  `CANARY_TITLE = /CANARY/i`로 제목 판별, `isCanaryTitle()`.
+- `chat.ts`: 세 경로 모두 `sealClockObserve()`로 성공 시 기존 `beat_log.clock_observe`에
+  합류시키고, **fail·interrupt 시에도** `logClockObserve()`로 별도의 얇은 `generation_log` 행을
+  남긴다(`scene_state` 없음, `beat_log` 없음, budget_json은 `{clock_observe}`뿐) — 실패·중단
+  턴이 표본에서 조용히 사라지지 않고 `in_sample=false`로 명시적으로 잡히게 하기 위함.
+  페이로드에 사용자·모델 텍스트·scene 전체는 담지 않는다.
+- 잠금 유지: 델타 프롬프트 재framing 없음·서버 기본값 미적용·자동 시간 진행 없음·
+  `day_index` 롤오버 없음·모델 호출 추가 없음.
+- 관측 계약: framing `pre-reframe`, 유효 표본 = 자연·성공한 multi-row 턴, 제외 = 테스트/canary/
+  regenerate/실패/중단, 최소 50 · 목표 100 · 최대 창 14일. `2분`은 평가 후보일 뿐 제품 기본값 아님.
+- 게이트: `bench/clockAdvanceObserve.test.ts` 18/18, `bench/abortBeforeFocusLog.test.ts` 2/2.
+
+## [2026-09-07 배포 + 관측 창 개시] `clock-observe-8657489-progress-record`
+- HEAD/origin/master `8657489`, 워킹트리 clean. 배포는 02:14 재시작 이전에 완료.
+  재시작 PID **`189441`**, health app/db/model ok, promptVersion 불변.
+- **배포 무쓰기**: 사전 배포 기준(직전 라이브 기록) `messages 371 / scene_state 5 /
+  generation_log 182` → 재시작 직후 동일. 그 뒤 자연 트래픽 2턴(+12 messages, +2 scene_state,
+  +2 generation_log)이 현재 값 `383/7/184`로 이어지며, 산술이 정확히 들어맞아 배포 자체의
+  쓰기가 0임을 확인한다. **이 검증을 위한 라이브 턴은 만들지 않았다.**
+- **관측 창 개시**: 이 재시작부터 자연 트래픽만으로 표본이 쌓인다. 배포 후 assistant
+  선택지가 오간 자연 롤플레이 2턴이 `canary=false / in_sample=true`로 표본에 들어갔다 —
+  발화 원문은 이 로그에 남기지 않는다.
+- 기록 시점 집계(읽기 전용): `clock_observe` 행 3 · `in_sample` 2 · kind 전부 `missing` ·
+  `user_time_expression` 전부 `false` · framing `pre-reframe`. **n=2는 배관이 작동한다는
+  확인일 뿐, 기본값이나 재framing 정책을 고를 근거가 아니다.**
+- `abort-before-focus-log-classification`은 `1231701`에서 이미 닫힘 — 여기서 재개하지 않음.
+
+```text
+OPEN:
+- clock-observe natural-traffic window
+- checkpoint at 50, 100, or 14 days
+
+DEFERRED:
+- server default duration selection
+- delta prompt reframing
+- clock-advance
+- day_index rollover
+- speech-action-block-split
+
+BACKLOG:
+- dialog-hunter-streaming-turn-discriminator
+```
