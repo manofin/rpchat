@@ -5,8 +5,12 @@
 - 채택 범위: 아래 §2 S2, §3 `day_index` 소유권, §3.1 clock 정규화, §5 B-3 의미론, §8 구현 순서.
   **기본 진행량은 채택 대상이 아니다** — §6에서 미확정으로 남는다.
 - 이 문서가 accepted가 된 뒤에도 어떤 제품 코드도 바뀌지 않았다. 구현은 §8의 슬라이스로 분리한다.
+- Implementation (2026-09-07, `1231701`): §8.2 `clock-advance-observe` 계측과
+  `abort-before-focus-log-classification`이 라이브에 올라갔다. **시계는 여전히 멈춘다.**
+  기본 진행량·델타 프롬프트 재framing·`day_index` 롤오버·`clock-advance` 적용은
+  이 커밋에 포함되지 않는다. §6 미확정은 그대로다.
 - HEAD (기준): `v0.0.19-127-gf5e9d97` (`f5e9d972880201e9a51c9ad3d9a3047d87a70305`)
-- 라이브 실행 산출물: `15ec2c7` · PID `148511`
+- 라이브 실행 산출물 (observe 배포 후): `1231701` · PID `178515`
 - Author token: `clock-advance-policy-adr`
 - Predecessor: `planning_documents/ADR-F9-scene-engine.md` (accepted)
 - 이 ADR은 ADR-F9의 **소유권 표 한 행 추가**와 **scene 커밋 시점 한 가지**만 다룬다. ADR-F9 전체를

@@ -3666,3 +3666,54 @@ HEAD/describe into this block after any docs commit.
   `day_index` 롤오버 미구현(소유권은 ADR-F9c에서 server로 채택) · 기본
   `advance_minutes`는 관측 슬라이스 전까지 미확정. 다음 구현 순서는
   `clock-advance-observe`.
+
+## [2026-09-07 clock 제안 관측] `clock-advance-observe`
+- 커밋 `1231701` (`feat(scene): observe clock proposals; classify abort-before-focus`).
+  7 files, +712/-25. `clockObserve.ts` 신설 + 세 경로 `holdClockProposal` +
+  `bench/clockAdvanceObserve.test.ts`(10). abort 분류는 같은 커밋의 둘째 절.
+- **계약**: 모델의 `advance_minutes`는 기록만 하고 scene에 적용하지 않는다.
+  `clock_observe`를 `beat_log`/`dialog_log`/`hunter_log`에 남긴다.
+  kind = `unparsed`/`missing`/`zero`/`positive`/`invalid`. `applied: false`.
+  framing = `pre-reframe`. 사용자 시간 표현은 ADR 토큰 `분|시간|뒤|후|이따|나중`.
+- `applySceneDelta`는 키가 넘어오면 여전히 시계를 움직인다. 빼는 곳은 생성 경로뿐.
+  스냅샷·S2 벤치는 세계 변화 탐침을 weather/`scene_version`으로 옮겼다.
+- 게이트: `clockAdvanceObserve` 10/10, `sceneCommitOnSuccess` 13/13,
+  `sceneBranchSnapshot` 25/25, `regenerateTurnBoundary` 15/15, typecheck EXIT 0.
+  전체 스위트 커밋 후 펜스 포함 통과(커밋 전 펜스 1건은 `apps/server` dirty).
+- **하지 않은 것 (이번 슬라이스 계약)**: 델타 프롬프트 재framing, 기본 진행량 확정,
+  `day_index` 롤오버, `clock-advance` 적용. 숫자는 관측 n≥30 전/후 비교 전까지
+  `1`/`2`/`3`/`5` 중 고르지 않는다.
+
+## [2026-09-07 abort 로그 분류] `abort-before-focus-log-classification`
+- 같은 커밋 `1231701`. `wasAborted`로 catch 양쪽 분기가 abort를 본다.
+  focus/script 행이 없으면 `log.error`와 SSE `error`를 타지 않고 `done`으로 닫는다.
+  부분 header 보존, scene 불변(S2).
+- `bench/abortBeforeFocusLog.test.ts`(2): Pass N 중 abort → journal error 0, SSE error 0.
+
+## [2026-09-07 배포] `clock-observe-abort-push-deploy`
+- push `f1af908..1231701` fast-forward(force 아님, 1커밋, 파일 7개).
+  local HEAD == origin/master == `1231701`.
+- 빌드 `2026-09-07T00:57:04Z` EXIT 0. dist: `clockObserve.js` 존재, `holdClockProposal` 3,
+  `clock_observe` 3, `else if (aborted)` 3, `chat.js`에 `day_index`/`advance_minutes` 0.
+  웹 `index-C7XMMN0F.js`/`index-aow0FVul.css` 불변(서버 전용).
+- 재시작 PID `170069` → `178515` `00:57:43Z`. SIGTERM 정상 종료. health ok/db ok/model ok,
+  auth tailscale, prompt `2026.08.22-r1+story`, gen `0/0`.
+- **배포로 인한 DB 쓰기 0**: conversations 24→24, messages 365→365, `scene_state` 4→4.
+
+## [2026-09-07 라이브] `clock-observe-live-1-plus-abort`
+- S2 canary `145b7004-…` `S2-ABORT-CANARY-20260907` DELETE HTTP 200. conv 24→23,
+  messages 365→363(+2 회수). 대상 외 0.
+- 전용 canary `a00da757-b6b4-4c38-86b7-70fc997b0222` · `CLOCK-OBSERVE-CANARY-20260907` ·
+  한소연-smoke · F9-LIVE-PARTY · Serve HTTPS, 헤더 위조 없음.
+- **성공 턴 1회** (시간 표현 있는 입력 「10분쯤」): 30.5s, SSE `done`, error 0.
+  clock **578→578**, day 1→1, weather cloudy 유지, `scene_version` 0→1 (다른 키 적용).
+  `clock_observe`: kind `positive` value `10` applied `false` user_time_expression `true`
+  framing `pre-reframe`. 이 입력은 예전에 578→588로 시계를 움직이던 형태다.
+- **abort 1회** (다음 턴, 생성 8.6s에 수락): `POST /generations/83963a90…/abort` HTTP 200.
+  SSE types `aux`/`done`, **error 없음**. PID `178515` 기동 이후 journal `level:50` **0건**.
+  중단 턴: user 1 + header 1, `scene_state` 없음, clock 578 유지.
+- 쓰기 안전성: conversations 23→24(+1 canary), messages 363→371
+  (성공 턴 +6, abort 턴 +2), 유키-smoke 70 불변, QA `69e0ad66` 68 불변,
+  F9-LIVE-PARTY-SMOKE 65 불변, gen `0/0`.
+- **판정**: observe PASS · abort classification PASS · write safety PASS.
+  기본값·재framing·롤오버·clock-advance 적용은 열지 않음.
