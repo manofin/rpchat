@@ -1,8 +1,22 @@
 import { useEffect, useState } from 'react';
 import { del, get, patch, post } from '../lib/api';
 import { navigate } from '../lib/router';
+import { currentApprovedState, diffWords, priorApprovedWhole } from '../lib/summaryDiff';
 import type { BudgetReport, Memory, PromptPreview, Summary } from '../types';
 import { BottomSheet, useUi } from '../components/ui';
+
+function DiffText({ before, after }: { before: string; after: string }) {
+  const segments = diffWords(before, after);
+  return (
+    <div style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 14 }}>
+      {segments.map((seg, idx) => {
+        if (seg.type === 'same') return <span key={idx}>{seg.text}</span>;
+        if (seg.type === 'add') return <ins key={idx} style={{ background: 'rgba(51,180,167,0.16)', color: 'var(--role-teal-text)', textDecorationColor: 'var(--role-teal-text)' }}>{seg.text}</ins>;
+        return <del key={idx} style={{ background: 'rgba(199,51,63,0.12)', color: 'var(--danger)' }}>{seg.text}</del>;
+      })}
+    </div>
+  );
+}
 
 type Tab = 'budget' | 'memory' | 'summary';
 
@@ -345,7 +359,7 @@ export function SummaryTab({ conversationId, open, onApplied, onClose }: { conve
   const wholeRows = summaries.filter((s) => s.tier !== 'state' && s.tier !== 'scene' && s.tier !== 'episode');
   const foldableScenes = summaries.filter((s) => s.tier === 'scene' && s.status === 'approved' && !s.rolled_up_into).length;
 
-  function renderCard(s: Summary, kind: '상태' | '전체' | '장면' | '에피소드', opts?: { onRestore?: () => void }) {
+  function renderCard(s: Summary, kind: '상태' | '전체' | '장면' | '에피소드', opts?: { onRestore?: () => void; diffBefore?: string | null }) {
     return (
       <div className="card" key={s.id} style={{ marginBottom: 10 }}>
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 6 }}>
@@ -362,7 +376,11 @@ export function SummaryTab({ conversationId, open, onApplied, onClose }: { conve
           </>
         ) : (
           <>
-            <div style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{s.content}</div>
+            {opts?.diffBefore != null ? (
+              <DiffText before={opts.diffBefore} after={s.content} />
+            ) : (
+              <div style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{s.content}</div>
+            )}
             <div className="row end" style={{ gap: 6, marginTop: 8 }}>
               {s.covers_until_message_id && <button className="btn sm ghost" onClick={() => jumpToCover(s)}>원본</button>}
               {opts?.onRestore && <button className="btn sm ghost" onClick={opts.onRestore}>복원</button>}
@@ -383,20 +401,19 @@ export function SummaryTab({ conversationId, open, onApplied, onClose }: { conve
       <div className="small muted" style={{ margin: '8px 0 14px' }}>요약과 자동 추출 기억은 <b>초안</b>으로 저장되며, 승인해야 프롬프트에 들어갑니다. 마지막 승인 이후의 새 메시지만 요약합니다.</div>
       {summaries.length === 0 && <div className="muted small">아직 요약이 없습니다.</div>}
       {(() => {
-        const approved = stateRows.filter((s) => s.status === 'approved').sort((a, b) => b.created_at.localeCompare(a.created_at));
+        const current = currentApprovedState(summaries);
         const drafts = stateRows.filter((s) => s.status !== 'approved');
-        const current = approved[0];
-        const history = approved.slice(1);
+        const history = stateRows.filter((s) => s.status === 'approved' && s.id !== current?.id).sort((a, b) => b.created_at.localeCompare(a.created_at));
         return (
           <>
-            {drafts.map((s) => renderCard(s, '상태'))}
+            {drafts.map((s) => renderCard(s, '상태', { diffBefore: current?.content ?? null }))}
             {current && renderCard(current, '상태')}
             {history.length > 0 && (
               <>
                 <button className="btn sm ghost block" style={{ marginBottom: 10 }} onClick={() => setStateHistoryOpen((v) => !v)}>
                   {stateHistoryOpen ? '이전 상태 이력 숨기기' : `이전 상태 이력 보기 (${history.length})`}
                 </button>
-                {stateHistoryOpen && history.map((s) => renderCard(s, '상태', { onRestore: () => restore(s.id) }))}
+                {stateHistoryOpen && history.map((s) => renderCard(s, '상태', { onRestore: () => restore(s.id), diffBefore: current?.content ?? null }))}
               </>
             )}
           </>
@@ -404,7 +421,7 @@ export function SummaryTab({ conversationId, open, onApplied, onClose }: { conve
       })()}
       {episodeRows.map((s) => renderCard(s, '에피소드'))}
       {sceneRows.map((s) => renderCard(s, '장면'))}
-      {wholeRows.map((s) => renderCard(s, '전체'))}
+      {wholeRows.map((s) => renderCard(s, '전체', { diffBefore: priorApprovedWhole(summaries, s)?.content ?? null }))}
     </div>
   );
 }
