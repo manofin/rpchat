@@ -26,7 +26,7 @@ export function Modal({ open, title, onClose, children, footer, toolbar }: { ope
   return (
     <>
       <div className="sheet-backdrop" onClick={onClose} />
-      <div className="sheet" style={{ maxHeight: '94%' }} role="dialog" aria-modal="true">
+      <div className="sheet" style={{ maxHeight: 'calc(var(--app-height) * 0.94)' }} role="dialog" aria-modal="true">
         <div className="handle" onClick={onClose} />
         <div className="row" style={{ padding: '0 14px 8px' }}>
           <strong style={{ flex: 1 }}>{title}</strong>

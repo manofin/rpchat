@@ -122,7 +122,7 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
       title={character ? '캐릭터 편집' : '새 캐릭터'}
       onClose={onClose}
       toolbar={
-        <div className="sheet tabs" style={{ padding: '0 0 10px' }}>
+        <div className="tabs" style={{ padding: '0 0 10px' }}>
           <button className={tab === 'card' ? 'active' : ''} onClick={() => setTab('card')}>카드</button>
           <button className={tab === 'lore' ? 'active' : ''} onClick={() => setTab('lore')} disabled={!character}>로어{character ? ` (${lore.length})` : ' (저장 후)'}</button>
         </div>
