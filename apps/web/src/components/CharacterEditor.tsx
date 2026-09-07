@@ -12,6 +12,7 @@ import { Modal, useUi } from './ui';
 
 const FROST_CHARACTER_ID = 'f89ace9b-8684-4d97-96dc-e00c4b25a819';
 const AVATAR_ACCEPT = 'image/jpeg,image/png,image/webp';
+const AVATAR_MAX_BYTES = 8 * 1024 * 1024;
 
 type Draft = Omit<Character, 'id' | 'created_at' | 'updated_at' | 'archived' | 'conversation_count' | 'last_chat_at'>;
 
@@ -140,6 +141,10 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
                   const file = e.target.files?.[0];
                   e.target.value = '';
                   if (!file) return;
+                  if (file.size > AVATAR_MAX_BYTES) {
+                    ui.toast('파일이 8MB를 넘습니다', 'err');
+                    return;
+                  }
                   setUploading(true);
                   try {
                     const saved = await postBinary<Character>(`/api/characters/${character.id}/avatar`, file, file.type || 'application/octet-stream');
@@ -152,7 +157,7 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
                   }
                 }}
               />
-              <span className="hint">jpeg/png/webp · 최대 2MB. 변환 없음.</span>
+              <span className="hint">jpeg/png/webp · 최대 8MB. 변환 없음.</span>
             </div>
           )}
           <div className="field">

@@ -1,6 +1,6 @@
-/** F3 avatar lock (2026-08-25): 2MB, jpeg/png/webp, magic-byte sniff. No convert. */
+/** jpeg/png/webp, magic-byte sniff. No convert. Cap is Galaxy camera originals, not the old 2MB F3 lock. */
 
-export const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
+export const AVATAR_MAX_BYTES = 8 * 1024 * 1024;
 export const FROST_CHARACTER_ID = 'f89ace9b-8684-4d97-96dc-e00c4b25a819';
 
 export type AvatarKind = 'jpeg' | 'png' | 'webp';
