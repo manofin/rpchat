@@ -18,7 +18,6 @@ export const FIELD_LIMITS = {
 export type LimitedField = keyof typeof FIELD_LIMITS;
 
 export function fieldCountTone(length: number, max: number): 'ok' | 'warn' | 'err' {
-  if (length > max) return 'err';
   if (length >= max) return 'err';
   if (length >= Math.floor(max * 0.9)) return 'warn';
   return 'ok';
