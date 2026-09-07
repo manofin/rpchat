@@ -3768,3 +3768,19 @@ DEFERRED:
 BACKLOG:
 - dialog-hunter-streaming-turn-discriminator
 ```
+
+## [2026-09-07 ADR] `story-opening-preset-adr`
+
+- 토큰 범위: 문서만. `apps/**` 0, 마이그레이션 0, 라이브 DB 쓰기 0, `PROMPT_VERSION` 불변, generate 0.
+- HEAD bind `v0.0.19-138-g7443230` (`7443230f48c87d44f3eb36ba9c33c75b4106a618`). 워킹트리 제품 코드 clean (이 블록만 append).
+- 파일: `planning_documents/ADR-F8d-story-opening-preset.md`
+  sha256 `3a59c0fd4c57c52fd2fab7b60ffd0fc36a5cd33fef7b52950684992a37203d56`.
+- 갈림 잠금: 1-A / 2-A / 3-A / 4-A.
+- 저장 채택: `stories.opening_json` + `conversations.story_opening_snapshot`.
+  개별 컬럼 기각, `scene_catalog` nested 기각.
+- 파티 greeting: assistant 1행, `block_kind` 없음, 화자 없음, 첫 beat 입력 아님.
+- clock/day: F9c `0..1439` / `≥1`.
+- 관측 창 실측 (읽기 전용, 2026-09-07T07:04Z): clock_observe 행 3, `in_sample` 2,
+  framing `pre-reframe` 3. MIN 50 미달 → **코드 슬라이스 미개방**.
+- 이 토큰 **spent**. 다음 합법 = 창 종료 선언 + 새 이름 `story-opening-schema`.
+  침묵은 schema가 아님. F8c 슬라이스 이름 재사용 금지.
