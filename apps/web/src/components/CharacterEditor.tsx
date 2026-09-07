@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
 import { del, get, post, postBinary, put } from '../lib/api';
+import {
+  FIELD_LIMITS,
+  fieldCountTone,
+  formatFieldCount,
+  overLimitFields,
+  type LimitedField,
+} from '../lib/characterFieldLimits';
 import type { Character } from '../types';
 import { Modal, useUi } from './ui';
 
@@ -24,6 +31,17 @@ interface LoreEntry {
   token_cap: number;
   enabled: boolean;
   selective: boolean;
+}
+
+function FieldCount({ value, field }: { value: string; field: LimitedField }) {
+  const max = FIELD_LIMITS[field];
+  const len = value.length;
+  const tone = fieldCountTone(len, max);
+  return (
+    <span className={`field-count${tone === 'ok' ? '' : ` ${tone}`}`} aria-live="polite">
+      {formatFieldCount(len, max)}
+    </span>
+  );
 }
 
 export function CharacterEditor({ open, character, onClose, onSaved }: { open: boolean; character: Character | null; onClose: () => void; onSaved: (c: Character) => void }) {
@@ -52,6 +70,21 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
 
   async function save() {
     if (!d.name.trim()) return ui.toast('이름은 필수', 'err');
+    const overs = overLimitFields({
+      name: d.name,
+      tagline: d.tagline,
+      avatar: d.avatar,
+      description: d.description,
+      personality: d.personality,
+      speech_style: d.speech_style,
+      scenario: d.scenario,
+      first_message: d.first_message,
+      example_dialogue: d.example_dialogue,
+      taboos: d.taboos,
+    });
+    if (overs.length) {
+      ui.toast(`글자 수 초과: ${overs.join(', ')} (그래도 저장 시도)`, 'warn');
+    }
     setSaving(true);
     try {
       const saved = character ? await put<Character>(`/api/characters/${character.id}`, d) : await post<Character>('/api/characters', d);
@@ -85,9 +118,17 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
     >
       {tab === 'card' ? (
         <>
-          <div className="field"><label>이름 *</label><input value={d.name} onChange={(e) => set('name', e.target.value)} maxLength={80} /></div>
-          <div className="field"><label>한 줄 소개</label><input value={d.tagline} onChange={(e) => set('tagline', e.target.value)} maxLength={200} /></div>
-          <div className="field"><label>아바타 URL (선택)</label><input value={d.avatar ?? ''} onChange={(e) => set('avatar', e.target.value || null)} placeholder="비워두면 이니셜 표시" /></div>
+          <div className="field">
+            <label>이름 *</label>
+            <input value={d.name} onChange={(e) => set('name', e.target.value)} maxLength={FIELD_LIMITS.name} />
+            <FieldCount value={d.name} field="name" />
+          </div>
+          <div className="field">
+            <label>한 줄 소개</label>
+            <input value={d.tagline} onChange={(e) => set('tagline', e.target.value)} maxLength={FIELD_LIMITS.tagline} />
+            <FieldCount value={d.tagline} field="tagline" />
+          </div>
+          <div className="field"><label>아바타 URL (선택)</label><input value={d.avatar ?? ''} onChange={(e) => set('avatar', e.target.value || null)} placeholder="비워두면 이니셜 표시" maxLength={FIELD_LIMITS.avatar} /></div>
           {character && character.id !== FROST_CHARACTER_ID && (
             <div className="field">
               <label>아바타 파일</label>
@@ -114,13 +155,42 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
               <span className="hint">jpeg/png/webp · 최대 2MB. 변환 없음.</span>
             </div>
           )}
-          <div className="field"><label>설명 / 배경</label><textarea value={d.description} onChange={(e) => set('description', e.target.value)} /></div>
-          <div className="field"><label>성격</label><textarea value={d.personality} onChange={(e) => set('personality', e.target.value)} /></div>
-          <div className="field"><label>말투</label><textarea value={d.speech_style} onChange={(e) => set('speech_style', e.target.value)} placeholder="예: 반말, 짧고 툭툭 던지는 말투. 문장 끝을 흐림." /></div>
-          <div className="field"><label>기본 장면 / 시나리오</label><textarea value={d.scenario} onChange={(e) => set('scenario', e.target.value)} /></div>
-          <div className="field"><label>첫 메시지</label><textarea value={d.first_message} onChange={(e) => set('first_message', e.target.value)} placeholder="{{char}}, {{user}} 치환 가능" /></div>
-          <div className="field"><label>예시 대화</label><textarea value={d.example_dialogue} onChange={(e) => set('example_dialogue', e.target.value)} style={{ minHeight: 120 }} placeholder={'{{user}}: ...\n{{char}}: ...'} /><span className="hint">컨텍스트가 부족하면 이 블록이 먼저 잘립니다.</span></div>
-          <div className="field"><label>금기 / 하지 말 것</label><textarea value={d.taboos} onChange={(e) => set('taboos', e.target.value)} /></div>
+          <div className="field">
+            <label>설명 / 배경</label>
+            <textarea value={d.description} onChange={(e) => set('description', e.target.value)} maxLength={FIELD_LIMITS.description} />
+            <FieldCount value={d.description} field="description" />
+          </div>
+          <div className="field">
+            <label>성격</label>
+            <textarea value={d.personality} onChange={(e) => set('personality', e.target.value)} maxLength={FIELD_LIMITS.personality} />
+            <FieldCount value={d.personality} field="personality" />
+          </div>
+          <div className="field">
+            <label>말투</label>
+            <textarea value={d.speech_style} onChange={(e) => set('speech_style', e.target.value)} maxLength={FIELD_LIMITS.speech_style} placeholder="예: 반말, 짧고 툭툭 던지는 말투. 문장 끝을 흐림." />
+            <FieldCount value={d.speech_style} field="speech_style" />
+          </div>
+          <div className="field">
+            <label>기본 장면 / 시나리오</label>
+            <textarea value={d.scenario} onChange={(e) => set('scenario', e.target.value)} maxLength={FIELD_LIMITS.scenario} />
+            <FieldCount value={d.scenario} field="scenario" />
+          </div>
+          <div className="field">
+            <label>첫 메시지</label>
+            <textarea value={d.first_message} onChange={(e) => set('first_message', e.target.value)} maxLength={FIELD_LIMITS.first_message} placeholder="{{char}}, {{user}} 치환 가능" />
+            <FieldCount value={d.first_message} field="first_message" />
+          </div>
+          <div className="field">
+            <label>예시 대화</label>
+            <textarea value={d.example_dialogue} onChange={(e) => set('example_dialogue', e.target.value)} maxLength={FIELD_LIMITS.example_dialogue} style={{ minHeight: 120 }} placeholder={'{{user}}: ...\n{{char}}: ...'} />
+            <FieldCount value={d.example_dialogue} field="example_dialogue" />
+            <span className="hint">컨텍스트가 부족하면 이 블록이 먼저 잘립니다.</span>
+          </div>
+          <div className="field">
+            <label>금기 / 하지 말 것</label>
+            <textarea value={d.taboos} onChange={(e) => set('taboos', e.target.value)} maxLength={FIELD_LIMITS.taboos} />
+            <FieldCount value={d.taboos} field="taboos" />
+          </div>
           <div className="field">
             <label>태그</label>
             <div className="row"><input value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())} placeholder="입력 후 Enter" /><button className="btn sm" onClick={addTag}>추가</button></div>
