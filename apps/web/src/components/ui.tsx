@@ -21,7 +21,7 @@ export function BottomSheet({ open, onClose, children }: { open: boolean; onClos
 }
 
 // ---- 전체화면 모달(편집 폼용) ----
-export function Modal({ open, title, onClose, children, footer }: { open: boolean; title: string; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
+export function Modal({ open, title, onClose, children, footer, toolbar }: { open: boolean; title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; toolbar?: ReactNode }) {
   if (!open) return null;
   return (
     <>
@@ -32,7 +32,8 @@ export function Modal({ open, title, onClose, children, footer }: { open: boolea
           <strong style={{ flex: 1 }}>{title}</strong>
           <button className="btn ghost icon" onClick={onClose} aria-label="닫기">✕</button>
         </div>
-        <div className="sheet-body" style={{ flex: 1 }}>{children}</div>
+        {toolbar}
+        <div className="sheet-body" style={{ flex: 1, minHeight: 0 }}>{children}</div>
         {footer && <div className="row end" style={{ padding: '10px 14px', borderTop: '1px solid var(--bg-3)', gap: 8 }}>{footer}</div>}
       </div>
     </>

@@ -169,6 +169,9 @@ textarea { resize: none; }
 .field input, .field textarea, .field select { background: var(--bg-2); border: 1px solid var(--bg-3); border-radius: 10px; padding: 10px 12px; width: 100%; min-height: 42px; }
 .field textarea { min-height: 84px; }
 .field .hint { font-size: 12px; color: var(--fg-3); }
+.field-count { font-size: 12px; color: var(--fg-3); align-self: flex-end; font-variant-numeric: tabular-nums; }
+.field-count.warn { color: var(--warn); }
+.field-count.err { color: var(--danger); }
 .muted { color: var(--fg-2); }
 .small { font-size: 12px; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; white-space: pre-wrap; word-break: break-word; }
