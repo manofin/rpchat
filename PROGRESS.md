@@ -3592,3 +3592,77 @@ HEAD/describe into this block after any docs commit.
 - 남은 경계: multi-row regenerate는 현재 UI에서 여전히 도달 불가 · 자동 시간 진행 미구현 ·
   `day_index` 롤오버 소유권이 ADR에 미정의 · 중단 턴 scene 잔존 정책 불변 ·
   레거시 대화는 다음 완료 생성 후 자연 전환(마이그레이션·백필 없음).
+
+## [2026-09-06 S2 scene 커밋 시점] `scene-commit-on-success`
+- 정책 ADR-F9c S2를 세 multi-row 경로(beat/dialog/hunter)에 구현. 커밋 `ae5ee3b`
+  (`fix(scene): commit world state only after successful turns`). 2 files, +535/-17 —
+  `apps/server/src/routes/chat.ts`, `bench/sceneCommitOnSuccess.test.ts`(13).
+  선행 정본 스냅샷은 `7481586` `docs/context/ADR-F9c-clock-advance-policy.md`.
+- **계약**: `conversations.scene_json` = 마지막으로 성공 완료된 턴의 커밋된 scene.
+  생성은 커밋된 scene에서 기준을 풀고 delta는 in-memory로만 유지한다. 성공 시에만
+  `stampTurnScene` 후 같은 완성 상태를 conversation cache에 쓴다. 실패·중단 시
+  conversation scene 불변, 완료 `after_delta` 없음.
+- clock-state 추적의 **결함 ③(생성 전 쓰기)** 을 닫는다. 제거된 선행 쓰기의 주석은
+  「패스와 동시 reader가 같은 세계를 본다」였는데, 패스는 `planInput` in-memory만
+  받고 그 쓰기와 finish 사이에 `scene_json`을 다시 읽는 코드가 없었다. 실시간 소비자는
+  `convOut()`뿐이었고, 다음 턴 레거시 폴백이 중단 턴의 delta를 상속하는 것이 결함이었다.
+- 저장 순서 `stamp → scene`은 두 번째 쓰기가 실패해도 분기 스냅샷이 남게 하려는 선택.
+  역순이면 cache만 앞서고 스냅샷이 없는 창이 생긴다. **두 최종 쓰기는 여전히 비원자적**
+  — ADR-F9c §7이 별도 증거 트리거 슬라이스로 남긴 잔여 위험이며, 커밋 시점을 옮긴
+  것으로 해소되지 않고 노출 창만 줄어든다.
+- 쓰기 감소(턴당): 성공 conversation scene UPDATE **2 → 1**, 실패·중단 **1 → 0**,
+  완료 스냅샷 stamp는 1 유지, 모델 호출 수 불변. 세 선행 쓰기를 되돌리면 새 벤치
+  첫 케이스가 실패한다(기능을 확인하는 테스트가 아니라 결함을 잡는 테스트).
+- 게이트: 전체 **91/91**, `sceneCommitOnSuccess` 13/13, `sceneBranchSnapshot` 25/25,
+  `regenerateTurnBoundary` 15/15, server/web typecheck EXIT 0.
+- 이번 슬라이스에서 하지 않은 것: 자동 `advance_minutes` 기본값, `day_index` 롤오버,
+  스냅샷 스키마 변경, 마이그레이션, 메시지·scene 트랜잭션화, UI, 프롬프트 수정.
+
+## [2026-09-06 배포] `scene-commit-on-success-push-deploy`
+- push `7481586..ae5ee3b` fast-forward(force 아님, 1커밋, 파일 2개).
+  local HEAD == origin/master == `ae5ee3b`.
+- 빌드 `2026-09-06T23:01:04Z` EXIT 0. dist에서 확인: 생성 전 scene 저장 패턴 0,
+  S2 주석 3경로, 성공 경로 scene 저장 3, 세 경로 모두 `stampTurnScene` 직후 scene 저장,
+  catch/finally 안에 커밋 없음, `resolveSceneBase`/`resolveTurnStart` 유지,
+  `chat.js`에 `advance_minutes`/`day_index` 진행 코드 0.
+- 재시작 PID `148511` → `170069` `23:01:54Z`. SIGTERM 정상 종료 → 정상 기동.
+  health app/db/model ok, auth tailscale, prompt `2026.08.22-r1+story`, gen `0/0`.
+  실행 산출물 `apps/server/dist/index.js`.
+- **배포로 인한 DB 쓰기 0**: conversations 23→23, messages 363→363,
+  `scene_state` 보유 행 4→4.
+
+## [2026-09-07 라이브 abort] `scene-commit-on-success-live-abort-1`
+- 전용 canary `145b7004-4d0e-476f-ab91-3c97751161f1` · `S2-ABORT-CANARY-20260907` ·
+  rp-balanced · F9-LIVE-PARTY. 기존 사용자 대화·유키-smoke는 사용하지 않음.
+  생성 1회, abort 1회. PID `170069`.
+- 사전 동결: scene sha `55f2cdf020bdf8a9`, `scene_version` 없음 · clock 578 ·
+  day 1 · stage `reg` · arc `entry`.
+- abort가 완료 전에 수락됨: 생성 `23:02:58.325Z` → 조건 충족(active + assistant 1 +
+  ui 0) `23:03:37.488Z` → `POST /generations/4c280561…/abort` `23:03:37.509Z`
+  HTTP 200 `{"ok":true}`.
+- abort 전후 scene sha **동일** `55f2cdf020bdf8a9`. `scene_version` None→None,
+  clock 578→578, day 1→1, stage `reg`→`reg`, arc `entry`→`entry`.
+  모델이 in-memory에서 `advance_minutes`를 제안했든 아니든 conversation scene에는
+  남지 않았다 — 이 슬라이스 이전이면 델타가 여기 남았을 자리.
+- 중단된 턴: user 1행 + assistant header 1행(`beat_seq` 0). `scene_state` 없음,
+  `after_delta` 없음. 헤더가 `complete`로 남은 것은 `addBlock`이 즉시 complete로
+  쓰기 때문이고, focus 행이 생기기 전 중단이라 `interruptOrphanStreaming`이 접을
+  대상도 없었다. 기존 부분 메시지 계약 그대로.
+- 쓰기 안전성: conversations +1(canary만), messages 363→365(+2, 전부 canary),
+  대상 외 message 증가 0 · 대상 외 conversation scene 변경 0, abort 후
+  active/queued `0/0`. 코드 변경 0, 워킹트리 clean, HEAD `ae5ee3b`.
+- **journal 오류 1건을 0으로 쓰지 않는다.** `level:50` `AbortError: This operation
+  was aborted` / `msg: "비트 생성 실패"` 1건이 같은 시각·같은 generation에 있다.
+  abort 자체는 수락됐고 generation도 `0/0`으로 돌아왔으며 scene 정본은 보존됐다.
+  원인은 이번 슬라이스가 아니라 기존 catch 분기: `focusRow`가 있으면 `aborted`를
+  확인해 `interrupted`로 접지만, **focus 행 생성 전 abort는 `aborted`를 보지 않고
+  error로 로깅**한다. `ae5ee3b`에서 이 분기는 0줄 변경. S2 상태 실패가 아니라
+  관측성·오류 분류 결함으로 분리한다.
+  백로그 이름: `abort-before-focus-log-classification`.
+- **판정**: scene commit semantics PASS · abort execution PASS · write safety PASS ·
+  journal classification DEFECT OBSERVED · overall **PASS WITH FOLLOW-UP**.
+  토큰 `scene-commit-on-success-progress-close`. canary는 삭제하지 않음.
+- 남은 위험: 스냅샷과 conversation cache 쓰기는 비원자적 · 자동 시간 진행 미구현 ·
+  `day_index` 롤오버 미구현(소유권은 ADR-F9c에서 server로 채택) · 기본
+  `advance_minutes`는 관측 슬라이스 전까지 미확정. 다음 구현 순서는
+  `clock-advance-observe`.
