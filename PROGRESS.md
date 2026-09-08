@@ -3831,3 +3831,39 @@ BACKLOG:
 - 비범위 유지: ChatPage 배너, SummaryTab, API/types/client, migration, A안.
   워킹트리의 속마음 숨김 dirty 4파일은 이 토큰 무관·미수정.
 - 이 토큰 **spent**. 배포/재시작/push는 별도 지시.
+
+## [2026-09-08] `speaker-mix-roster-injection`
+
+- 토큰: 파티 Pass F/E 명단 주입만. 요약 배너 A안 0. compaction B안 재작업 0.
+  배포/재시작/push 0. 라이브 DB 쓰기 0. generate 0. 마이그레이션/API 0.
+- HEAD bind 착수 `v0.0.19-150-gd8fa0fc` (`d8fa0fc117dfd8f70c06175fc3cd8fa73919b505`).
+  커밋 `9a6a4c4d69dabd234c4a2c9cb5cbde8faad36d9d`
+  `fix(rp): inject cast roster into focus and extra passes` (parent `d8fa0fc`).
+  13파일. 마이그레이션/API/클라이언트 0.
+- 원인: `rosterLine()` 호출이 Pass N 한 곳뿐. Pass F는 `상대는 '{user}'다` 2인 프레임
+  + 포커스 카드만. 서술의 제3자(챙)가 사용자 슬롯(황지명)으로 흡수됨.
+- 변경: `passes.ts` Pass F/E에 같은 명단(이름만) + `'user'은 사용자다` +
+  `다른 인물을 user으로 바꿔 부르지 않는다`. 여는 문장에서 `상대는` 삭제.
+  `composeBeat.ts`가 이미 가진 `cast` / post-apply `scene`을 F/E에 전달.
+  1:1 `templates.ts` `HARD_RULES` / `builder.ts` 무접촉.
+- `PROMPT_VERSION` `2026.08.22-r1+story+compact` → `2026.08.22-r1+story+compact+roster`.
+- 벤치: `passPrompts.test.ts` 30/30 (유키/챙/황지명 전용 회귀 포함).
+  `composeBeat.test.ts` 31/31. version 핀: dialogBeatContract 7, storyInjectBuild 14,
+  rpEngineR1 18, summaryWatermarkCompaction 24, storyArchivedGate 9, storyAuthoringUi 8.
+- `onePointOneBaseline` 라이브 복사 `/tmp/rpchat-1to1-roster.db`
+  story_id IS NULL 8/8 system sha256 HEAD와 바이트 동일 (`diff` empty).
+- typecheck server+web EXIT 0.
+- `settingsRegression` 커밋 전 fail 1 = 펜스
+  (`git diff HEAD -- apps/server` 비공집합이 계약). CSS/SSE/swipe/WEB_APP_VERSION ok.
+  펜스 파일 미수정.
+- 이 토큰 **spent** (코드). 배포/재시작/커밋/push는 별도 지시.
+
+## [2026-09-08] `speaker-mix-roster-commit`
+
+- 토큰: 커밋만. 배포/재시작/push 0. 라이브 DB 쓰기 0. generate 0.
+- 산출물 `9a6a4c4d69dabd234c4a2c9cb5cbde8faad36d9d`
+  parent `d8fa0fc117dfd8f70c06175fc3cd8fa73919b505`.
+  13파일: `passes.ts` `composeBeat.ts` `config.ts` + Pass F/E/N 벤치 + version 핀.
+  `PROMPT_VERSION` `2026.08.22-r1+story+compact+roster`.
+- 비범위 유지: 배포/재시작/push/generate, 배너 A, compaction B, schema/API.
+- 이 토큰 **spent**. 라이브 generate 검증은 배포+재시작을 포함한 새 이름.
