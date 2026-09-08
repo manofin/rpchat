@@ -186,7 +186,7 @@ t('Pass F lists who is in the room so a third body is not absorbed into the user
   assert.ok(p.includes('이 자리에 있는 사람: 나리, 세라, 루나'));
   assert.equal(p.includes('한소연'), false, 'an absent cast member must not be offered');
   assert.ok(p.includes("'황지명'은 사용자다. 위 목록의 인물과 같은 사람이 아니다."));
-  assert.ok(p.includes("다른 인물을 '황지명'으로 바꿔 부르지 않는다."));
+  assert.equal(p.includes("다른 인물을 '황지명'으로 바꿔 부르지 않는다."), false, 'fact/rule pair deduped to the fact');
 });
 
 t('Pass F keeps a named extra distinct from the user (유키/챙/황지명 mix-up)', () => {
@@ -268,7 +268,7 @@ t('Pass E lists who is in the room and does not rename them as the user', () => 
   assert.ok(p.includes('이 자리에 있는 사람: 나리, 세라, 루나'));
   assert.equal(p.includes('한소연'), false, 'an absent cast member must not be offered');
   assert.ok(p.includes("'황지명'은 사용자다. 위 목록의 인물과 같은 사람이 아니다."));
-  assert.ok(p.includes("다른 인물을 '황지명'으로 바꿔 부르지 않는다."));
+  assert.equal(p.includes("다른 인물을 '황지명'으로 바꿔 부르지 않는다."), false, 'fact/rule pair deduped to the fact');
 });
 
 t('server facts are marked as fixed, and the section vanishes when there are none', () => {
@@ -312,6 +312,34 @@ t('1:1 HARD_RULES text is not reused or edited by the pass prompts', () => {
   assert.equal(s.includes("오직 '{{char}}'"), false);
   assert.equal(s.includes('HARD_RULES'), false);
   assert.equal(s.includes('<choices>'), false);
+});
+
+t('the room roster sentence has one implementation path shared by N/F/E', () => {
+  const s = code('apps/server/src/prompt/passes.ts');
+  assert.equal(s.split('이 자리에 있는 사람').length - 1, 1);
+  const line = (p: string) => p.split('\n').find((l) => l.includes('이 자리에 있는 사람'));
+  assert.equal(line(passN()), line(passF()));
+  assert.equal(line(passF()), line(passE()));
+  assert.equal(passN().includes('같은 사람이 아니다'), false);
+});
+
+t('user separation has one canonical sentence, not a fact/rule pair', () => {
+  for (const p of [passF(), passE()]) {
+    assert.ok(p.includes('은 사용자다. 위 목록의 인물과 같은 사람이 아니다.'));
+    assert.equal(p.includes('으로 바꿔 부르지 않는다'), false);
+  }
+});
+
+t('Pass E has no fake scene section; people lines are standalone context', () => {
+  const p = passE();
+  assert.equal(p.includes('## 장면'), false);
+  assert.ok(p.includes('이 자리에 있는 사람: 나리, 세라, 루나'));
+  assert.ok(p.includes('은 사용자다. 위 목록의 인물과 같은 사람이 아니다.'));
+  const peopleIdx = p.indexOf('이 자리에 있는 사람');
+  const happenedIdx = p.indexOf('## 방금 일어난 일');
+  assert.ok(peopleIdx >= 0 && peopleIdx < happenedIdx);
+  assert.ok(passF().includes('## 장면'), 'F keeps its real scene block');
+  assert.ok(passN().includes('## 장면'), 'N keeps its real scene block');
 });
 
 console.log(`\n${passed} passed`);

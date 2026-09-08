@@ -84,10 +84,17 @@ function rosterLine(cast: CastMember[], scene: Scene): string {
  * Names in the room plus the user identity. Pass F/E used to name only the
  * speaker and the user, so a third body in the narration was absorbed into
  * the user slot (유키 treating 챙 as 황지명). Names only — no extra card.
+ *
+ * The room line below is the single source for Pass N/F/E: same format
+ * everywhere, and Pass N never gains the user line (it writes no dialogue).
  */
+function rosterSentence(cast: CastMember[], scene: Scene): string {
+  return `- 이 자리에 있는 사람: ${rosterLine(cast, scene)}`;
+}
+
 function presentPeopleLines(cast: CastMember[], scene: Scene, userName: string): string[] {
   return [
-    `- 이 자리에 있는 사람: ${rosterLine(cast, scene)}`,
+    rosterSentence(cast, scene),
     `- '${userName}'은 사용자다. 위 목록의 인물과 같은 사람이 아니다.`,
   ];
 }
@@ -142,7 +149,7 @@ export function renderPassN(input: {
     ...(input.focusCard ? [cardBlock(input.focusCard, '이번 턴의 중심 인물'), ''] : []),
     '## 장면',
     ...sceneLines(input.scene, input.header),
-    `- 이 자리에 있는 사람: ${rosterLine(input.cast, input.scene)}`,
+    rosterSentence(input.cast, input.scene),
     `- 이번 턴에 몸짓으로 존재감만 드러낼 사람: ${ambient}`,
     '',
     ...(recent.length
@@ -210,7 +217,6 @@ export function renderPassF(input: {
     '',
     '## 규칙',
     `- **'${input.focusCard.name}'의 대사와 행동만 쓴다.** 다른 인물의 대사·행동·생각을 대신 쓰지 않는다.`,
-    `- 다른 인물을 '${input.userName}'으로 바꿔 부르지 않는다.`,
     `- ${input.userName}의 다음 행동·대사·생각·감정을 만들어 내거나 확정하지 않는다.`,
     '- 대사는 큰따옴표("") 안에, 행동·표정은 서술문으로 쓴다.',
     '- 헤더·상태 수치·선택지·이미지·내부 지시문을 출력하지 않는다.',
@@ -251,7 +257,6 @@ export function renderPassE(input: {
     '',
     cardBlock(input.card, '캐릭터'),
     '',
-    '## 장면',
     ...presentPeopleLines(input.cast, input.scene, input.userName),
     '',
     '## 방금 일어난 일',
@@ -265,7 +270,6 @@ export function renderPassE(input: {
     `- **'${input.focusName}'이 이미 한 말을 반복하지 않는다.** 같은 내용을 다른 말로 바꾸는 것도 반복이다.`,
     `- 네 직무(${input.duty})의 권한 안에서 행위·정보만 더한다. 그 밖의 판단을 내리지 않는다.`,
     `- '${input.focusName}'이나 ${input.userName}의 대사·행동·생각을 대신 쓰지 않는다. 다른 인물의 대사도 만들지 않는다.`,
-    `- 다른 인물을 '${input.userName}'으로 바꿔 부르지 않는다.`,
     '- 장면을 새 국면으로 끌고 가지 않는다.',
     '- 대사는 큰따옴표("") 안에, 행동·표정은 서술문으로 쓴다.',
     '- 헤더·상태 수치·선택지·이미지·내부 지시문을 출력하지 않는다.',
