@@ -31,7 +31,7 @@ const DEFAULT_TAGS = ['party:role=secondary'];
 const EMPTY: Draft = {
   name: '', tagline: '', avatar: null, description: '', personality: '', speech_style: '', scenario: '',
   first_message: '', example_dialogue: '', taboos: '', tags: DEFAULT_TAGS, // scene/voice optional
-} as unknown as Draft;
+};
 
 interface LoreEntry {
   id: string;
