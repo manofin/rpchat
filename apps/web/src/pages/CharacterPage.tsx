@@ -5,6 +5,7 @@ import type { Character, Conversation, Persona, Scene } from '../types';
 import { Avatar, relTime } from '../components/view';
 import { CharacterEditor } from '../components/CharacterEditor';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
+import { characterHeroEmpty, resolveConversationCount, resolveLastChatAt } from '../lib/characterChatStats';
 
 export function CharacterPage({ id }: { id: string }) {
   const ui = useUi();
@@ -17,7 +18,7 @@ export function CharacterPage({ id }: { id: string }) {
   async function load() {
     setLoading(true);
     try {
-      const [c, v] = await Promise.all([get<Character>(`/api/characters/${id}`), get<Conversation[]>(`/api/conversations?characterId=${id}`)]);
+      const [c, v] = await Promise.all([get<Character>(`/api/characters/${id}`), get<Conversation[]>(`/api/conversations?characterId=${id}&limit=200`)]);
       setChar(c);
       setConvs(v);
     } catch (e) {
@@ -37,6 +38,8 @@ export function CharacterPage({ id }: { id: string }) {
   if (loading || !char) return <div className="screen"><div className="topbar"><button className="btn ghost icon" onClick={() => back('/')}>‹</button></div><Spinner /></div>;
 
   const resume = convs.find((v) => !v.archived) ?? null;
+  const convCount = resolveConversationCount(char.conversation_count, convs.length);
+  const lastChat = resolveLastChatAt(char.last_chat_at, convs);
 
   return (
     <div className="screen">
@@ -58,9 +61,9 @@ export function CharacterPage({ id }: { id: string }) {
                 </div>
               )}
               <div className="char-hero-meta muted small">
-                {char.conversation_count
-                  ? `대화 ${char.conversation_count}개${char.last_chat_at ? ` · ${relTime(char.last_chat_at)}` : ''}`
-                  : '아직 대화 없음'}
+                {characterHeroEmpty(convCount)
+                  ? '아직 대화 없음'
+                  : `대화 ${convCount}개${lastChat ? ` · ${relTime(lastChat)}` : ''}`}
               </div>
             </div>
           </div>
@@ -77,8 +80,8 @@ export function CharacterPage({ id }: { id: string }) {
           </div>
         </div>
 
-        <div className="section-title">대화 {convs.length > 0 && `(${convs.length})`}</div>
-        {convs.length === 0 ? (
+        <div className="section-title">대화 {convCount > 0 && `(${convCount})`}</div>
+        {convCount === 0 ? (
           <div className="empty-state compact">
             <div className="empty-state-title">아직 대화가 없습니다.</div>
             <p className="empty-state-sub">위에서 대화를 시작해 보세요</p>

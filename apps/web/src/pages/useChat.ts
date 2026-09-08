@@ -109,10 +109,10 @@ export function useChat(conversationId: string) {
   }, [conversationId]);
 
   const runStream = useCallback(async (path: string, body: unknown) => {
-    if (state.generating) return;
-    patchState({ error: null });
+    if (state.generating || abortRef.current) return;
     const ctrl = new AbortController();
     abortRef.current = ctrl;
+    patchState({ error: null, generating: true });
     genIdRef.current = null;
     try {
       await streamPost(path, body, applyEvent, ctrl.signal);
