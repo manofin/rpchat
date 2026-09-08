@@ -3867,3 +3867,30 @@ BACKLOG:
   `PROMPT_VERSION` `2026.08.22-r1+story+compact+roster`.
 - 비범위 유지: 배포/재시작/push/generate, 배너 A, compaction B, schema/API.
 - 이 토큰 **spent**. 라이브 generate 검증은 배포+재시작을 포함한 새 이름.
+
+## [2026-09-08] `speaker-mix-roster-deploy`
+
+- 토큰: 배포+재시작. generate 0. push 0. 라이브 DB 쓰기 0.
+- HEAD bind `v0.0.19-152-g8e3491d` (`8e3491d181a8c0934e479a1b7cbd5126c27bb6b4`).
+  제품 코드 이 블록만 append (워킹트리에 이 기록 외 dirty가 있어도 이 토큰 범위 아님).
+- 배포 전: PID `249614` start `2026-09-08 09:33:15 UTC`.
+  health `ok` `db:ok` `model.ok` `authMode:tailscale`
+  `promptVersion` `2026.08.22-r1+story+compact`. generation active=[] queued=0.
+  DB `conversations|36` `messages|765`(complete) `summaries|12`(approved 6/draft 6)
+  `characters|17` `stories|3` `schema_migrations|12` `integrity_check=ok`.
+- `npm run build` EXIT 0 (`2026-09-08T10:21Z`).
+  dist `config.js` `PROMPT_VERSION = '2026.08.22-r1+story+compact+roster'`
+  sha256 `fec27229fb56a0d6476eebdf69b680a145b8c1db4ddf2b21102f176a8c8e58fa`.
+  `passes.js` sha256 `b7ee0fd0753559599bc26aeba8e15482024a966dfb908d8c31eff3000b90f25f`
+  `presentPeopleLines` + `rosterLine` + 사용자 동일시 금지. Pass F 여는 `상대는 '{user}'다` 0.
+  `composeBeat.js` `cast: input.cast` / `scene: plan.applied.state`.
+  1:1 `templates.js` `상대는 '{{user}}'다` 유지. `builder.js` roster 문자열 0.
+  web `index-CwuDTCWs.js` / `index-BWgNqAh5.css` (서버 프롬프트 문자열 없음).
+- `systemctl --user restart rpchat.service` EXIT 0 `2026-09-08T10:21:50Z`.
+  PID `249614`→`256153`. 구 PID `/proc` 소멸. active running.
+- 배포 후 health: `promptVersion` `2026.08.22-r1+story+compact+roster`
+  `ok` `db:ok` `model.ok` latencyMs 29 `authMode:tailscale` generation [].
+  localhost `/api/characters` 401 (tailscale 유지).
+  DB 카운트 재시작 전후 동일. CONTEXT_TOKENS 16384 DATA_DIR `/home/hermes/rpchat/data`.
+- generate 0. POST 0. push 0.
+- 이 토큰 **spent**. 화자 혼동 실측은 `speaker-mix-roster-live-verify` (미개방).
