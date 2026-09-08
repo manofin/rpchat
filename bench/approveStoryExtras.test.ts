@@ -59,7 +59,6 @@ const EMPTY_CAT = { flags: {} } as PartyCatalog;
 
 const run = (o: Partial<Parameters<typeof approveStoryExtras>[0]> = {}) =>
   approveStoryExtras({
-    story: true,
     cast: [ROSETTA, GIYAM],
     scene: bothPresent,
     focus_id: 'rosetta',
@@ -127,18 +126,17 @@ t('6 more than two candidates cap at 2', () => {
   assert.equal(why(r, 'nara'), 'cap');
 });
 
-t('7 no story flag does not open C1 and does not change approveExtras', () => {
-  const storyOff = run({ story: false });
-  assert.deepEqual(ids(storyOff), []);
-  assert.equal(storyOff.k_opened, 0);
+t('7 call itself is story-room; legacy approveExtras unchanged; canonical cap', () => {
+  const r = run();
+  assert.deepEqual(ids(r), ['giyam']);
+  assert.equal(r.k_opened, 1);
 
-  const omitted = approveStoryExtras({
-    cast: [ROSETTA, GIYAM],
-    scene: bothPresent,
-    focus_id: 'rosetta',
-  });
-  assert.deepEqual(ids(omitted), []);
-  assert.equal(omitted.k_opened, 0);
+  const impl = read('apps/server/src/prompt/approveStoryExtras.ts');
+  assert.equal(impl.includes('story?:'), false);
+  assert.equal(impl.includes('not_story'), false);
+  assert.equal(impl.includes('STORY_EXTRA_K'), false);
+  assert.equal(impl.includes('MAX_EXTRAS'), true);
+  assert.match(impl, /from '\.\/assignSpeakers\.js'/);
 
   assert.equal(EXTRA_SCORE_ENABLED, false);
   const legacy = approveExtras({

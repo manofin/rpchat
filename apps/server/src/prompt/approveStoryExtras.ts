@@ -1,14 +1,11 @@
 import { eligibleExtras, type ExtraRejectReason } from './eligibleExtras.js';
+import { MAX_EXTRAS } from './assignSpeakers.js';
 import type { CastMember } from './cast.js';
 import type { Scene } from '../types.js';
-
-/** ADR-F8e Fork C1: story-room extras cap. Same numeric as MAX_EXTRAS; not wired. */
-const STORY_EXTRA_K = 2;
 
 export type StoryExtraRejectReason =
   | ExtraRejectReason
   | 'no_focus'
-  | 'not_story'
   | 'solo_cast'
   | 'cap';
 
@@ -25,7 +22,6 @@ export type ApproveStoryExtrasResult = {
 };
 
 export type ApproveStoryExtrasInput = {
-  story?: boolean;
   cast: CastMember[];
   scene: Scene;
   focus_id: string | null;
@@ -48,10 +44,10 @@ function rejectAll(
 /**
  * Story-room extra policy (ADR-F8e C1 + C-focus-β). Isolated: generate path
  * does not import this. 1:1 extra policy lives in a separate module.
+ * Call itself means story-room; there is no non-story input.
  */
 export function approveStoryExtras(input: ApproveStoryExtrasInput): ApproveStoryExtrasResult {
   const { cast, scene, focus_id } = input;
-  if (input.story !== true) return rejectAll(cast, 'not_story');
   if (focus_id == null) return rejectAll(cast, 'no_focus');
 
   const uniqueIds = new Set(cast.map((c) => c.id));
@@ -68,7 +64,7 @@ export function approveStoryExtras(input: ApproveStoryExtrasInput): ApproveStory
   const extraRejected: Array<{ id: string; reason: StoryExtraRejectReason }> = [...rejected];
   const approved: ApprovedStoryExtra[] = [];
   for (const id of eligible_ids) {
-    if (approved.length >= STORY_EXTRA_K) {
+    if (approved.length >= MAX_EXTRAS) {
       extraRejected.push({ id, reason: 'cap' });
       continue;
     }
