@@ -358,6 +358,18 @@ t('Pass F is rebuilt with the narration Pass N actually produced', () => {
   })), 'x'), null);
 });
 
+t('Pass F/E receive the post-apply roster, not a two-person user frame', () => {
+  const i = input({ patch: { base_version: 0, flags: { rulebreak: true } } });
+  const plan = planBeat(i);
+  const f = passFWith(i, plan, '챙이 소매를 걷는다.')!;
+  assert.ok(f.includes('이 자리에 있는 사람: 나리, 세라, 하연, 유라, 루나, 미르'));
+  assert.ok(f.includes("'황지명'은 사용자다"));
+  assert.equal(f.includes("상대는 '황지명'다"), false);
+  const extras = planPassE(i, plan, '챙이 소매를 걷는다.', '"시비냐."');
+  assert.ok(extras[0].prompt.includes('이 자리에 있는 사람: 나리, 세라, 하연, 유라, 루나, 미르'));
+  assert.ok(extras[0].prompt.includes("다른 인물을 '황지명'으로 바꿔 부르지 않는다."));
+});
+
 t('Pass E is planned once per approved extra, carrying its opening duty', () => {
   const i = input({ patch: { base_version: 0, flags: { rulebreak: true } } });
   const plan = planBeat(i);

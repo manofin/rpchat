@@ -205,7 +205,7 @@ function beatPrompts(extras: number): { pass: string; messages: ChatMessage[]; t
       messages: [{ role: 'user' as const, content:
         `${renderPassF({
           focusCard: CARD_MINA, userName: '사용자', userText: USER_TEXT,
-          scene: SCENE, header: HEADER, narration: NARRATION,
+          scene: SCENE, header: HEADER, narration: NARRATION, cast: CAST,
         })}\n\n## 최근 대화\n${history}` }],
       temperature: 0.9, max_tokens: 500,
     },
@@ -218,6 +218,7 @@ function beatPrompts(extras: number): { pass: string; messages: ChatMessage[]; t
       messages: [{ role: 'user' as const, content: renderPassE({
         card: cards[i], duty: duties[i], focusName: '민아', focusText: FOCUS_TEXT,
         narration: NARRATION, userName: '사용자', userText: USER_TEXT,
+        cast: CAST, scene: SCENE,
         facts: ['빈자리는 창가 두 번째'],
       }) }],
       temperature: 0.85, max_tokens: 220,

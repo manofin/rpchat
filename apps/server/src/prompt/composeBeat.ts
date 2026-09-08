@@ -237,6 +237,7 @@ export function planBeat(input: BeatPlanInput): BeatPlan {
           scene,
           header,
           narration: '',
+          cast: input.cast,
           contentPolicy: input.content_policy,
         })
       : null,
@@ -258,6 +259,7 @@ export function passFWith(input: BeatPlanInput, plan: BeatPlan, narration: strin
     scene: plan.applied.state,
     header: plan.header,
     narration,
+    cast: input.cast,
     contentPolicy: input.content_policy,
   });
 }
@@ -295,6 +297,8 @@ export function planPassE(input: BeatPlanInput, plan: BeatPlan, narration: strin
       narration,
       userName: userNameOf(input),
       userText: input.user_text,
+      cast: input.cast,
+      scene: plan.applied.state,
       facts: input.facts,
     }),
   }));

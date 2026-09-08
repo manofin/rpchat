@@ -9,8 +9,8 @@
  * alone is honoured ~80% of the time.
  *
  *   Pass N  서술·군중             focus card + short roster + 직전 서술
- *   Pass F  focus 대사·속마음    focus card only
- *   Pass E  approved extra only  that card only, 2-4 sentences
+ *   Pass F  focus 대사·속마음    focus card + short roster (names only)
+ *   Pass E  approved extra only  that card + short roster, 2-4 sentences
  *   Pass C  선택지               the finished turn, no card at all → beatChoices.ts
  *   Pass U  UI                   server template (renderBeat), no model
  *
@@ -78,6 +78,18 @@ function rosterLine(cast: CastMember[], scene: Scene): string {
   const present = Array.isArray(scene.present_ids) ? scene.present_ids : null;
   const here = present ? cast.filter((m) => present.includes(m.id)) : cast;
   return here.length ? here.map((m) => m.name).join(', ') : '(없음)';
+}
+
+/**
+ * Names in the room plus the user identity. Pass F/E used to name only the
+ * speaker and the user, so a third body in the narration was absorbed into
+ * the user slot (유키 treating 챙 as 황지명). Names only — no extra card.
+ */
+function presentPeopleLines(cast: CastMember[], scene: Scene, userName: string): string[] {
+  return [
+    `- 이 자리에 있는 사람: ${rosterLine(cast, scene)}`,
+    `- '${userName}'은 사용자다. 위 목록의 인물과 같은 사람이 아니다.`,
+  ];
 }
 
 function sceneLines(scene: Scene, header: string | null): string[] {
@@ -163,6 +175,11 @@ export function renderPassN(input: {
 /**
  * Pass F — the focus speaks. One card, so there is nothing to blend with.
  *
+ * The roster is names only: without it, a third body that Pass N already named
+ * has no declared slot here and collapses into the user. The opening line used
+ * to say `상대는 '{user}'다`, which framed a two-person scene and made that
+ * collapse the default.
+ *
  * 속마음 is separated by a fixed marker rather than asked for as JSON: the model
  * only has to emit one literal token, and a missing marker degrades to "all of it
  * was dialogue" instead of losing the turn (A-6).
@@ -174,16 +191,18 @@ export function renderPassF(input: {
   scene: Scene;
   header: string | null;
   narration: string;
+  cast: CastMember[];
   contentPolicy?: string;
 }): string {
   const policy = (input.contentPolicy ?? '').trim();
   return [
-    `너는 '${input.focusCard.name}' 한 명만 연기한다. 상대는 '${input.userName}'다.`,
+    `너는 '${input.focusCard.name}' 한 명만 연기한다.`,
     '',
     cardBlock(input.focusCard, '캐릭터'),
     '',
     '## 장면',
     ...sceneLines(input.scene, input.header),
+    ...presentPeopleLines(input.cast, input.scene, input.userName),
     ...(input.narration.trim() ? ['', '## 방금 서술된 것 (이미 화면에 있다. 다시 쓰지 말 것)', input.narration.trim()] : []),
     '',
     `## ${input.userName}의 말`,
@@ -191,6 +210,7 @@ export function renderPassF(input: {
     '',
     '## 규칙',
     `- **'${input.focusCard.name}'의 대사와 행동만 쓴다.** 다른 인물의 대사·행동·생각을 대신 쓰지 않는다.`,
+    `- 다른 인물을 '${input.userName}'으로 바꿔 부르지 않는다.`,
     `- ${input.userName}의 다음 행동·대사·생각·감정을 만들어 내거나 확정하지 않는다.`,
     '- 대사는 큰따옴표("") 안에, 행동·표정은 서술문으로 쓴다.',
     '- 헤더·상태 수치·선택지·이미지·내부 지시문을 출력하지 않는다.',
@@ -221,6 +241,8 @@ export function renderPassE(input: {
   narration: string;
   userName: string;
   userText: string;
+  cast: CastMember[];
+  scene: Scene;
   facts?: string[];
 }): string {
   const facts = (input.facts ?? []).filter((f) => f.trim());
@@ -228,6 +250,9 @@ export function renderPassE(input: {
     `너는 '${input.card.name}' 한 명만 연기한다. 이번 턴에 끼어들 근거는 네 직무다: ${input.duty}.`,
     '',
     cardBlock(input.card, '캐릭터'),
+    '',
+    '## 장면',
+    ...presentPeopleLines(input.cast, input.scene, input.userName),
     '',
     '## 방금 일어난 일',
     ...(input.narration.trim() ? [input.narration.trim()] : []),
@@ -240,6 +265,7 @@ export function renderPassE(input: {
     `- **'${input.focusName}'이 이미 한 말을 반복하지 않는다.** 같은 내용을 다른 말로 바꾸는 것도 반복이다.`,
     `- 네 직무(${input.duty})의 권한 안에서 행위·정보만 더한다. 그 밖의 판단을 내리지 않는다.`,
     `- '${input.focusName}'이나 ${input.userName}의 대사·행동·생각을 대신 쓰지 않는다. 다른 인물의 대사도 만들지 않는다.`,
+    `- 다른 인물을 '${input.userName}'으로 바꿔 부르지 않는다.`,
     '- 장면을 새 국면으로 끌고 가지 않는다.',
     '- 대사는 큰따옴표("") 안에, 행동·표정은 서술문으로 쓴다.',
     '- 헤더·상태 수치·선택지·이미지·내부 지시문을 출력하지 않는다.',

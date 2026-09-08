@@ -16,7 +16,8 @@ function num(name: string, def: number): number {
 export type AuthMode = 'tailscale' | 'token' | 'none';
 
 // +story: F8b 스토리 설정 주입. +compact: 승인 요약 covers_until 워터마크 기반 최근 대화 컴팩션.
-export const PROMPT_VERSION = '2026.08.22-r1+story+compact';
+// +roster: 파티 Pass F/E에 등장 명단 주입 (화자를 사용자 슬롯에 흡수하지 않게).
+export const PROMPT_VERSION = '2026.08.22-r1+story+compact+roster';
 
 export const config = {
   port: num('PORT', 8787),

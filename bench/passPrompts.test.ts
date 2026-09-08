@@ -56,12 +56,14 @@ const passN = (o: Partial<Parameters<typeof renderPassN>[0]> = {}) => renderPass
 
 const passF = (o: Partial<Parameters<typeof renderPassF>[0]> = {}) => renderPassF({
   focusCard: NARI_CARD, userName: '황지명', userText: '나리, 네 이야기 말인데.',
-  scene: SCENE, header: '12일차 · 09:37 · 교실', narration: '지명이 나리를 돌아본다.', ...o,
+  scene: SCENE, header: '12일차 · 09:37 · 교실', narration: '지명이 나리를 돌아본다.',
+  cast: CAST, ...o,
 });
 
 const passE = (o: Partial<Parameters<typeof renderPassE>[0]> = {}) => renderPassE({
   card: SERA_CARD, duty: '교칙', focusName: '나리', focusText: '"시비냐."',
-  narration: '지명이 나리를 돌아본다.', userName: '황지명', userText: '나리, 네 이야기 말인데.', ...o,
+  narration: '지명이 나리를 돌아본다.', userName: '황지명', userText: '나리, 네 이야기 말인데.',
+  cast: CAST, scene: SCENE, ...o,
 });
 
 // ── Pass N: narration only ──────────────────────────────────────────────────
@@ -169,6 +171,7 @@ t('Pass F names exactly one speaker and forbids writing anyone else', () => {
   assert.ok(p.includes("너는 '나리' 한 명만 연기한다"));
   assert.ok(p.includes('다른 인물의 대사·행동·생각을 대신 쓰지 않는다'));
   assert.ok(p.includes('황지명의 다음 행동·대사·생각·감정을 만들어 내거나 확정하지 않는다'));
+  assert.equal(p.includes("상대는 '황지명'다"), false, 'two-person framing is the mix-up');
 });
 
 t('Pass F carries only the focus card — no other character sheet leaks in', () => {
@@ -176,7 +179,30 @@ t('Pass F carries only the focus card — no other character sheet leaks in', ()
   assert.ok(p.includes('날이 서 있다'));
   assert.ok(p.includes('먼저 사과하지 않는다'));
   assert.equal(p.includes('원칙적이다'), false, "세라's card must not appear in 나리's pass");
-  assert.equal(p.includes('세라'), false);
+});
+
+t('Pass F lists who is in the room so a third body is not absorbed into the user', () => {
+  const p = passF();
+  assert.ok(p.includes('이 자리에 있는 사람: 나리, 세라, 루나'));
+  assert.equal(p.includes('한소연'), false, 'an absent cast member must not be offered');
+  assert.ok(p.includes("'황지명'은 사용자다. 위 목록의 인물과 같은 사람이 아니다."));
+  assert.ok(p.includes("다른 인물을 '황지명'으로 바꿔 부르지 않는다."));
+});
+
+t('Pass F keeps a named extra distinct from the user (유키/챙/황지명 mix-up)', () => {
+  const yuki = { name: '유키', personality: '장난기다' };
+  const chen = member({ id: 'chen', name: '챙' });
+  const p = passF({
+    focusCard: yuki,
+    cast: [member({ id: 'yuki', name: '유키' }), chen],
+    scene: { location: '교실', present_ids: ['yuki', 'chen'] },
+    narration: '챙이 소매를 걷어 옷자락을 고쳐 잡는다.',
+  });
+  assert.ok(p.includes('이 자리에 있는 사람: 유키, 챙'));
+  assert.ok(p.includes('챙이 소매를 걷어'));
+  assert.ok(p.includes("'황지명'은 사용자다"));
+  assert.equal(p.includes("상대는 '황지명'다"), false);
+  assert.equal(p.includes('원칙적이다'), false);
 });
 
 t('Pass F fixes the thought marker and scopes 속마음 to the focus', () => {
@@ -235,6 +261,14 @@ t('Pass E gets the focus line to react to, without permission to write it', () =
   const p = passE();
   assert.ok(p.includes('"시비냐."'));
   assert.ok(p.includes("'나리'이나 황지명의 대사·행동·생각을 대신 쓰지 않는다"));
+});
+
+t('Pass E lists who is in the room and does not rename them as the user', () => {
+  const p = passE();
+  assert.ok(p.includes('이 자리에 있는 사람: 나리, 세라, 루나'));
+  assert.equal(p.includes('한소연'), false, 'an absent cast member must not be offered');
+  assert.ok(p.includes("'황지명'은 사용자다. 위 목록의 인물과 같은 사람이 아니다."));
+  assert.ok(p.includes("다른 인물을 '황지명'으로 바꿔 부르지 않는다."));
 });
 
 t('server facts are marked as fixed, and the section vanishes when there are none', () => {

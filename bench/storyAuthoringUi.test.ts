@@ -103,7 +103,7 @@ t('AU-07 character-tab start, editor, and server contracts stay untouched', () =
   assert.ok(storiesSrc.includes('/inject-preview'));
   assert.ok(convSrc.includes("error: 'archived'") || convSrc.includes('error: "archived"'));
   assert.ok(builderSrc.includes('computeStoryInjection'));
-  assert.ok(configSrc.includes("PROMPT_VERSION = '2026.08.22-r1+story+compact'"));
+  assert.ok(configSrc.includes("PROMPT_VERSION = '2026.08.22-r1+story+compact+roster'"));
   assert.equal(pageSrc.includes('default_character_id'), false);
   assert.equal(pageSrc.includes('worlds'), false);
   assert.equal(pageSrc.includes('lore'), false);

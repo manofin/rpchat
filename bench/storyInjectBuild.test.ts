@@ -114,7 +114,8 @@ const configSrc = fs.readFileSync('apps/server/src/config.ts', 'utf8');
 
 t('PROMPT_VERSION keeps +story and records compact', () => {
   assert.equal(PROMPT_VERSION.includes('+story'), true);
-  assert.match(configSrc, /PROMPT_VERSION = '2026\.08\.22-r1\+story\+compact'/);
+  assert.equal(PROMPT_VERSION.includes('+compact'), true);
+  assert.match(configSrc, /PROMPT_VERSION = '2026\.08\.22-r1\+story\+compact\+roster'/);
 });
 
 t('sub-budget constants: setting 0.7 then cast 0.3 of story room', () => {
