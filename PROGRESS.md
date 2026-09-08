@@ -3802,3 +3802,32 @@ BACKLOG:
   `feat(rp): add story peer-cast extra policy` (parent `b88635e`).
   `approveStoryExtras.ts` + `bench/approveStoryExtras.test.ts`. `chat.ts` import 0.
   **`story-peer-cast-adr` 산출물이 아님.** 소급 귀속 금지.
+
+## [2026-09-08] `summary-watermark-compaction`
+
+- 토큰: 서버 컴팩션만. A안(배너 UI) 0. 배포/재시작/push 0. 라이브 DB 쓰기 0. generate 0.
+- HEAD bind 착수 `v0.0.19-147-g0a8c8b0` (`0a8c8b081caee76544e5287acfe5efef45f7f7c3`).
+- 커밋 `89eeaee10df9e6c54163ab62314b2f60e657638b`
+  `feat(prompt): compact recent turns behind approved summary watermarks`
+  (parent `0a8c8b0`). 9파일. 마이그레이션/API/클라이언트 0.
+- 변경: `apps/server/src/prompt/compaction.ts` (신규, 순수 헬퍼)
+  `builder.ts` 최근 창이 유효 워터마크 이하를 제외.
+  `PROMPT_VERSION` `2026.08.22-r1+story` → `2026.08.22-r1+story+compact`.
+- 유효 워터마크: approved + covers_until 존재 + 현재 대화 + 현재 getPath 위
+  + covers_from이 있으면 같은 경로·역전 없음. 가장 먼 until. 없으면 기존 조립.
+- 보호선: `effective = min(watermark, pathLength - SCENE_RECENT_GUARD - 1)`.
+  `dropped_messages` = 컴팩션 이후 후보 중 토큰 예산 탈락만.
+- 벤치: `bench/summaryWatermarkCompaction.test.ts` 24/24.
+  builder/version 핀: builderBudget 6, builderDifferential 1, userNoteInject 4,
+  budgetKind 7, storyInjectBuild 14, dialogBeatContract 7, rpEngineR1 18,
+  storyArchivedGate 9, storyAuthoringUi 8, personaResolve 9, summarizeContract 3.
+- `onePointOneBaseline` 라이브 복사 `/tmp/rpchat-1to1-pre-compact.db`
+  story_id IS NULL 8/8 system sha256 불변 (승인 요약 0건 → 컴팩션 no-op + system 바이트 비접촉).
+- typecheck server+web EXIT 0.
+- 전체 `bench/*.test.ts` 98파일, 커밋 전 fail 1 = `settingsRegression` 펜스
+  (커밋 전 `git diff HEAD -- apps/server` 비공집합이 계약).
+  CSS/SSE/swipe/WEB_APP_VERSION ok. 마이그레이션 목록=tracked, untracked 0.
+  `partyBeatPersist` 커밋 전 실행 PASS.
+- 비범위 유지: ChatPage 배너, SummaryTab, API/types/client, migration, A안.
+  워킹트리의 속마음 숨김 dirty 4파일은 이 토큰 무관·미수정.
+- 이 토큰 **spent**. 배포/재시작/push는 별도 지시.
