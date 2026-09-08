@@ -44,6 +44,22 @@ t('.sheet max-height follows --app-height and clips overflow', () => {
   assert.equal(sheet![0].includes('max-height: 86%'), false);
 });
 
+t('sheet column: only .sheet-body absorbs the overflow, handle and tabs never shrink', () => {
+  // .tabs 는 overflow-x:auto 라 min-height:auto 가 0 으로 풀린다. flex-shrink 기본값(1)이
+  // 남아 있으면 내용이 긴 탭(요약)에서 탭 줄까지 눌려 탭이 잘리고 탭이 안 눌린다.
+  const rule = (sel: string) => {
+    const m = css.match(new RegExp(`\\${sel} \\{[^}]+\\}`));
+    assert.ok(m, `${sel} rule missing`);
+    return m![0];
+  };
+  assert.match(rule('.sheet .handle'), /flex:\s*0 0 auto/);
+  assert.match(rule('.sheet .tabs'), /flex:\s*0 0 auto/);
+  const body = rule('.sheet .sheet-body');
+  assert.match(body, /flex:\s*1 1 auto/);
+  assert.match(body, /min-height:\s*0/);
+  assert.match(body, /overflow-y:\s*auto/);
+});
+
 t('Modal override also uses --app-height, not 94%', () => {
   assert.match(ui, /maxHeight: 'calc\(var\(--app-height\) \* 0\.94\)'/);
   assert.equal(ui.includes("maxHeight: '94%'"), false);

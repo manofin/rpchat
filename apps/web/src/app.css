@@ -296,11 +296,12 @@ textarea { resize: none; }
 /* ---- 바텀 시트 ---- */
 .sheet-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 20; }
 .sheet { position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: 100%; max-width: 720px; max-height: calc(var(--app-height) * 0.86); overflow: hidden; background: var(--bg-2); border-radius: 18px 18px 0 0; z-index: 21; display: flex; flex-direction: column; padding-bottom: var(--safe-bottom); }
-.sheet .handle { width: 40px; height: 4px; border-radius: 2px; background: var(--fg-3); margin: 8px auto 4px; }
-.sheet .tabs { display: flex; gap: 4px; padding: 6px 10px; overflow-x: auto; }
+.sheet .handle { width: 40px; height: 4px; border-radius: 2px; background: var(--fg-3); margin: 8px auto 4px; flex: 0 0 auto; }
+/* overflow-x 때문에 min-height:auto 가 0 이 되어, 내용이 긴 탭에서 탭 줄까지 눌려 찌그러졌다. */
+.sheet .tabs { display: flex; gap: 4px; padding: 6px 10px; overflow-x: auto; flex: 0 0 auto; }
 .sheet .tabs button { flex: 0 0 auto; border: none; background: transparent; color: var(--fg-2); padding: 8px 12px; border-radius: 10px; cursor: pointer; }
 .sheet .tabs button.active { background: var(--bg-3); color: var(--fg); }
-.sheet .sheet-body { overflow-y: auto; padding: 8px 14px 16px; }
+.sheet .sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 8px 14px 16px; }
 .budget-row { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--bg-3); gap: 8px; }
 .budget-row .bar { height: 4px; background: var(--bg-3); border-radius: 2px; overflow: hidden; width: 100%; margin-top: 4px; }
 .budget-row .bar i { display: block; height: 100%; background: var(--accent); }
