@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { get, patch } from '../lib/api';
 import { back, navigate, useRoute } from '../lib/router';
 import { NAV_TABS } from '../lib/navTabs';
-import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, PromptPreview, Summary } from '../types';
+import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, Summary } from '../types';
 import {
   Avatar, BeatHeader, BeatHunterLine, BeatHunterPanel, BeatInfoSheet, BeatNarration, BeatSystem, BeatUiPanel, parseBeatUi,
   renderContent, SpeakerHeader,
@@ -11,6 +11,11 @@ import { OverlayDrawer } from '../components/OverlayDrawer';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { groupChatTurns, shouldReorderTurn, turnChoicesHost, visualAssistantOrder } from '../lib/chatLayout';
 import { useDesktopLayout } from '../lib/useDesktopLayout';
+import {
+  resolveBannerWatermarkId,
+  shouldShowSummaryBanner,
+  suppressSummaryBanner,
+} from '../lib/summaryBanner';
 import { useChat } from './useChat';
 import { ChatDrawer } from './ChatDrawer';
 import { ChatListRail } from './ChatListRail';
@@ -27,10 +32,11 @@ export function ChatPage({ id }: { id: string }) {
   const path = useRoute();
   const [listOpen, setListOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(desktop);
-  const [previewDropped, setPreviewDropped] = useState<number | null>(null);
-  const [previewIncluded, setPreviewIncluded] = useState<number | null>(null);
-  const [hasDraft, setHasDraft] = useState(false);
+  const [summaryRows, setSummaryRows] = useState<Summary[] | null>(null);
+  const [summaryTick, setSummaryTick] = useState(0);
   const [dismissTick, setDismissTick] = useState(0);
+
+  useEffect(() => { setSummaryRows(null); }, [id]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const stickyRef = useRef(true);
@@ -100,54 +106,28 @@ export function ChatPage({ id }: { id: string }) {
     setListOpen(false);
   }, [toolsOpen, desktop]);
 
-  const headId = chat.messages[chat.messages.length - 1]?.id ?? '';
-  const dropped = chat.budgetAtHead === headId && chat.lastBudget
-    ? chat.lastBudget.dropped_messages
-    : (previewDropped ?? 0);
-  const included = chat.budgetAtHead === headId && chat.lastBudget
-    ? chat.lastBudget.included_messages
-    : (previewIncluded ?? 0);
-
   useEffect(() => {
-    if (chat.generating || chat.loading || !headId) return;
-    if (chat.budgetAtHead === headId) {
-      setPreviewDropped(null);
-      setPreviewIncluded(null);
-      return;
-    }
-    let cancelled = false;
-    get<PromptPreview>(`/api/conversations/${id}/prompt-preview`)
-      .then((p) => {
-        if (cancelled) return;
-        setPreviewDropped(p.budget.dropped_messages);
-        setPreviewIncluded(p.budget.included_messages);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setPreviewDropped(null);
-        setPreviewIncluded(null);
-      });
-    return () => { cancelled = true; };
-  }, [id, headId, chat.generating, chat.loading, chat.budgetAtHead]);
-
-  /** 최종 트리거: dropped_messages > 0 만. TEMP observe 해제. */
-  const TEMP_MIN_INCLUDED: number | null = null;
-  const triggered = dropped > 0 || (TEMP_MIN_INCLUDED != null && included > TEMP_MIN_INCLUDED);
-
-  useEffect(() => {
-    if (chat.generating || chat.loading || !triggered) {
-      setHasDraft(false);
-      return;
-    }
+    if (chat.generating || chat.loading) return;
     let cancelled = false;
     get<Summary[]>(`/api/conversations/${id}/summaries`)
-      .then((rows) => { if (!cancelled) setHasDraft(rows.some((s) => s.status !== 'approved')); })
-      .catch(() => { if (!cancelled) setHasDraft(false); });
+      .then((rows) => { if (!cancelled) setSummaryRows(rows); })
+      .catch(() => { if (!cancelled) setSummaryRows([]); });
     return () => { cancelled = true; };
-  }, [id, triggered, chat.generating, chat.loading]);
+  }, [id, chat.generating, chat.loading, chat.messages.length, summaryTick]);
 
-  const suggestSuppressed = dismissTick >= 0 && !!headId && suggestIsSuppressed(id, headId, dropped);
-  const showSuggest = !chat.generating && !chat.loading && triggered && !suggestSuppressed;
+  const bannerStorage = sessionBannerKv();
+  const bannerLocal = localBannerKv();
+  const showSuggest = summaryRows != null && shouldShowSummaryBanner({
+    path: chat.messages,
+    summaries: summaryRows,
+    conversationId: id,
+    generating: chat.generating,
+    loading: chat.loading,
+    storage: bannerStorage,
+    localStorage: bannerLocal,
+  });
+  void dismissTick;
+  const hasDraft = summaryRows?.some((s) => s.status !== 'approved') ?? false;
 
   async function submit() {
     const text = draft.trim();
@@ -296,7 +276,8 @@ export function ChatPage({ id }: { id: string }) {
                 <button
                   className="btn sm ghost"
                   onClick={() => {
-                    suppressSuggest(id, headId, dropped);
+                    const wm = resolveBannerWatermarkId(chat.messages, summaryRows ?? [], id);
+                    suppressSummaryBanner(id, wm, sessionBannerKv());
                     setDismissTick((n) => n + 1);
                   }}
                 >나중에</button>
@@ -342,7 +323,7 @@ export function ChatPage({ id }: { id: string }) {
         )}
       </div>
 
-      <ChatDrawer open={drawer} conversationId={id} draft={draft} initialTab={drawerTab} onClose={() => { setDrawer(false); setDrawerTab(undefined); }} onApplied={() => { /* 미리보기는 열 때마다 재계산 */ }} />
+      <ChatDrawer open={drawer} conversationId={id} draft={draft} initialTab={drawerTab} onClose={() => { setDrawer(false); setDrawerTab(undefined); }} onApplied={() => { setSummaryTick((n) => n + 1); }} />
       <ConversationSettings open={settings} conversationId={id} generating={chat.generating} onClose={() => setSettings(false)} onChanged={chat.reload} onOpenMemory={() => { setSettings(false); setDrawerTab(undefined); setDrawer(true); }} />
       </div>
 
@@ -737,25 +718,22 @@ function ConversationSettings({ open, conversationId, generating, onClose, onCha
   );
 }
 
-function suggestKey(convId: string, headId: string): string {
-  return `rpchat.summarySuggest.${convId}.${headId}`;
+function sessionBannerKv() {
+  return {
+    getItem: (k: string) => {
+      try { return sessionStorage.getItem(k); } catch { return null; }
+    },
+    setItem: (k: string, v: string) => {
+      try { sessionStorage.setItem(k, v); } catch { /* private mode */ }
+    },
+  };
 }
 
-function suggestIsSuppressed(convId: string, headId: string, dropped: number): boolean {
-  try {
-    const raw = sessionStorage.getItem(suggestKey(convId, headId));
-    if (raw == null) return false;
-    const n = Number(raw);
-    return Number.isFinite(n) && dropped <= n;
-  } catch {
-    return false;
-  }
-}
-
-function suppressSuggest(convId: string, headId: string, dropped: number): void {
-  try {
-    sessionStorage.setItem(suggestKey(convId, headId), String(dropped));
-  } catch {
-    /* private mode */
-  }
+function localBannerKv() {
+  return {
+    getItem: (k: string) => {
+      try { return localStorage.getItem(k); } catch { return null; }
+    },
+    setItem: (_k: string, _v: string) => {},
+  };
 }

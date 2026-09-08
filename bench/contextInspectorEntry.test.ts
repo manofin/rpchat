@@ -56,7 +56,7 @@ t('CI-03 no second inspector surface was added', () => {
   assert.equal((chatSrc.match(/<ChatDrawer/g) ?? []).length, 1, 'exactly one drawer');
   assert.equal((chatSrc.match(/BottomSheet/g) ?? []).length, 9, 'no new BottomSheet in ChatPage');
   assert.equal((chatSrc.match(/setDrawer\(true\)/g) ?? []).length, 4, 'header + 요약하기 + 설정→기억 + tools hub (mobile)');
-  assert.equal((chatSrc.match(/prompt-preview/g) ?? []).length, 1, 'no new preview fetch for the entry');
+  assert.equal((chatSrc.match(/prompt-preview/g) ?? []).length, 0, 'ChatPage itself does not fetch prompt-preview; BudgetTab still does');
   assert.equal(chatSrc.includes('inject-preview'), false, 'story pre-start preview is a different surface');
 });
 
