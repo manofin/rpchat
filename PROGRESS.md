@@ -3894,3 +3894,32 @@ BACKLOG:
   DB 카운트 재시작 전후 동일. CONTEXT_TOKENS 16384 DATA_DIR `/home/hermes/rpchat/data`.
 - generate 0. POST 0. push 0.
 - 이 토큰 **spent**. 화자 혼동 실측은 `speaker-mix-roster-live-verify` (미개방).
+
+## [2026-09-08] `speaker-mix-roster-verification-commit`
+
+- 토큰: `PROGRESS.md` 문서 커밋만. 코드/프롬프트 수정 0. generate 0.
+  진단 dump 추가 0. 재시작/재배포 0. DB 정리 0. push 0. 배너 A 0.
+- pre-docs-commit bind `2026-09-08T22:07:01Z` `v0.0.19-157-g87c48c0`
+  HEAD `87c48c0ec4ea1d8d367257a5a2f71261010f4320` dirty 0.
+  disk `index.html` sha256 `a496f048a516265ed7ce2df12a9896f89ee8f4a62c98131525154dcbb35b9f5e`
+  assets `index-1QE3JEMD.js` / `index-BWgNqAh5.css`.
+  이 턴 health `ok` `db:ok` `authMode:tailscale`
+  `promptVersion` `2026.08.22-r1+story+compact+roster` PID `272501`.
+- 배포: 기능 `b6b0daf` (`refactor(rp): share roster sentence and drop user-rename rule`)
+  이후 web→server build EXIT 0 `2026-09-08T18:08:52Z`, restart EXIT 0 `18:09:11Z`
+  PID `265833`→`272501`. 라이브 `promptVersion` 위와 동일 (이 턴 재확인).
+- `speaker-mix-roster-live-verify` (spent): generate 1.
+  conversation `86c703c0-621e-4a60-a39e-cb084c636d4a`
+  generation `b0aac3d1-e303-4f07-b50e-c38eb1d023b5`
+  (`2026.08.22-r1+story+compact+roster`). 기존 53건 genlog는 표본 제외.
+  3번째 인물 라이브 이름 **첸** (`f8824940-…`), 벤치 표기 챙과 다름.
+- 행동: 화자 혼동 0. Pass N 서술 유키/첸/상대 분리·대사·`이름|` 0.
+  Pass F 유키 `첸`≠`황지명`. Pass E speaker `첸`, `유키와 황지명` 분리.
+  제3자를 사용자로 오인 0.
+- 한계: Pass F/E 프롬프트 바이트 미관측. beat 경로 `dumpGenerationPrompt` 0.
+  `last.json`/`last-request.json` sha 불변 (`51417291…` / `742daee93…`,
+  mtime `2026-09-08 01:03:27`, 가젯 1:1). `budget_json` roster 문장 없음.
+- DB 쓰기 (이 conversation만): `messages` 873→880 (+7, 대화 320→327),
+  `generation_log` 305→306 (+1, 대화 53→54). conversations 행 갱신·추가 0.
+  서리/카이 쓰기 0. user_note PATCH 0. 코드 수정 0.
+- 이 토큰 **spent**.
