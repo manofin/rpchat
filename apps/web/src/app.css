@@ -600,20 +600,6 @@ textarea { resize: none; }
 .beat-line-hunter-sep { opacity: 0.7; padding: 0 1px; }
 .beat-line-hunter-text { white-space: pre-wrap; }
 
-.beat-thought {
-  align-self: stretch;
-  display: flex;
-  gap: 6px;
-  align-items: baseline;
-  margin: 2px 8px 6px;
-  padding-left: 8px;
-  border-left: 2px solid var(--border);
-  color: var(--muted);
-  font-size: 13px;
-  font-style: italic;
-}
-.beat-thought-who { font-weight: 600; font-style: normal; }
-.beat-thought-text { white-space: pre-wrap; }
 .beat-ui {
   align-self: stretch;
   display: flex;

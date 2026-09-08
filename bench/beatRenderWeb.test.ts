@@ -55,15 +55,24 @@ t("a 'line' block keeps the bubble — it is speech, not chrome", () => {
 });
 
 // ── 2. each block kind has a renderer ───────────────────────────────────────
-t('view.tsx exports a renderer for every non-line block kind', () => {
+t('view.tsx exports a renderer for every rendered non-line block kind', () => {
   const s = view();
-  for (const fn of ['BeatHeader', 'BeatNarration', 'BeatThought', 'BeatUiPanel', 'parseBeatUi']) {
+  for (const fn of ['BeatHeader', 'BeatNarration', 'BeatUiPanel', 'parseBeatUi']) {
     assert.ok(s.includes(`export function ${fn}`), fn);
   }
   const page = chatPage();
-  for (const fn of ['BeatHeader', 'BeatNarration', 'BeatThought', 'BeatUiPanel', 'parseBeatUi']) {
+  for (const fn of ['BeatHeader', 'BeatNarration', 'BeatUiPanel', 'parseBeatUi']) {
     assert.ok(page.includes(fn), `${fn} must be wired into ChatPage`);
   }
+});
+
+t("'thought' is stored but never drawn — the 속마음 bubble is gone, not the row", () => {
+  assert.equal(view().includes('BeatThought'), false, 'no thought renderer may come back silently');
+  const page = chatPage();
+  assert.match(page, /kind === 'thought'\) body = null/, 'thought must resolve to no body');
+  assert.match(page, /if \(!body && !chips\) return null/, 'a thought with no chips must emit no DOM');
+  // the kind itself stays legal: the server still writes these rows.
+  assert.match(webTypes(), /block_kind\?: 'header' \| 'narration' \| 'line' \| 'thought' \| 'ui'/);
 });
 
 t('the speaker header is used for line blocks only', () => {
@@ -177,7 +186,9 @@ t('the 1:1 client path is unchanged: no block_kind is ever written there', () =>
 
 t('beat styles are additive; no existing class was redefined', () => {
   const css = src('apps/web/src/app.css');
-  for (const cls of ['.beat-header', '.beat-narration', '.beat-thought', '.beat-ui', '.beat-chip']) {
+  // `.beat-thought` is intentionally absent: the 속마음 bubble was removed from the
+  // client. The server still writes `thought` rows — only the rendering is gone.
+  for (const cls of ['.beat-header', '.beat-narration', '.beat-ui', '.beat-chip']) {
     assert.ok(css.includes(cls), cls);
   }
   // `.bubble` and `.msg` keep exactly one definition each

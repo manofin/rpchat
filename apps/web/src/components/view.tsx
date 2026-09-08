@@ -34,16 +34,6 @@ export function BeatNarration({ text, variant }: { text: string; variant?: 'hunt
   return <div className={`beat-narration${variant === 'hunter' ? ' hunter' : ''}`}>{text}</div>;
 }
 
-export function BeatThought({ name, text }: { name: string; text: string }) {
-  return (
-    <div className="beat-thought">
-      <span className="beat-thought-mark">💭</span>
-      <span className="beat-thought-who">{name}</span>
-      <span className="beat-thought-text">{text}</span>
-    </div>
-  );
-}
-
 /**
  * dialog-format — the Dialog.txt-class INFO sheet.
  *

@@ -4,7 +4,7 @@ import { back, navigate, useRoute } from '../lib/router';
 import { NAV_TABS } from '../lib/navTabs';
 import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, PromptPreview, Summary } from '../types';
 import {
-  Avatar, BeatHeader, BeatHunterLine, BeatHunterPanel, BeatInfoSheet, BeatNarration, BeatSystem, BeatThought, BeatUiPanel, parseBeatUi,
+  Avatar, BeatHeader, BeatHunterLine, BeatHunterPanel, BeatInfoSheet, BeatNarration, BeatSystem, BeatUiPanel, parseBeatUi,
   renderContent, SpeakerHeader,
 } from '../components/view';
 import { OverlayDrawer } from '../components/OverlayDrawer';
@@ -507,17 +507,21 @@ function MessageView(props: {
     else if (kind === 'panel') body = <BeatHunterPanel text={m.content} />;
     else if (kind === 'system') body = <BeatSystem text={m.content} />;
     else if (kind === 'narration') body = <BeatNarration text={m.content} variant={props.sceneFormat === 'hunter' ? 'hunter' : undefined} />;
-    else if (kind === 'thought') body = <BeatThought name={m.meta.speaker_name ?? props.charName} text={m.content} />;
+    // 속마음 말풍선 제거: Pass F 는 `속마음:` 분리·저장을 그대로 하고(행은 남는다),
+    // 화면에만 그리지 않는다. 나중에 별도 명령으로 이 행들을 모아 보여줄 여지를 남긴다.
+    else if (kind === 'thought') body = null;
     else { const ui = parseBeatUi(m.content); body = ui ? <BeatUiPanel ui={ui} /> : null; }
     // dialog-format: choices ride on whichever block a turn actually ends on
     // (narration or a speaker's line), not just the `line` kind — see chat.ts
     // generateDialog. The chip row below is otherwise identical to the 1:1 one.
+    const chips = !props.hideChoices && !props.streaming && !props.generating && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0
+      ? <ChoiceChips choices={m.meta.choices} onChoice={props.onChoice} onEdit={props.onEditChoice} disabled={props.generating} />
+      : null;
+    if (!body && !chips) return null;
     return (
       <>
         {body}
-        {!props.hideChoices && !props.streaming && !props.generating && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
-          <ChoiceChips choices={m.meta.choices} onChoice={props.onChoice} onEdit={props.onEditChoice} disabled={props.generating} />
-        )}
+        {chips}
       </>
     );
   }
