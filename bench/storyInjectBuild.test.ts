@@ -112,9 +112,9 @@ const builderSrc = fs.readFileSync('apps/server/src/prompt/builder.ts', 'utf8');
 const templatesSrc = fs.readFileSync('apps/server/src/prompt/templates.ts', 'utf8');
 const configSrc = fs.readFileSync('apps/server/src/config.ts', 'utf8');
 
-t('PROMPT_VERSION ends with +story', () => {
-  assert.equal(PROMPT_VERSION.endsWith('+story'), true);
-  assert.match(configSrc, /PROMPT_VERSION = '2026\.08\.22-r1\+story'/);
+t('PROMPT_VERSION keeps +story and records compact', () => {
+  assert.equal(PROMPT_VERSION.includes('+story'), true);
+  assert.match(configSrc, /PROMPT_VERSION = '2026\.08\.22-r1\+story\+compact'/);
 });
 
 t('sub-budget constants: setting 0.7 then cast 0.3 of story room', () => {

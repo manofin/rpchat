@@ -5,6 +5,7 @@ import type {
 import { estimateTokens, estimateMessageTokens, getCalibration, truncateToTokens } from './tokens.js';
 import { loreEntryMatch } from './loreMatch.js';
 import { MIN_EPISODE_TOKENS, SCENE_RECENT_GUARD, allocateSummaryBudget } from './summaryBudget.js';
+import { effectiveCompactionEndIndex, resolveWatermarkIndex } from './compaction.js';
 import { allocateUserContextBudget } from './userContextBudget.js';
 import {
   OOC_INSTRUCTION, STORY_CHOICES_INSTRUCTION, renderCharacter, renderEpisode, renderLore, renderMemories, renderPersona, renderRules, renderScene, renderState, renderStory, renderSummary, substitute,
@@ -397,8 +398,19 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   const recent: MessageRow[] = [];
   let recentEst = 0;
   let dropped = 0;
+  // 승인 요약이 덮은 구간은 최근 창 후보에서 제외한다. dropped_messages 는
+  // 컴팩션·보호선 적용 뒤에 토큰 예산에 못 들어간 메시지만 센다.
+  const compactEnd = effectiveCompactionEndIndex(
+    resolveWatermarkIndex(
+      history,
+      many<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ?`, conv.id),
+      conv.id,
+    ),
+    history.length,
+  );
   for (let i = history.length - 1; i >= 0; i--) {
     if (skip.has(i)) continue;
+    if (compactEnd != null && i <= compactEnd) continue;
     const m = history[i];
     const t = estimateMessageTokens(m.content, cal);
     if (recent.length > 0 && recentEst + t > recentBudget) {
