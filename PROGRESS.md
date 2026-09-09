@@ -3944,3 +3944,182 @@ BACKLOG:
   chatShellWeb 14, settingsRegression 6, beatChoices 19.
   `npm run typecheck --workspace @rpchat/web` EXIT 0.
 - 미실행: 커밋, 푸시, 배포, 재시작, generate, R2–R6. Galaxy 실측 없음 (브라우저 도구 없음).
+
+## [2026-09-09] R2 turn chrome parity (uncommitted)
+
+- 근거: `docs/RP-DEPTH-FROM-CRACK-PLAY.md` R2. 사용자 `R2 착수`.
+  서버/1:1 프롬프트 무변경. `*` `/` 단축은 R2 이후(G6). 커밋/푸시/배포/재시작 없음.
+- HEAD bind `v0.0.19-164-gdea10de` (`dea10debaf4dec4edeed81f3a94c1be35e8548e4`) dirty.
+- 워킹트리: `ChatPage.tsx` `app.css` `lib/choices.ts`(new)
+  `bench/rpTurnChromeR2.test.ts`(new) `bench/chatShellWeb.test.ts`(S2 cap 경로만).
+- 타이밍: 생성 중 textarea 유지(다음 초안). 전송 칸 = `■` `stop-gen` → `useChat.stop`.
+  `세계관에 반영 중…` + inputbar를 `.composer`로 묶어 모바일 sticky.
+  칩은 생성 중 숨김(이전 턴 추천 전송 금지). 연필=composer 주입, 즉시 send 아님.
+- 품질 훅: `visibleChoices` — trim/공백/중복 제거, cap 3. `meta.choices`만 소비.
+  Pass C / 1:1 choices 프롬프트 무접촉.
+- 게이트: `git diff HEAD -- apps/server` empty. `useChat.ts` empty.
+  `npx tsx bench/rpTurnChromeR2.test.ts` 7/7.
+  인접: chatShellWeb 14, rpReadabilityR1 10, characterChatWebGuards 9,
+  settingsRegression 6, designTokens 12, beatChoices 19.
+  `npm run typecheck --workspace @rpchat/web` EXIT 0.
+- 미실행: 커밋, 푸시, 배포, 재시작, generate, R3–R6, Galaxy 실측(브라우저 도구 없음).
+
+## [2026-09-09] R3 living world state sheet (uncommitted)
+
+- 근거: `docs/RP-DEPTH-FROM-CRACK-PLAY.md` R3. 사용자 `R3수행`.
+  서버 PATCH 이미 있음 → `apps/server` 0. 1:1 `renderScene` 키(place/time/goal/genre/conflict/mood) 비접촉.
+  호감 필드는 scene에 없음 → UI 미작성(갭). 커밋/푸시/배포/재시작 없음.
+- HEAD bind `v0.0.19-164-gdea10de`. R2 워킹트리 위에 추가.
+- 허브 leaf `state` 「장면 상태」. `ConversationSceneStatePage`가 있는 키만 표시
+  (`user_sheet` / `info` / `hunter`). 저장은 `PATCH /api/conversations/:id` `{scene:{…}}`.
+  1:1(비트 상태 없음)은 빈 상태 문구만. 새 테이블 0.
+- 게이트: `git diff HEAD -- apps/server` empty. `useChat.ts` empty.
+  `npx tsx bench/sceneStateSheet.test.ts` 6/6.
+  인접: settingsHub 6, settingsSheetInventory 14, designTokens 12,
+  routerSettings 7, chatShellWeb 14, settingsRegression 6, settingsUi 7.
+  `npm run typecheck --workspace @rpchat/web` EXIT 0.
+- 미실행: 커밋, 푸시, 배포, 재시작, generate, R4–R6. Galaxy 실측 없음.
+
+## [2026-09-09] R4 progression (uncommitted)
+
+- 근거: `docs/RP-DEPTH-FROM-CRACK-PLAY.md` R4. 사용자 `R4 수행`.
+  party/beat `applySceneDelta`만. 1:1 `templates.ts` `renderScene` / `builder.ts` / `HARD_RULES` 무접촉.
+  호감 축은 여전히 갭(`relationship`은 approval-gated, 자동 커밋 아님).
+  마이그레이션 0. 커밋/푸시/배포/재시작 없음.
+- HEAD bind `v0.0.19-164-gdea10de`. R2+R3 워킹트리 위.
+- 규칙:
+  `hp_delta`/`money_delta` 한 턴 상승 한도 20 / 10000 (`rise_cap`). 감소는 기존 범위.
+  `quest_set` → `hunter.quest` (빈 슬롯 또는 동일 문구만). 교체는 `quest_clear` 후 다음 턴 (`quest_locked`).
+  `grade_up` → `hunter.trait.grade`, catalog `grades` 사다리 한 칸. 사다리 없으면 fail-closed.
+  맨키 `hunter`/`quest`/`grade`는 allow-list 밖.
+- 카탈로그: `grades` optional. parse + stories Zod (PUT strip 방지). 라이브 스토리 grades 없으면 grade_up 무시가 정상.
+- 게이트: `npx tsx bench/sceneProgressionR4.test.ts` 10/10.
+  인접: hudStateMatrix 7, sceneProgression 29, sceneDeltaLive 20,
+  composeHunter 25 (`'quest'`/`'hunter'` allow-list 문자 유지), sceneCatalog 16,
+  storyCatalogWrite 12. server+web typecheck EXIT 0.
+  `settingsRegression` 서버 dirty → 커밋 전까지 fail이 펜스 계약.
+- 미실행: 커밋, 푸시, 배포, 재시작, generate, R5–R6.
+
+## [2026-09-09] R5 party cast UX (uncommitted)
+
+- 근거: `docs/RP-DEPTH-FROM-CRACK-PLAY.md` R5. 사용자 `R5 수행`.
+  표시 위주. 턴 스크롤백이 `last_beat`만 보면 과거 포커스가 어긋나
+  `renderUi`에 `focus_id`를 찍음 (party 템플릿, 1:1 `builder`/`HARD_RULES` 무접촉).
+- HEAD bind `v0.0.19-164-gdea10de`. R2–R4 워킹트리 위.
+- 잠금: 칩 `🔒` + 라벨 「잠금」. dashed, opacity 0.5 제거.
+  포커스: 칩/화자 헤더 「포커스」, 잉크 보더. 역할색으로 화자 구분 안 함.
+  캐스트 스트립 `.cast-status`를 스크롤러 위에 고정 (마지막 `ui` 로스터).
+  header/narration/line/ui/info/panel 위계 유지. thought 비표시 유지.
+- 게이트: `npx tsx bench/rpPartyCastR5.test.ts` 5/5.
+  인접: partyBeatFormat 9, beatRenderWeb 19, hunterRenderWeb 11,
+  designTokens 12, hudStateMatrix 7, composeBeat 31, rpReadabilityR1 10,
+  rpTurnChromeR2 7. web+server typecheck EXIT 0.
+- 미실행: 커밋, 푸시, 배포, 재시작, generate, R6. Galaxy 실측 없음.
+
+## [2026-09-09] R6 mobile PWA polish (uncommitted)
+
+- 근거: `docs/RP-DEPTH-FROM-CRACK-PLAY.md` R6. 사용자 `R6 진행`.
+  서버 0. 1:1 프롬프트 0. Galaxy 박스 미체크 (기기 증거 없이 PASS 금지).
+- HEAD bind `v0.0.19-164-gdea10de`. R2–R5 워킹트리 위.
+- CSS: `.chip` / 전송·중단 44px (연필은 R2). `.chat-main` safe-left/right + overscroll contain.
+  PWA: `runtimeCaching: []` 유지, `/api/` denylist. 캐시 전략 추가 없음 — 셸 가용성만.
+- `docs/GALAXY-CHECKLIST.md`에 R1–R6 증거 슬롯 추가. 상태 전부 수동 확인 대기.
+- 게이트: `npx tsx bench/rpMobilePwaR6.test.ts` 5/5.
+  인접: rpReadabilityR1 10, rpTurnChromeR2 7, designTokens 12, chatShellWeb 14.
+  web typecheck EXIT 0.
+  `settingsRegression` 서버 dirty는 R4 잔여 (이 슬라이스 서버 0).
+- 미실행: 커밋, 푸시, 배포, 재시작, generate. Galaxy 실측 없음.
+  Crack-play R1–R6 코드 범위는 워킹트리에 있음.
+
+## [2026-09-09] F8e story-peer-cast-schema (uncommitted)
+
+- 근거: `planning_documents/ADR-F8e-story-peer-cast.md` §9 순서 1번째 코드 슬라이스. 사용자가 이번 채팅에서
+  `clock-observe` 창 종료를 선언(라이브 실측으로 독립 검증: `generation_log` 101행, `in_sample=1` 99건,
+  `CLOCK_OBSERVE_MIN_N=50` 충족 — `clockObserve.ts:20,25-27` 기준 `framing`은 여전히 전부 `pre-reframe`,
+  재framing 코드 미착수 확인) 후 새 토큰 `story-peer-cast-schema`를 열고 스코프 5항목 지정.
+  이번 토큰 범위: ①`story_participant_ids_snapshot` 컬럼+마이그레이션 ②스토리 방 생성 시 스냅샷 저장
+  ③기존 방 호환 정책 ④`character_id`는 표시/레거시 필드 유지 ⑤`resolveFocus`/생성 경로 무변경.
+  HEAD bind `v0.0.19-164-gdea10de` dirty (R2–R6 워킹트리 위, F8e ADR §0 clock-observe 게이트만 새로 닫힘).
+- 마이그레이션: `apps/server/migrations/0013_story_participant_snapshot.sql` —
+  `ALTER TABLE conversations ADD COLUMN story_participant_ids_snapshot TEXT` (nullable, 백필 없음).
+- 서버: `routes/conversations.ts` POST — storyId 있을 때 이미 조회하던 `roster`(story_characters)에
+  호스트 `character.id`를 항상 앞에 붙이고 dedup한 id 배열을 JSON으로 같은 INSERT에 기록
+  (F8b 선례: 단일 INSERT, 이후 라이브 재조회 없음). storyId 없으면 컬럼은 NULL.
+  `character_id` 컬럼/의미는 무변경 — 여전히 NOT NULL, 여전히 표시용. `routes/stories.ts`의
+  `inject-preview` 가상 ConversationRow 리터럴에 새 필드 `null` 추가(타입 만족, 동작 무변경).
+  `resolveFocus.ts` / `routes/chat.ts` / `prompt/composeBeat.ts` 바이트 무변경(벤치로 고정).
+- 호환 정책(명시): 이 마이그레이션 이전에 만들어진 방은 컬럼값이 `NULL`. 자동 백필 없음. 이 토큰에서는
+  아무 코드도 이 컬럼을 읽지 않으므로(§5) NULL의 소비 방식은 `story-peer-cast-generate` 슬라이스에서 결정.
+- 게이트: `npx tsx bench/storyPeerCastSchema.test.ts` 6/6 (컬럼 nullable, 스냅샷 계산, 호스트 미로스터
+  케이스, 1:1 NULL, 구행 NULL 무백필, generate/focus 파일 diff=0).
+  인접(신규 컬럼으로 pinned column-list 2건 갱신, 값 자체는 무변경 — 리스트에 항목 추가만):
+  `bench/storyInjectSchema.test.ts` 22/22, `bench/sceneStateSchema.test.ts` 29/29.
+  나머지 인접 회귀: storyCatalogWrite 12, storyDetail 7, storySchema 24, storyTabs 5, storyArchivedGate 9,
+  partyBeatPersist 6(flaky 1/4 관측, 이번 3연속 재현 시도 3/3 통과로 무관 확인), sceneProgressionR4 10,
+  sceneCommitOnSuccess 13, composeBeat 31, focusResolve 37.
+  `npm run typecheck` (server+web) EXIT 0.
+  전체 스위트: 109 파일 중 106 pass / 3 fence red 전부 `git diff HEAD -- apps/server` 비어있음 단언
+  (`characterChatWebGuards`, `rpReadabilityR1`, `settingsRegression`) — R4+이 토큰의 서버 diff가
+  커밋 전이라 정상 발생, 코드 결함 아님(다른 R-슬라이스 PROGRESS 기록과 동일 패턴).
+- 부수 수정: `bench/partyRender.test.ts`(R5의 `SpeakerHeader` 동적 className과 충돌하던 stale 리터럴
+  단언을 완화) — 이번 F8e 작업이 아니라 세션 시작 시 R1–R6 검증 중 발견한 별도 회귀, 같은 커밋 전 워킹
+  트리에 포함.
+- 미실행: 커밋, 푸시, 배포, 재시작, generate, `story-peer-cast-start-ui`/`story-peer-cast-generate`
+  (§9 다음 슬라이스, 각각 새 토큰 필요). Galaxy 실측 없음.
+
+## [2026-09-09] R1–R6 + CSS + F8e commit reconciliation (append-only correction)
+
+- Prior R1–R6 and F8e blocks above were written against the uncommitted
+  working tree and are preserved as-is. Expressions like `(uncommitted)`,
+  `HEAD bind ... dirty`, `미실행: 커밋`, and `코드는 워킹트리에 있음` were
+  true at write time and are now stale. This block records the actual
+  committed state. No earlier block was edited.
+- Commit chain (each verified: hash, parent, subject, stat):
+  `bab83bcc2b2f14f9f974946427a9d343e2760c2a`
+  → `e40bb6f7ecbdd5db09205824f029420d53806236` R1 implementation
+    (`web(ui): RP readability — narration/speech, day rule, status strip (R1)`,
+    5 files, 226 insertions, 28 deletions)
+  → `dea10debaf4dec4edeed81f3a94c1be35e8548e4` R1 progress record
+    (`docs(progress): record R1 readability`, 1 file, 21 insertions)
+  → `d9b6d00dcfa3b54853e3b84b148abc1c3e18c692` R2
+    (`web(ui): RP turn chrome — composer, choices, stop (R2)`,
+    5 files, 142 insertions, 36 deletions)
+  → `e6a06c42872908bf4ee1b95e6537a2b4fde923d2` R3
+    (`web(scene): add living scene state sheet and settings entry (R3)`,
+    9 files, 574 insertions, 4 deletions)
+  → `7201129e481bbcebe48bbffa58a33a4c97dd1ebe` R4
+    (`server(scene): add progression rules and grade ladder (R4)`,
+    7 files, 308 insertions, 3 deletions)
+  → `e2ea7949b336619c45b8327e361fefb0c4e1e6c7` R5
+    (`web(party): add cast roster and focus highlighting (R5)`,
+    10 files, 189 insertions, 18 deletions)
+  → `314f6a00723a9b82a2d7a4a38f1ffe56d6d1e21e` R6
+    (`web(mobile): improve touch targets and safe-area handling (R6)`,
+    4 files, 125 insertions, 5 deletions)
+  → `b05fd279bdbaeb2f994792d35a3431bde9f515d1` CSS disposition
+    (`web(css): add beat-info and beat-panel accent border`,
+    1 file, 2 insertions; out-of-scope CSS kept out of R2–R6)
+  → `cd988e403391ede02fad59c1eff0e09be330431e` F8e schema
+    (`server(story): add participant cast snapshot schema (F8e)`,
+    7 files, 159 insertions, 6 deletions)
+- R1–R6, CSS disposition, and F8e schema are committed locally.
+  No push, deployment, or restart was performed.
+  The F8e schema commit's actual parent is
+  `b05fd279bdbaeb2f994792d35a3431bde9f515d1`.
+- Gate numbers in the earlier blocks are preserved as measurements taken
+  immediately before each commit.
+- The previously recorded full-suite result of 106 pass out of 109
+  was a historical measurement from the uncommitted working-tree state.
+  It was not re-run during the 2026-09-09 PROGRESS reconciliation audit.
+- settingsRegression, characterChatWebGuards, and rpReadabilityR1 were
+  previously expected red while R4, R5, and F8e server changes were
+  uncommitted. They were not re-run after `cd988e4` during the
+  2026-09-09 documentation audit, so current green status is not asserted.
+- clock-observe, as observed on 2026-09-09 (read-only, independently
+  re-verified during the F8e schema audit):
+  clock_observe rows 101, in_sample 99, framing all observed rows
+  pre-reframe, minimum gate 50 satisfied at observation time.
+  These are live cumulative values and may differ afterward.
+- Not recorded as complete: push, deploy, restart, F8e start-ui,
+  F8e generate, Galaxy device verification, Galaxy checklist completion.
+  The Galaxy checklist remains 55 unchecked, 0 checked.
