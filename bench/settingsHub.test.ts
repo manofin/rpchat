@@ -90,6 +90,7 @@ t('summary uses existing detail fields only', () => {
   assert.equal(s.userNote.length, 326);
   assert.deepEqual(s.output, { profileName: 'rp-balanced', label: '균형' });
   assert.equal(s.startTitle, '항구 · 밤');
+  assert.equal(s.stateLabel, '없음');
   assert.equal(s.appVersion, '0.1.0');
 });
 
@@ -113,9 +114,13 @@ t('start and about are read-only; room rows are route-shells', () => {
   assert.equal(byId.memory.state, 'available');
   assert.equal(byId.style.state, 'available');
   assert.equal(byId.start.state, 'read-only');
+  assert.equal(byId.state.state, 'available');
+  assert.equal(byId.state.control, 'navigate');
+  assert.equal(byId.state.href, '/chat/c1/settings/state');
   assert.equal(byId.about.state, 'read-only');
   assert.equal(byId.about.value, '0.1.0');
   assert.equal(isRowNavigable(byId.start), false);
+  assert.equal(isRowNavigable(byId.state), true);
   assert.equal(isRowNavigable(byId.guide), true);
   assert.equal(byId.guide.href, '/chat/c1/settings/guide');
 });

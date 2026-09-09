@@ -94,6 +94,36 @@ export interface Scene {
   mood?: string;
   /** Per-conversation output shape. Absent means the ordinary bubble / beat path. */
   format?: 'beat' | 'dialog' | 'hunter';
+  location?: string;
+  day_index?: number;
+  weekday?: string;
+  clock_minutes?: number;
+  user_sheet?: {
+    hp?: number | null;
+    money?: number | null;
+    gear?: string[];
+    inventory?: string[];
+    traits?: string[];
+  };
+  info?: {
+    status?: string[];
+    contract?: string;
+    erosion?: string;
+    goals?: string[];
+    extra?: Array<{ label: string; value: string }>;
+  };
+  hunter?: {
+    date?: string;
+    gender?: string;
+    affiliation?: string;
+    trait?: { name?: string; grade?: string; note?: string };
+    patron?: { name?: string; note?: string };
+    skills?: string[];
+    quest?: string;
+    schedule?: string;
+    situation?: string;
+    mode?: string;
+  };
 }
 
 export interface Conversation {

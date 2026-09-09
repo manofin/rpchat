@@ -23,6 +23,7 @@ import { ConversationOutputPage } from './ConversationOutputPage';
 import { ConversationProfilePage } from './ConversationProfilePage';
 import { ConversationStylePage } from './ConversationStylePage';
 import { ConversationUserNotePage } from './ConversationUserNotePage';
+import { ConversationSceneStatePage } from './ConversationSceneStatePage';
 
 /**
  * Utilities hub (StoryForge UtilitiesPanel tone) — same catalog as the settings
@@ -49,6 +50,7 @@ const TOOL_ICON: Record<string, string> = {
   style: '🔤',
   'scene-image': '🖼',
   start: '📍',
+  state: '📋',
   about: 'ℹ',
 };
 
@@ -95,6 +97,7 @@ export function ConversationTools({
   if (leaf === 'memory') return <ConversationMemoryPage conversationId={conversationId} onBack={goHub} />;
   if (leaf === 'output') return <ConversationOutputPage conversationId={conversationId} onBack={goHub} />;
   if (leaf === 'style') return <ConversationStylePage conversationId={conversationId} onBack={goHub} />;
+  if (leaf === 'state') return <ConversationSceneStatePage conversationId={conversationId} onBack={goHub} />;
 
   const summary = summarizeConversationDetail(detail, WEB_APP_VERSION);
   const items = buildHubItems(summary);
@@ -163,7 +166,7 @@ export function ConversationTools({
                     disabled={item.state === 'disabled'}
                     onNavigate={() => {
                       const id = item.id as SettingsLeaf;
-                      if (id === 'guide' || id === 'profile' || id === 'user-note' || id === 'memory' || id === 'output' || id === 'style') {
+                      if (id === 'guide' || id === 'profile' || id === 'user-note' || id === 'memory' || id === 'output' || id === 'style' || id === 'state') {
                         setLeaf(id);
                       }
                     }}

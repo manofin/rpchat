@@ -1,4 +1,5 @@
 import { match } from './router';
+import { livingStateLabel, type LivingScene } from './sceneState';
 
 /** apps/web/package.json version. Display-only; no store/hasUpdate. */
 export const WEB_APP_VERSION = '0.1.0';
@@ -11,6 +12,7 @@ export const SETTINGS_LEAVES = [
   'memory',
   'style',
   'start',
+  'state',
   'about',
 ] as const;
 
@@ -52,6 +54,7 @@ export type SettingsHubSummary = {
   userNote: { configured: boolean; length: number };
   output: { profileName: string; label: string };
   startTitle: string;
+  stateLabel: string;
   appVersion: string;
 };
 
@@ -90,7 +93,7 @@ export function summarizeConversationDetail(
       title: string;
       profile_name: string;
       user_note?: string | null;
-      scene?: { place?: string; time?: string; goal?: string };
+      scene?: { place?: string; time?: string; goal?: string } & LivingScene;
       persona_applied_at?: string | null;
     };
     character: { name: string; avatar: string | null; scenario?: string };
@@ -115,6 +118,7 @@ export function summarizeConversationDetail(
       label: outputProfileLabel(detail.conversation.profile_name),
     },
     startTitle,
+    stateLabel: livingStateLabel(detail.conversation.scene),
     appVersion,
   };
 }
@@ -131,6 +135,7 @@ export function buildHubItems(summary: SettingsHubSummary): SettingsHubItem[] {
     { id: 'style', section: 'global', title: '글꼴', state: 'available', control: 'navigate', href: leaf('style') },
     { id: 'scene-image', section: 'global', title: '상황 이미지 보기', state: 'disabled', control: 'toggle' },
     { id: 'start', section: 'start', title: '시작 설정', state: 'read-only', control: 'value', value: summary.startTitle },
+    { id: 'state', section: 'start', title: '장면 상태', state: 'available', control: 'navigate', href: leaf('state'), value: summary.stateLabel },
     { id: 'about', section: 'about', title: '앱 버전', state: 'read-only', control: 'value', value: summary.appVersion },
     { id: 'currency', section: 'global', title: '재화', state: 'hidden', control: 'value' },
   ];

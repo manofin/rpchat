@@ -27,6 +27,7 @@ import { ConversationOutputPage } from './ConversationOutputPage';
 import { ConversationProfilePage } from './ConversationProfilePage';
 import { ConversationStylePage } from './ConversationStylePage';
 import { ConversationUserNotePage } from './ConversationUserNotePage';
+import { ConversationSceneStatePage } from './ConversationSceneStatePage';
 
 const LEAF_TITLE: Record<string, string> = {
   guide: '플레이 가이드',
@@ -36,6 +37,7 @@ const LEAF_TITLE: Record<string, string> = {
   memory: '요약 메모리',
   style: '글꼴',
   start: '시작 설정',
+  state: '장면 상태',
   about: '업데이트 정보',
 };
 
@@ -108,6 +110,10 @@ export function ConversationSettingsPage({ route }: { route: SettingsRoute }) {
 
   if (route.kind === 'leaf' && route.leaf === 'style') {
     return <ConversationStylePage conversationId={route.conversationId} />;
+  }
+
+  if (route.kind === 'leaf' && route.leaf === 'state') {
+    return <ConversationSceneStatePage conversationId={route.conversationId} />;
   }
 
   if (route.kind === 'leaf') {

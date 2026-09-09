@@ -211,8 +211,8 @@ const detail: ConversationDetail = {
 
 t('the settings hub item set is byte-identical to the pre-slice contract', () => {
   const items = buildHubItems(summarizeConversationDetail(detail, WEB_APP_VERSION));
-  assert.deepEqual(items.map((i) => i.id), ['guide', 'profile', 'user-note', 'output', 'memory', 'style', 'scene-image', 'start', 'about']);
-  assert.deepEqual(items.map((i) => i.section), ['room', 'room', 'room', 'room', 'room', 'global', 'global', 'start', 'about']);
+  assert.deepEqual(items.map((i) => i.id), ['guide', 'profile', 'user-note', 'output', 'memory', 'style', 'scene-image', 'start', 'state', 'about']);
+  assert.deepEqual(items.map((i) => i.section), ['room', 'room', 'room', 'room', 'room', 'global', 'global', 'start', 'start', 'about']);
   // Only the drawer's presentation moved: section order and titles.
   const tools = src('apps/web/src/pages/ConversationTools.tsx');
   assert.match(tools, /SECTION_ORDER[^=]*=\s*\['start', 'room', 'global', 'about'\]/);
