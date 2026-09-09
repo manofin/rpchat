@@ -3923,3 +3923,24 @@ BACKLOG:
   `generation_log` 305→306 (+1, 대화 53→54). conversations 행 갱신·추가 0.
   서리/카이 쓰기 0. user_note PATCH 0. 코드 수정 0.
 - 이 토큰 **spent**.
+
+## [2026-09-09] R1 chat readability (uncommitted)
+
+- 근거: `docs/RP-DEPTH-FROM-CRACK-PLAY.md` §6 First PR = R1 only.
+  사용자: 웹 가독성, 서버/1:1 프롬프트 무변경. 커밋/푸시/배포/재시작 없음.
+- HEAD bind `v0.0.19-162-gbab83bc` (`bab83bcc2b2f14f9f974946427a9d343e2760c2a`) dirty.
+- 워킹트리 (uncommitted):
+  `apps/web/src/app.css` `components/view.tsx` `pages/ChatPage.tsx`
+  `apps/web/src/lib/speechMarks.ts` (new) `bench/rpReadabilityR1.test.ts` (new).
+- 표시만: 파티/dialog `line`에 「」 (스트리밍 중·이미 따옴표·`*` 지문·hunter 스크립트·1:1 제외).
+  `.beat-narration` muted 14px/1.9. `.beat-header` 구분선 호흡. `BeatUiPanel` 카드+스트립.
+  `.topbar.chat-topbar` min-height 40. 저장 원문 불변.
+- 게이트:
+  `git diff HEAD -- apps/server` empty.
+  `git diff HEAD -- apps/web/src/pages/useChat.ts` empty.
+  `.msg.assistant .bubble` / `.msg.user .bubble` / `.bubble` HEAD와 바이트 동일.
+  `npx tsx bench/rpReadabilityR1.test.ts` 10/10.
+  인접: beatRenderWeb 19, hunterRenderWeb 11, designTokens 12, lightTheme 12,
+  chatShellWeb 14, settingsRegression 6, beatChoices 19.
+  `npm run typecheck --workspace @rpchat/web` EXIT 0.
+- 미실행: 커밋, 푸시, 배포, 재시작, generate, R2–R6. Galaxy 실측 없음 (브라우저 도구 없음).
