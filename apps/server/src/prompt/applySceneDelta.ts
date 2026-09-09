@@ -7,6 +7,10 @@ export const ADVANCE_MINUTES_MAX = 1440;
 /** HUD numeric caps. Out of range → previous value unchanged (no silent clamp-apply). */
 export const HP_MAX = 9999;
 export const MONEY_MAX = 1_000_000_000;
+/** Per-turn rise caps. Fast power-up is a server reject, not a model scold. */
+export const HP_DELTA_MAX_UP = 20;
+export const MONEY_DELTA_MAX_UP = 10_000;
+export const QUEST_SET_MAX = 200;
 
 export type PartyCatalog = {
   weathers: string[];
@@ -28,6 +32,8 @@ export type PartyCatalog = {
   dutySlots?: Record<string, string>;
   /** Allow-list for `inventory_add`. Absent/empty → adds fail closed. */
   items?: string[];
+  /** Ordered 경지 ladder for `grade_up`. Absent/empty → grade_up fail-closed. */
+  grades?: string[];
 };
 
 export type ApplyIgnore = { key: string; reason: string };
@@ -67,6 +73,10 @@ const APPLY_KEYS = new Set([
   'money_delta',
   'inventory_add',
   'inventory_remove',
+  // R4: quest/grade use hunter.* slots. Bare `quest` / `hunter` stay off this list.
+  'quest_set',
+  'quest_clear',
+  'grade_up',
 ]);
 
 const APPROVAL_KEYS = new Set(['relationship', 'memories']);
@@ -104,6 +114,22 @@ function cloneScene(s: Scene): Scene {
       unresolved: [...s.last_beat.unresolved],
     };
   }
+  if (s.hunter) {
+    out.hunter = {
+      ...s.hunter,
+      trait: s.hunter.trait ? { ...s.hunter.trait } : undefined,
+      patron: s.hunter.patron ? { ...s.hunter.patron } : undefined,
+      skills: s.hunter.skills ? [...s.hunter.skills] : undefined,
+    };
+  }
+  if (s.info) {
+    out.info = {
+      ...s.info,
+      status: s.info.status ? [...s.info.status] : undefined,
+      goals: s.info.goals ? [...s.info.goals] : undefined,
+      extra: s.info.extra ? s.info.extra.map((e) => ({ ...e })) : undefined,
+    };
+  }
   return out;
 }
 
@@ -129,6 +155,80 @@ function ensureSheet(scene: Scene): NonNullable<Scene['user_sheet']> {
   return scene.user_sheet;
 }
 
+function ensureHunter(scene: Scene) {
+  if (!scene.hunter) scene.hunter = {};
+  return scene.hunter;
+}
+
+/** Quest/grade live on hunter.* ; illegal rises are ignored, never clamped-applied. */
+function applyProgression(
+  next: Scene,
+  patch: Record<string, unknown>,
+  catalog: PartyCatalog,
+  applied: string[],
+  ignored: ApplyIgnore[],
+): void {
+  if ('quest_set' in patch) {
+    const v = patch.quest_set;
+    if (typeof v !== 'string') {
+      ignored.push({ key: 'quest_set', reason: 'type' });
+    } else {
+      const q = v.trim().slice(0, QUEST_SET_MAX);
+      if (!q) {
+        ignored.push({ key: 'quest_set', reason: 'type' });
+      } else {
+        const cur = (next.hunter?.quest ?? '').trim();
+        if (cur && cur !== q) {
+          ignored.push({ key: 'quest_set', reason: 'quest_locked' });
+        } else {
+          ensureHunter(next).quest = q;
+          applied.push('quest_set');
+        }
+      }
+    }
+  }
+
+  if ('quest_clear' in patch) {
+    if (patch.quest_clear !== true) {
+      ignored.push({ key: 'quest_clear', reason: 'type' });
+    } else if (!(next.hunter?.quest ?? '').trim()) {
+      ignored.push({ key: 'quest_clear', reason: 'not_held' });
+    } else {
+      delete ensureHunter(next).quest;
+      applied.push('quest_clear');
+    }
+  }
+
+  if ('grade_up' in patch) {
+    if (patch.grade_up !== true) {
+      ignored.push({ key: 'grade_up', reason: 'type' });
+    } else {
+      const ladder = catalog.grades ?? [];
+      if (ladder.length === 0) {
+        ignored.push({ key: 'grade_up', reason: 'not_in_allowlist' });
+      } else {
+        const cur = (next.hunter?.trait?.grade ?? '').trim();
+        const idx = cur ? ladder.indexOf(cur) : -1;
+        let nextGrade: string | null = null;
+        if (!cur) {
+          nextGrade = ladder[0] ?? null;
+        } else if (idx < 0) {
+          ignored.push({ key: 'grade_up', reason: 'not_in_allowlist' });
+        } else if (idx >= ladder.length - 1) {
+          ignored.push({ key: 'grade_up', reason: 'rise_cap' });
+        } else {
+          nextGrade = ladder[idx + 1] ?? null;
+        }
+        if (nextGrade) {
+          const h = ensureHunter(next);
+          h.trait = { ...(h.trait ?? {}), grade: nextGrade };
+          applied.push('grade_up');
+        }
+      }
+    }
+  }
+}
+
 function tokenList(v: unknown): string[] | null {
   if (typeof v === 'string') return v ? [v] : [];
   if (!Array.isArray(v)) return null;
@@ -152,6 +252,8 @@ function applyHudDeltas(
     const v = patch.hp_delta;
     if (!isInt(v)) {
       ignored.push({ key: 'hp_delta', reason: 'type' });
+    } else if (v > HP_DELTA_MAX_UP) {
+      ignored.push({ key: 'hp_delta', reason: 'rise_cap' });
     } else {
       const cur = typeof next.user_sheet?.hp === 'number' ? next.user_sheet.hp : 0;
       const n = cur + v;
@@ -168,6 +270,8 @@ function applyHudDeltas(
     const v = patch.money_delta;
     if (!isInt(v)) {
       ignored.push({ key: 'money_delta', reason: 'type' });
+    } else if (v > MONEY_DELTA_MAX_UP) {
+      ignored.push({ key: 'money_delta', reason: 'rise_cap' });
     } else {
       const cur = typeof next.user_sheet?.money === 'number' ? next.user_sheet.money : 0;
       const n = cur + v;
@@ -322,6 +426,7 @@ export function applySceneDelta(
   }
 
   applyHudDeltas(next, patch, catalog, applied, ignored);
+  applyProgression(next, patch, catalog, applied, ignored);
 
   if ('flags' in patch) {
     const v = patch.flags;

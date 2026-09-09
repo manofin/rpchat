@@ -16,7 +16,12 @@
  * the server itself applied, so asking the model to nominate them only produced
  * a nomination per scene regardless of need (`bench/dutyAttribution`).
  */
-import { ADVANCE_MINUTES_MAX, type PartyCatalog } from './applySceneDelta.js';
+import {
+  ADVANCE_MINUTES_MAX,
+  HP_DELTA_MAX_UP,
+  MONEY_DELTA_MAX_UP,
+  type PartyCatalog,
+} from './applySceneDelta.js';
 import type { Scene } from '../types.js';
 
 /** Reads the scene's canonical version. Anything not a non-negative integer is 0. */
@@ -90,8 +95,13 @@ export function renderSceneDeltaPrompt(input: {
     `- 현재 arc의 stage: ${list(stagesForArc)}`,
     `- flags: ${list(flagKeys)} (각각 true/false)`,
     `- advance_minutes: 0 이상 ${ADVANCE_MINUTES_MAX} 이하의 정수`,
-    `- hp_delta / money_delta: 정수. 결과 HP는 0..9999, money는 0 이상. 범위 밖이면 이전 값 유지`,
+    `- hp_delta / money_delta: 정수. 한 턴 상승은 hp ≤ ${HP_DELTA_MAX_UP}, money ≤ ${MONEY_DELTA_MAX_UP}. 결과 HP는 0..9999, money는 0 이상. 한도 밖이면 이전 값 유지`,
     `- inventory_add / inventory_remove: 아이템 id 문자열 또는 배열. 허용: ${list(catalog.items ?? [])}`,
+    `- quest_set: 퀘스트 문자열. 현재 퀘스트가 비어 있거나 같은 문구일 때만. 교체는 quest_clear 후 다음 턴.`,
+    `- quest_clear: true 만. 현재 퀘스트를 지운다.`,
+    ...(catalog.grades?.length
+      ? [`- grade_up: true 만. 경지 사다리에서 한 칸. 허용: ${list(catalog.grades)}`]
+      : []),
     ...presenceAllowLines(catalog),
     '',
     '## 사용자 입력',

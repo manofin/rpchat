@@ -28,6 +28,7 @@ export interface SceneCatalog {
   flags: Record<string, { owner_stage?: string; owner_duty?: string }>;
   outfits: string[];
   items: string[];
+  grades: string[];
   emotions: Record<string, number>;
   stages: Record<string, { closer_duty?: string }>;
   dutySlots: Record<string, string>;

@@ -18,7 +18,7 @@ const EMPTY: Draft = { name: '', tagline: '', setting: '', minor_cast: [], place
  * "0 bytes outside places" contract the omission path already has.
  */
 const EMPTY_CATALOG_REST: Omit<SceneCatalog, 'places'> = {
-  weathers: [], arcs: [], stagesByArc: {}, flags: {}, outfits: [], items: [], emotions: {}, stages: {}, dutySlots: {},
+  weathers: [], arcs: [], stagesByArc: {}, flags: {}, outfits: [], items: [], grades: [], emotions: {}, stages: {}, dutySlots: {},
 };
 
 export function StoryEditor({ open, story, onClose, onSaved }: { open: boolean; story: Story | null; onClose: () => void; onSaved: (s: Story) => void }) {
