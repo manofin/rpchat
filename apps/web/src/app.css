@@ -236,12 +236,13 @@ textarea { resize: none; }
    한 번 말하고, 어느 것을 고를지는 말하지 않는다. 채움 대신 왼쪽 선.
    S2: pencil+chip rows (StoryForge RecommendationChoices); ~3 vertical, scannable. */
 .chips { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; width: 100%; }
-.chip-row { display: flex; align-items: flex-start; gap: 8px; width: 100%; }
+.chip-row { display: flex; align-items: center; gap: 8px; width: 100%; }
 .chip-edit {
   flex: 0 0 auto;
-  width: 32px;
-  height: 32px;
-  margin-top: 4px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 50%;
   border: 1px solid var(--kami-line);
   background: var(--bg-2);
@@ -262,6 +263,8 @@ textarea { resize: none; }
 .chip:hover { background: rgba(201, 150, 62, 0.10); }
 .chip:active { background: rgba(201, 150, 62, 0.16); }
 .chip:focus-visible { outline: 2px solid var(--role-gold-text); outline-offset: 2px; }
+.composer { flex: 0 0 auto; background: var(--bg); }
+.composer.is-generating .inputbar { border-top-color: transparent; }
 .gen-status {
   flex: 0 0 auto;
   display: flex;
@@ -288,9 +291,13 @@ textarea { resize: none; }
 }
 .inputbar { flex: 0 0 auto; display: flex; gap: 8px; align-items: flex-end; padding: 8px 10px calc(8px + var(--safe-bottom)); border-top: 1px solid var(--bg-3); background: var(--bg); }
 .inputbar textarea { flex: 1; background: var(--bg-2); border: 1px solid var(--bg-3); border-radius: 18px; padding: 10px 14px; max-height: 132px; min-height: 42px; line-height: 1.4; }
-.inputbar textarea:disabled { opacity: 0.6; }
 .inputbar .btn.icon { width: 42px; height: 42px; border-radius: 50%; }
-.inputbar .btn.danger.icon { background: var(--danger); color: var(--role-on-fill); border-color: var(--danger); }
+.inputbar .btn.stop-gen {
+  background: var(--kami-charcoal);
+  color: var(--kami-text-strong);
+  border-color: var(--kami-line);
+  border-radius: 10px;
+}
 .sysline { text-align: center; font-size: 12px; color: var(--fg-3); }
 .search-snippet { font-size: 13px; color: var(--kami-text); margin-top: 3px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .search-snippet mark { background: rgba(45, 90, 138, 0.35); color: var(--kami-text-strong); border-radius: 3px; padding: 0 2px; }
@@ -1131,8 +1138,8 @@ textarea { resize: none; }
   .chat-topbar { gap: 4px; }
   .beat-narration { line-height: 1.9; }
   .overlay-drawer { z-index: 60; }
-  /* Composer stays pinned at bottom of flex column (visualViewport → --app-height). */
-  .chat-main .inputbar {
+  /* Composer (status + input) stays pinned so ■ and 세계관에 반영 중… do not scroll apart. */
+  .chat-main .composer {
     position: sticky;
     bottom: 0;
     z-index: 5;
@@ -1140,6 +1147,7 @@ textarea { resize: none; }
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
+  .chat-main .composer .inputbar { background: transparent; }
 }
 
 /* ---- S4: Discovery (home / character / search) ---- */

@@ -172,7 +172,7 @@ t('S2 turn chrome: generating status, stop wired to useChat.stop, ChoiceChips pe
   assert.ok(page.includes("aria-label=\"생성 중단\""), 'send slot becomes stop while generating');
   assert.ok(page.includes('function ChoiceChips'), 'ChoiceChips stays the single chips surface');
   assert.ok(page.includes('onEdit'), 'pencil fills composer via onEdit');
-  assert.ok(page.includes('choices.slice(0, 3)'), 'chips stay scannable (~3)');
+  assert.ok(page.includes('visibleChoices(choices)'), 'chips stay scannable (~3) via visibleChoices');
   assert.ok(page.includes('chip-edit'), 'pencil control class present');
   // Inline beat/hunter/bubble chip maps must go through ChoiceChips (no duplicate raw chip maps).
   assert.equal((page.match(/m\.meta\.choices\.map\(/g) ?? []).length, 0, 'no raw choices.map chip rows');

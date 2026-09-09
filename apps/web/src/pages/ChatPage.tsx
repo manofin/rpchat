@@ -9,6 +9,7 @@ import {
 } from '../components/view';
 import { OverlayDrawer } from '../components/OverlayDrawer';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
+import { visibleChoices } from '../lib/choices';
 import { groupChatTurns, shouldReorderTurn, turnChoicesHost, visualAssistantOrder } from '../lib/chatLayout';
 import { wrapSpeechMarks } from '../lib/speechMarks';
 import { useDesktopLayout } from '../lib/useDesktopLayout';
@@ -295,33 +296,34 @@ export function ChatPage({ id }: { id: string }) {
         );
       })()}
 
-      {chat.generating && (
-        <div className="gen-status" aria-live="polite">
-          <span className="gen-dots" aria-hidden="true"><i /><i /><i /></span>
-          세계관에 반영 중…
-        </div>
-      )}
-      <div className="inputbar">
-        <textarea
-          ref={taRef}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-              e.preventDefault();
-              submit();
-            }
-          }}
-          placeholder={`${char.name}에게 메시지…`}
-          rows={1}
-          enterKeyHint="send"
-          disabled={chat.generating}
-        />
-        {chat.generating ? (
-          <button type="button" className="btn danger icon" onClick={() => void chat.stop()} aria-label="생성 중단" title="생성 중단">■</button>
-        ) : (
-          <button type="button" className="btn primary icon" onClick={submit} disabled={!draft.trim()} aria-label="보내기">↑</button>
+      <div className={`composer${chat.generating ? ' is-generating' : ''}`}>
+        {chat.generating && (
+          <div className="gen-status" aria-live="polite">
+            <span className="gen-dots" aria-hidden="true"><i /><i /><i /></span>
+            세계관에 반영 중…
+          </div>
         )}
+        <div className="inputbar">
+          <textarea
+            ref={taRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                if (!chat.generating) submit();
+              }
+            }}
+            placeholder={chat.generating ? '다음 행동을 적어 두세요…' : `${char.name}에게 메시지…`}
+            rows={1}
+            enterKeyHint="send"
+          />
+          {chat.generating ? (
+            <button type="button" className="btn icon stop-gen" onClick={() => void chat.stop()} aria-label="생성 중단" title="생성 중단">■</button>
+          ) : (
+            <button type="button" className="btn primary icon" onClick={submit} disabled={!draft.trim()} aria-label="보내기">↑</button>
+          )}
+        </div>
       </div>
 
       <ChatDrawer open={drawer} conversationId={id} draft={draft} initialTab={drawerTab} onClose={() => { setDrawer(false); setDrawerTab(undefined); }} onApplied={() => { setSummaryTick((n) => n + 1); }} />
@@ -368,7 +370,7 @@ function ChoiceChips({
   onEdit: (c: string) => void;
   disabled?: boolean;
 }) {
-  const shown = choices.slice(0, 3);
+  const shown = visibleChoices(choices);
   if (shown.length === 0) return null;
   return (
     <div className="chips" aria-disabled={disabled || undefined}>
