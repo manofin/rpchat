@@ -8,11 +8,12 @@ export function Avatar({ name, avatar, size }: { name: string; avatar?: string |
 }
 
 /** F9F — party speaker header. Bubble + renderContent stay on MessageView. */
-export function SpeakerHeader({ name, avatar }: { name: string; avatar?: string | null }) {
+export function SpeakerHeader({ name, avatar, focused }: { name: string; avatar?: string | null; focused?: boolean }) {
   return (
-    <div className="speaker-header">
+    <div className={`speaker-header${focused ? ' is-focus' : ''}`}>
       <Avatar name={name} avatar={avatar} size="sm" />
       <span className="speaker-name">{name}</span>
+      {focused ? <span className="speaker-focus-tag">포커스</span> : null}
     </div>
   );
 }
@@ -82,12 +83,13 @@ export function BeatSystem({ text }: { text: string }) {
  * Name comes from `meta.speaker_name` (server allow-list). The spoken text is
  * printed as stored; the client does not re-parse a 💬 line out of the body.
  */
-export function BeatHunterLine({ name, text }: { name: string; text: string }) {
+export function BeatHunterLine({ name, text, focused }: { name: string; text: string; focused?: boolean }) {
   return (
-    <div className="beat-line-hunter">
+    <div className={`beat-line-hunter${focused ? ' is-focus' : ''}`}>
       <span className="beat-line-hunter-mark" aria-hidden>💬</span>
       {' '}
       <span className="beat-line-hunter-name">{name}</span>
+      {focused ? <span className="speaker-focus-tag">포커스</span> : null}
       <span className="beat-line-hunter-sep" aria-hidden>│</span>
       <span className="beat-line-hunter-text">{renderContent(text)}</span>
     </div>
@@ -102,6 +104,7 @@ export type BeatUiData = {
   } | null;
   roster?: Array<{ id: string; name: string; chip: string; locked: boolean; in_room: boolean }>;
   intent_hint?: string | null;
+  focus_id?: string | null;
 };
 
 /** Parses the `ui` block payload. A damaged payload renders nothing, never a crash. */
@@ -137,11 +140,22 @@ export function BeatUiPanel({ ui }: { ui: BeatUiData }) {
       ) : null}
       {hasRoster ? (
         <div className="beat-ui-roster">
-          {(ui.roster ?? []).map((r) => (
-            <span key={r.id} className={`beat-chip ${r.locked ? 'locked' : ''}`} title={r.name}>
-              {r.chip} {r.name}
-            </span>
-          ))}
+          {(ui.roster ?? []).map((r) => {
+            const isFocus = Boolean(ui.focus_id && r.id === ui.focus_id);
+            const label = `${r.name}${r.locked ? ' 잠금' : ''}${isFocus && !r.locked ? ' 포커스' : ''}`;
+            return (
+              <span
+                key={r.id}
+                className={`beat-chip${r.locked ? ' locked' : ''}${isFocus && !r.locked ? ' is-focus' : ''}`}
+                title={label}
+                aria-label={label}
+              >
+                {r.chip} {r.name}
+                {r.locked ? <span className="beat-chip-tag">잠금</span> : null}
+                {isFocus && !r.locked ? <span className="beat-chip-tag">포커스</span> : null}
+              </span>
+            );
+          })}
         </div>
       ) : null}
       {ui.intent_hint ? <span className="beat-ui-hint">{ui.intent_hint}</span> : null}

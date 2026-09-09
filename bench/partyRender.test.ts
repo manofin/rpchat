@@ -169,7 +169,11 @@ function main() {
   t('SpeakerHeader exported from view.tsx; reuses Avatar', () => {
     const src = srcOf(viewPath);
     assert.ok(/export function SpeakerHeader/.test(src));
-    assert.ok(/className=\"speaker-header\"/.test(src) || /className='speaker-header'/.test(src));
+    assert.ok(
+      /className=\"speaker-header\"/.test(src) ||
+        /className='speaker-header'/.test(src) ||
+        /className=\{`speaker-header/.test(src),
+    );
     assert.ok(/<Avatar/.test(src));
     assert.ok(/speaker-name/.test(src));
   });

@@ -97,7 +97,7 @@ t('a damaged ui payload renders nothing rather than throwing', () => {
   const s = view();
   assert.match(s, /export function parseBeatUi[\s\S]{0,400}catch \{\s*return null;/);
   const page = code('apps/web/src/pages/ChatPage.tsx');
-  assert.ok(page.includes('ui ? <BeatUiPanel ui={ui} /> : null'), 'a null parse must render nothing');
+  assert.match(page, /ui \? <BeatUiPanel ui=\{/, 'a null parse must render nothing');
 });
 
 // ── 3. the image is a server path, never model output ───────────────────────

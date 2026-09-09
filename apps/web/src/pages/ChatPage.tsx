@@ -184,6 +184,7 @@ export function ChatPage({ id }: { id: string }) {
     onBookmark: () => chat.toggleBookmark(m.id, !m.bookmarked),
     onChoice,
     onEditChoice,
+    focusId: conv.scene.last_beat?.focus_id ?? null,
   });
 
   return (
@@ -241,6 +242,18 @@ export function ChatPage({ id }: { id: string }) {
           onClick={() => setToolsOpen((v) => !v)}
         >{desktop ? '⚙' : '⋯'}</button>
       </div>
+
+      {(() => {
+        const lastUiMsg = [...chat.messages].reverse().find((m) => m.meta.block_kind === 'ui');
+        const lastUi = lastUiMsg ? parseBeatUi(lastUiMsg.content) : null;
+        if (!lastUi?.roster?.length) return null;
+        const live = { ...lastUi, focus_id: lastUi.focus_id ?? conv.scene.last_beat?.focus_id ?? null };
+        return (
+          <div className="cast-status" aria-label="캐스트">
+            <BeatUiPanel ui={{ roster: live.roster, focus_id: live.focus_id }} />
+          </div>
+        );
+      })()}
 
       <div className="chat-scroll" ref={scrollRef} onScroll={onScroll}>
         {chat.messages.length === 0 && <div className="sysline" style={{ margin: 'auto' }}>첫 메시지를 보내 대화를 시작하세요.</div>}
@@ -410,6 +423,7 @@ function MessageView(props: {
   onChoice: (c: string) => void;
   onEditChoice: (c: string) => void;
   hideChoices?: boolean;
+  focusId?: string | null;
 }) {
   const { m } = props;
   const [editing, setEditing] = useState(false);
@@ -494,7 +508,10 @@ function MessageView(props: {
     // 속마음 말풍선 제거: Pass F 는 `속마음:` 분리·저장을 그대로 하고(행은 남는다),
     // 화면에만 그리지 않는다. 나중에 별도 명령으로 이 행들을 모아 보여줄 여지를 남긴다.
     else if (kind === 'thought') body = null;
-    else { const ui = parseBeatUi(m.content); body = ui ? <BeatUiPanel ui={ui} /> : null; }
+    else {
+      const ui = parseBeatUi(m.content);
+      body = ui ? <BeatUiPanel ui={{ ...ui, focus_id: ui.focus_id ?? (props.isLastAssistant ? props.focusId : null) ?? null }} /> : null;
+    }
     // dialog-format: choices ride on whichever block a turn actually ends on
     // (narration or a speaker's line), not just the `line` kind — see chat.ts
     // generateDialog. The chip row below is otherwise identical to the 1:1 one.
@@ -515,7 +532,7 @@ function MessageView(props: {
   if (!isUser && kind === 'line' && props.sceneFormat === 'hunter') {
     return (
       <>
-        <BeatHunterLine name={m.meta.speaker_name ?? props.charName} text={m.content} />
+        <BeatHunterLine name={m.meta.speaker_name ?? props.charName} text={m.content} focused={Boolean(props.focusId && m.meta.speaker_character_id === props.focusId)} />
         {!props.hideChoices && !props.streaming && !props.generating && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
           <ChoiceChips choices={m.meta.choices} onChoice={props.onChoice} onEdit={props.onEditChoice} disabled={props.generating} />
         )}
@@ -526,10 +543,11 @@ function MessageView(props: {
   const showActions = !props.streaming && !props.generating;
   // R1: 파티/dialog `line`만 화면에 「」를 입힌다. 저장 원문·1:1·스트리밍 중·hunter 스크립트는 그대로.
   const lineSpeech = !isUser && kind === 'line';
+  const lineFocus = Boolean(lineSpeech && props.focusId && m.meta.speaker_character_id === props.focusId);
   return (
-    <div id={props.domId} className={`msg ${isUser ? 'user' : 'assistant'} ${m.meta.ooc ? 'ooc' : ''} ${lineSpeech ? 'beat-line' : ''}`}>
+    <div id={props.domId} className={`msg ${isUser ? 'user' : 'assistant'} ${m.meta.ooc ? 'ooc' : ''} ${lineSpeech ? 'beat-line' : ''}${lineFocus ? ' is-focus' : ''}`}>
       {!isUser && m.meta.speaker_character_id ? (
-        <SpeakerHeader name={m.meta.speaker_name ?? props.charName} avatar={m.meta.image_url ?? m.meta.speaker_avatar} />
+        <SpeakerHeader name={m.meta.speaker_name ?? props.charName} avatar={m.meta.image_url ?? m.meta.speaker_avatar} focused={lineFocus} />
       ) : null}
       <div
         className={`bubble ${m.status === 'interrupted' ? 'interrupted' : ''} ${m.status === 'error' ? 'error' : ''}`}

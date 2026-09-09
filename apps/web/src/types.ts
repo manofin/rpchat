@@ -125,6 +125,7 @@ export interface Scene {
     situation?: string;
     mode?: string;
   };
+  last_beat?: { focus_id: string | null; extra_ids?: string[]; unresolved?: string[] };
 }
 
 export interface Conversation {

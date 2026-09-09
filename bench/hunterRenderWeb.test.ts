@@ -63,7 +63,7 @@ t('BeatHunterLine is the transcript script row: 💬 name │ text', () => {
   const body = s.slice(at, at + 600);
   assert.ok(body.includes('💬'));
   assert.ok(body.includes('│'));
-  assert.ok(body.includes('className="beat-line-hunter"'));
+  assert.ok(body.includes('beat-line-hunter'));
   assert.ok(body.includes('{name}'));
   assert.ok(body.includes('renderContent(text)'));
 });

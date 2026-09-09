@@ -44,6 +44,8 @@ export type BeatUi = {
   user_sheet: Scene['user_sheet'] | null;
   roster: RosterChip[];
   intent_hint: string | null;
+  /** Who this turn addressed. Null = narration-only. Stamped so scrollback does not use the live last_beat. */
+  focus_id: string | null;
 };
 
 export type BeatLine = {
@@ -191,6 +193,7 @@ export function renderUi(input: {
       };
     }),
     intent_hint: input.intent_hint ?? null,
+    focus_id: focusId,
   };
 }
 

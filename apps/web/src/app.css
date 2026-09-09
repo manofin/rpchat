@@ -223,6 +223,18 @@ textarea { resize: none; }
 .msg.user .bubble { background: var(--kami-charcoal); border: 0; border-right: 2px solid var(--kami-ink); border-radius: 4px; font-family: "Noto Serif KR", serif; font-weight: 400; color: var(--kami-text); }
 .msg.assistant .bubble { background: var(--kami-surface); border: 1px solid var(--kami-line-soft); border-radius: 8px; box-shadow: none; font-family: "Noto Serif KR", serif; font-weight: 400; color: var(--kami-text-strong); font-size: 16px; line-height: 1.85; }
 .msg.beat-line .bubble { color: var(--kami-text-strong); font-size: 16px; line-height: 1.9; font-weight: 500; }
+.msg.beat-line.is-focus .bubble { border-left: 3px solid var(--kami-ink); }
+.speaker-header { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; }
+.speaker-header .speaker-name { font-size: 13px; font-weight: 500; color: var(--kami-text); }
+.speaker-header.is-focus .speaker-name { font-weight: 650; color: var(--kami-text-strong); }
+.speaker-focus-tag {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--kami-text-muted);
+  border: 1px solid var(--kami-line);
+  border-radius: 999px;
+  padding: 1px 6px;
+}
 .msg.ooc .bubble { border: 1px dashed var(--fg-3); opacity: 0.85; }
 .bubble.interrupted { border: 1px solid var(--warn); }
 .bubble.error { border: 1px solid var(--danger); }
@@ -609,6 +621,7 @@ textarea { resize: none; }
 }
 .beat-line-hunter-mark { font-family: system-ui, sans-serif; }
 .beat-line-hunter-name { font-weight: 500; }
+.beat-line-hunter.is-focus .beat-line-hunter-name { font-weight: 650; }
 .beat-line-hunter-sep { opacity: 0.7; padding: 0 1px; }
 .beat-line-hunter-text { white-space: pre-wrap; }
 
@@ -658,12 +671,41 @@ textarea { resize: none; }
   border-top: 1px solid var(--kami-line-soft);
 }
 .beat-chip {
-  padding: 1px 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
   border-radius: 999px;
   border: 1px solid var(--border);
   white-space: nowrap;
 }
-.beat-chip.locked { opacity: 0.5; }
+.beat-chip.locked {
+  color: var(--kami-text-faint);
+  border-style: dashed;
+}
+.beat-chip.is-focus {
+  border-color: var(--kami-ink);
+  color: var(--kami-text-strong);
+  font-weight: 650;
+}
+.beat-chip-tag {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--kami-text-muted);
+}
+.cast-status {
+  flex: 0 0 auto;
+  padding: 4px 8px 6px;
+  border-bottom: 1px solid var(--kami-line-soft);
+  background: var(--kami-deep);
+}
+.cast-status .beat-ui {
+  margin: 0;
+  padding: 6px 8px;
+}
+.cast-status .beat-ui-panel {
+  border-radius: 8px;
+}
 
 /* ---- chat shell: desktop rails, mobile overlay ---- */
 .chat-shell {

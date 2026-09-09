@@ -269,6 +269,7 @@ t('renderUi roster marks ambient/out-of-room as lock, vitals from user_sheet', (
   assert.deepEqual(ui.user_sheet!.traits, ['[A]성흔(풍뢰영근)']);
   assert.equal(ui.roster.find((r) => r.id === 'luna')!.chip, LOCK_CHIP);
   assert.equal(ui.roster.find((r) => r.id === 'nari')!.chip, '😡');
+  assert.equal(ui.focus_id, 'nari');
 });
 
 console.log(`PASS=${passed}`);
