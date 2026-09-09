@@ -60,6 +60,7 @@ const CONV_COLS = [
   'story_name_snapshot',
   'story_setting_snapshot',
   'story_minor_cast_snapshot',
+  'story_participant_ids_snapshot',
 ] as const;
 
 const GOLDEN_SIX: Scene = { place: '취선객잔', time: '밤' };
@@ -193,7 +194,7 @@ async function main() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-scene-state-schema-'));
   const db = openDb(tmp, path.resolve('apps/server/migrations'));
 
-  await t('openDb records 0010; conversations columns unchanged (26)', () => {
+  await t('openDb records 0010; conversations columns unchanged by 0010 (27 incl. 0013 story_participant_ids_snapshot)', () => {
     const names = (
       db.prepare('SELECT name FROM schema_migrations ORDER BY name').all() as Array<{ name: string }>
     ).map((r) => r.name);

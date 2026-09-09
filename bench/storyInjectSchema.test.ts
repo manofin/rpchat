@@ -151,15 +151,17 @@ async function main() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-story-inject-schema-'));
   const db = openDb(tmp, path.resolve('apps/server/migrations'));
 
-  await t('openDb records 0009; conversations has base 21 + 5 story cols', () => {
+  await t('openDb records 0009; conversations has base 21 + 5 story cols + later-slice cols', () => {
     const names = (db.prepare('SELECT name FROM schema_migrations ORDER BY name').all() as Array<{ name: string }>).map(
       (r) => r.name,
     );
     assert.ok(names.includes('0009_conversation_story.sql'), JSON.stringify(names));
     const info = cols(db, 'conversations');
+    // 0010-0012 add separate tables, not conversations columns; 0013 (F8e
+    // story-peer-cast-schema) appends story_participant_ids_snapshot.
     assert.deepEqual(
       info.map((c) => c.name),
-      [...BASE_CONV_COLS, ...STORY_COLS],
+      [...BASE_CONV_COLS, ...STORY_COLS, 'story_participant_ids_snapshot'],
     );
     assert.equal(info.find((c) => c.name === 'character_id')?.notnull, 1);
   });

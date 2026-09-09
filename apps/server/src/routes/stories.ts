@@ -301,6 +301,7 @@ export function storyRoutes(ctx: Ctx) {
           story_name_snapshot: null,
           story_setting_snapshot: null,
           story_minor_cast_snapshot: null,
+          story_participant_ids_snapshot: null,
         };
         const built = buildPrompt(db, virtualConv, [], config.model.contextTokens, ctx.resolvedModel());
         const fixedSection = built.budget.sections.find((s) => s.name === '시스템 규칙+카드+페르소나+장면')!;

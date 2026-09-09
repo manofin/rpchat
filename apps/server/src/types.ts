@@ -203,6 +203,7 @@ export interface ConversationRow {
   story_name_snapshot: string | null;
   story_setting_snapshot: string | null;
   story_minor_cast_snapshot: string | null;
+  story_participant_ids_snapshot: string | null;
 }
 
 export type MessageStatus = 'streaming' | 'complete' | 'interrupted' | 'error';

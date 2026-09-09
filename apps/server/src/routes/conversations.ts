@@ -173,6 +173,7 @@ export function conversationRoutes(ctx: Ctx) {
       let storyNameSnapshot: string | null = null;
       let storySettingSnapshot: string | null = null;
       let storyMinorCastSnapshot: string | null = null;
+      let storyParticipantIdsSnapshot: string | null = null;
       if (d.storyId) {
         const story = one<StoryRow>(db, 'SELECT * FROM stories WHERE id = ?', d.storyId);
         if (!story) return reply.code(404).send({ error: 'story not found' });
@@ -203,6 +204,10 @@ export function conversationRoutes(ctx: Ctx) {
           : [];
         sceneJson = JSON.stringify(initialBeatScene({ catalog, cast, overlay: d.scene }));
         partyOpening = partySuppressesGreeting(cast);
+        // ADR-F8e §7: snapshot at creation, single write, no live story_characters re-query afterward.
+        // Host is always included even if not (yet) rostered via story_characters.
+        const participantIds = [character.id, ...roster.map((r) => r.id).filter((id) => id !== character.id)];
+        storyParticipantIdsSnapshot = JSON.stringify(participantIds);
       }
       let personaNameSnap: string | null = null;
       let personaAddressSnap: string | null = null;
@@ -222,10 +227,10 @@ export function conversationRoutes(ctx: Ctx) {
       db.transaction(() => {
         run(
           db,
-          `INSERT INTO conversations (id, character_id, persona_id, title, mode, profile_name, scene_json, head_message_id, prompt_version, created_at, updated_at, last_message_at, story_id, story_applied_at, story_name_snapshot, story_setting_snapshot, story_minor_cast_snapshot, persona_name_snapshot, persona_address_snapshot, persona_appearance_snapshot, persona_personality_snapshot, persona_relationship_snapshot, persona_applied_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO conversations (id, character_id, persona_id, title, mode, profile_name, scene_json, head_message_id, prompt_version, created_at, updated_at, last_message_at, story_id, story_applied_at, story_name_snapshot, story_setting_snapshot, story_minor_cast_snapshot, story_participant_ids_snapshot, persona_name_snapshot, persona_address_snapshot, persona_appearance_snapshot, persona_personality_snapshot, persona_relationship_snapshot, persona_applied_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           id, character.id, d.personaId ?? null, d.title ?? '', d.mode, profileName, sceneJson, PROMPT_VERSION, t, t,
-          storyId, storyAppliedAt, storyNameSnapshot, storySettingSnapshot, storyMinorCastSnapshot,
+          storyId, storyAppliedAt, storyNameSnapshot, storySettingSnapshot, storyMinorCastSnapshot, storyParticipantIdsSnapshot,
           personaNameSnap, personaAddressSnap, personaAppearanceSnap, personaPersonalitySnap, personaRelationshipSnap, personaAppliedAt,
         );
         const conv = loadConversation(ctx, id)!;
