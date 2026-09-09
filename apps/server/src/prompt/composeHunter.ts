@@ -164,12 +164,16 @@ export function planHunterBeat(input: HunterPlanInput): HunterPlan {
   // 3. Speakers first, then ambient from whoever is left over — the dialog path's
   // ordering, and for its reason: picking ambient first would let a two-person
   // scene lose its second voice to a gesture.
-  const speakers = hunterSpeakers({
-    cast: input.cast,
-    scene,
-    focus_id: focus.focus_id,
-    cards: input.cards,
-  });
+  // ADR-F8e C-focus-β: a story room with no addressee has no script speakers.
+  // Presence must not mint host or peer dialogue. Non-story rooms unchanged.
+  const speakers = input.story_room === true && focus.focus_id === null
+    ? []
+    : hunterSpeakers({
+      cast: input.cast,
+      scene,
+      focus_id: focus.focus_id,
+      cards: input.cards,
+    });
 
   const ambient = ambientPicks({
     cast: input.cast,

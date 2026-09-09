@@ -162,12 +162,18 @@ export function planDialogBeat(input: DialogPlanInput): DialogPlan {
   // cap is the only limit, and picking ambient first would let a two-person scene
   // lose its second voice to a gesture — which is precisely the turn Dialog.txt
   // has 15 times. So the floor is assigned first and ambient describes the excess.
-  const speakers = dialogSpeakers({
-    cast: input.cast,
-    scene,
-    focus_id: focus.focus_id,
-    cards: input.cards,
-  });
+  // ADR-F8e C-focus-β: a story room with no addressee is Pass-N-only.
+  // Do not fill the script allow-list from presence; that would auto-speak
+  // the host or another participant. Non-story rooms keep the existing
+  // presence allow-list, including focus_id null.
+  const speakers = input.story_room === true && focus.focus_id === null
+    ? []
+    : dialogSpeakers({
+      cast: input.cast,
+      scene,
+      focus_id: focus.focus_id,
+      cards: input.cards,
+    });
 
   const ambient = ambientPicks({
     cast: input.cast,
