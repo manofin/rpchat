@@ -10,6 +10,7 @@ import {
 import { OverlayDrawer } from '../components/OverlayDrawer';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { groupChatTurns, shouldReorderTurn, turnChoicesHost, visualAssistantOrder } from '../lib/chatLayout';
+import { wrapSpeechMarks } from '../lib/speechMarks';
 import { useDesktopLayout } from '../lib/useDesktopLayout';
 import {
   resolveBannerWatermarkId,
@@ -521,8 +522,10 @@ function MessageView(props: {
   }
 
   const showActions = !props.streaming && !props.generating;
+  // R1: 파티/dialog `line`만 화면에 「」를 입힌다. 저장 원문·1:1·스트리밍 중·hunter 스크립트는 그대로.
+  const lineSpeech = !isUser && kind === 'line';
   return (
-    <div id={props.domId} className={`msg ${isUser ? 'user' : 'assistant'} ${m.meta.ooc ? 'ooc' : ''}`}>
+    <div id={props.domId} className={`msg ${isUser ? 'user' : 'assistant'} ${m.meta.ooc ? 'ooc' : ''} ${lineSpeech ? 'beat-line' : ''}`}>
       {!isUser && m.meta.speaker_character_id ? (
         <SpeakerHeader name={m.meta.speaker_name ?? props.charName} avatar={m.meta.image_url ?? m.meta.speaker_avatar} />
       ) : null}
@@ -537,7 +540,11 @@ function MessageView(props: {
         onTouchEnd={onTouchEnd}
         onTouchCancel={onTouchCancel}
       >
-        {m.content ? renderContent(m.content) : props.streaming ? '' : <span className="muted">…</span>}
+        {m.content
+          ? (lineSpeech && !props.streaming
+              ? renderContent(wrapSpeechMarks(m.content))
+              : renderContent(m.content))
+          : props.streaming ? '' : <span className="muted">…</span>}
         {props.streaming && <span className="cursor" />}
         {m.status === 'error' && <div className="small" style={{ color: 'var(--danger)', marginTop: 6 }}>{m.meta.error ?? '생성 실패'}</div>}
         {m.status === 'interrupted' && <div className="small muted" style={{ marginTop: 4 }}>(중단됨)</div>}

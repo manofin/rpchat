@@ -124,18 +124,25 @@ export function BeatUiPanel({ ui }: { ui: BeatUiData }) {
     if (sheet.inventory?.length) stats.push(`보유 ${sheet.inventory.join(', ')}`);
     if (sheet.traits?.length) stats.push(`특수 ${sheet.traits.join(', ')}`);
   }
+  const hasStrip = Boolean(ui.location_badge || stats.length);
+  const hasRoster = Boolean(ui.roster?.length);
+  if (!hasStrip && !hasRoster && !ui.intent_hint) return null;
   return (
-    <div className="beat-ui">
-      {ui.location_badge ? <span className="beat-ui-badge">{ui.location_badge}</span> : null}
-      {stats.length ? <span className="beat-ui-stats">{stats.join(' · ')}</span> : null}
-      {ui.roster?.length ? (
-        <span className="beat-ui-roster">
-          {ui.roster.map((r) => (
+    <div className="beat-ui beat-ui-panel">
+      {hasStrip ? (
+        <div className="beat-ui-strip">
+          {ui.location_badge ? <span className="beat-ui-badge">{ui.location_badge}</span> : null}
+          {stats.length ? <span className="beat-ui-stats">{stats.join(' · ')}</span> : null}
+        </div>
+      ) : null}
+      {hasRoster ? (
+        <div className="beat-ui-roster">
+          {(ui.roster ?? []).map((r) => (
             <span key={r.id} className={`beat-chip ${r.locked ? 'locked' : ''}`} title={r.name}>
               {r.chip} {r.name}
             </span>
           ))}
-        </span>
+        </div>
       ) : null}
       {ui.intent_hint ? <span className="beat-ui-hint">{ui.intent_hint}</span> : null}
     </div>

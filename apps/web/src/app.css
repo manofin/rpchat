@@ -139,6 +139,8 @@ textarea { resize: none; }
 /* ---- 화면 골격 ---- */
 .screen { display: flex; flex-direction: column; height: var(--app-height); max-width: 720px; margin: 0 auto; background: var(--bg); }
 .topbar { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; padding: calc(6px + var(--safe-top)) 8px 6px; border-bottom: 1px solid var(--kami-line); min-height: 48px; background: var(--kami-deep); box-shadow: none; }
+.topbar.chat-topbar { min-height: 40px; padding: calc(4px + var(--safe-top)) 8px 4px; gap: 4px; }
+.topbar.chat-topbar .avatar.sm { width: 32px; height: 32px; font-size: 14px; }
 .topbar .title { flex: 1; min-width: 0; }
 .topbar .title h1 { font-size: 15px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: "Noto Serif KR", serif; font-weight: 500; color: var(--kami-text-strong); }
 .topbar .title .sub { font-size: 11px; color: var(--kami-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: system-ui, sans-serif; }
@@ -220,6 +222,7 @@ textarea { resize: none; }
 .bubble { padding: 10px 13px; border-radius: 16px; white-space: pre-wrap; word-break: break-word; line-height: 1.5; -webkit-user-select: text; user-select: text; }
 .msg.user .bubble { background: var(--kami-charcoal); border: 0; border-right: 2px solid var(--kami-ink); border-radius: 4px; font-family: "Noto Serif KR", serif; font-weight: 400; color: var(--kami-text); }
 .msg.assistant .bubble { background: var(--kami-surface); border: 1px solid var(--kami-line-soft); border-radius: 8px; box-shadow: none; font-family: "Noto Serif KR", serif; font-weight: 400; color: var(--kami-text-strong); font-size: 16px; line-height: 1.85; }
+.msg.beat-line .bubble { color: var(--kami-text-strong); font-size: 16px; line-height: 1.9; font-weight: 500; }
 .msg.ooc .bubble { border: 1px dashed var(--fg-3); opacity: 0.85; }
 .bubble.interrupted { border: 1px solid var(--warn); }
 .bubble.error { border: 1px solid var(--danger); }
@@ -507,11 +510,12 @@ textarea { resize: none; }
   align-self: stretch;
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 14px 0 4px;
-  color: var(--muted);
-  font-size: 12px;
-  letter-spacing: 0.02em;
+  gap: 12px;
+  margin: 16px 0 10px;
+  color: var(--kami-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
 }
 /* 장면 전환은 알약이 아니라 구분선이다 — 카드가 하나 더 쌓이지 않는다. */
 .beat-header::before,
@@ -523,10 +527,10 @@ textarea { resize: none; }
 }
 .beat-narration {
   align-self: stretch;
-  margin: 4px 8px;
-  color: var(--kami-text);
-  font-size: 16px;
-  line-height: 1.85;
+  margin: 4px 8px 10px;
+  color: var(--kami-text-muted);
+  font-size: 14px;
+  line-height: 1.9;
   white-space: pre-wrap;
 }
 /* dialog-format — the INFO sheet. A monospaced label column so 정보/계약/침식/목표
@@ -581,10 +585,10 @@ textarea { resize: none; }
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 .beat-narration.hunter {
-  color: var(--kami-text);
+  color: var(--kami-text-muted);
   font-family: "Noto Serif KR", serif;
-  font-size: 16px;
-  line-height: 1.85;
+  font-size: 14px;
+  line-height: 1.9;
 }
 .beat-line-hunter {
   align-self: stretch;
@@ -604,21 +608,48 @@ textarea { resize: none; }
 .beat-ui {
   align-self: stretch;
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px 10px;
-  align-items: center;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 8px;
+  align-items: stretch;
   margin: 6px 8px 12px;
-  padding: 6px 8px;
-  border-top: 1px solid var(--border);
+  padding: 8px 10px;
   font-size: 12px;
   color: var(--muted);
+}
+.beat-ui-panel {
+  background: var(--panel-1);
+  border: 1px solid var(--kami-line-soft);
+  border-left: 4px solid var(--role-gold);
+  border-radius: 10px;
+}
+.beat-ui-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: baseline;
+  color: var(--kami-text-strong);
+  font-size: 13px;
+}
+.beat-ui-stats {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 .beat-ui-badge {
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--panel-1);
+  background: var(--panel-2);
+  color: var(--kami-text);
 }
-.beat-ui-roster { display: flex; flex-wrap: wrap; gap: 4px; }
+.beat-ui-roster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.beat-ui-strip + .beat-ui-roster {
+  padding-top: 6px;
+  border-top: 1px solid var(--kami-line-soft);
+}
 .beat-chip {
   padding: 1px 7px;
   border-radius: 999px;
@@ -1098,6 +1129,7 @@ textarea { resize: none; }
   .chat-ci-btn { display: none; }
   .chat-back-btn { display: none; }
   .chat-topbar { gap: 4px; }
+  .beat-narration { line-height: 1.9; }
   .overlay-drawer { z-index: 60; }
   /* Composer stays pinned at bottom of flex column (visualViewport → --app-height). */
   .chat-main .inputbar {
