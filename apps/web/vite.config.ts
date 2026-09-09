@@ -26,7 +26,8 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // 앱 셸만 캐시. API/SSE 는 절대 캐시하지 않는다.
+        // 앱 셸만 precache. API/SSE 는 절대 캐시하지 않는다.
+        // runtimeCaching 을 채우지 않는 것이 계약이다 — 오프라인은 셸 가용성만.
         globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],
