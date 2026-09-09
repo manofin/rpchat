@@ -103,6 +103,7 @@ const sceneSchema = z.object({
 const createSchema = z.object({
   characterId: z.string().min(1),
   storyId: z.string().min(1).optional(),
+  participantIds: z.array(z.string().min(1).max(100)).max(12).optional(),
   personaId: z.string().nullable().optional(),
   title: z.string().max(120).optional(),
   mode: z.enum(['chat', 'story']).default('story'),
@@ -206,7 +207,24 @@ export function conversationRoutes(ctx: Ctx) {
         partyOpening = partySuppressesGreeting(cast);
         // ADR-F8e §7: snapshot at creation, single write, no live story_characters re-query afterward.
         // Host is always included even if not (yet) rostered via story_characters.
-        const participantIds = [character.id, ...roster.map((r) => r.id).filter((id) => id !== character.id)];
+        // Optional participantIds (start-ui): preserve order, prepend host if absent, drop unknown (no host substitute).
+        let participantIds: string[];
+        if (d.participantIds) {
+          const seen = new Set<string>();
+          participantIds = [];
+          for (const pid of d.participantIds) {
+            if (seen.has(pid)) continue;
+            seen.add(pid);
+            participantIds.push(pid);
+          }
+          if (!seen.has(character.id)) participantIds.unshift(character.id);
+          participantIds = participantIds.filter((pid) => {
+            if (pid === character.id) return true;
+            return Boolean(one(db, 'SELECT 1 FROM characters WHERE id = ? AND archived = 0', pid));
+          });
+        } else {
+          participantIds = [character.id, ...roster.map((r) => r.id).filter((rid) => rid !== character.id)];
+        }
         storyParticipantIdsSnapshot = JSON.stringify(participantIds);
       }
       let personaNameSnap: string | null = null;

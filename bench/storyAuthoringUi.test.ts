@@ -91,7 +91,7 @@ t('AU-05 preview 409 and conversation POST 409 share the archived copy', () => {
 
 t('AU-06 empty setting / empty cast do not assume rows exist', () => {
   assert.ok(pageSrc.includes('설정이 없습니다.'));
-  assert.ok(pageSrc.includes('조연: 없음'));
+  assert.ok(pageSrc.includes('설정 이름: 없음'));
   assert.ok(pageSrc.includes('preview.cast.length === 0') || pageSrc.includes('preview.cast.filter'));
 });
 
