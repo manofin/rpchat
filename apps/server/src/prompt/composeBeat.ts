@@ -62,6 +62,11 @@ export type BeatPlanInput = {
    * Pass N a narration from a path the user abandoned. Absent = opening turn.
    */
   recent_narrations?: string[];
+  /**
+   * ADR-F8e C-focus-β. Forwarded to resolveFocus. Omit for 1:1 / party-tab rooms.
+   */
+  story_room?: boolean;
+  participant_ids?: string[] | null;
 };
 
 export type BeatPlan = {
@@ -152,6 +157,8 @@ export function planBeat(input: BeatPlanInput): BeatPlan {
     cast: input.cast,
     catalog,
     main_character_id: input.main_character_id,
+    story_room: input.story_room,
+    participant_ids: input.participant_ids,
   });
 
   // 3-5. Candidates closed, then approved. Default: nobody.

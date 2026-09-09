@@ -50,6 +50,8 @@ export type DialogPlanInput = {
   main_character_id: string;
   message_id?: string | null;
   content_policy?: string;
+  story_room?: boolean;
+  participant_ids?: string[] | null;
 };
 
 export type DialogPlan = {
@@ -149,6 +151,8 @@ export function planDialogBeat(input: DialogPlanInput): DialogPlan {
     cast: input.cast,
     catalog,
     main_character_id: input.main_character_id,
+    story_room: input.story_room,
+    participant_ids: input.participant_ids,
   });
 
   // 3. The speaker allow-list, then ambient from whoever is left over.

@@ -58,6 +58,8 @@ export type HunterPlanInput = {
   main_character_id: string;
   message_id?: string | null;
   content_policy?: string;
+  story_room?: boolean;
+  participant_ids?: string[] | null;
 };
 
 export type HunterPlan = {
@@ -155,6 +157,8 @@ export function planHunterBeat(input: HunterPlanInput): HunterPlan {
     cast: input.cast,
     catalog,
     main_character_id: input.main_character_id,
+    story_room: input.story_room,
+    participant_ids: input.participant_ids,
   });
 
   // 3. Speakers first, then ambient from whoever is left over — the dialog path's

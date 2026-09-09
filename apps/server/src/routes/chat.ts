@@ -28,6 +28,7 @@ import {
 import { PASS_E_MAX_SENTENCES, PASS_N_RECENT_NARRATIONS } from '../prompt/passes.js';
 import { parseChoicesPass } from '../prompt/beatChoices.js';
 import { resolvePersona } from '../prompt/builder.js';
+import { parseParticipantSnapshot } from '../prompt/resolveFocus.js';
 import type { PassCard } from '../prompt/passes.js';
 import type { CharacterRow } from '../types.js';
 import { buildPrompt } from '../prompt/builder.js';
@@ -36,6 +37,16 @@ import { extractChoices } from '../prompt/templates.js';
 import { estimateTokens, updateCalibration } from '../prompt/tokens.js';
 import type { ConversationRow, MessageRow, Scene } from '../types.js';
 import { loadConversation } from './conversations.js';
+
+function storyFocusPlanFields(conv: ConversationRow): {
+  story_room: boolean;
+  participant_ids: string[] | null;
+} {
+  return {
+    story_room: Boolean(conv.story_id),
+    participant_ids: parseParticipantSnapshot(conv.story_participant_ids_snapshot),
+  };
+}
 
 type SseBudget = {
   dropped_messages: number;
@@ -481,6 +492,7 @@ export function chatRoutes(ctx: Ctx) {
       message_id: userMessage?.id ?? null,
       content_policy: getSetting(db, 'content_policy', ''),
       recent_narrations: recentNarrations,
+      ...storyFocusPlanFields(convNow),
     };
     const plan = planBeat(planInput);
 
@@ -884,6 +896,7 @@ export function chatRoutes(ctx: Ctx) {
       main_character_id: convNow.character_id,
       message_id: userMessage?.id ?? null,
       content_policy: getSetting(db, 'content_policy', ''),
+      ...storyFocusPlanFields(convNow),
     };
     const plan = planDialogBeat(planInput);
 
@@ -1181,6 +1194,7 @@ export function chatRoutes(ctx: Ctx) {
       main_character_id: convNow.character_id,
       message_id: userMessage?.id ?? null,
       content_policy: getSetting(db, 'content_policy', ''),
+      ...storyFocusPlanFields(convNow),
     };
     const plan = planHunterBeat(planInput);
 

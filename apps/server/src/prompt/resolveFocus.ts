@@ -169,6 +169,21 @@ function pickAddressed(ids: string[], partner: string | null): string {
 }
 
 /**
+ * JSON array of character ids from `story_participant_ids_snapshot`, or null
+ * when the column is NULL/empty/invalid (legacy-row compat: no freeze bound).
+ */
+export function parseParticipantSnapshot(raw: string | null | undefined): string[] | null {
+  if (raw == null || raw === '') return null;
+  try {
+    const v = JSON.parse(raw) as unknown;
+    if (!Array.isArray(v) || !v.every((x) => typeof x === 'string')) return null;
+    return v;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * §4.1 priority. The first rule that yields a single selectable character wins;
  * nothing falls through to chance.
  *
@@ -181,6 +196,9 @@ function pickAddressed(ids: string[], partner: string | null): string {
  * Two addressees are not a coin flip: the conversation partner wins if named,
  * otherwise the first match in roster order. The rest become `mention_ids` so
  * extra slots can open. Comitative "X랑" is a mention, not the addressee.
+ *
+ * Story rooms (`story_room`): skip 2 / 3 / 3b. `conversations.character_id` is
+ * display-only there; unnamed turns are narration.
  */
 export function resolveFocus(input: {
   user_text: string;
@@ -189,10 +207,25 @@ export function resolveFocus(input: {
   catalog?: Pick<PartyCatalog, 'places'>;
   /** Character id this conversation was opened as. Not ST-Natural random. */
   main_character_id?: string | null;
+  /**
+   * ADR-F8e C-focus-β. When true, skip unresolved / location default_focus /
+   * conversation_partner. Only an explicit snapshot participant (or a
+   * second-person reconfirm of last focus) becomes focus. Omit for 1:1.
+   */
+  story_room?: boolean;
+  /**
+   * Frozen participant ids. A present array never promotes an id outside it.
+   * null/omitted = no extra bound (legacy NULL snapshot).
+   */
+  participant_ids?: string[] | null;
 }): FocusResult {
   const { scene, cast } = input;
   const text = input.user_text ?? '';
   const partner = input.main_character_id ?? null;
+  const storyRoom = input.story_room === true;
+  const bound = Array.isArray(input.participant_ids) ? new Set(input.participant_ids) : null;
+  const inBound = (id: string) => !bound || bound.has(id);
+  const canFocus = (id: string) => selectable(id, cast, scene) && inBound(id);
 
   // 1. explicit targeting.
   //
@@ -200,9 +233,10 @@ export function resolveFocus(input: {
   // candidate (absent, locked, background) is not a decision, so naming someone
   // who is not in the room lets the location's default answer instead of putting
   // words in an absent character's mouth.
-  const named = targetedIds(text, cast).filter((id) => selectable(id, cast, scene));
+  // Story rooms additionally bound names to the frozen participant snapshot.
+  const named = targetedIds(text, cast).filter(canFocus);
   const direction = actionDirectionText(text);
-  const aimed = targetedIds(direction, cast).filter((id) => selectable(id, cast, scene));
+  const aimed = targetedIds(direction, cast).filter(canFocus);
   const aimedSplit = splitAddressed(direction || text, aimed, cast);
   const namedSplit = splitAddressed(text, named, cast);
 
@@ -225,7 +259,8 @@ export function resolveFocus(input: {
   }
   // A lone comitative ("나리랑") with no conversation partner is still who the
   // line is about. With a partner ("유키랑" in a 카이 chat) it stays a mention.
-  if (namedSplit.mentioned.length >= 1 && !partner) {
+  // Story rooms never promote a comitative — that would invent a speaker.
+  if (namedSplit.mentioned.length >= 1 && !partner && !storyRoom) {
     return takeAddressed(namedSplit.mentioned, []);
   }
 
@@ -235,28 +270,31 @@ export function resolveFocus(input: {
 
   // 1b. second person with no name: only ever re-confirms the standing focus.
   // With no previous focus it creates nothing — a pronoun is not an introduction.
-  if (usesSecondPerson(text) && lastFocus && selectable(lastFocus, cast, scene)) {
+  if (usesSecondPerson(text) && lastFocus && canFocus(lastFocus)) {
     return result(lastFocus, 'targeted', [lastFocus], mentionIds);
   }
 
-  // 2. whoever the previous beat left hanging
-  const unresolved = (scene.last_beat?.unresolved ?? []).filter((id) => selectable(id, cast, scene));
-  if (unresolved.length === 1) return result(unresolved[0], 'unresolved', [], mentionIds);
-  if (unresolved.length > 1) return result(null, 'none', [], mentionIds);
+  // Story rooms (C-focus-β): no unresolved / default_focus / conversation_partner.
+  if (!storyRoom) {
+    // 2. whoever the previous beat left hanging
+    const unresolved = (scene.last_beat?.unresolved ?? []).filter(canFocus);
+    if (unresolved.length === 1) return result(unresolved[0], 'unresolved', [], mentionIds);
+    if (unresolved.length > 1) return result(null, 'none', [], mentionIds);
 
-  // 3. the location's default focus
-  const here = scene.location ?? scene.place ?? '';
-  const place = here ? (input.catalog?.places ?? []).find((p) => p.id === here) : undefined;
-  const fallback = place?.default_focus;
-  if (fallback && selectable(fallback, cast, scene)) {
-    return result(fallback, 'default_focus', [], mentionIds);
-  }
+    // 3. the location's default focus
+    const here = scene.location ?? scene.place ?? '';
+    const place = here ? (input.catalog?.places ?? []).find((p) => p.id === here) : undefined;
+    const fallback = place?.default_focus;
+    if (fallback && canFocus(fallback)) {
+      return result(fallback, 'default_focus', [], mentionIds);
+    }
 
-  // 3b. this chat's partner. Opening a 서리 conversation and saying 안녕하세요
-  // is talking to 서리 — not a random draw, and not assignSpeakers stuffing
-  // main in after a null focus.
-  if (partner && selectable(partner, cast, scene)) {
-    return result(partner, 'conversation_partner', [], mentionIds);
+    // 3b. this chat's partner. Opening a 서리 conversation and saying 안녕하세요
+    // is talking to 서리 — not a random draw, and not assignSpeakers stuffing
+    // main in after a null focus.
+    if (partner && canFocus(partner)) {
+      return result(partner, 'conversation_partner', [], mentionIds);
+    }
   }
 
   // 4. narration only
