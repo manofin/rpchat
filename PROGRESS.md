@@ -4273,3 +4273,19 @@ BACKLOG:
   - `git diff --cached --check` empty EXIT 0; secret/forbidden-path scan 0
   - implement-session (pre-commit): web `tsc --noEmit` TSC:0; `npx tsx bench/storyOpeningsEditor.test.ts` 6 passed EXIT 0; storyOpening 13, storyStats 10, storyDefaults 8, storyPeerCastStartUi 16, storyAuthoringUi 8, storyOpeningsExtra 11, storyDetail 7
 - Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. Live ALTER/0019 미적용. Slice 3 Start-UI 미착수.
+
+## [2026-09-10T11:00:31Z] `story-multi-opening-slice3-commit` A6 Slice 3 start-sheet opening picker
+
+- Token `story-multi-opening-slice3-commit` MODE commit SCOPE feat BASE `792a476cdade98dafe3c7e3174a37b965ee20ccc`. Parent of feat = BASE.
+- Feat commit `eaa4f1304b6248b2949730a8acf3bcf7a3740ac9` (`feat(story): multi-opening selection in start sheet (A6)`), 5 files, +160/-16. `git describe --tags` `v0.0.19-191-geaa4f13`.
+  - `apps/web/src/types.ts` — `StoryStartRequest` + `openingId?: string`
+  - `apps/web/src/lib/storyStartRequest.ts` — omit/blank `openingId` key; extra id sent; `participantIds` ORDER_CONTRACT unchanged
+  - `apps/web/src/pages/StoryPage.tsx` — F5 picker iff `(story.openings_extra ?? []).length > 0`; default omit
+  - `bench/storyOpeningsStartUi.test.ts` (new)
+  - `bench/storyOpeningsEditor.test.ts` — Slice 2 negative fence on start-sheet `openingId` removed (editor still no `/api/conversations`)
+- Pipeline / schema / live 0019 무접촉.
+- Gates this bind (workdir `/home/hermes/rpchat/app`):
+  - `git diff --cached --check` empty EXIT 0; secret/forbidden-path scan 0
+  - web `tsc --noEmit` TSC:0
+  - `storyOpeningsStartUi` 7, `storyOpeningsEditor` 6, storyOpening 13, storyStats 10, storyDefaults 8, storyPeerCastStartUi 16, storyAuthoringUi 8, storyInjectUi 7, storyDetail 7, storyOpeningsExtra 11
+- Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. Live ALTER/0019 미적용.
