@@ -4189,3 +4189,22 @@ BACKLOG:
 - 벤치 수정 9건, 전부 값 갱신(삭제 아님): `loreClone.test.ts` CLONE-08의 소스 그렙 대상을 `CharacterEditor.tsx` → `LorePanel.tsx`로(같은 JSX가 옮겨갔을 뿐, 기능은 그대로). `budgetKind`/`builderDifferential`/`storyOpening`/`storyInjectBuild`/`personaResolve`/`summaryWatermarkCompaction`/`userNoteInject`의 손수 만든 `lorebooks` 픽스처 스키마(`CREATE TABLE lorebooks (id, character_id)`)에 `story_id TEXT` 추가 — 이 7개는 마이그레이션 러너가 아니라 자체 스키마를 손으로 짓는 격리 벤치라 신규 컬럼을 몰라 `SQLITE_ERROR: no such column: b.story_id`로 죽었었음. `storySchema.test.ts`는 이번 항목과 무관(A2 잔여 없음, 재확인만).
 - 게이트: `npm run typecheck` EXIT 0. 전체 `bench/*.test.ts` 114개: 111 pass / 3 fence red(`settingsRegression` `characterChatWebGuards` `rpReadabilityR1` — apps/server diff nonempty, 커밋 전 정상). `git diff --stat HEAD` = 22 files(server 6 · web 6 · bench 10 · PROGRESS.md).
 - 미실행: 커밋, 빌드, 배포, 재시작, 라이브 DB. Galaxy 없음. 브라우저 실측 없음 — 키워드북 탭 CRUD 왕복은 육안 확인 필요. `story-peer-cast-*`/F9 계열 파일(`resolveFocus.ts`/`chat.ts`/`composeBeat.ts`) 미접촉.
+
+## [2026-09-10T03:26Z] `커밋` A1+A2+A8 combined commit
+
+- User: 사전에 hunk 분리 복잡성을 안내한 뒤, "하나로 묶어서 커밋" 명시적 확인.
+- 커밋 `5720b1c` (`feat(story): editor tabs, cover image, and keyword book scope (A1/A2/A8)`), 25 files changed, +514/-185. HEAD `v0.0.19-180-g5720b1c`, `git describe --dirty` 접미사 없음(clean).
+- Staged set은 A1(story-editor-tabs)/A2(story-cover-image)/A8(story-lore-scope) 파일만 명시적 경로로 추가 — `git add -A` 미사용, `.env`/`dist` 없음.
+- 커밋 후 재검증(사전 결과 111/114를 커밋 후 114/114로 미리 선언하지 않고 재실행): `npm run typecheck` EXIT 0(양쪽 워크스페이스). 전체 `bench/*.test.ts` 114개 **114 pass / 0 fail** — `settingsRegression`/`characterChatWebGuards`/`rpReadabilityR1` 펜스가 이번에 녹색으로 전환됨(server diff가 비었으므로).
+- 미실행: push, 마이그레이션 0015/0016 라이브 적용, 빌드, 배포, 재시작, A12. `resolveFocus.ts`/`chat.ts`/`composeBeat.ts` 무접촉.
+
+## [2026-09-10T03:5xZ] `story-defaults` A12 story-level creation defaults (uncommitted)
+
+- User: "a12를 수행할 수 있나요?" 질문에 대해 설계(default_profile_name + default_format, 생성 시점 기본값 대체만)를 제시하고 명시적 승인 받음. 락 토큰 `story-defaults`.
+- HEAD bind `v0.0.19-180-g5720b1c` (A1+A2+A8 커밋 완료 상태) + PROGRESS.md 기록 미커밋.
+- ADR 사전 점검: `ADR-F8`/`ADR-F8b`/`ADR-F9`에 `profile_name`/`max_tokens`/`format` 스토리 기본값을 막는 조항 없음.
+- 구현: `0017_story_defaults.sql`(`stories.default_profile_name TEXT REFERENCES model_profiles(name) ON DELETE SET NULL`, `stories.default_format TEXT`, 둘 다 nullable) · `routes/conversations.ts`의 `POST /api/conversations`에서 `profileName = d.profileName ?? story?.default_profile_name ?? 'rp-balanced'`(기존 하드코딩 대체)와 `scene.format`이 비어 있고 스토리에 `default_format`이 있을 때만 `sceneJson`에 주입(둘 다 명시적 요청값이 항상 우선) · `stories.ts`에 `default_profile_name`/`default_format`를 `cover`와 동일한 always-write 필드로 추가(POST INSERT, PUT sets/args, storySchema) · `StoryEditor.tsx` 「스토리 설정」 탭에 두 개 select 추가(`GET /api/profiles` 재사용, `rp-` 접두 프로필만 노출).
+- `resolveFocus.ts`/`chat.ts`/`composeBeat.ts`/`builder.ts`/`templates.ts` 무접촉 — `storyDefaults.test.ts` 마지막 테스트가 `git diff HEAD`로 고정.
+- 벤치 신규 `storyDefaults.test.ts`(8/8: 컬럼 nullable, POST/GET round-trip, PUT null 클리어, 생성 시 폴백 적용, 명시값 우선, 기본값 없는 스토리는 이전과 바이트 동일(`scene.format` absent 유지), 1:1 방 무영향, F9/1:1 동결 파일 diff 빈 문자열). `storySchema.test.ts`의 stories 컬럼 목록에 두 컬럼 추가(값 갱신).
+- 게이트: `npm run typecheck` EXIT 0. 전체 `bench/*.test.ts` 115개: 112 pass / 3 fence red(`settingsRegression`/`characterChatWebGuards`/`rpReadabilityR1` — server diff nonempty, 커밋 전 정상). `git diff --stat HEAD` = 7 files(server 3 · web 2 · bench 1 · PROGRESS.md) + 신규 마이그레이션·벤치 2개.
+- 미실행: 커밋, 푸시, 0017 라이브 적용, 빌드, 배포, 재시작. Galaxy 없음. 브라우저 실측 없음.
