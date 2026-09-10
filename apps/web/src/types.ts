@@ -81,6 +81,15 @@ export interface Story {
   characters?: StoryCharacter[];
 }
 
+/** POST /api/conversations story-room create body (web helper). Omit openingId = default opening. */
+export type StoryStartRequest = {
+  characterId: string;
+  storyId: string;
+  mode: 'story';
+  participantIds: string[];
+  openingId?: string;
+};
+
 /** GET /api/stories/:id/inject-preview — user-facing fields only. */
 export interface StoryInjectPreview {
   settingExcerpt: string;

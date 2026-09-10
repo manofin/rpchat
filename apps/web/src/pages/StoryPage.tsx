@@ -31,6 +31,7 @@ export function StoryPage({ id }: { id: string }) {
   const [starter, setStarter] = useState(false);
   const [startPick, setStartPick] = useState('');
   const [rosterIds, setRosterIds] = useState<string[]>([]);
+  const [openingPick, setOpeningPick] = useState('');
   const [previewKind, setPreviewKind] = useState<PreviewKind>('idle');
   const [preview, setPreview] = useState<StoryInjectPreview | null>(null);
   const [previewRetry, setPreviewRetry] = useState(0);
@@ -125,6 +126,7 @@ export function StoryPage({ id }: { id: string }) {
           characterId: startPick,
           storyId: id,
           selectedIds: rosterIds,
+          openingId: openingPick,
         }),
       );
       setStarter(false);
@@ -210,6 +212,7 @@ export function StoryPage({ id }: { id: string }) {
             onClick={() => {
               setStartPick(hosted.length === 1 ? hosted[0].character_id : '');
               setRosterIds(hosted.map((c) => c.character_id));
+              setOpeningPick('');
               setStarter(true);
             }}
             style={{ marginTop: 18 }}
@@ -238,6 +241,17 @@ export function StoryPage({ id }: { id: string }) {
               ))}
             </select>
           </div>
+          {(story.openings_extra ?? []).length > 0 && (
+            <div className="field">
+              <label>시작 설정</label>
+              <select value={openingPick} onChange={(e) => setOpeningPick(e.target.value)} disabled={starting}>
+                <option value="">기본</option>
+                {(story.openings_extra ?? []).map((e) => (
+                  <option key={e.id} value={e.id}>{e.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="field">
             <label>참가 캐릭터</label>
             <div>
