@@ -66,6 +66,17 @@ export interface StoryEnding {
   title: string;
   description: string;
   badge_label: string;
+  /**
+   * ADR-F8h evaluator conditions. Absent = 판정 대상 아님 (and D1: still manually
+   * reachable). No editor UI in this slice — StoryEditor round-trips it untouched
+   * so an unrelated save cannot erase it.
+   */
+  conditions?: {
+    min_turns?: number;
+    required_stats?: Record<string, { gte?: number; lte?: number }>;
+    required_flags?: string[];
+    narrative_hint?: string;
+  };
 }
 
 export interface Story {

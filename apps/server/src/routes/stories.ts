@@ -20,7 +20,30 @@ import type { CharacterRow, ConversationRow, LoreEntryRow, StoryCharacterRow, St
 
 export type StoryOpeningExtra = { id: string; label: string; opening_json: string };
 
-export type StoryEnding = { id: string; title: string; description: string; badge_label: string };
+/**
+ * ADR-F8h §4: evaluator conditions. Absent = 판정 대상 아님 — the evaluator skips
+ * the ending entirely, and (D1) the reader may still reach it manually exactly as
+ * F8g E2a allows. Present = every listed rule must hold before the ending can be
+ * confirmed. No column of its own: this rides inside `endings_json`, so the F8g
+ * E4a snapshot (raw-string copy at room creation) freezes conditions with it.
+ *
+ * This slice (`story-ending-conditions-schema`) only stores and round-trips the
+ * shape. Nothing reads it yet — the rule engine is `story-ending-eval-rule`.
+ */
+export type StoryEndingConditions = {
+  min_turns?: number;
+  required_stats?: Record<string, { gte?: number; lte?: number }>;
+  required_flags?: string[];
+  narrative_hint?: string;
+};
+
+export type StoryEnding = {
+  id: string;
+  title: string;
+  description: string;
+  badge_label: string;
+  conditions?: StoryEndingConditions;
+};
 
 /** Damaged / non-array → [] (GET/POST fallback). Authorship 400 lives in the PUT handler. */
 export function parseOpeningsExtra(raw: string | null | undefined): StoryOpeningExtra[] {
@@ -63,6 +86,41 @@ function storedOpeningsExtra(extras: StoryOpeningExtra[]): string {
   );
 }
 
+/**
+ * ADR-F8h: read side only. A damaged/partial `conditions` degrades to `undefined`
+ * (= 판정 대상 아님) rather than to an empty object, because `{}` would mean "no
+ * rule to fail" and D1 would then gate the ending behind a check that trivially
+ * passes. Authorship 400 lives in the PUT handler; this is the GET/snapshot path.
+ */
+function parseEndingConditions(raw: unknown): StoryEndingConditions | undefined {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return undefined;
+  const rec = raw as Record<string, unknown>;
+  const out: StoryEndingConditions = {};
+  if (typeof rec.min_turns === 'number' && Number.isInteger(rec.min_turns) && rec.min_turns >= 1) {
+    out.min_turns = rec.min_turns;
+  }
+  if (typeof rec.required_stats === 'object' && rec.required_stats !== null && !Array.isArray(rec.required_stats)) {
+    const stats: Record<string, { gte?: number; lte?: number }> = {};
+    for (const [statId, bound] of Object.entries(rec.required_stats as Record<string, unknown>)) {
+      if (typeof bound !== 'object' || bound === null || Array.isArray(bound)) continue;
+      const b = bound as Record<string, unknown>;
+      const one: { gte?: number; lte?: number } = {};
+      if (typeof b.gte === 'number' && Number.isFinite(b.gte)) one.gte = b.gte;
+      if (typeof b.lte === 'number' && Number.isFinite(b.lte)) one.lte = b.lte;
+      if (one.gte !== undefined || one.lte !== undefined) stats[statId] = one;
+    }
+    if (Object.keys(stats).length) out.required_stats = stats;
+  }
+  if (Array.isArray(rec.required_flags)) {
+    const flags = rec.required_flags.filter((f): f is string => typeof f === 'string' && f.trim().length > 0);
+    if (flags.length) out.required_flags = flags;
+  }
+  if (typeof rec.narrative_hint === 'string' && rec.narrative_hint.trim().length > 0) {
+    out.narrative_hint = rec.narrative_hint;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
 /** Damaged / non-array → [] (GET fallback). Authorship 400 lives in the PUT handler. */
 export function parseEndings(raw: string | null | undefined): StoryEnding[] {
   if (raw == null || raw === '') return [];
@@ -89,7 +147,8 @@ export function parseEndings(raw: string | null | undefined): StoryEnding[] {
     if (!id || id.length > 64 || !title || title.length > 40) continue;
     if (seen.has(id)) continue;
     seen.add(id);
-    out.push({ id, title, description, badge_label });
+    const conditions = parseEndingConditions(rec.conditions);
+    out.push(conditions ? { id, title, description, badge_label, conditions } : { id, title, description, badge_label });
     if (out.length >= 7) break;
   }
   return out;
@@ -102,6 +161,9 @@ function storedEndings(endings: StoryEnding[]): string {
       title: e.title.trim(),
       description: e.description,
       badge_label: e.badge_label,
+      // ADR-F8h: omit the key entirely when absent so an ending without conditions
+      // keeps a byte-identical stored shape to everything written before F8h.
+      ...(e.conditions ? { conditions: e.conditions } : {}),
     })),
   );
 }
@@ -317,6 +379,19 @@ const storySchema = z.object({
           title: z.string().max(40),
           description: z.string().max(2000).optional().default(''),
           badge_label: z.string().max(40).optional().default(''),
+          // ADR-F8h §4. `.strict()` on both levels: an unknown key is a 400, never a
+          // silent strip (f9-catalog-write 교훈). Absent = 판정 대상 아님.
+          conditions: z
+            .object({
+              min_turns: z.number().int().min(1).optional(),
+              required_stats: z
+                .record(z.object({ gte: z.number().optional(), lte: z.number().optional() }).strict())
+                .optional(),
+              required_flags: z.array(z.string().min(1).max(64)).max(20).optional(),
+              narrative_hint: z.string().max(500).optional(),
+            })
+            .strict()
+            .optional(),
         })
         .strict(),
     )
@@ -336,6 +411,42 @@ const storySchema = z.object({
           ctx.addIssue({ code: z.ZodIssueCode.custom, message: `duplicate id ${id}`, path: [i, 'id'] });
         }
         if (id) seen.add(id);
+        // ADR-F8h §4: `conditions: {}` would be "no rule to fail", which under D1
+        // gates the ending behind a check that always passes — an authoring
+        // mistake that looks like a working condition. Reject it outright.
+        const c = row.conditions;
+        if (c !== undefined) {
+          const keys = Object.keys(c).filter((k) => c[k as keyof typeof c] !== undefined);
+          if (keys.length === 0) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: 'conditions needs at least one of min_turns/required_stats/required_flags/narrative_hint',
+              path: [i, 'conditions'],
+            });
+          }
+          for (const [statId, bound] of Object.entries(c.required_stats ?? {})) {
+            if (bound.gte === undefined && bound.lte === undefined) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: `required_stats.${statId} needs gte or lte`,
+                path: [i, 'conditions', 'required_stats', statId],
+              });
+            } else if (bound.gte !== undefined && bound.lte !== undefined && bound.gte > bound.lte) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: `required_stats.${statId} gte > lte is unsatisfiable`,
+                path: [i, 'conditions', 'required_stats', statId],
+              });
+            }
+          }
+          if (c.required_flags && new Set(c.required_flags).size !== c.required_flags.length) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: 'required_flags has duplicates',
+              path: [i, 'conditions', 'required_flags'],
+            });
+          }
+        }
       });
     })
     .optional(),

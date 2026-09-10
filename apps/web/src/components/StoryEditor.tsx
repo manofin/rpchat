@@ -62,7 +62,19 @@ const OPENING_EXTRA_MAX = 7;
 type ExtraDraft = OpeningDraft & { id: string; label: string };
 
 const ENDINGS_MAX = 7;
-type EndingDraft = { id: string; title: string; description: string; badge_label: string };
+/**
+ * ADR-F8h: `conditions` has no editor UI yet (that is the eval-ui slice), but the
+ * PUT body replaces the whole `endings` array — so an ending authored with
+ * conditions would lose them on the next unrelated save. Same failure the
+ * `EMPTY_CATALOG_REST` round-trip above exists to prevent. Carried untouched.
+ */
+type EndingDraft = {
+  id: string;
+  title: string;
+  description: string;
+  badge_label: string;
+  conditions?: StoryEnding['conditions'];
+};
 
 function openingFieldsFrom(o: StoryOpening | undefined): OpeningDraft {
   return {
@@ -101,7 +113,13 @@ function emptyExtra(existing: ExtraDraft[]): ExtraDraft {
 }
 
 function endingToDraft(e: StoryEnding): EndingDraft {
-  return { id: e.id, title: e.title, description: e.description ?? '', badge_label: e.badge_label ?? '' };
+  return {
+    id: e.id,
+    title: e.title,
+    description: e.description ?? '',
+    badge_label: e.badge_label ?? '',
+    ...(e.conditions ? { conditions: e.conditions } : {}),
+  };
 }
 
 function emptyEnding(existing: EndingDraft[]): EndingDraft {
@@ -270,6 +288,8 @@ export function StoryEditor({
             title: e.title.trim(),
             description: e.description,
             badge_label: e.badge_label,
+            // ADR-F8h round-trip — never authored here, never dropped here.
+            ...(e.conditions ? { conditions: e.conditions } : {}),
           }))
           .filter((e) => e.id && e.title)
           .slice(0, ENDINGS_MAX),
