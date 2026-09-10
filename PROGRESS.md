@@ -4306,3 +4306,15 @@ BACKLOG:
   - `storyOpeningsStartUi`는 Slice 3 WT 펜스 dirty로 exit 1이었으며 feat 안착 후 해소 예정
 - Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. Live ALTER/0020 미적용.
 
+## [2026-09-10T11:45:41Z] `story-endings-slice2-commit` A11 Slice 2 endings authoring UI
+
+- Token `story-endings-slice2-commit` MODE commit SCOPE feat BASE `d37b27cc4845a3476b2b6ccbd1e0790c4bf5463b`. Parent of feat = BASE.
+- Feat commit `0cf0c1b8e26681f0be6e47db6923a98ce9cff80a` (`feat(story): endings authoring UI in editor (A11)`), 3 files, +155/-2. `git describe --tags` `v0.0.19-195-g0cf0c1b`.
+  - `apps/web/src/types.ts` — `StoryEnding` + `Story.endings`
+  - `apps/web/src/components/StoryEditor.tsx` — `endings` 탭, CRUD, 캡 7, PUT/POST `endings` 송신
+  - `bench/storyEndingsEditor.test.ts` (new, 5 passed)
+- Slice 3 Runtime UI / pipeline / schema / live 0020 무접촉.
+- Gates this bind (workdir `/home/hermes/rpchat/app`):
+  - `git diff --cached --check` empty EXIT 0
+  - web `tsc --noEmit` 0; `storyEndingsEditor` 5, 전 벤치 exit 0
+- Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. Live ALTER/0020 미적용.
