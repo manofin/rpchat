@@ -38,6 +38,7 @@ import { extractChoices } from '../prompt/templates.js';
 import { estimateTokens, updateCalibration } from '../prompt/tokens.js';
 import type { ConversationRow, MessageRow, Scene } from '../types.js';
 import { loadConversation } from './conversations.js';
+import { fireEndingEvalJob } from '../endingJudge.js';
 
 function storyFocusPlanFields(conv: ConversationRow): {
   story_room: boolean;
@@ -374,6 +375,8 @@ export function chatRoutes(ctx: Ctx) {
         if (result.usage?.prompt_tokens) updateCalibration(db, estPrompt, result.usage.prompt_tokens);
         logRow('complete', { actual: result.usage?.prompt_tokens ?? null, completion: result.usage?.completion_tokens ?? null, ttft: result.ttftMs, total: result.totalMs, finish: result.finishReason });
         sse.send({ type: 'done', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', assistant.id)!), usage: result.usage, ttftMs: result.ttftMs, totalMs: result.totalMs, budget: sseBudget(built.budget) });
+        // ADR-F8h Slice 3 (V2): 스트리밍 완료 직후 백그라운드 판정 (non-blocking, OOC 제외).
+        if (!built.isOoc) void fireEndingEvalJob(ctx, conv.id);
 
       }, controller.signal);
     } catch (err) {
@@ -775,6 +778,8 @@ export function chatRoutes(ctx: Ctx) {
         message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', closing.id)!),
         usage: null, ttftMs: null, totalMs: Date.now() - tBeat,
       });
+      // ADR-F8h Slice 3 (V2): beat 완료 직후 백그라운드 판정 (non-blocking).
+      void fireEndingEvalJob(ctx, conv.id);
     } catch (err) {
       const aborted = wasAborted(controller, err);
       const msg = err instanceof ModelError ? err.message : (err as Error)?.name === 'TimeoutError' ? '모델 응답 시간 초과' : (err as Error).message;
@@ -1077,6 +1082,8 @@ export function chatRoutes(ctx: Ctx) {
         message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', scriptRow.id)!),
         usage: null, ttftMs: null, totalMs: Date.now() - tBeat,
       });
+      // ADR-F8h Slice 3 (V2): dialog 완료 직후 백그라운드 판정 (non-blocking).
+      void fireEndingEvalJob(ctx, conv.id);
     } catch (err) {
       const aborted = wasAborted(controller, err);
       const msg = err instanceof ModelError ? err.message : (err as Error)?.name === 'TimeoutError' ? '모델 응답 시간 초과' : (err as Error).message;
@@ -1361,6 +1368,8 @@ export function chatRoutes(ctx: Ctx) {
         message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', scriptRow.id)!),
         usage: null, ttftMs: null, totalMs: Date.now() - tBeat,
       });
+      // ADR-F8h Slice 3 (V2): hunter 완료 직후 백그라운드 판정 (non-blocking).
+      void fireEndingEvalJob(ctx, conv.id);
     } catch (err) {
       const aborted = wasAborted(controller, err);
       const msg = err instanceof ModelError ? err.message : (err as Error)?.name === 'TimeoutError' ? '모델 응답 시간 초과' : (err as Error).message;
