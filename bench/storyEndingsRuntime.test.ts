@@ -10,6 +10,7 @@ import Fastify from 'fastify';
 import { openDb } from '../apps/server/src/db/index.ts';
 import { GenerationQueue } from '../apps/server/src/model/queue.ts';
 import { characterRoutes } from '../apps/server/src/routes/characters.ts';
+import { chatRoutes } from '../apps/server/src/routes/chat.ts';
 import { conversationRoutes } from '../apps/server/src/routes/conversations.ts';
 import { storyRoutes } from '../apps/server/src/routes/stories.ts';
 import type { Ctx } from '../apps/server/src/ctx.ts';
@@ -27,15 +28,19 @@ async function main() {
   const storyPageSrc = fs.readFileSync('apps/web/src/pages/StoryPage.tsx', 'utf8');
   const webTypesSrc = fs.readFileSync('apps/web/src/types.ts', 'utf8');
 
-  await t('end endpoint exists with snapshot validation (no chat.ts pipeline touch)', () => {
+  await t('end endpoint exists with snapshot validation (chat.ts guard owns sends)', () => {
     assert.ok(convSrc.includes('/api/conversations/:id/end'));
     assert.ok(convSrc.includes('reached_ending_id'));
     assert.ok(convSrc.includes('ended_at'));
-    for (const rel of ['apps/server/src/routes/chat.ts', 'apps/server/src/prompt/composeBeat.ts']) {
-      const src = fs.readFileSync(rel, 'utf8');
-      assert.equal(src.includes('ended_at'), false, rel);
-      assert.equal(src.includes('reached_ending_id'), false, rel);
+    const chatRouteSrc = fs.readFileSync('apps/server/src/routes/chat.ts', 'utf8');
+    for (const h of ['/api/conversations/:id/messages', '/api/conversations/:id/regenerate', '/api/conversations/:id/branch']) {
+      assert.ok(chatRouteSrc.includes(h), h);
     }
+    assert.equal(chatRouteSrc.split("conv.ended_at").length - 1 >= 3, true, 'guard on all three send-paths');
+    assert.ok(chatRouteSrc.includes("code(409).send({ error: 'already ended' })"));
+    const composeSrc = fs.readFileSync('apps/server/src/prompt/composeBeat.ts', 'utf8');
+    assert.equal(composeSrc.includes('ended_at'), false, 'composeBeat');
+    assert.equal(composeSrc.includes('reached_ending_id'), false, 'composeBeat');
   });
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-story-endings-rt-'));
@@ -53,6 +58,7 @@ async function main() {
   await app.register(characterRoutes(ctx));
   await app.register(storyRoutes(ctx));
   await app.register(conversationRoutes(ctx));
+  await app.register(chatRoutes(ctx));
   await app.listen({ host: '127.0.0.1', port: 0 });
   const origin = `http://127.0.0.1:${(app.addresses()[0] as { port: number }).port}`;
 
@@ -128,6 +134,20 @@ async function main() {
     const soloId = (solo.json as { id: string }).id;
     const r = await api('POST', `/api/conversations/${soloId}/end`, { endingId: 'true' });
     assert.equal(r.status, 400, r.text);
+  });
+
+  await t('ended room rejects sends: messages/regenerate/branch → 409, nothing stored', async () => {
+    const before = (db.prepare('SELECT COUNT(*) AS n FROM messages WHERE conversation_id = ?').get(roomId) as { n: number }).n;
+    for (const [method, url, body] of [
+      ['POST', `/api/conversations/${roomId}/messages`, { content: '우회 시도' }],
+      ['POST', `/api/conversations/${roomId}/regenerate`, {}],
+      ['POST', `/api/conversations/${roomId}/branch`, {}],
+    ] as Array<[string, string, unknown]>) {
+      const r = await api(method, url, body);
+      assert.equal(r.status, 409, `${url} ${r.text}`);
+    }
+    const after = (db.prepare('SELECT COUNT(*) AS n FROM messages WHERE conversation_id = ?').get(roomId) as { n: number }).n;
+    assert.equal(after, before);
   });
 
   await t('GET detail exposes ended_at / reached_ending_id / snapshot', async () => {

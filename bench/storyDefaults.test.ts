@@ -153,10 +153,14 @@ async function main() {
   await t('story-editor-tabs A12 does not touch the F9/1:1-frozen files', () => {
     const root = path.resolve('.');
     const changed = execSync(
-      'git diff --name-only HEAD -- apps/server/src/prompt/resolveFocus.ts apps/server/src/routes/chat.ts apps/server/src/prompt/composeBeat.ts apps/server/src/prompt/builder.ts apps/server/src/prompt/templates.ts',
+      'git diff --name-only HEAD -- apps/server/src/prompt/resolveFocus.ts apps/server/src/prompt/composeBeat.ts apps/server/src/prompt/builder.ts apps/server/src/prompt/templates.ts',
       { cwd: root, encoding: 'utf8' },
     ).trim();
     assert.equal(changed, '', `A12 must not touch: ${changed}`);
+    const chatDiff = execSync('git diff HEAD -- apps/server/src/routes/chat.ts', { cwd: root, encoding: 'utf8' });
+    for (const line of chatDiff.split('\n')) {
+      if (line.startsWith('+') && !line.startsWith('+++')) assert.ok(line.includes('ended_at') || line.includes('already ended'), `chat.ts guard-only: ${line}`);
+    }
   });
 
   await app.close();

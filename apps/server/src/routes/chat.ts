@@ -1405,6 +1405,7 @@ export function chatRoutes(ctx: Ctx) {
     app.post<{ Params: { id: string } }>('/api/conversations/:id/messages', async (req, reply) => {
       const conv = loadConversation(ctx, req.params.id);
       if (!conv) return reply.code(404).send({ error: 'not found' });
+      if (conv.ended_at) return reply.code(409).send({ error: 'already ended' });
       const p = sendSchema.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
       if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
@@ -1416,6 +1417,7 @@ export function chatRoutes(ctx: Ctx) {
     app.post<{ Params: { id: string } }>('/api/conversations/:id/regenerate', async (req, reply) => {
       const conv = loadConversation(ctx, req.params.id);
       if (!conv) return reply.code(404).send({ error: 'not found' });
+      if (conv.ended_at) return reply.code(409).send({ error: 'already ended' });
       const p = regenSchema.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ? AND conversation_id = ?', p.data.messageId, conv.id);
@@ -1450,6 +1452,7 @@ export function chatRoutes(ctx: Ctx) {
     app.post<{ Params: { id: string } }>('/api/conversations/:id/branch', async (req, reply) => {
       const conv = loadConversation(ctx, req.params.id);
       if (!conv) return reply.code(404).send({ error: 'not found' });
+      if (conv.ended_at) return reply.code(409).send({ error: 'already ended' });
       const p = branchSchema.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ? AND conversation_id = ?', p.data.messageId, conv.id);

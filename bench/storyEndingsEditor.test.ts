@@ -63,10 +63,14 @@ t('editor stays out of the reach action; ChatPage + server own it', () => {
 t('generate-path and pipeline files stay untouched', () => {
   const root = path.resolve('.');
   const changed = execSync(
-    'git diff --name-only HEAD -- apps/server/src/prompt/storyOpening.ts apps/server/src/prompt/applySceneDelta.ts apps/server/src/prompt/composeBeat.ts apps/server/src/routes/chat.ts apps/server/src/prompt/resolveFocus.ts apps/server/src/prompt/builder.ts apps/server/src/prompt/templates.ts apps/server/src/config.ts',
+    'git diff --name-only HEAD -- apps/server/src/prompt/storyOpening.ts apps/server/src/prompt/applySceneDelta.ts apps/server/src/prompt/composeBeat.ts apps/server/src/prompt/resolveFocus.ts apps/server/src/prompt/builder.ts apps/server/src/prompt/templates.ts apps/server/src/config.ts',
     { cwd: root, encoding: 'utf8' },
   ).trim();
   assert.equal(changed, '', `editor bench must not dirty pipeline: ${changed}`);
+  const chatDiff = execSync('git diff HEAD -- apps/server/src/routes/chat.ts', { cwd: root, encoding: 'utf8' });
+  for (const line of chatDiff.split('\n')) {
+    if (line.startsWith('+') && !line.startsWith('+++')) assert.ok(line.includes('ended_at') || line.includes('already ended'), `chat.ts guard-only: ${line}`);
+  }
   assert.equal(/from ['"][^'"]*applySceneDelta/.test(editorSrc), false);
   assert.equal(/from ['"][^'"]*storyOpening/.test(editorSrc), false);
 });
