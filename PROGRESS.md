@@ -4208,3 +4208,21 @@ BACKLOG:
 - 벤치 신규 `storyDefaults.test.ts`(8/8: 컬럼 nullable, POST/GET round-trip, PUT null 클리어, 생성 시 폴백 적용, 명시값 우선, 기본값 없는 스토리는 이전과 바이트 동일(`scene.format` absent 유지), 1:1 방 무영향, F9/1:1 동결 파일 diff 빈 문자열). `storySchema.test.ts`의 stories 컬럼 목록에 두 컬럼 추가(값 갱신).
 - 게이트: `npm run typecheck` EXIT 0. 전체 `bench/*.test.ts` 115개: 112 pass / 3 fence red(`settingsRegression`/`characterChatWebGuards`/`rpReadabilityR1` — server diff nonempty, 커밋 전 정상). `git diff --stat HEAD` = 7 files(server 3 · web 2 · bench 1 · PROGRESS.md) + 신규 마이그레이션·벤치 2개.
 - 미실행: 커밋, 푸시, 0017 라이브 적용, 빌드, 배포, 재시작. Galaxy 없음. 브라우저 실측 없음.
+
+## [2026-09-10T05:01:51Z] `story-editor-tabs-a9-shortcuts` A9 client-only slash macros
+
+- Pre-docs-commit bind: `date -u` `2026-09-10T05:01:51Z`, `git describe --tags --always --dirty` `v0.0.19-183-ga6abf04`, HEAD `a6abf0453df8ebc4aa883d721ca0245b70d8d951`, tracked dirty paths none (this file uncommitted).
+- Token `story-editor-tabs-a9-shortcuts` MODE commit SCOPE feat BASE `afb826a` PATHS 5. Parent of feat = `afb826a2967b91fc15beb47cb7ed8b5bc5dbd43e`.
+- Feat commit `a6abf0453df8ebc4aa883d721ca0245b70d8d951` (`feat(story): client-only slash shortcuts per story (A9)`), 5 files, +360/-5.
+  - `apps/web/src/lib/shortcutMacro.ts` (new)
+  - `bench/shortcutMacro.test.ts` (new)
+  - `apps/web/src/components/StoryEditor.tsx`
+  - `apps/web/src/pages/ChatPage.tsx`
+  - `apps/web/src/types.ts` (`Conversation.story_id: string | null` type-only)
+- D3=a: localStorage `rpchat.shortcuts.<storyId>`, max 20, never on PUT `/api/stories`. Expand `/name` with delimiter on input; bare `/name` on submit only.
+- Gates this bind (workdir `/home/hermes/rpchat/app`):
+  - `npx tsx bench/shortcutMacro.test.ts` passed 7 EXIT 0
+  - web `tsc --noEmit` WEB_TC:0; server `tsc --noEmit` SERVER_TC:0
+  - storyDetail 7, storyAuthoringUi 8, storyInjectUi 7, storyTabs 5
+  - `git diff HEAD -- apps/server` empty
+- Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. A7 not in this commit.
