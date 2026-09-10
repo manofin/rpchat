@@ -4289,3 +4289,20 @@ BACKLOG:
   - web `tsc --noEmit` TSC:0
   - `storyOpeningsStartUi` 7, `storyOpeningsEditor` 6, storyOpening 13, storyStats 10, storyDefaults 8, storyPeerCastStartUi 16, storyAuthoringUi 8, storyInjectUi 7, storyDetail 7, storyOpeningsExtra 11
 - Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. Live ALTER/0019 미적용.
+
+## [2026-09-10T11:40:53Z] `story-endings-slice1-commit` A11 Slice 1 endings schema & snapshot
+
+- Token `story-endings-slice1-commit` MODE commit SCOPE feat BASE `4805762dd015d62d9f71054f307ac07450e929f6`. Parent of feat = BASE.
+- Feat commit `e8ecf1e2874d5af60a21f466aac6dacbbab439ae` (`feat(story): endings schema and conversation snapshot (A11)`), 5 files, +348/-6. `git describe --tags` `v0.0.19-193-ge8ecf1e`.
+  - `apps/server/migrations/0020_story_endings.sql` (new) — `stories.endings_json DEFAULT '[]'` + conversations 3열
+  - `apps/server/src/routes/stories.ts` — `StoryEnding`/`parseEndings`/`storedEndings`, `storyOut.endings`, zod max 7·id 유일·title 1–40, POST/PUT omit=preserve
+  - `apps/server/src/routes/conversations.ts` — 생성 시 `endings_json` 원문 복사, 1:1 NULL
+  - `apps/server/src/types.ts` — `StoryRow.endings_json`, `ConversationRow` 3열
+  - `bench/storyEndings.test.ts` (new, 9 passed)
+- ADR-F8g accepted (app git 밖, 이 커밋에 없음).
+- Gates this bind (workdir `/home/hermes/rpchat/app`):
+  - `git diff --cached --check` empty EXIT 0; secret/forbidden-path scan 0
+  - server/web `tsc --noEmit` 0; `storyEndings` 9, storyOpening 13, storyStats 10, storyDefaults 8, storyPeerCastStartUi 16, storyAuthoringUi 8, storyInjectUi 7, storyDetail 7, storyOpeningsExtra 11, storyOpeningsEditor 6
+  - `storyOpeningsStartUi`는 Slice 3 WT 펜스 dirty로 exit 1이었으며 feat 안착 후 해소 예정
+- Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. Live ALTER/0020 미적용.
+
