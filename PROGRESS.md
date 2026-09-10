@@ -4123,3 +4123,27 @@ BACKLOG:
 - Not recorded as complete: push, deploy, restart, F8e start-ui,
   F8e generate, Galaxy device verification, Galaxy checklist completion.
   The Galaxy checklist remains 55 unchecked, 0 checked.
+
+## [2026-09-09] ADR remainder: F8e generate + F8d opening (uncommitted)
+
+- User: ADR 미구현 내역 구현. 커밋/배포/재시작/라이브 DB 쓰기 0.
+- HEAD bind `v0.0.19-176-g1226a8d` (`1226a8d4af51de594e2b644f9255425628c871a2`) clean at start.
+- ADR inventory:
+  - F5 accepted-A — World 제품 없음. 구현하지 않음.
+  - F8 / F8b / F8c / F9 — already shipped.
+  - F8e extra-policy/schema/start-ui/focus already in HEAD. Remaining generate gap closed this slice.
+  - F8d opening — 0013 was taken by F8e participant snapshot, so schema is `0014_story_opening.sql`.
+  - F9c clock-advance — 기본 진행량 미확정 (`1/2/3/5`), reframe 전. 구현하지 않음.
+- F8e generate:
+  - `storyCastForGenerate`: snapshot ≥ 2 → beat cast without `party:` tags (E1/F1). snapshot 1 → 1:1. NULL snapshot → tagged `partyCastForGenerate` (legacy).
+  - chat.ts reads frozen snapshot characters, not live `story_characters`.
+  - `planBeat` story_room uses `approveStoryExtras` (C1, K=2, focus-null extras 0). `chat.ts` still does not import that module.
+  - regen user text: `userTextFrom(parent)` so C-focus-β does not turn every regenerate into Pass N.
+- F8d opening:
+  - `stories.opening_json` default `'{}'` + `conversations.story_opening_snapshot` raw copy.
+  - PUT omit=preserve, explicit `{}` empties, field 400 (clock 1440 / day 0 / foreign present_id).
+  - POST overlay field-by-field (4-A drop, not block). Greeting: non-empty story string wins even on party; empty party still suppresses character `first_message`.
+  - 1:1 prompt 3-A: `opening.scenario` replaces card scenario, no concat. `PROMPT_VERSION` `2026.08.22-r1+story+compact+roster+opening`.
+  - StoryEditor 오프닝 필드. `StoryPage` hosted checkboxes for `present_ids`.
+- Gates: `npm run typecheck` EXIT 0. New benches `storyPeerCastGenerate` 11/11, `storyOpening` 13/13. Full `bench/*.test.ts` 114 files, 111 pass / 3 fence red (`settingsRegression` `characterChatWebGuards` `rpReadabilityR1`) = `git diff HEAD -- apps/server` nonempty until commit. Do not edit the fences.
+- 미실행: 커밋, 푸시, 배포, 재시작, 라이브 0014 ALTER, generate. Galaxy 없음. StoryEditor는 브라우저 도구가 없어 UI 실측 없음.
