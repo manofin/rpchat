@@ -4260,3 +4260,16 @@ BACKLOG:
   - implement-session (pre-commit): `npx tsx bench/storyOpeningsExtra.test.ts` 11 passed EXIT 0; storyOpening 13, storyStats 10, storyDefaults 8, storyPeerCastStartUi 16
 - ADR `planning_documents/ADR-F8f-story-multi-opening.md` Status accepted (app git 밖, 이 커밋에 없음).
 - Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. Live ALTER/0019 미적용. Slice 2 Editor / Slice 3 Start-UI 미착수.
+
+## [2026-09-10T08:46:17Z] `story-multi-opening-slice2-commit` A6 Slice 2 extra openings editor UI
+
+- Token `story-multi-opening-slice2-commit` MODE commit SCOPE feat BASE `4edd89400bb240a72b90b02d7f58fe563f663046`. Parent of feat = BASE.
+- Feat commit `8fe72192fdb1e0c2b3147eee8942671e950fe45a` (`feat(story): extra openings editor UI (A6)`), 3 files, +249/-30. `git describe --tags` `v0.0.19-189-g8fe7219`.
+  - `apps/web/src/types.ts` — `StoryOpeningExtra`; `Story.openings_extra` (wire; column `openings_extra_json` comment-only)
+  - `apps/web/src/components/StoryEditor.tsx` — default opening kept (no delete); extras add/edit/delete, cap 7; PUT/POST `openings_extra` always sent (`opening_json` = JSON.stringify F8d)
+  - `bench/storyOpeningsEditor.test.ts` (new)
+- Slice 3 Start-UI / pipeline / schema / live 0019 무접촉. omit=preserve remains server-side (editor sends the key).
+- Gates this bind (workdir `/home/hermes/rpchat/app`):
+  - `git diff --cached --check` empty EXIT 0; secret/forbidden-path scan 0
+  - implement-session (pre-commit): web `tsc --noEmit` TSC:0; `npx tsx bench/storyOpeningsEditor.test.ts` 6 passed EXIT 0; storyOpening 13, storyStats 10, storyDefaults 8, storyPeerCastStartUi 16, storyAuthoringUi 8, storyOpeningsExtra 11, storyDetail 7
+- Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. Live ALTER/0019 미적용. Slice 3 Start-UI 미착수.
