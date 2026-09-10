@@ -197,7 +197,12 @@ async function main() {
     const stories = fs.readFileSync('apps/server/src/routes/stories.ts', 'utf8');
     assert.equal(/conditions not met/.test(stories), false, '403 guard belongs to story-ending-eval-rule');
     const convs = fs.readFileSync('apps/server/src/routes/conversations.ts', 'utf8');
-    assert.equal(/conditions/.test(convs), false, 'the /end route stays F8g-only in this slice');
+    // Slice 2 (story-ending-eval-rule, ADR-F8h §8) owns the confirm-path
+    // revalidation — 403 conditions-not-met + 409 stale-suggestion live in
+    // conversations.ts now. Slice 1's remaining invariant is that the F8g
+    // guards it shipped are intact, not bypassed or removed.
+    assert.ok(/already ended/.test(convs), 'F8g 409 already-ended guard intact');
+    assert.ok(/unknown endingId/.test(convs), 'F8g 400 unknown-endingId guard intact');
   });
 
   await t('StoryEditor round-trips conditions instead of erasing them on save', () => {

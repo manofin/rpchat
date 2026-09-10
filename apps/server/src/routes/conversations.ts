@@ -14,6 +14,7 @@ import { applyOpeningOverlay, parseOpening } from '../prompt/storyOpening.js';
 import type { CharacterRow, ConversationRow, MessageRow, PersonaRow, Scene, StoryRow } from '../types.js';
 import { characterOut, personaOut } from './characters.js';
 import { parseEndings, parseOpeningsExtra } from './stories.js';
+import { evalRoomEnding, suggestEndings } from '../endingEval.js';
 
 const sceneSchema = z.object({
   place: z.string().max(300).optional(),
@@ -430,20 +431,48 @@ export function conversationRoutes(ctx: Ctx) {
 
     // ADR-F8g E2a/E3a: reader manual reach. Snapshot join only — the live
     // story row is never re-read, so later authoring edits cannot dangle this.
+    // ADR-F8h §5.1: confirm-time re-validation. The suggestion is never
+    // trusted — rules are recomputed from the live room. `conditions` on the
+    // ending gates BOTH the suggestion path and the manual path (D1).
+    // No 410: v1 stores no suggestions, so past eligibility is unknowable.
     app.post<{ Params: { id: string } }>('/api/conversations/:id/end', async (req, reply) => {
       const conv = loadConversation(ctx, req.params.id);
       if (!conv) return reply.code(404).send({ error: 'not found' });
       if (conv.ended_at) return reply.code(409).send({ error: 'already ended' });
       if (!conv.story_id) return reply.code(400).send({ error: 'not a story room' });
-      const body = (req.body ?? {}) as { endingId?: unknown };
+      const body = (req.body ?? {}) as { endingId?: unknown; turnId?: unknown };
       const endingId = typeof body.endingId === 'string' ? body.endingId.trim() : '';
       if (!endingId) return reply.code(400).send({ error: 'endingId required' });
-      if (!parseEndings(conv.story_endings_snapshot).some((e) => e.id === endingId)) {
+      const ending = parseEndings(conv.story_endings_snapshot).find((e) => e.id === endingId);
+      if (!ending) {
         return reply.code(400).send({ error: 'unknown endingId' });
+      }
+      // Suggestion-path only: the client echoes the `turn_id` it was shown.
+      // Manual reach sends no turnId and skips the staleness check.
+      if (body.turnId !== undefined) {
+        const turnId = typeof body.turnId === 'string' ? body.turnId : '';
+        if (turnId !== conv.head_message_id) {
+          return reply.code(409).send({ error: 'stale suggestion' });
+        }
+      }
+      if (ending.conditions) {
+        const r = evalRoomEnding(db, conv, ending.conditions);
+        if (!r.pass) {
+          return reply.code(403).send({ error: 'conditions not met' });
+        }
       }
       const t = nowIso();
       run(db, 'UPDATE conversations SET ended_at = ?, reached_ending_id = ?, updated_at = ? WHERE id = ?', t, endingId, t, conv.id);
       return conversationOut(loadConversation(ctx, conv.id)!);
+    });
+
+    // ADR-F8h Slice 2: rule-only suggestion read. Pure recompute per call —
+    // no persistence, no model, no ended_at write. Ended / non-story rooms
+    // yield an empty list (the Job never runs there either — 제약 1).
+    app.get<{ Params: { id: string } }>('/api/conversations/:id/ending-suggestions', async (req, reply) => {
+      const conv = loadConversation(ctx, req.params.id);
+      if (!conv) return reply.code(404).send({ error: 'not found' });
+      return suggestEndings(db, conv, parseEndings(conv.story_endings_snapshot));
     });
 
     // ---- 프롬프트 미리보기 (모델 호출 없음) ----
