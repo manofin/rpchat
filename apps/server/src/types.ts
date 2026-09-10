@@ -39,6 +39,12 @@ export interface StoryRow {
   scene_catalog: string;
   /** ADR-F8d: story opening JSON. '{}' = all 4-A fallbacks. */
   opening_json: string;
+  /**
+   * ADR-F8f (0019): extra openings as JSON array of
+   * {id, label, opening_json} where opening_json is the F8d object *raw string*.
+   * '[]' = no extras. Snapshot copies one chosen opening_json string, never this array.
+   */
+  openings_extra_json: string;
   archived: number;
   created_at: string;
   updated_at: string;

@@ -18,14 +18,67 @@ import {
 import { loreOut, loreSchema } from './characters.js';
 import type { CharacterRow, ConversationRow, LoreEntryRow, StoryCharacterRow, StoryRow } from '../types.js';
 
+export type StoryOpeningExtra = { id: string; label: string; opening_json: string };
+
+/** Damaged / non-array → [] (GET/POST fallback). Authorship 400 lives in the PUT handler. */
+export function parseOpeningsExtra(raw: string | null | undefined): StoryOpeningExtra[] {
+  if (raw == null || raw === '') return [];
+  let doc: unknown;
+  try {
+    doc = JSON.parse(raw);
+  } catch {
+    console.warn('[parseOpeningsExtra] damaged openings_extra_json');
+    return [];
+  }
+  if (!Array.isArray(doc)) {
+    console.warn('[parseOpeningsExtra] damaged openings_extra_json');
+    return [];
+  }
+  const out: StoryOpeningExtra[] = [];
+  const seen = new Set<string>();
+  for (const item of doc) {
+    if (typeof item !== 'object' || item === null || Array.isArray(item)) continue;
+    const rec = item as Record<string, unknown>;
+    const id = typeof rec.id === 'string' ? rec.id.trim() : '';
+    const label = typeof rec.label === 'string' ? rec.label.trim() : '';
+    const opening_json = typeof rec.opening_json === 'string' ? rec.opening_json : '';
+    if (!id || id.length > 64 || !label || label.length > 40 || !opening_json) continue;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push({ id, label, opening_json });
+    if (out.length >= 7) break;
+  }
+  return out;
+}
+
+function storedOpeningsExtra(extras: StoryOpeningExtra[]): string {
+  return JSON.stringify(
+    extras.map((e) => ({
+      id: e.id.trim(),
+      label: e.label.trim(),
+      opening_json: e.opening_json,
+    })),
+  );
+}
+
+function extraOpeningJsonIsObject(raw: string): boolean {
+  try {
+    const doc = JSON.parse(raw) as unknown;
+    return typeof doc === 'object' && doc !== null && !Array.isArray(doc);
+  } catch {
+    return false;
+  }
+}
+
 export function storyOut(s: StoryRow) {
-  const { opening_json, stats_json, ...rest } = s;
+  const { opening_json, stats_json, openings_extra_json, ...rest } = s;
   return {
     ...rest,
     minor_cast: parseJson<unknown[]>(s.minor_cast, []),
     stats_json: parseJson<unknown[]>(stats_json ?? '[]', []),
     scene_catalog: parseSceneCatalog(s.scene_catalog ?? '{}'),
     opening: parseOpening(opening_json ?? '{}'),
+    openings_extra: parseOpeningsExtra(openings_extra_json ?? '[]'),
     archived: !!s.archived,
   };
 }
@@ -175,6 +228,40 @@ const storySchema = z.object({
     }).optional(),
     present_ids: z.array(z.string().min(1).max(100)).max(12).optional(),
   }).optional(),
+  // ADR-F8f: omit=preserve on PUT (same as opening). Explicit [] clears extras.
+  // opening_json on each row is the F8d object *raw string* — not re-serialized.
+  openings_extra: z
+    .array(
+      z
+        .object({
+          id: z.string().max(64),
+          label: z.string().max(40),
+          opening_json: z.string(),
+        })
+        .strict(),
+    )
+    .max(7)
+    .superRefine((arr, ctx) => {
+      const seen = new Set<string>();
+      arr.forEach((row, i) => {
+        const id = row.id.trim();
+        const label = row.label.trim();
+        if (id.length < 1 || id.length > 64) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'id required', path: [i, 'id'] });
+        }
+        if (label.length < 1 || label.length > 40) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'label 1-40', path: [i, 'label'] });
+        }
+        if (id && seen.has(id)) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: `duplicate id ${id}`, path: [i, 'id'] });
+        }
+        if (id) seen.add(id);
+        if (!extraOpeningJsonIsObject(row.opening_json)) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'opening_json must be an F8d object', path: [i, 'opening_json'] });
+        }
+      });
+    })
+    .optional(),
 });
 
 const mappingSchema = z.object({
@@ -241,10 +328,22 @@ export function storyRoutes(ctx: Ctx) {
         const fieldErrors = validateOpeningPut(opening, catalog, []);
         if (fieldErrors.length) return reply.code(400).send({ error: 'invalid opening', fields: fieldErrors });
       }
+      if (d.openings_extra !== undefined) {
+        const catalog = parseSceneCatalog(
+          d.scene_catalog === undefined ? EMPTY_CATALOG_JSON : storedCatalog(d.scene_catalog),
+        );
+        const extraErrors = d.openings_extra.flatMap((extra) =>
+          validateOpeningPut(parseOpening(extra.opening_json), catalog, []).map((e) => ({
+            ...e,
+            field: `${extra.id}:${e.field}`,
+          })),
+        );
+        if (extraErrors.length) return reply.code(400).send({ error: 'invalid openings_extra', fields: extraErrors });
+      }
       run(
         db,
-        `INSERT INTO stories (id, name, tagline, cover, default_profile_name, default_format, stats_json, setting, minor_cast, scene_catalog, opening_json, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO stories (id, name, tagline, cover, default_profile_name, default_format, stats_json, setting, minor_cast, scene_catalog, opening_json, openings_extra_json, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         id,
         d.name,
         d.tagline,
@@ -257,6 +356,7 @@ export function storyRoutes(ctx: Ctx) {
         // A new story with no catalog gets the empty one, as before.
         d.scene_catalog === undefined ? EMPTY_CATALOG_JSON : storedCatalog(d.scene_catalog),
         openingJson,
+        d.openings_extra === undefined ? '[]' : storedOpeningsExtra(d.openings_extra),
         t,
         t,
       );
@@ -307,6 +407,21 @@ export function storyRoutes(ctx: Ctx) {
         if (fieldErrors.length) return reply.code(400).send({ error: 'invalid opening', fields: fieldErrors });
         sets.push('opening_json=?');
         args.push(openingJson);
+      }
+      if (d.openings_extra !== undefined) {
+        const catalog = parseSceneCatalog(
+          d.scene_catalog !== undefined ? storedCatalog(d.scene_catalog) : (s.scene_catalog ?? '{}'),
+        );
+        const hosted = hostedCharacters(db, s.id).map((c) => c.character_id);
+        const extraErrors = d.openings_extra.flatMap((extra) =>
+          validateOpeningPut(parseOpening(extra.opening_json), catalog, hosted).map((e) => ({
+            ...e,
+            field: `${extra.id}:${e.field}`,
+          })),
+        );
+        if (extraErrors.length) return reply.code(400).send({ error: 'invalid openings_extra', fields: extraErrors });
+        sets.push('openings_extra_json=?');
+        args.push(storedOpeningsExtra(d.openings_extra));
       }
       sets.push('updated_at=?');
       args.push(nowIso());

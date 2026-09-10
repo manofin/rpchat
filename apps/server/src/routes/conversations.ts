@@ -13,6 +13,7 @@ import { initialBeatScene, partySuppressesGreeting } from '../prompt/initScene.j
 import { applyOpeningOverlay, parseOpening } from '../prompt/storyOpening.js';
 import type { CharacterRow, ConversationRow, MessageRow, PersonaRow, Scene, StoryRow } from '../types.js';
 import { characterOut, personaOut } from './characters.js';
+import { parseOpeningsExtra } from './stories.js';
 
 const sceneSchema = z.object({
   place: z.string().max(300).optional(),
@@ -120,6 +121,8 @@ const createSchema = z.object({
   mode: z.enum(['chat', 'story']).default('story'),
   profileName: z.string().max(60).optional(),
   scene: sceneSchema.default({}),
+  // ADR-F8f: optional extra opening id. Missing/blank/unknown → default opening_json (F4=a).
+  openingId: z.string().max(64).optional(),
 });
 
 const nonBlankPersonaId = z
@@ -196,8 +199,13 @@ export function conversationRoutes(ctx: Ctx) {
         storyNameSnapshot = story.name;
         storySettingSnapshot = story.setting;
         storyMinorCastSnapshot = story.minor_cast;
-        // Raw copy, no re-serialize (F8b minor_cast precedent).
+        // Raw copy, no re-serialize (F8b minor_cast precedent; F8d / F8f opening).
+        const requestedOpeningId = d.openingId?.trim();
         storyOpeningSnapshot = story.opening_json ?? '{}';
+        if (requestedOpeningId) {
+          const hit = parseOpeningsExtra(story.openings_extra_json).find((e) => e.id === requestedOpeningId);
+          if (hit) storyOpeningSnapshot = hit.opening_json;
+        }
       }
       // story-editor-tabs A12: creation-time fallback only, applied after the
       // story lookup above so a story's default_profile_name can stand in for
@@ -208,8 +216,8 @@ export function conversationRoutes(ctx: Ctx) {
       let partyOpening = false;
       let openingGreeting = '';
       if (storyId) {
-        const catalogRow = one<{ scene_catalog: string; opening_json: string }>(
-          db, 'SELECT scene_catalog, opening_json FROM stories WHERE id = ?', storyId,
+        const catalogRow = one<{ scene_catalog: string }>(
+          db, 'SELECT scene_catalog FROM stories WHERE id = ?', storyId,
         );
         const catalog = catalogFromStory(catalogRow?.scene_catalog ?? '{}');
         const roster = many<PartyTagRow>(
@@ -261,7 +269,7 @@ export function conversationRoutes(ctx: Ctx) {
           : (tagged
             ? withConversationStarter(tagged, { id: character.id, name: character.name })
             : []);
-        const opening = parseOpening(catalogRow?.opening_json ?? '{}');
+        const opening = parseOpening(storyOpeningSnapshot ?? '{}');
         const overlay = applyOpeningOverlay({
           opening,
           catalog,
