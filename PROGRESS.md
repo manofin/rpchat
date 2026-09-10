@@ -4333,3 +4333,15 @@ BACKLOG:
   - `git diff --cached --check` empty EXIT 0; secret/forbidden-path scan 0
   - server/web `tsc --noEmit` 0; 13종 벤치 전부 exit 0
 - Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. Live ALTER/0020 미적용.
+
+## [2026-09-10T13:42:35Z] `story-endings-chat-guard-commit` A11 chat.ts ended-room guard
+
+- Token `story-endings-chat-guard-commit` MODE commit SCOPE feat BASE `03b4e4ddc0cf8242d9891c88a9db8f899b61da4f`. Parent of feat = BASE.
+- Feat commit `bbd5e69fca8eb15a670216a9c8d011e407712f25` (`feat(chat): guard ended conversation from message generation (A11)`), 7 files, +53/-10. `git describe --tags` `v0.0.19-199-gbbd5e69`.
+  - `apps/server/src/routes/chat.ts` — messages/regenerate/branch 진입 가드 (`ended_at` → 409 `already ended`)
+  - `bench/storyEndingsRuntime.test.ts` — 9 passed (3경로 409 실증)
+  - 5종 구 벤치 펜스 갱신 (chat.ts 가드 형상만 허용, 나머지 파이프라인 무접촉 유지)
+- Gates this bind (workdir `/home/hermes/rpchat/app`):
+  - `git diff --cached --check` empty EXIT 0; secret/forbidden-path scan 0
+  - server/web `tsc --noEmit` 0; 13종 벤치 전부 exit 0
+- Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. DB 0. NOT YET LIVE (needs staging + activate).
