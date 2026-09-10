@@ -4305,7 +4305,6 @@ BACKLOG:
   - server/web `tsc --noEmit` 0; `storyEndings` 9, storyOpening 13, storyStats 10, storyDefaults 8, storyPeerCastStartUi 16, storyAuthoringUi 8, storyInjectUi 7, storyDetail 7, storyOpeningsExtra 11, storyOpeningsEditor 6
   - `storyOpeningsStartUi`는 Slice 3 WT 펜스 dirty로 exit 1이었으며 feat 안착 후 해소 예정
 - Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. Live ALTER/0020 미적용.
-
 ## [2026-09-10T11:45:41Z] `story-endings-slice2-commit` A11 Slice 2 endings authoring UI
 
 - Token `story-endings-slice2-commit` MODE commit SCOPE feat BASE `d37b27cc4845a3476b2b6ccbd1e0790c4bf5463b`. Parent of feat = BASE.
@@ -4317,4 +4316,20 @@ BACKLOG:
 - Gates this bind (workdir `/home/hermes/rpchat/app`):
   - `git diff --cached --check` empty EXIT 0
   - web `tsc --noEmit` 0; `storyEndingsEditor` 5, 전 벤치 exit 0
+- Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. Live ALTER/0020 미적용.
+
+## [2026-09-10T11:55:25Z] `story-endings-slice3-commit` A11 Slice 3 runtime ending completion
+
+- Token `story-endings-slice3-commit` MODE commit SCOPE feat BASE `b2a344a0e33ca9760ba0cdb65859b8b62bcb503f`. Parent of feat = BASE.
+- Feat commit `0e7a1e325f8d97ca58e650fa2847c5024f2b4f49` (`feat(story): runtime ending selection and completion (A11)`), 7 files, +266/-10. `git describe --tags` `v0.0.19-197-g0e7a1e3`.
+  - `apps/server/src/routes/conversations.ts` — `POST /api/conversations/:id/end` (스냅샷 조인·409·1:1 400)
+  - `apps/web/src/types.ts` — `Conversation` 종료 3필드
+  - `apps/web/src/pages/StoryPage.tsx` — `엔딩 N개 수록` 개수만
+  - `apps/web/src/pages/ChatPage.tsx` — 엔딩 선택 시트·완결 카드·입력 잠금
+  - `bench/storyEndingsRuntime.test.ts` (new, 8 passed)
+  - `bench/storyEndingsEditor.test.ts` + `bench/storyOpeningsStartUi.test.ts` — 이전 슬라이스 네거티브 펜스 해소
+- chat.ts 파이프라인·라이브 0020 무접촉. 완결 방 전송 차단은 클라이언트 측만.
+- Gates this bind (workdir `/home/hermes/rpchat/app`):
+  - `git diff --cached --check` empty EXIT 0; secret/forbidden-path scan 0
+  - server/web `tsc --noEmit` 0; 13종 벤치 전부 exit 0
 - Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. Live ALTER/0020 미적용.
