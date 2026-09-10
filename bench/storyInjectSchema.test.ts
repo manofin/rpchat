@@ -159,10 +159,11 @@ async function main() {
     const info = cols(db, 'conversations');
     // 0010-0012 add separate tables, not conversations columns; 0013 (F8e
     // story-peer-cast-schema) appends story_participant_ids_snapshot;
-    // 0014 (F8d) appends story_opening_snapshot.
+    // 0014 (F8d) appends story_opening_snapshot; 0020 (F8g endings slice 1)
+    // appends story_endings_snapshot + ended_at + reached_ending_id.
     assert.deepEqual(
       info.map((c) => c.name),
-      [...BASE_CONV_COLS, ...STORY_COLS, 'story_participant_ids_snapshot', 'story_opening_snapshot'],
+      [...BASE_CONV_COLS, ...STORY_COLS, 'story_participant_ids_snapshot', 'story_opening_snapshot', 'story_endings_snapshot', 'ended_at', 'reached_ending_id'],
     );
     assert.equal(info.find((c) => c.name === 'character_id')?.notnull, 1);
   });

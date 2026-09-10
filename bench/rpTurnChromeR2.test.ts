@@ -49,8 +49,10 @@ t('generating: composer stays typable; send slot is stop; submit still latched',
   assert.ok(composer.includes('aria-label="생성 중단"'));
   assert.ok(composer.includes('chat.stop'));
   assert.ok(!/textarea[\s\S]{0,400}disabled=\{chat\.generating\}/.test(composer), 'textarea must stay enabled while generating');
-  assert.match(chat, /async function submit\(\) \{[\s\S]*?if \(!text \|\| chat\.generating\) return;/);
-  assert.match(chat, /const onChoice = \(c: string\) => \{[\s\S]*?if \(!text \|\| chat\.generating\) return;/);
+  // A11 ended-room guard appends `|| chat.detail?.conversation.ended_at` to the
+  // latch; the fence binds on the `!text || chat.generating` prefix, not the tail.
+  assert.match(chat, /async function submit\(\) \{[\s\S]*?if \(!text \|\| chat\.generating/);
+  assert.match(chat, /const onChoice = \(c: string\) => \{[\s\S]*?if \(!text \|\| chat\.generating/);
   assert.match(chat, /if \(!chat\.generating\) submit\(\)/);
 });
 

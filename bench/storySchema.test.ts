@@ -93,7 +93,7 @@ async function main() {
   // that UI — upload route + StoryEditor 프로필 tab — landing in the same slice as
   // the column, so the F5-dead-column lesson this clause guards against does not
   // apply here.
-  await t('stories columns match ADR v1 + 0011 scene_catalog + 0014 opening_json + 0015 cover + 0017 defaults', () => {
+  await t('stories columns match ADR v1 + 0011 scene_catalog + 0014 opening_json + 0015 cover + 0017 defaults + 0018 stats + 0019 openings_extra + 0020 endings', () => {
     assert.deepEqual(cols(db, 'stories'), [
       'id',
       'name',
@@ -108,6 +108,9 @@ async function main() {
       'cover',
       'default_profile_name',
       'default_format',
+      'stats_json',
+      'openings_extra_json',
+      'endings_json',
     ]);
   });
 

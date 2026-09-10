@@ -54,7 +54,7 @@ t('CI-03b mobile tools hub links to the same inspector drawer', () => {
 
 t('CI-03 no second inspector surface was added', () => {
   assert.equal((chatSrc.match(/<ChatDrawer/g) ?? []).length, 1, 'exactly one drawer');
-  assert.equal((chatSrc.match(/BottomSheet/g) ?? []).length, 9, 'no new BottomSheet in ChatPage');
+  assert.equal((chatSrc.match(/BottomSheet/g) ?? []).length, 11, 'no new BottomSheet in ChatPage beyond the A11 ending sheet');
   assert.equal((chatSrc.match(/setDrawer\(true\)/g) ?? []).length, 4, 'header + 요약하기 + 설정→기억 + tools hub (mobile)');
   assert.equal((chatSrc.match(/prompt-preview/g) ?? []).length, 0, 'ChatPage itself does not fetch prompt-preview; BudgetTab still does');
   assert.equal(chatSrc.includes('inject-preview'), false, 'story pre-start preview is a different surface');

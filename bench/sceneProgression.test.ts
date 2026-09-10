@@ -275,7 +275,11 @@ function main() {
 
   t('conversations PATCH still shallow-merge; no applySceneDelta import', () => {
     assert.ok(convSrc.includes('...parseJson<Scene>(conv.scene_json, {}), ...d.scene'));
-    assert.equal(convSrc.includes('applySceneDelta'), false);
+    // Fence binds on the import, not the identifier: the A7 stats comment
+    // references applySceneDelta APPLY_KEYS by name without importing it.
+    assert.equal(/^import.*applySceneDelta/m.test(convSrc), false);
+    assert.equal(convSrc.includes('prompt/applySceneDelta\''), false);
+    assert.equal(convSrc.includes('prompt/applySceneDelta"'), false);
   });
 
   t('Scene type has F9B additive keys; no hp/relationship on interface', () => {

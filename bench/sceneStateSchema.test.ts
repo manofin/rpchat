@@ -62,6 +62,10 @@ const CONV_COLS = [
   'story_minor_cast_snapshot',
   'story_participant_ids_snapshot',
   'story_opening_snapshot',
+  // 0020 (F8g endings slice 1) appends the frozen snapshot + end-state columns.
+  'story_endings_snapshot',
+  'ended_at',
+  'reached_ending_id',
 ] as const;
 
 const GOLDEN_SIX: Scene = { place: '취선객잔', time: '밤' };
@@ -195,7 +199,7 @@ async function main() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-scene-state-schema-'));
   const db = openDb(tmp, path.resolve('apps/server/migrations'));
 
-  await t('openDb records 0010; conversations columns unchanged by 0010 (28 incl. 0013 snapshot + 0014 opening)', () => {
+  await t('openDb records 0010; conversations columns unchanged by 0010 (31 incl. 0013 snapshot + 0014 opening + 0020 endings)', () => {
     const names = (
       db.prepare('SELECT name FROM schema_migrations ORDER BY name').all() as Array<{ name: string }>
     ).map((r) => r.name);
