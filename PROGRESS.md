@@ -4244,3 +4244,19 @@ BACKLOG:
   - web `tsc --noEmit` WEB_TC:0; server `tsc --noEmit` SERVER_TC:0
   - storyDefaults 8, storyAuthoringUi 8, sceneStateSheet 6, storyTabs 5, beatRender 38
 - Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. Migrations 0015–0018 still not live.
+
+## [2026-09-10T08:23:46Z] `story-multi-opening-slice1-commit` A6 Slice 1 extra openings schema
+
+- Token `story-multi-opening-slice1-commit` MODE commit SCOPE feat BASE `90ca7f054dc9c036e60855f38544e6435eba9700`. Parent of feat = BASE.
+- Feat commit `3d3116e2d31f136095fc7d54a96c16ed6dcb19da` (`feat(story): extra openings schema and snapshot copy (A6)`), 5 files, +485/-7. `git describe --tags` `v0.0.19-187-g3d3116e`.
+  - `apps/server/migrations/0019_story_openings_extra.sql` (new) `openings_extra_json TEXT NOT NULL DEFAULT '[]'`
+  - `bench/storyOpeningsExtra.test.ts` (new)
+  - `apps/server/src/routes/stories.ts` · `conversations.ts` · `types.ts`
+- F1=a / F3=1+7 / F4=a: extras column additive; PUT omit=preserve, max 7; POST `openingId` copies matching extra `opening_json` raw into `story_opening_snapshot`, omit/unknown → default `opening_json`; 1:1 ignores `openingId`.
+- Pipeline untouched: `resolveOpening` / `applySceneDelta` / `composeBeat` / `chat.ts` / `resolveFocus` / `PROMPT_VERSION` / `HARD_RULES`. Web UI 0.
+- Gates this bind (workdir `/home/hermes/rpchat/app`):
+  - server `tsc --noEmit` EXIT 0
+  - `git diff --cached --check` empty EXIT 0; secret/forbidden-path scan 0
+  - implement-session (pre-commit): `npx tsx bench/storyOpeningsExtra.test.ts` 11 passed EXIT 0; storyOpening 13, storyStats 10, storyDefaults 8, storyPeerCastStartUi 16
+- ADR `planning_documents/ADR-F8f-story-multi-opening.md` Status accepted (app git 밖, 이 커밋에 없음).
+- Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. Live ALTER/0019 미적용. Slice 2 Editor / Slice 3 Start-UI 미착수.
