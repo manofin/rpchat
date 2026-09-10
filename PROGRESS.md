@@ -4226,3 +4226,21 @@ BACKLOG:
   - storyDetail 7, storyAuthoringUi 8, storyInjectUi 7, storyTabs 5
   - `git diff HEAD -- apps/server` empty
 - Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. A7 not in this commit.
+
+## [2026-09-10T05:50:43Z] `story-editor-tabs-a7-stats` A7 display-only custom stats
+
+- Token `story-editor-tabs-a7-stats` MODE commit SCOPE feat BASE `288b9f5` (`288b9f5d3709ef6b848617ebb9bbf0594ebdb8a6`). Parent of feat = BASE.
+- Feat commit `65aab3610cfb6b0943d84de4c11674291b662788` (`feat(story): display-only custom stats per story (A7)`), 12 files, +435/-8. `git describe --tags` `v0.0.19-185-g65aab36`.
+  - `apps/server/migrations/0018_story_stats.sql` (new) `stats_json TEXT NOT NULL DEFAULT '[]'`
+  - `apps/web/src/lib/storyStats.ts` (new)
+  - `bench/storyStats.test.ts` (new)
+  - `apps/server/src/routes/stories.ts` · `conversations.ts` · `types.ts` · `prompt/renderBeat.ts`
+  - `apps/web/src/components/StoryEditor.tsx` · `view.tsx` · `lib/sceneState.ts` · `pages/ConversationSceneStatePage.tsx` · `types.ts`
+- D2=a: story defs in `stories.stats_json` (max 7); values in `scene.stats`; frozen copy `scene.stat_defs` at create. PUT omit=preserve. HUD overlay `custom_stats`. User can edit values on the scene sheet.
+- `applySceneDelta.ts` / `composeBeat.ts` / `chat.ts` / `resolveFocus.ts` / `builder.ts` / `templates.ts` / `config.ts` unchanged. Model cannot write stats.
+- `bench/shortcutMacro.test.ts` restored to HEAD before staging (A9 SM-07 not mixed into this feat).
+- Gates this bind (workdir `/home/hermes/rpchat/app`):
+  - `npx tsx bench/storyStats.test.ts` PASS=10 EXIT 0
+  - web `tsc --noEmit` WEB_TC:0; server `tsc --noEmit` SERVER_TC:0
+  - storyDefaults 8, storyAuthoringUi 8, sceneStateSheet 6, storyTabs 5, beatRender 38
+- Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. Migrations 0015–0018 still not live.
