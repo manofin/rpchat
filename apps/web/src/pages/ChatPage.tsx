@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { get, patch } from '../lib/api';
+import { get, patch, post } from '../lib/api';
 import { back, navigate, useRoute } from '../lib/router';
 import { NAV_TABS } from '../lib/navTabs';
-import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, Summary } from '../types';
+import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, StoryEnding, Summary } from '../types';
 import {
   Avatar, BeatHeader, BeatHunterLine, BeatHunterPanel, BeatInfoSheet, BeatNarration, BeatSystem, BeatUiPanel, parseBeatUi,
   renderContent, SpeakerHeader,
@@ -24,6 +24,18 @@ import { ChatDrawer } from './ChatDrawer';
 import { ChatListRail } from './ChatListRail';
 import { ConversationTools } from './ConversationTools';
 
+/** ADR-F8g: snapshot is the reader-visible endings list. Damaged → no picker. */
+function parseEndingsSnapshot(raw: string | null | undefined): StoryEnding[] {
+  if (!raw) return [];
+  try {
+    const doc = JSON.parse(raw) as unknown;
+    if (!Array.isArray(doc)) return [];
+    return doc.filter((e): e is StoryEnding => !!e && typeof e === 'object' && typeof (e as { id?: unknown }).id === 'string');
+  } catch {
+    return [];
+  }
+}
+
 export function ChatPage({ id }: { id: string }) {
   const ui = useUi();
   const chat = useChat(id);
@@ -38,6 +50,9 @@ export function ChatPage({ id }: { id: string }) {
   const [summaryRows, setSummaryRows] = useState<Summary[] | null>(null);
   const [summaryTick, setSummaryTick] = useState(0);
   const [dismissTick, setDismissTick] = useState(0);
+  const [endingOpen, setEndingOpen] = useState(false);
+  const [endingPick, setEndingPick] = useState('');
+  const [endingSaving, setEndingSaving] = useState(false);
 
   useEffect(() => { setSummaryRows(null); }, [id]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -136,7 +151,7 @@ export function ChatPage({ id }: { id: string }) {
     const storyId = chat.detail?.conversation.story_id ?? null;
     const expanded = expandLeadingShortcut(draft, readShortcuts(storyId)).text;
     const text = expanded.trim();
-    if (!text || chat.generating) return;
+    if (!text || chat.generating || chat.detail?.conversation.ended_at) return;
     setDraft('');
     requestAnimationFrame(grow);
     stickyRef.current = true;
@@ -153,10 +168,14 @@ export function ChatPage({ id }: { id: string }) {
   const lastMsg = chat.messages[chat.messages.length - 1];
 
   const reorderTurns = !desktop && shouldReorderTurn(conv.scene.format);
+  const ended = !!conv.ended_at;
+  const snapshotEndings = parseEndingsSnapshot(conv.story_endings_snapshot);
+  const reachedEnding = ended ? (snapshotEndings.find((e) => e.id === conv.reached_ending_id) ?? null) : null;
+  const endingChoices = !ended && conv.story_id ? snapshotEndings : [];
   /** Chip tap → send immediately (StoryForge RecommendationChoices onSend). */
   const onChoice = (c: string) => {
     const text = c.trim();
-    if (!text || chat.generating) return;
+    if (!text || chat.generating || chat.detail?.conversation.ended_at) return;
     setDraft('');
     requestAnimationFrame(grow);
     stickyRef.current = true;
@@ -168,6 +187,23 @@ export function ChatPage({ id }: { id: string }) {
     requestAnimationFrame(grow);
     taRef.current?.focus();
   };
+
+  /** ADR-F8g E2a/E3a: reader picks one snapshot ending → room locks read-only. */
+  async function reachEnding() {
+    if (!endingPick || endingSaving || chat.detail?.conversation.ended_at) return;
+    if (!(await ui.confirm('이 결말로 대화를 완결할까요? 이후에는 메시지를 보낼 수 없습니다.', { danger: true, okLabel: '완결' }))) return;
+    setEndingSaving(true);
+    try {
+      await post(`/api/conversations/${id}/end`, { endingId: endingPick });
+      setEndingOpen(false);
+      setEndingPick('');
+      await chat.reload();
+    } catch (e) {
+      ui.toast((e as Error).message, 'err');
+    } finally {
+      setEndingSaving(false);
+    }
+  }
   const messageViewProps = (m: Message, opts?: { hideChoices?: boolean }) => ({
     m,
     domId: `msg-${m.id}`,
@@ -312,6 +348,18 @@ export function ChatPage({ id }: { id: string }) {
         );
       })()}
 
+      {ended && (
+        <div className="banner" role="status" style={{ margin: '8px 12px 0' }}>
+          <div><strong>완결{reachedEnding ? ` — ${reachedEnding.title}` : ''}</strong>{reachedEnding?.badge_label ? ` · ${reachedEnding.badge_label}` : ''}</div>
+          {reachedEnding?.description ? <div className="small" style={{ whiteSpace: 'pre-wrap', marginTop: 4 }}>{reachedEnding.description}</div> : null}
+        </div>
+      )}
+      {!ended && endingChoices.length > 0 && (
+        <div className="row" style={{ justifyContent: 'center', padding: '4px 0' }}>
+          <button className="btn sm ghost" onClick={() => { setEndingPick(''); setEndingOpen(true); }}>엔딩 선택</button>
+        </div>
+      )}
+
       <div className={`composer${chat.generating ? ' is-generating' : ''}`}>
         {chat.generating && (
           <div className="gen-status" aria-live="polite">
@@ -330,17 +378,37 @@ export function ChatPage({ id }: { id: string }) {
                 if (!chat.generating) submit();
               }
             }}
-            placeholder={chat.generating ? '다음 행동을 적어 두세요…' : `${char.name}에게 메시지…`}
+            placeholder={ended ? '완결된 대화입니다' : (chat.generating ? '다음 행동을 적어 두세요…' : `${char.name}에게 메시지…`)}
             rows={1}
             enterKeyHint="send"
+            disabled={ended}
           />
           {chat.generating ? (
             <button type="button" className="btn icon stop-gen" onClick={() => void chat.stop()} aria-label="생성 중단" title="생성 중단">■</button>
           ) : (
-            <button type="button" className="btn primary icon" onClick={submit} disabled={!draft.trim()} aria-label="보내기">↑</button>
+            <button type="button" className="btn primary icon" onClick={submit} disabled={!draft.trim() || ended} aria-label="보내기">↑</button>
           )}
         </div>
       </div>
+
+      <BottomSheet open={endingOpen} onClose={() => { if (!endingSaving) setEndingOpen(false); }}>
+        <div className="sheet-body">
+          <strong>엔딩 선택</strong>
+          <div className="field" style={{ marginTop: 12 }}>
+            <label>결말</label>
+            <select value={endingPick} onChange={(e) => setEndingPick(e.target.value)} disabled={endingSaving}>
+              <option value="">선택</option>
+              {endingChoices.map((e) => (
+                <option key={e.id} value={e.id}>{e.title}{e.badge_label ? ` · ${e.badge_label}` : ''}</option>
+              ))}
+            </select>
+          </div>
+          <div className="small muted" style={{ marginBottom: 12 }}>완결하면 이후 메시지를 보낼 수 없습니다.</div>
+          <button className="btn primary block" disabled={!endingPick || endingSaving} onClick={() => void reachEnding()}>
+            {endingSaving ? '완결 중…' : '이 결말로 완결'}
+          </button>
+        </div>
+      </BottomSheet>
 
       <ChatDrawer open={drawer} conversationId={id} draft={draft} initialTab={drawerTab} onClose={() => { setDrawer(false); setDrawerTab(undefined); }} onApplied={() => { setSummaryTick((n) => n + 1); }} />
       <ConversationSettings open={settings} conversationId={id} generating={chat.generating} onClose={() => setSettings(false)} onChanged={chat.reload} onOpenMemory={() => { setSettings(false); setDrawerTab(undefined); setDrawer(true); }} />

@@ -210,6 +210,12 @@ export interface Conversation {
   persona_applied_at: string | null;
   /** Present on GET conversation; null on 1:1. A9 macros key off this. */
   story_id: string | null;
+  /** ADR-F8g: frozen copy of stories.endings_json. Null on 1:1. */
+  story_endings_snapshot: string | null;
+  /** ADR-F8g: set when the reader reaches an ending. Null = room in progress. */
+  ended_at: string | null;
+  /** ADR-F8g: id of the reached ending (joins the snapshot). Null = not ended. */
+  reached_ending_id: string | null;
   character_name?: string;
   preview?: string;
 }

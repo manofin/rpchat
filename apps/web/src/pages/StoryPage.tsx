@@ -177,6 +177,9 @@ export function StoryPage({ id }: { id: string }) {
           </div>
         )}
 
+        {(story.endings ?? []).length > 0 && (
+          <div className="muted small" style={{ marginBottom: 12 }}>엔딩 {(story.endings ?? []).length}개 수록</div>
+        )}
         <div className="section-title">참여 캐릭터 {hosted.length > 0 && `(${hosted.length})`}</div>
         {hosted.length === 0 ? (
           <div className="muted small" style={{ marginBottom: 12 }}>참여 캐릭터를 추가하세요.</div>

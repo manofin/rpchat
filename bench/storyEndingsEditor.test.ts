@@ -54,8 +54,7 @@ t('endings CRUD: id, title, description, badge_label; cap 7; 8th add refused', (
   assert.ok(editorSrc.includes('description'));
 });
 
-t('Slice 3 reader runtime stays out: no endings on StoryPage, no reach action in editor', () => {
-  assert.equal(pageSrc.includes('endings'), false);
+t('editor stays out of the reach action; ChatPage + server own it', () => {
   assert.equal(editorSrc.includes('/api/conversations'), false);
   assert.equal(editorSrc.includes('ended_at'), false);
   assert.equal(editorSrc.includes('reached_ending_id'), false);

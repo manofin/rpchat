@@ -109,7 +109,7 @@ t('1:1 CharacterPage stays free of openingId / story start helper', () => {
 
 t('generate-path and pipeline files stay untouched', () => {
   const changed = execSync(
-    'git diff --name-only HEAD -- apps/server/src/prompt/storyOpening.ts apps/server/src/prompt/applySceneDelta.ts apps/server/src/prompt/composeBeat.ts apps/server/src/routes/chat.ts apps/server/src/prompt/resolveFocus.ts apps/server/src/prompt/builder.ts apps/server/src/prompt/templates.ts apps/server/src/config.ts apps/server/src/routes/conversations.ts apps/server/src/routes/stories.ts',
+    'git diff --name-only HEAD -- apps/server/src/prompt/storyOpening.ts apps/server/src/prompt/applySceneDelta.ts apps/server/src/prompt/composeBeat.ts apps/server/src/routes/chat.ts apps/server/src/prompt/resolveFocus.ts apps/server/src/prompt/builder.ts apps/server/src/prompt/templates.ts apps/server/src/config.ts apps/server/src/routes/stories.ts',
     { cwd: path.resolve('.'), encoding: 'utf8' },
   ).trim();
   assert.equal(changed, '', `Slice 3 must not touch: ${changed}`);

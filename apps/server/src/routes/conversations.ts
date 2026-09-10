@@ -13,7 +13,7 @@ import { initialBeatScene, partySuppressesGreeting } from '../prompt/initScene.j
 import { applyOpeningOverlay, parseOpening } from '../prompt/storyOpening.js';
 import type { CharacterRow, ConversationRow, MessageRow, PersonaRow, Scene, StoryRow } from '../types.js';
 import { characterOut, personaOut } from './characters.js';
-import { parseOpeningsExtra } from './stories.js';
+import { parseEndings, parseOpeningsExtra } from './stories.js';
 
 const sceneSchema = z.object({
   place: z.string().max(300).optional(),
@@ -426,6 +426,24 @@ export function conversationRoutes(ctx: Ctx) {
       const r = run(db, 'DELETE FROM conversations WHERE id = ?', req.params.id);
       if (r.changes === 0) return reply.code(404).send({ error: 'not found' });
       return { ok: true };
+    });
+
+    // ADR-F8g E2a/E3a: reader manual reach. Snapshot join only — the live
+    // story row is never re-read, so later authoring edits cannot dangle this.
+    app.post<{ Params: { id: string } }>('/api/conversations/:id/end', async (req, reply) => {
+      const conv = loadConversation(ctx, req.params.id);
+      if (!conv) return reply.code(404).send({ error: 'not found' });
+      if (conv.ended_at) return reply.code(409).send({ error: 'already ended' });
+      if (!conv.story_id) return reply.code(400).send({ error: 'not a story room' });
+      const body = (req.body ?? {}) as { endingId?: unknown };
+      const endingId = typeof body.endingId === 'string' ? body.endingId.trim() : '';
+      if (!endingId) return reply.code(400).send({ error: 'endingId required' });
+      if (!parseEndings(conv.story_endings_snapshot).some((e) => e.id === endingId)) {
+        return reply.code(400).send({ error: 'unknown endingId' });
+      }
+      const t = nowIso();
+      run(db, 'UPDATE conversations SET ended_at = ?, reached_ending_id = ?, updated_at = ? WHERE id = ?', t, endingId, t, conv.id);
+      return conversationOut(loadConversation(ctx, conv.id)!);
     });
 
     // ---- 프롬프트 미리보기 (모델 호출 없음) ----
