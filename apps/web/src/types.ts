@@ -34,6 +34,19 @@ export interface SceneCatalog {
   dutySlots: Record<string, string>;
 }
 
+export interface StoryOpening {
+  scenario: string;
+  greeting: string;
+  scene: {
+    place_id?: string;
+    weather?: string;
+    day_index?: number;
+    clock_minutes?: number;
+    beat_goal?: string;
+  };
+  present_ids: string[];
+}
+
 export interface Story {
   id: string;
   name: string;
@@ -41,6 +54,7 @@ export interface Story {
   setting: string;
   minor_cast: { name: string; note: string }[];
   scene_catalog: SceneCatalog;
+  opening: StoryOpening;
   archived: boolean;
   created_at: string;
   updated_at: string;

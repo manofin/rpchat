@@ -219,7 +219,13 @@ export function StoryPage({ id }: { id: string }) {
         )}
         <button className="btn danger block sm" onClick={() => void archiveStory()} style={{ marginTop: 18 }}>스토리 보관</button>
       </div>
-      <StoryEditor open={editorOpen} story={story} onClose={() => setEditorOpen(false)} onSaved={() => { setEditorOpen(false); load(); }} />
+      <StoryEditor
+        open={editorOpen}
+        story={story}
+        hosted={story?.characters ?? []}
+        onClose={() => setEditorOpen(false)}
+        onSaved={() => { setEditorOpen(false); load(); }}
+      />
       <BottomSheet open={starter} onClose={() => { if (!starting) setStarter(false); }}>
         <div className="sheet-body">
           <strong>이 스토리로 대화 시작</strong>
