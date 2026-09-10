@@ -53,6 +53,9 @@ export interface Story {
   tagline: string;
   /** story-editor-tabs A2 (0015). NULL = DiscCover 📖 placeholder. */
   cover: string | null;
+  /** story-editor-tabs A12 (0017). Creation-time fallback only. */
+  default_profile_name: string | null;
+  default_format: 'beat' | 'dialog' | 'hunter' | null;
   setting: string;
   minor_cast: { name: string; note: string }[];
   scene_catalog: SceneCatalog;

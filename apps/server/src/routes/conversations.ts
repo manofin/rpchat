@@ -167,9 +167,9 @@ export function conversationRoutes(ctx: Ctx) {
       const character = one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ? AND archived = 0', d.characterId);
       if (!character) return reply.code(404).send({ error: 'character not found' });
       if (d.personaId && !one(db, 'SELECT 1 FROM personas WHERE id = ?', d.personaId)) return reply.code(404).send({ error: 'persona not found' });
-      const profileName = d.profileName ?? 'rp-balanced';
       const id = uid();
       const t = nowIso();
+      let story: StoryRow | null = null;
       let storyId: string | null = null;
       let storyAppliedAt: string | null = null;
       let storyNameSnapshot: string | null = null;
@@ -178,7 +178,7 @@ export function conversationRoutes(ctx: Ctx) {
       let storyParticipantIdsSnapshot: string | null = null;
       let storyOpeningSnapshot: string | null = null;
       if (d.storyId) {
-        const story = one<StoryRow>(db, 'SELECT * FROM stories WHERE id = ?', d.storyId);
+        story = one<StoryRow>(db, 'SELECT * FROM stories WHERE id = ?', d.storyId) ?? null;
         if (!story) return reply.code(404).send({ error: 'story not found' });
         if (story.archived) return reply.code(409).send({ error: 'archived' });
         storyId = story.id;
@@ -189,6 +189,11 @@ export function conversationRoutes(ctx: Ctx) {
         // Raw copy, no re-serialize (F8b minor_cast precedent).
         storyOpeningSnapshot = story.opening_json ?? '{}';
       }
+      // story-editor-tabs A12: creation-time fallback only, applied after the
+      // story lookup above so a story's default_profile_name can stand in for
+      // the hardcoded 'rp-balanced'. An explicit profileName in the request body
+      // always wins.
+      const profileName = d.profileName ?? story?.default_profile_name ?? 'rp-balanced';
       let sceneJson = JSON.stringify(d.scene);
       let partyOpening = false;
       let openingGreeting = '';
@@ -257,6 +262,17 @@ export function conversationRoutes(ctx: Ctx) {
         sceneJson = JSON.stringify(initialBeatScene({ catalog, cast, overlay }));
         partyOpening = partySuppressesGreeting(cast);
         openingGreeting = opening.greeting.trim();
+      }
+      // story-editor-tabs A12: same creation-time-fallback-only rule as
+      // profileName above. An explicit scene.format in the request always wins;
+      // initialBeatScene/applyOpeningOverlay are not touched, so the party/beat
+      // scene-construction contract is unchanged.
+      if (storyId && story?.default_format && d.scene?.format === undefined) {
+        const sceneObj = parseJson<Scene>(sceneJson, {});
+        if (sceneObj.format === undefined) {
+          sceneObj.format = story.default_format;
+          sceneJson = JSON.stringify(sceneObj);
+        }
       }
       let personaNameSnap: string | null = null;
       let personaAddressSnap: string | null = null;

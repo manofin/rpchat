@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ApiError, get, post, postBinary, put } from '../lib/api';
-import type { SceneCatalog, SceneCatalogPlace, Story } from '../types';
+import type { ModelProfile, SceneCatalog, SceneCatalogPlace, Story } from '../types';
 import { LorePanel, type LoreEntry } from './LorePanel';
 import { Modal, useUi } from './ui';
 
@@ -8,8 +8,27 @@ import { Modal, useUi } from './ui';
 const COVER_MAX_BYTES = 8 * 1024 * 1024;
 const COVER_ACCEPT = 'image/jpeg,image/png,image/webp';
 
+/** story-editor-tabs A12: user-facing profiles only, same filter as ConversationOutputPage's rpOutputProfiles. */
+const rpProfiles = (profiles: ModelProfile[]) => profiles.filter((p) => p.name.startsWith('rp-'));
+
+const FORMAT_OPTIONS: Array<{ value: '' | 'beat' | 'dialog' | 'hunter'; label: string }> = [
+  { value: '', label: '기본값 없음' },
+  { value: 'beat', label: '비트 (기본)' },
+  { value: 'dialog', label: '대화형' },
+  { value: 'hunter', label: '헌터' },
+];
+
 type Cast = { name: string; note: string };
-type Draft = { name: string; tagline: string; cover: string | null; setting: string; minor_cast: Cast[]; places: SceneCatalogPlace[] };
+type Draft = {
+  name: string;
+  tagline: string;
+  cover: string | null;
+  default_profile_name: string;
+  default_format: '' | 'beat' | 'dialog' | 'hunter';
+  setting: string;
+  minor_cast: Cast[];
+  places: SceneCatalogPlace[];
+};
 type OpeningDraft = {
   scenario: string;
   greeting: string;
@@ -21,7 +40,7 @@ type OpeningDraft = {
   present_ids: string[];
 };
 
-const EMPTY: Draft = { name: '', tagline: '', cover: null, setting: '', minor_cast: [], places: [] };
+const EMPTY: Draft = { name: '', tagline: '', cover: null, default_profile_name: '', default_format: '', setting: '', minor_cast: [], places: [] };
 const EMPTY_OPENING: OpeningDraft = {
   scenario: '', greeting: '', place_id: '', weather: '', day_index: '', clock_minutes: '', beat_goal: '', present_ids: [],
 };
@@ -66,11 +85,13 @@ export function StoryEditor({
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [lore, setLore] = useState<LoreEntry[]>([]);
+  const [profiles, setProfiles] = useState<ModelProfile[]>([]);
   const [tab, setTab] = useState<Tab>('profile');
 
   useEffect(() => {
     if (!open) return;
     setTab('profile');
+    get<ModelProfile[]>('/api/profiles').then(setProfiles).catch(() => setProfiles([]));
     if (story) {
       get<LoreEntry[]>(`/api/stories/${story.id}/lore`).then(setLore).catch(() => setLore([]));
       const { places, ...rest } = story.scene_catalog ?? { places: [], ...EMPTY_CATALOG_REST };
@@ -78,6 +99,8 @@ export function StoryEditor({
         name: story.name,
         tagline: story.tagline,
         cover: story.cover ?? null,
+        default_profile_name: story.default_profile_name ?? '',
+        default_format: story.default_format ?? '',
         setting: story.setting,
         minor_cast: (story.minor_cast ?? []).map((c) => ({ name: c.name, note: c.note })),
         places: places.map((p) => ({ ...p })),
@@ -143,7 +166,9 @@ export function StoryEditor({
     setSaving(true);
     try {
       const body = {
-        name: d.name.trim(), tagline: d.tagline.trim(), cover: d.cover, setting: d.setting, minor_cast,
+        name: d.name.trim(), tagline: d.tagline.trim(), cover: d.cover,
+        default_profile_name: d.default_profile_name || null, default_format: d.default_format || null,
+        setting: d.setting, minor_cast,
         scene_catalog: { ...catalogRest, places },
         opening: openingBody,
       };
@@ -244,6 +269,24 @@ export function StoryEditor({
             </div>
           ))}
           <button className="btn block" type="button" onClick={() => set('minor_cast', [...d.minor_cast, { name: '', note: '' }])}>＋ 조연 추가</button>
+
+          <div className="section-title">기본값</div>
+          <div className="small muted" style={{ marginBottom: 8 }}>
+            이 스토리의 새 방을 만들 때만 적용되는 기본값입니다. 기존 방에는 영향이 없습니다.
+          </div>
+          <div className="field">
+            <label>기본 대화 형태</label>
+            <select value={d.default_format} onChange={(e) => set('default_format', e.target.value as Draft['default_format'])}>
+              {FORMAT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label>기본 모델 프로필</label>
+            <select value={d.default_profile_name} onChange={(e) => set('default_profile_name', e.target.value)}>
+              <option value="">기본값 없음</option>
+              {rpProfiles(profiles).map((p) => <option key={p.name} value={p.name}>{p.name}{p.notes ? ` — ${p.notes}` : ''}</option>)}
+            </select>
+          </div>
         </>
       )}
 

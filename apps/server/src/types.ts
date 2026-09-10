@@ -44,6 +44,14 @@ export interface StoryRow {
   updated_at: string;
   /** story-editor-tabs A2 (0015). NULL = 배치용 placeholder (DiscCover 📖 폴백). */
   cover: string | null;
+  /**
+   * story-editor-tabs A12 (0017). Creation-time fallback only — applied in
+   * routes/conversations.ts when the client omits profileName/scene.format at
+   * POST /api/conversations. Never read by buildPrompt/composeBeat; existing
+   * conversations are unaffected.
+   */
+  default_profile_name: string | null;
+  default_format: 'beat' | 'dialog' | 'hunter' | null;
 }
 
 export interface StoryCharacterRow {

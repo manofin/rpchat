@@ -119,6 +119,11 @@ const storySchema = z.object({
   // non-null value. Not omit=preserve (unlike scene_catalog/opening): there is
   // no legacy client that predates this field.
   cover: z.string().max(300).nullable().optional(),
+  // story-editor-tabs A12: same always-write treatment as cover above — client
+  // echoes the current value on every save. Creation-time fallback only (see
+  // routes/conversations.ts); never read by buildPrompt/composeBeat.
+  default_profile_name: z.string().max(60).nullable().optional(),
+  default_format: z.enum(['beat', 'dialog', 'hunter']).nullable().optional(),
   setting: z.string().max(8000).default(''),
   minor_cast: z
     .array(
@@ -217,12 +222,14 @@ export function storyRoutes(ctx: Ctx) {
       }
       run(
         db,
-        `INSERT INTO stories (id, name, tagline, cover, setting, minor_cast, scene_catalog, opening_json, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO stories (id, name, tagline, cover, default_profile_name, default_format, setting, minor_cast, scene_catalog, opening_json, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         id,
         d.name,
         d.tagline,
         d.cover ?? null,
+        d.default_profile_name ?? null,
+        d.default_format ?? null,
         d.setting,
         JSON.stringify(d.minor_cast),
         // A new story with no catalog gets the empty one, as before.
@@ -251,12 +258,12 @@ export function storyRoutes(ctx: Ctx) {
       // the field used to carry an empty-catalog default, so a client that does not
       // model catalogs — StoryEditor sends {name, tagline, setting, minor_cast} —
       // erased the catalog on every save. Preserving here covers every such client.
-      // cover is always-write like name/tagline (StoryEditor's Draft echoes the
-      // current value back on every save — see storySchema comment above). It is
-      // not omit=preserve like scene_catalog/opening, so there is no legacy-client
-      // erasure risk to guard against.
-      const sets = ['name=?', 'tagline=?', 'cover=?', 'setting=?', 'minor_cast=?'];
-      const args: unknown[] = [d.name, d.tagline, d.cover ?? null, d.setting, JSON.stringify(d.minor_cast)];
+      // cover/default_profile_name/default_format are always-write like
+      // name/tagline (StoryEditor's Draft echoes the current value back on every
+      // save — see storySchema comments above). None is omit=preserve like
+      // scene_catalog/opening, so there is no legacy-client erasure risk to guard.
+      const sets = ['name=?', 'tagline=?', 'cover=?', 'default_profile_name=?', 'default_format=?', 'setting=?', 'minor_cast=?'];
+      const args: unknown[] = [d.name, d.tagline, d.cover ?? null, d.default_profile_name ?? null, d.default_format ?? null, d.setting, JSON.stringify(d.minor_cast)];
       if (d.scene_catalog !== undefined) {
         sets.push('scene_catalog=?');
         args.push(storedCatalog(d.scene_catalog));
