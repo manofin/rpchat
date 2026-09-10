@@ -88,8 +88,12 @@ async function main() {
     assert.equal(tables.includes('worlds'), false);
   });
 
-  // f9-place-catalog (0011) added scene_catalog. `cover` is still forbidden (ADR-F8 §4).
-  await t('stories columns match ADR v1 + 0011 scene_catalog + 0014 opening_json (still no cover)', () => {
+  // ADR-F8 §5's "no cover column" was conditional on there being no cover UI yet
+  // ("커버 UI가 열리기 전에 자리를 만들지 않는다"). story-editor-tabs A2 (0015) is
+  // that UI — upload route + StoryEditor 프로필 tab — landing in the same slice as
+  // the column, so the F5-dead-column lesson this clause guards against does not
+  // apply here.
+  await t('stories columns match ADR v1 + 0011 scene_catalog + 0014 opening_json + 0015 cover', () => {
     assert.deepEqual(cols(db, 'stories'), [
       'id',
       'name',
@@ -101,6 +105,7 @@ async function main() {
       'updated_at',
       'scene_catalog',
       'opening_json',
+      'cover',
     ]);
   });
 
@@ -152,7 +157,9 @@ async function main() {
     assert.equal(body.setting, '눈 덮인 왕국');
     assert.deepEqual(body.minor_cast, [{ name: '행상인', note: '정보를 판다' }]);
     assert.equal(body.archived, false);
-    assert.equal('cover' in body, false);
+    // story-editor-tabs A2 (0015): cover now exists — see the ADR-F8 §5 note on
+    // the column-list test above. No upload happened in this test, so null.
+    assert.equal(body.cover, null);
 
     const list = await app.inject({ method: 'GET', url: '/api/stories' });
     assert.equal(list.statusCode, 200, list.body);

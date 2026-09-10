@@ -231,13 +231,26 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   }
 
   // 2) 활성 로어: 최근 발화 키워드 매칭 (결정론적)
+  //
+  // story-editor-tabs A8: candidate set = 전역(character_id IS NULL AND story_id
+  // IS NULL) + 캐릭터 + 이 방의 story_id와 일치하는 스토리 로어북. A story
+  // lorebook only ever exists with story_id set (lorebookForStory in
+  // routes/stories.ts is its only writer), so `conv.story_id` NULL (every 1:1
+  // room, and every pre-A8 conversation) makes `b.story_id = ?` never match and
+  // leaves the global clause exactly as it read before this slice — byte-identical
+  // candidate set, byte-identical assembled prompt.
   const scanText = history.slice(-LORE_SCAN_MESSAGES).map((m) => m.content).join('\n').toLowerCase();
   const entries = many<LoreEntryRow>(
     db,
     `SELECT e.* FROM lore_entries e JOIN lorebooks b ON b.id = e.lorebook_id
-     WHERE e.enabled = 1 AND (b.character_id = ? OR b.character_id IS NULL)
+     WHERE e.enabled = 1 AND (
+       b.character_id = ?
+       OR (b.character_id IS NULL AND b.story_id IS NULL)
+       OR b.story_id = ?
+     )
      ORDER BY e.always_on DESC, e.priority DESC`,
     conv.character_id,
+    conv.story_id,
   );
   const activeLore: Array<{ title: string; content: string }> = [];
   const droppedLore: string[] = [];

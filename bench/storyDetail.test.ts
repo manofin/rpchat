@@ -59,7 +59,7 @@ t('DET-03 StoryPage shows setting + minor_cast; hosts mains via mapping routes',
   assert.ok(pageSrc.includes("navigate(`/character/${"));
 });
 
-t('DET-04 StoryEditor create/edit fields; no nested .sheet tabs; no cover', () => {
+t('DET-04 StoryEditor create/edit fields; no nested .sheet tabs; cover upload (A2)', () => {
   assert.ok(editorSrc.includes("post('/api/stories'") || editorSrc.includes('post<') && editorSrc.includes('/api/stories'));
   assert.ok(editorSrc.includes('put<') && editorSrc.includes('/api/stories/'));
   assert.ok(editorSrc.includes('name'));
@@ -68,7 +68,9 @@ t('DET-04 StoryEditor create/edit fields; no nested .sheet tabs; no cover', () =
   assert.ok(editorSrc.includes('minor_cast'));
   assert.equal(editorSrc.includes('className="sheet tabs"'), false);
   assert.equal(editorSrc.includes("className='sheet tabs'"), false);
-  assert.equal(editorSrc.includes('cover'), false);
+  // story-editor-tabs A2 (0015): the ADR-F8 §5 "no cover" clause was conditional
+  // on there being no cover UI (see storySchema.test.ts). This is that UI.
+  assert.ok(editorSrc.includes('/api/stories/${story.id}/cover'));
 });
 
 t('DET-05 HomePage story tab creates and opens detail', () => {

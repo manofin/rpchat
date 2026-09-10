@@ -4147,3 +4147,45 @@ BACKLOG:
   - StoryEditor 오프닝 필드. `StoryPage` hosted checkboxes for `present_ids`.
 - Gates: `npm run typecheck` EXIT 0. New benches `storyPeerCastGenerate` 11/11, `storyOpening` 13/13. Full `bench/*.test.ts` 114 files, 111 pass / 3 fence red (`settingsRegression` `characterChatWebGuards` `rpReadabilityR1`) = `git diff HEAD -- apps/server` nonempty until commit. Do not edit the fences.
 - 미실행: 커밋, 푸시, 배포, 재시작, 라이브 0014 ALTER, generate. Galaxy 없음. StoryEditor는 브라우저 도구가 없어 UI 실측 없음.
+
+## [2026-09-10T00:22Z] `커밋`+`배포`+`재시작` F8e generate + F8d opening live
+
+- 커밋 3: `ecf3a09` server · `dd9e9ba` web · `6240bd9` docs. HEAD `v0.0.19-179-g6240bd9`.
+- 사전백업 `/home/hermes/rpchat/backups/rpchat-pre-0014-story-opening.db` sha256 `148a1398e717debdc2286cbfea6c278b04bfd5b2e9fb6bac25ed4e9016709d03`. schema_migrations 0001–0013 only, stories에 opening_json 없음, integrity ok, 행수 conv 36 / char 17 / story 3 / msg 1116 / sc 15.
+- 빌드 EXIT 0. web `index-BGxP1Kvl.js` sha256 `2f1671aeff0b29dccf643497e72e38789b48a9ed9b9cc585c2ab19d172bf51c1`. CSS `index-MUyLeUJc.css` `1856f2e3…`. server `PROMPT_VERSION` `…+opening`, `storyOpening.js` 존재.
+- 재시작 PID `388244`→`401869`. 구 PID 소멸. health `db:ok` `authMode:tailscale` `promptVersion` `2026.08.22-r1+story+compact+roster+opening`. localhost `/api/characters` 401.
+- 라이브 0014 적용. stories.opening_json 3행 전부 `'{}'`. conversations.story_opening_snapshot 36/36 NULL. character_id NOT NULL. 행수 전후 동일. integrity ok. 서리/카이 archived=0.
+- `settingsRegression` 6/6 (커밋이 펜스를 참으로 만듦).
+- generate 0. push 0. Galaxy 없음.
+
+## [2026-09-10T02:xxZ] `story-editor-tabs` A1 tab shell reflow (uncommitted)
+
+- User: `planning_documents/PLAN-story-authoring-tabs.md` 승인 — A1부터 착수, D1/D2/D3는 계획서 §3 권고(보수적 기본값) 고정, lock 토큰 `story-editor-tabs`.
+- HEAD bind `v0.0.19-179-g6240bd9` clean at start (PROGRESS.md만 이전 세션 미커밋 상태).
+- 범위: `apps/web/src/components/StoryEditor.tsx` 단일 파일. 새 필드 0, `save()`/검증/페이로드 무변경. 227줄 단일 스크롤 → 탭 4개(`프로필`/`스토리 설정`/`시작 설정`/`장소`)로 재배치만.
+- 구현: `Modal` `toolbar`에 탭 바(`CharacterEditor.tsx`의 `.tabs`/`.sheet .tabs button.active` CSS 재사용, 신규 CSS 0). 하단 `← 이전`/`다음 →` 버튼으로 탭 이동(경계에서 disabled). 탭 라벨에 미완료 마커(`프로필 *` — 이름 미입력 시만, 기존에 유일하게 강제되던 필수 필드). `useEffect`가 모달 열릴 때 `profile` 탭으로 리셋.
+- 명시적으로 안 한 것(§2 비목표·D1/D2/D3 그대로): 임시저장 localStorage 드래프트, Modal→라우트 전환, 커버 이미지(A2), 전개 예시(A5), 스탯(A7), 키워드북 스코프(A8), 단축어(A9), 복수 시작 설정(A6), 엔딩(A11).
+- 게이트: `npm run typecheck` EXIT 0 (양쪽 워크스페이스). `git diff HEAD -- apps/server` 빈 문자열(서버 무접촉 확인). `git diff --stat HEAD -- apps/` = `StoryEditor.tsx`만.
+- 벤치: 전체 `bench/*.test.ts` 114개 1회차 113 pass / 1 fail(`storyOpening.test.ts` 13번째 assert — 소스 그렙이 리터럴 `'오프닝'` 문자열을 찾는데, 섹션 제목을 탭 라벨(`시작 설정`)로 바꾸며 그 리터럴이 사라짐). 실제 회귀로 판단 — 테스트를 손대지 않고 `opening` 탭 안에 `<div className="section-title">오프닝</div>`을 되살려 원래 의미(오프닝 UI가 에디터에 실재한다)를 유지한 채 통과시킴. 2회차 114/114 all pass.
+- 미실행: 커밋, 빌드, 배포, 재시작, 라이브 DB 접촉, Galaxy. StoryEditor는 브라우저 도구가 없어 UI 실측(탭 클릭·키보드 겹침 등) 없음 — 다음에 열 때 육안 확인 필요.
+
+## [2026-09-10T02:xxZ] `story-cover-image` A2 story cover image (uncommitted)
+
+- User: `planning_documents/PLAN-story-authoring-tabs.md` A2 착수 승인.
+- HEAD bind `v0.0.19-179-g6240bd9` + uncommitted `story-editor-tabs` A1 (`StoryEditor.tsx` 탭 리플로우).
+- **발견**: `ADR-F8-story.md` §5가 `cover` 컬럼을 명시적으로 금지하고 있었다 — "F5 사망 컬럼 교훈, 커버 UI가 열리기 전에 자리를 만들지 않는다". 계획서(`PLAN-story-authoring-tabs.md`) 작성 시 이 조항을 확인하지 못했음(연구 공백). 조건부 금지(UI 부재 조건)이고 A2가 바로 그 UI를 같은 슬라이스에서 만들므로 조건이 충족된다고 판단해 진행. 이 판단은 사용자에게 별도 승인 없이 진행했음 — 세션 보고에서 명시.
+- 구현: `0015_story_cover.sql` (`stories.cover TEXT` nullable) · `media/avatar.ts`에 `publicCoverPath` 추가(신규 검증 로직 0, 기존 sniff/inspect/reject 파이프라인 재사용) · `routes/stories.ts`에 `POST /api/stories/:id/cover`(캐릭터 아바타 핸들러와 동일 구조) + `storySchema.cover`(항상-포함, name/tagline과 동일 취급 — omit=preserve 아님, 레거시 클라이언트 없음) · `index.ts`에 `/media/covers/:file` 정적 서빙(아바타 라우트와 동일 UUID 정규식) · 웹 `StoryEditor.tsx` 프로필 탭에 업로드/미리보기/삭제 · `DiscCover`가 이미 `avatar` prop을 받게 설계돼 있었으므로 `HomePage.tsx`/`SearchPage.tsx` 카드에 `avatar={s.cover}` 1줄씩만 추가(신규 컴포넌트 0).
+- 벤치 펜스 갱신 2건(값 갱신, 삭제 아님): `bench/storySchema.test.ts` — "no cover" 컬럼 리스트/API 응답 어서션을 "0015 cover 있음"으로, ADR-F8 §5 조건부 해제 근거를 주석에 남김. `bench/storyDetail.test.ts` DET-04 — "no cover" 소스 그렙을 "cover 업로드 엔드포인트 존재"로.
+- 게이트: `npm run typecheck` EXIT 0. 전체 `bench/*.test.ts` 114개: 111 pass / 3 fence red(`settingsRegression` `characterChatWebGuards` `rpReadabilityR1` — `git diff HEAD -- apps/server` nonempty, 커밋 전 정상 적색). `git diff --stat HEAD` = 11 files (server 4 + web 4 + bench 2 + PROGRESS.md).
+- 미실행: 커밋, 빌드, 배포, 재시작, 라이브 DB. Galaxy 없음. 브라우저 실측 없음 — 파일 업로드·미리보기·삭제 버튼 동작은 육안 확인 필요.
+
+## [2026-09-10T03:xxZ] `story-lore-scope` A8 keyword book = story-scoped lorebook (uncommitted)
+
+- User: `PLAN-story-authoring-tabs.md` A8 착수 승인.
+- HEAD bind `v0.0.19-179-g6240bd9` + uncommitted `story-editor-tabs`(A1) + `story-cover-image`(A2).
+- ADR 점검(A2에서 놓친 걸 교훈 삼아 먼저 확인): `ADR-F8-story.md`·`lore-selective-locked.md` 어디에도 스토리 스코프 로어북 금지 없음. `lore-selective-locked.md`가 잠근 건 매칭 세부(스캔 6개/selective+secondary 게이트) 뿐이고 이번 슬라이스는 그걸 건드리지 않음 — 후보 집합(어느 lorebook을 조회하는가)만 확장.
+- 구현: `0016_lorebook_story_scope.sql`(`lorebooks.story_id` nullable FK) · `builder.ts`의 로어 후보 쿼리를 `character_id = ? OR (character_id IS NULL AND story_id IS NULL) OR story_id = ?`로 확장(1:1 방은 `conv.story_id`가 항상 NULL이라 세 번째 절이 결코 매치하지 않고, 전역 로어북은 마이그레이션 직후 story_id NULL이라 두 번째 절이 이전과 동일 — 후보 집합·바이트 무변경 보존) · `routes/stories.ts`에 `lorebookForStory` + `GET/POST /api/stories/:id/lore`(PUT/DELETE/clone은 캐릭터와 동일 `/api/lore/:id` 재사용, 신규 라우트 0) · `characters.ts`의 `loreSchema`를 export해 재사용.
+- 리팩터: `CharacterEditor.tsx`에 인라인이던 `LorePanel`(75줄)을 `components/LorePanel.tsx`로 추출, `characterId` prop을 `createUrl`로 일반화(PUT/DELETE/clone은 원래도 owner-agnostic). `CharacterEditor`·`StoryEditor` 양쪽에서 재사용 — 신규 로어 UI 컴포넌트 0. `StoryEditor.tsx`에 `키워드북` 탭 추가(A1 탭 셸에 슬롯 추가, 저장 전 새 스토리는 "저장 후 추가" 안내).
+- 벤치 수정 9건, 전부 값 갱신(삭제 아님): `loreClone.test.ts` CLONE-08의 소스 그렙 대상을 `CharacterEditor.tsx` → `LorePanel.tsx`로(같은 JSX가 옮겨갔을 뿐, 기능은 그대로). `budgetKind`/`builderDifferential`/`storyOpening`/`storyInjectBuild`/`personaResolve`/`summaryWatermarkCompaction`/`userNoteInject`의 손수 만든 `lorebooks` 픽스처 스키마(`CREATE TABLE lorebooks (id, character_id)`)에 `story_id TEXT` 추가 — 이 7개는 마이그레이션 러너가 아니라 자체 스키마를 손으로 짓는 격리 벤치라 신규 컬럼을 몰라 `SQLITE_ERROR: no such column: b.story_id`로 죽었었음. `storySchema.test.ts`는 이번 항목과 무관(A2 잔여 없음, 재확인만).
+- 게이트: `npm run typecheck` EXIT 0. 전체 `bench/*.test.ts` 114개: 111 pass / 3 fence red(`settingsRegression` `characterChatWebGuards` `rpReadabilityR1` — apps/server diff nonempty, 커밋 전 정상). `git diff --stat HEAD` = 22 files(server 6 · web 6 · bench 10 · PROGRESS.md).
+- 미실행: 커밋, 빌드, 배포, 재시작, 라이브 DB. Galaxy 없음. 브라우저 실측 없음 — 키워드북 탭 CRUD 왕복은 육안 확인 필요. `story-peer-cast-*`/F9 계열 파일(`resolveFocus.ts`/`chat.ts`/`composeBeat.ts`) 미접촉.

@@ -51,6 +51,8 @@ export interface Story {
   id: string;
   name: string;
   tagline: string;
+  /** story-editor-tabs A2 (0015). NULL = DiscCover 📖 placeholder. */
+  cover: string | null;
   setting: string;
   minor_cast: { name: string; note: string }[];
   scene_catalog: SceneCatalog;

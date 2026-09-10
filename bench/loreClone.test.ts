@@ -131,7 +131,9 @@ async function main() {
   });
 
   await t('CLONE-08 editor exposes a per-row 복사 button that does not open the row editor', async () => {
-    const editorSrc = fs.readFileSync(path.resolve('apps/web/src/components/CharacterEditor.tsx'), 'utf8');
+    // story-editor-tabs A8 extracted this JSX out of CharacterEditor.tsx into a
+    // shared LorePanel.tsx so StoryEditor's 키워드북 tab could reuse it verbatim.
+    const editorSrc = fs.readFileSync(path.resolve('apps/web/src/components/LorePanel.tsx'), 'utf8');
     assert.ok(editorSrc.includes('>복사</button>'), '복사 button missing');
     assert.match(editorSrc, /복사[\s\S]{0,40}<\/button>|stopPropagation\(\); clone\(e\.id\)/, 'clone must be wired');
     assert.ok(editorSrc.includes('ev.stopPropagation(); clone(e.id)'), 'row click opens the editor — clone must stop propagation');

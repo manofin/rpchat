@@ -42,6 +42,8 @@ export interface StoryRow {
   archived: number;
   created_at: string;
   updated_at: string;
+  /** story-editor-tabs A2 (0015). NULL = 배치용 placeholder (DiscCover 📖 폴백). */
+  cover: string | null;
 }
 
 export interface StoryCharacterRow {

@@ -51,7 +51,7 @@ const characterSchema = z.object({
 
 const LORE_TITLE_MAX = 120;
 
-const loreSchema = z.object({
+export const loreSchema = z.object({
   title: z.string().min(1).max(LORE_TITLE_MAX),
   keywords: z.array(z.string().min(1).max(40)).max(30).default([]),
   secondary_keys: z.array(z.string().min(1).max(40)).max(30).optional(),

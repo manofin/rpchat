@@ -96,6 +96,18 @@ async function main() {
     return reply.type(avatarMime[m[2]]).send(fs.readFileSync(p));
   });
 
+  // story-editor-tabs A2: same UUID-filename static handler as /media/avatars,
+  // pointed at the stories table's cover instead of characters' avatar.
+  fs.mkdirSync(path.join(mediaRoot, 'covers'), { recursive: true });
+  app.get<{ Params: { file: string } }>('/media/covers/:file', async (req, reply) => {
+    const file = req.params.file;
+    const m = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.(jpg|png|webp)$/.exec(file);
+    if (!m) return reply.code(404).send({ error: 'not found' });
+    const p = path.join(mediaRoot, 'covers', file);
+    if (!fs.existsSync(p)) return reply.code(404).send({ error: 'not found' });
+    return reply.type(avatarMime[m[2]]).send(fs.readFileSync(p));
+  });
+
   // f9-beat-render: scene assets. Registered here (before the SPA static handler)
   // so a missing asset 404s as JSON rather than falling through to index.html.
   await app.register(mediaRoutes(mediaRoot));

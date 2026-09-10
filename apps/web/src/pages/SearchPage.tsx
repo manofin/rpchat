@@ -233,7 +233,7 @@ export function SearchPage() {
             <div className="disc-grid">
               {storyHits.map((s) => (
                 <button key={s.id} type="button" className="disc-card disc-card--cover" onClick={() => navigate(`/story/${s.id}`)}>
-                  <DiscCover name={s.name} kind="story" />
+                  <DiscCover name={s.name} avatar={s.cover} kind="story" />
                   <div className="disc-card-body">
                     <div className="disc-card-tag">{s.tagline || ' '}</div>
                     <div className="disc-card-meta">

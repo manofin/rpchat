@@ -63,3 +63,8 @@ export function inspectAvatar(buf: Buffer): AvatarKind {
 export function publicAvatarPath(characterId: string, kind: AvatarKind): string {
   return `/media/avatars/${characterId}.${AVATAR_EXT[kind]}`;
 }
+
+/** story-editor-tabs A2: story cover, same sniff/size pipeline as character avatars. */
+export function publicCoverPath(storyId: string, kind: AvatarKind): string {
+  return `/media/covers/${storyId}.${AVATAR_EXT[kind]}`;
+}

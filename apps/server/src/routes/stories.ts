@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../ctx.js';
@@ -6,7 +8,15 @@ import { many, nowIso, one, parseJson, run, uid } from '../db/index.js';
 import { buildPrompt, computeStoryInjection } from '../prompt/builder.js';
 import { parseSceneCatalog } from '../prompt/sceneCatalog.js';
 import { parseOpening, storedOpening, validateOpeningPut } from '../prompt/storyOpening.js';
-import type { CharacterRow, ConversationRow, StoryCharacterRow, StoryRow } from '../types.js';
+import {
+  AVATAR_EXT,
+  AVATAR_MAX_BYTES,
+  AvatarReject,
+  inspectAvatar,
+  publicCoverPath,
+} from '../media/avatar.js';
+import { loreOut, loreSchema } from './characters.js';
+import type { CharacterRow, ConversationRow, LoreEntryRow, StoryCharacterRow, StoryRow } from '../types.js';
 
 export function storyOut(s: StoryRow) {
   const { opening_json, ...rest } = s;
@@ -104,6 +114,11 @@ const EMPTY_CATALOG_JSON = storedCatalog(sceneCatalogSchema.parse({}));
 const storySchema = z.object({
   name: z.string().min(1).max(80),
   tagline: z.string().max(200).default(''),
+  // story-editor-tabs A2: same treatment as CharacterRow.avatar — client echoes
+  // the current value on every save, upload endpoint is the only writer of a
+  // non-null value. Not omit=preserve (unlike scene_catalog/opening): there is
+  // no legacy client that predates this field.
+  cover: z.string().max(300).nullable().optional(),
   setting: z.string().max(8000).default(''),
   minor_cast: z
     .array(
@@ -154,6 +169,21 @@ function hostedCharacters(db: Ctx['db'], storyId: string) {
   );
 }
 
+/**
+ * story-editor-tabs A8: one lorebook per story (character_id NULL, story_id set),
+ * same one-lorebook-per-owner convention as `lorebookFor` in characters.ts. This
+ * is the only place a lorebook row ever gets `story_id` — no other path in the
+ * product sets it, so the candidate-set query in builder.ts stays byte-identical
+ * for every conversation that predates this slice.
+ */
+function lorebookForStory(db: Ctx['db'], storyId: string): string {
+  const b = one<{ id: string }>(db, 'SELECT id FROM lorebooks WHERE story_id = ? ORDER BY created_at LIMIT 1', storyId);
+  if (b) return b.id;
+  const id = uid();
+  run(db, 'INSERT INTO lorebooks (id, story_id, name, created_at) VALUES (?, ?, ?, ?)', id, storyId, '키워드북', nowIso());
+  return id;
+}
+
 export function storyRoutes(ctx: Ctx) {
   const { db } = ctx;
   return async function plugin(app: FastifyInstance) {
@@ -187,11 +217,12 @@ export function storyRoutes(ctx: Ctx) {
       }
       run(
         db,
-        `INSERT INTO stories (id, name, tagline, setting, minor_cast, scene_catalog, opening_json, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO stories (id, name, tagline, cover, setting, minor_cast, scene_catalog, opening_json, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         id,
         d.name,
         d.tagline,
+        d.cover ?? null,
         d.setting,
         JSON.stringify(d.minor_cast),
         // A new story with no catalog gets the empty one, as before.
@@ -220,8 +251,12 @@ export function storyRoutes(ctx: Ctx) {
       // the field used to carry an empty-catalog default, so a client that does not
       // model catalogs — StoryEditor sends {name, tagline, setting, minor_cast} —
       // erased the catalog on every save. Preserving here covers every such client.
-      const sets = ['name=?', 'tagline=?', 'setting=?', 'minor_cast=?'];
-      const args: unknown[] = [d.name, d.tagline, d.setting, JSON.stringify(d.minor_cast)];
+      // cover is always-write like name/tagline (StoryEditor's Draft echoes the
+      // current value back on every save — see storySchema comment above). It is
+      // not omit=preserve like scene_catalog/opening, so there is no legacy-client
+      // erasure risk to guard against.
+      const sets = ['name=?', 'tagline=?', 'cover=?', 'setting=?', 'minor_cast=?'];
+      const args: unknown[] = [d.name, d.tagline, d.cover ?? null, d.setting, JSON.stringify(d.minor_cast)];
       if (d.scene_catalog !== undefined) {
         sets.push('scene_catalog=?');
         args.push(storedCatalog(d.scene_catalog));
@@ -250,6 +285,72 @@ export function storyRoutes(ctx: Ctx) {
       const r = run(db, 'UPDATE stories SET archived = 1, updated_at = ? WHERE id = ?', nowIso(), req.params.id);
       if (r.changes === 0) return reply.code(404).send({ error: 'not found' });
       return { ok: true };
+    });
+
+    // story-editor-tabs A2: same sniff/size pipeline as character avatars
+    // (media/avatar.ts). Separate content-type parser scope from characterRoutes
+    // — each app.register() call is its own Fastify encapsulation context.
+    app.addContentTypeParser(
+      ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/octet-stream'],
+      { parseAs: 'buffer', bodyLimit: AVATAR_MAX_BYTES },
+      (_req, body, done) => {
+        done(null, body);
+      },
+    );
+
+    app.post<{ Params: { id: string }; Body: Buffer }>(
+      '/api/stories/:id/cover',
+      { bodyLimit: AVATAR_MAX_BYTES },
+      async (req, reply) => {
+        const id = req.params.id;
+        const s = one<StoryRow>(db, 'SELECT * FROM stories WHERE id = ?', id);
+        if (!s) return reply.code(404).send({ error: 'not found' });
+        const buf = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+        let kind;
+        try {
+          kind = inspectAvatar(buf);
+        } catch (e) {
+          if (e instanceof AvatarReject) return reply.code(e.status).send({ error: e.message });
+          throw e;
+        }
+        const dir = path.join(config.dataDir, 'media', 'covers');
+        fs.mkdirSync(dir, { recursive: true });
+        const dest = path.join(dir, `${id}.${AVATAR_EXT[kind]}`);
+        for (const ext of Object.values(AVATAR_EXT)) {
+          const prev = path.join(dir, `${id}.${ext}`);
+          if (prev !== dest && fs.existsSync(prev)) fs.unlinkSync(prev);
+        }
+        fs.writeFileSync(dest, buf);
+        const cover = publicCoverPath(id, kind);
+        run(db, 'UPDATE stories SET cover = ?, updated_at = ? WHERE id = ?', cover, nowIso(), id);
+        return storyOut(one<StoryRow>(db, 'SELECT * FROM stories WHERE id = ?', id)!);
+      },
+    );
+
+    // ---- 키워드북 (story-editor-tabs A8; PUT/DELETE/clone on /api/lore/:id are
+    // owner-agnostic and already shipped by characterRoutes — reused as-is) ----
+    app.get<{ Params: { id: string } }>('/api/stories/:id/lore', async (req, reply) => {
+      if (!one(db, 'SELECT 1 FROM stories WHERE id = ?', req.params.id)) return reply.code(404).send({ error: 'not found' });
+      const rows = many<LoreEntryRow>(
+        db,
+        `SELECT e.* FROM lore_entries e JOIN lorebooks b ON b.id = e.lorebook_id WHERE b.story_id = ? ORDER BY e.priority DESC, e.title`,
+        req.params.id,
+      );
+      return rows.map(loreOut);
+    });
+
+    app.post<{ Params: { id: string } }>('/api/stories/:id/lore', async (req, reply) => {
+      if (!one(db, 'SELECT 1 FROM stories WHERE id = ?', req.params.id)) return reply.code(404).send({ error: 'not found' });
+      const p = loreSchema.safeParse(req.body);
+      if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
+      const d = p.data;
+      const id = uid();
+      run(
+        db,
+        'INSERT INTO lore_entries (id, lorebook_id, title, keywords_json, secondary_keys_json, content, priority, always_on, token_cap, enabled, selective) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        id, lorebookForStory(db, req.params.id), d.title, JSON.stringify(d.keywords), JSON.stringify(d.secondary_keys ?? []), d.content, d.priority, d.always_on ? 1 : 0, d.token_cap, d.enabled ? 1 : 0, d.selective ? 1 : 0,
+      );
+      return reply.code(201).send(loreOut(one<LoreEntryRow>(db, 'SELECT * FROM lore_entries WHERE id = ?', id)!));
     });
 
     app.post<{ Params: { id: string } }>('/api/stories/:id/characters', async (req, reply) => {
