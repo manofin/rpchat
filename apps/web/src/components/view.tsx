@@ -102,6 +102,7 @@ export type BeatUiData = {
     hp?: number | null; money?: number | null;
     gear?: string[]; inventory?: string[]; traits?: string[];
   } | null;
+  custom_stats?: Array<{ label: string; value: number }>;
   roster?: Array<{ id: string; name: string; chip: string; locked: boolean; in_room: boolean }>;
   intent_hint?: string | null;
   focus_id?: string | null;
@@ -126,6 +127,9 @@ export function BeatUiPanel({ ui }: { ui: BeatUiData }) {
     if (sheet.gear?.length) stats.push(`장비 ${sheet.gear.join(', ')}`);
     if (sheet.inventory?.length) stats.push(`보유 ${sheet.inventory.join(', ')}`);
     if (sheet.traits?.length) stats.push(`특수 ${sheet.traits.join(', ')}`);
+  }
+  for (const s of ui.custom_stats ?? []) {
+    if (typeof s.value === 'number' && s.label) stats.push(`${s.label} ${s.value}`);
   }
   const hasStrip = Boolean(ui.location_badge || stats.length);
   const hasRoster = Boolean(ui.roster?.length);

@@ -42,6 +42,8 @@ export type RosterChip = {
 export type BeatUi = {
   location_badge: string | null;
   user_sheet: Scene['user_sheet'] | null;
+  /** story-editor-tabs A7 (D2=a). Display overlay; not an applySceneDelta key. */
+  custom_stats?: Array<{ label: string; value: number }>;
   roster: RosterChip[];
   intent_hint: string | null;
   /** Who this turn addressed. Null = narration-only. Stamped so scrollback does not use the live last_beat. */
@@ -181,6 +183,10 @@ export function renderUi(input: {
   return {
     location_badge: scene.location ?? scene.place ?? null,
     user_sheet: scene.user_sheet ?? null,
+    custom_stats: (scene.stat_defs ?? []).flatMap((d) => {
+      const v = scene.stats?.[d.id];
+      return typeof v === 'number' ? [{ label: d.label, value: v }] : [];
+    }),
     roster: cast.map((m): RosterChip => {
       const addressable = isAddressable(m, scene, focusId, extraIds);
       const emotion = roster[m.id]?.emotion;

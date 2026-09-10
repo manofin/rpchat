@@ -19,10 +19,11 @@ import { loreOut, loreSchema } from './characters.js';
 import type { CharacterRow, ConversationRow, LoreEntryRow, StoryCharacterRow, StoryRow } from '../types.js';
 
 export function storyOut(s: StoryRow) {
-  const { opening_json, ...rest } = s;
+  const { opening_json, stats_json, ...rest } = s;
   return {
     ...rest,
     minor_cast: parseJson<unknown[]>(s.minor_cast, []),
+    stats_json: parseJson<unknown[]>(stats_json ?? '[]', []),
     scene_catalog: parseSceneCatalog(s.scene_catalog ?? '{}'),
     opening: parseOpening(opening_json ?? '{}'),
     archived: !!s.archived,
@@ -124,6 +125,26 @@ const storySchema = z.object({
   // routes/conversations.ts); never read by buildPrompt/composeBeat.
   default_profile_name: z.string().max(60).nullable().optional(),
   default_format: z.enum(['beat', 'dialog', 'hunter']).nullable().optional(),
+  // story-editor-tabs A7 (D2=a): omit=preserve on PUT (same as scene_catalog).
+  // POST with the key absent stores []. Display-only; applySceneDelta untouched.
+  stats_json: z.array(
+    z.object({
+      id: z.string().regex(/^[a-z0-9_]{1,20}$/),
+      label: z.string().min(1).max(20),
+      min: z.number().int(),
+      max: z.number().int(),
+      default: z.number().int(),
+    }).refine((s) => s.min <= s.max, { message: 'min <= max' })
+      .refine((s) => s.default >= s.min && s.default <= s.max, { message: 'default in range' }),
+  ).max(7).superRefine((arr, ctx) => {
+    const seen = new Set<string>();
+    for (const row of arr) {
+      if (seen.has(row.id)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `duplicate id ${row.id}` });
+      }
+      seen.add(row.id);
+    }
+  }).optional(),
   setting: z.string().max(8000).default(''),
   minor_cast: z
     .array(
@@ -222,14 +243,15 @@ export function storyRoutes(ctx: Ctx) {
       }
       run(
         db,
-        `INSERT INTO stories (id, name, tagline, cover, default_profile_name, default_format, setting, minor_cast, scene_catalog, opening_json, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO stories (id, name, tagline, cover, default_profile_name, default_format, stats_json, setting, minor_cast, scene_catalog, opening_json, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         id,
         d.name,
         d.tagline,
         d.cover ?? null,
         d.default_profile_name ?? null,
         d.default_format ?? null,
+        JSON.stringify(d.stats_json ?? []),
         d.setting,
         JSON.stringify(d.minor_cast),
         // A new story with no catalog gets the empty one, as before.
@@ -264,6 +286,10 @@ export function storyRoutes(ctx: Ctx) {
       // scene_catalog/opening, so there is no legacy-client erasure risk to guard.
       const sets = ['name=?', 'tagline=?', 'cover=?', 'default_profile_name=?', 'default_format=?', 'setting=?', 'minor_cast=?'];
       const args: unknown[] = [d.name, d.tagline, d.cover ?? null, d.default_profile_name ?? null, d.default_format ?? null, d.setting, JSON.stringify(d.minor_cast)];
+      if (d.stats_json !== undefined) {
+        sets.push('stats_json=?');
+        args.push(JSON.stringify(d.stats_json));
+      }
       if (d.scene_catalog !== undefined) {
         sets.push('scene_catalog=?');
         args.push(storedCatalog(d.scene_catalog));

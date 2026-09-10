@@ -56,6 +56,8 @@ export interface Story {
   /** story-editor-tabs A12 (0017). Creation-time fallback only. */
   default_profile_name: string | null;
   default_format: 'beat' | 'dialog' | 'hunter' | null;
+  /** story-editor-tabs A7 (D2=a, 0018). Empty array = no custom stats. */
+  stats_json: Array<{ id: string; label: string; min: number; max: number; default: number }>;
   setting: string;
   minor_cast: { name: string; note: string }[];
   scene_catalog: SceneCatalog;
@@ -145,6 +147,9 @@ export interface Scene {
     mode?: string;
   };
   last_beat?: { focus_id: string | null; extra_ids?: string[]; unresolved?: string[] };
+  /** story-editor-tabs A7 (D2=a). User/server-owned. */
+  stats?: Record<string, number>;
+  stat_defs?: Array<{ id: string; label: string; min: number; max: number }>;
 }
 
 export interface Conversation {

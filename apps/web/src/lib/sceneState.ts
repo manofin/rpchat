@@ -1,5 +1,7 @@
 /** Living scene state — maps existing scene_json keys only. Missing axes stay absent. */
 
+import { formatCustomStats } from './storyStats';
+
 export type UserSheet = {
   hp?: number | null;
   money?: number | null;
@@ -33,11 +35,19 @@ export type LivingScene = {
   user_sheet?: UserSheet | null;
   info?: SceneInfo | null;
   hunter?: SceneHunter | null;
+  /** story-editor-tabs A7 (D2=a). */
+  stats?: Record<string, number>;
+  stat_defs?: Array<{ id: string; label: string; min: number; max: number }>;
 };
 
 export function hasLivingState(scene: LivingScene | null | undefined): boolean {
   if (!scene) return false;
-  return Boolean(scene.user_sheet || scene.info || scene.hunter);
+  return Boolean(
+    scene.user_sheet
+    || scene.info
+    || scene.hunter
+    || (scene.stats && Object.keys(scene.stats).length),
+  );
 }
 
 export function livingStateLabel(scene: LivingScene | null | undefined): string {
@@ -48,6 +58,7 @@ export function livingStateLabel(scene: LivingScene | null | undefined): string 
   if (typeof sheet?.money === 'number') parts.push(`₩ ${sheet.money.toLocaleString()}`);
   if (scene?.info?.contract) parts.push('계약');
   if (scene?.hunter?.quest) parts.push('퀘스트');
+  parts.push(...formatCustomStats(scene?.stats, scene?.stat_defs));
   return parts.join(' · ') || '있음';
 }
 
@@ -102,6 +113,8 @@ export type SceneStateDraft = {
   schedule: string;
   situation: string;
   mode: string;
+  statDefs: Array<{ id: string; label: string; min: number; max: number }>;
+  statValues: Record<string, string>;
 };
 
 export function draftFromScene(scene: LivingScene): SceneStateDraft {
@@ -135,6 +148,13 @@ export function draftFromScene(scene: LivingScene): SceneStateDraft {
     schedule: hunter.schedule ?? '',
     situation: hunter.situation ?? '',
     mode: hunter.mode ?? '',
+    statDefs: scene.stat_defs ?? [],
+    statValues: Object.fromEntries(
+      (scene.stat_defs ?? []).map((d) => {
+        const v = scene.stats?.[d.id];
+        return [d.id, typeof v === 'number' ? String(v) : ''];
+      }),
+    ),
   };
 }
 
@@ -143,6 +163,8 @@ export type SceneStatePatch = {
     user_sheet?: UserSheet;
     info?: SceneInfo;
     hunter?: SceneHunter;
+    stats?: Record<string, number>;
+    stat_defs?: Array<{ id: string; label: string; min: number; max: number }>;
   };
 };
 
@@ -196,7 +218,19 @@ export function buildSceneStatePatch(draft: SceneStateDraft): SceneStatePatch | 
       mode: draft.mode.trim().slice(0, 8),
     };
   }
-  if (!scene.user_sheet && !scene.info && !scene.hunter) return null;
+  if (draft.statDefs.length) {
+    const stats: Record<string, number> = {};
+    for (const d of draft.statDefs) {
+      const parsed = parseSheetInt(draft.statValues[d.id] ?? '');
+      if (!parsed.ok) return null;
+      if (parsed.value === null) continue;
+      if (parsed.value < d.min || parsed.value > d.max) return null;
+      stats[d.id] = parsed.value;
+    }
+    scene.stats = stats;
+    scene.stat_defs = draft.statDefs;
+  }
+  if (!scene.user_sheet && !scene.info && !scene.hunter && !scene.stats) return null;
   return { scene };
 }
 

@@ -9,6 +9,11 @@ import {
   upsertShortcut,
   type Shortcut,
 } from '../lib/shortcutMacro';
+import {
+  STAT_MAX,
+  emptyStat,
+  type StoryStatDef,
+} from '../lib/storyStats';
 import { LorePanel, type LoreEntry } from './LorePanel';
 import { Modal, useUi } from './ui';
 
@@ -36,6 +41,7 @@ type Draft = {
   setting: string;
   minor_cast: Cast[];
   places: SceneCatalogPlace[];
+  stats: StoryStatDef[];
 };
 type OpeningDraft = {
   scenario: string;
@@ -48,15 +54,16 @@ type OpeningDraft = {
   present_ids: string[];
 };
 
-const EMPTY: Draft = { name: '', tagline: '', cover: null, default_profile_name: '', default_format: '', setting: '', minor_cast: [], places: [] };
+const EMPTY: Draft = { name: '', tagline: '', cover: null, default_profile_name: '', default_format: '', setting: '', minor_cast: [], places: [], stats: [] };
 const EMPTY_OPENING: OpeningDraft = {
   scenario: '', greeting: '', place_id: '', weather: '', day_index: '', clock_minutes: '', beat_goal: '', present_ids: [],
 };
 
 /** story-editor-tabs (A1): reflow only — no new field, no payload change.
  * A8 added the `lore` tab (real feature: story-scoped keyword book).
- * A9 (D3=a): `shortcuts` tab — localStorage macros, not part of PUT body. */
-type Tab = 'profile' | 'story' | 'opening' | 'places' | 'lore' | 'shortcuts';
+ * A9 (D3=a): `shortcuts` tab — localStorage macros, not part of PUT body.
+ * A7 (D2=a): `stats` tab — stories.stats_json, display-only. */
+type Tab = 'profile' | 'story' | 'opening' | 'places' | 'lore' | 'shortcuts' | 'stats';
 const TABS: Array<{ key: Tab; label: string }> = [
   { key: 'profile', label: '프로필' },
   { key: 'story', label: '스토리 설정' },
@@ -64,6 +71,7 @@ const TABS: Array<{ key: Tab; label: string }> = [
   { key: 'places', label: '장소' },
   { key: 'lore', label: '키워드북' },
   { key: 'shortcuts', label: '단축어' },
+  { key: 'stats', label: '스탯' },
 ];
 
 /**
@@ -120,6 +128,7 @@ export function StoryEditor({
         setting: story.setting,
         minor_cast: (story.minor_cast ?? []).map((c) => ({ name: c.name, note: c.note })),
         places: places.map((p) => ({ ...p })),
+        stats: (story.stats_json ?? []).map((s) => ({ ...s })),
       });
       setCatalogRest(rest);
       const o = story.opening;
@@ -190,6 +199,15 @@ export function StoryEditor({
         setting: d.setting, minor_cast,
         scene_catalog: { ...catalogRest, places },
         opening: openingBody,
+        stats_json: d.stats
+          .map((s) => ({
+            id: s.id.trim(),
+            label: s.label.trim(),
+            min: Number(s.min),
+            max: Number(s.max),
+            default: Number(s.default),
+          }))
+          .filter((s) => s.id),
       };
       const saved = story ? await put<Story>(`/api/stories/${story.id}`, body) : await post<Story>('/api/stories', body);
       ui.toast('저장됨');
@@ -228,6 +246,7 @@ export function StoryEditor({
               {t.key === 'profile' && profileIncomplete ? ' *' : ''}
               {t.key === 'lore' ? (story ? ` (${lore.length})` : ' (저장 후)') : ''}
               {t.key === 'shortcuts' ? (story ? ` (${shortcuts.length})` : ' (저장 후)') : ''}
+              {t.key === 'stats' ? ` (${d.stats.length})` : ''}
             </button>
           ))}
         </div>
@@ -448,6 +467,39 @@ export function StoryEditor({
         ) : (
           <div className="small muted">저장 후 단축어를 추가할 수 있습니다.</div>
         )
+      )}
+
+      {tab === 'stats' && (
+        <>
+          <p className="small muted">표시용입니다. 모델이 바꿀 수 없고, 기존 HP/₩ 과는 별개입니다. 최대 {STAT_MAX}개.</p>
+          {d.stats.map((s, i) => (
+            <div key={i} className="card" style={{ padding: 8, marginBottom: 8 }}>
+              <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                <div className="field" style={{ flex: 1, minWidth: 80 }}><label>id</label>
+                  <input value={s.id} maxLength={20} onChange={(e) => setD((p) => ({ ...p, stats: p.stats.map((x, j) => j === i ? { ...x, id: e.target.value } : x) }))} placeholder="san" />
+                </div>
+                <div className="field" style={{ flex: 1, minWidth: 80 }}><label>표시</label>
+                  <input value={s.label} maxLength={20} onChange={(e) => setD((p) => ({ ...p, stats: p.stats.map((x, j) => j === i ? { ...x, label: e.target.value } : x) }))} placeholder="SAN" />
+                </div>
+              </div>
+              <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                <div className="field" style={{ flex: 1 }}><label>min</label>
+                  <input type="number" value={s.min} onChange={(e) => setD((p) => ({ ...p, stats: p.stats.map((x, j) => j === i ? { ...x, min: Number(e.target.value) } : x) }))} />
+                </div>
+                <div className="field" style={{ flex: 1 }}><label>max</label>
+                  <input type="number" value={s.max} onChange={(e) => setD((p) => ({ ...p, stats: p.stats.map((x, j) => j === i ? { ...x, max: Number(e.target.value) } : x) }))} />
+                </div>
+                <div className="field" style={{ flex: 1 }}><label>기본</label>
+                  <input type="number" value={s.default} onChange={(e) => setD((p) => ({ ...p, stats: p.stats.map((x, j) => j === i ? { ...x, default: Number(e.target.value) } : x) }))} />
+                </div>
+              </div>
+              <button className="btn ghost sm" type="button" onClick={() => setD((p) => ({ ...p, stats: p.stats.filter((_, j) => j !== i) }))}>이 스탯 빼기</button>
+            </div>
+          ))}
+          {d.stats.length < STAT_MAX && (
+            <button className="btn block" type="button" onClick={() => setD((p) => ({ ...p, stats: [...p.stats, emptyStat()] }))}>＋ 스탯 추가</button>
+          )}
+        </>
       )}
 
       <div className="row" style={{ justifyContent: 'space-between', marginTop: 16 }}>

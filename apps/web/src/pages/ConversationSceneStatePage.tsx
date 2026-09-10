@@ -118,6 +118,24 @@ function SceneStateView({
           </Field>
         </section>
       ) : null}
+      {draft.statDefs.length ? (
+        <section className="card settings-section-body" style={{ padding: 16, marginBottom: 12 }}>
+          <h2 className="section-title">스탯</h2>
+          {draft.statDefs.map((d) => (
+            <Field key={d.id} label={`${d.label} (${d.min}–${d.max})`}>
+              <input
+                inputMode="numeric"
+                value={draft.statValues[d.id] ?? ''}
+                disabled={pending}
+                onChange={(e) => onChange({
+                  ...draft,
+                  statValues: { ...draft.statValues, [d.id]: e.target.value },
+                })}
+              />
+            </Field>
+          ))}
+        </section>
+      ) : null}
     </SettingsPageLayout>
   );
 }

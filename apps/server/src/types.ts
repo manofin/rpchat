@@ -52,6 +52,8 @@ export interface StoryRow {
    */
   default_profile_name: string | null;
   default_format: 'beat' | 'dialog' | 'hunter' | null;
+  /** story-editor-tabs A7 (D2=a, 0018). JSON array of {id,label,min,max,default}. */
+  stats_json: string;
 }
 
 export interface StoryCharacterRow {
@@ -186,6 +188,13 @@ export interface Scene {
     /** `💬`/`⚔️` default mark. MODE_ICONS is the allow-list. */
     mode?: string;
   };
+  /**
+   * story-editor-tabs A7 (D2=a). User/server-owned numeric overlay. Not in
+   * applySceneDelta APPLY_KEYS — the model cannot write these.
+   */
+  stats?: Record<string, number>;
+  /** Frozen copy of the story defs (no default) so HUD/sheet do not re-fetch. */
+  stat_defs?: Array<{ id: string; label: string; min: number; max: number }>;
 }
 
 export interface ConversationRow {

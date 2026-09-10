@@ -99,6 +99,16 @@ const sceneSchema = z.object({
     situation: z.string().max(200).optional(),
     mode: z.string().max(8).optional(),
   }).optional(),
+  // story-editor-tabs A7 (D2=a): listed so a client PATCH that echoes the scene
+  // does not silently drop custom stats (same strip-vs-preserve as info/hunter).
+  // Not in applySceneDelta APPLY_KEYS.
+  stats: z.record(z.string().regex(/^[a-z0-9_]{1,20}$/), z.number().int()).optional(),
+  stat_defs: z.array(z.object({
+    id: z.string().regex(/^[a-z0-9_]{1,20}$/),
+    label: z.string().min(1).max(20),
+    min: z.number().int(),
+    max: z.number().int(),
+  })).max(7).optional(),
 });
 
 const createSchema = z.object({
@@ -271,6 +281,23 @@ export function conversationRoutes(ctx: Ctx) {
         const sceneObj = parseJson<Scene>(sceneJson, {});
         if (sceneObj.format === undefined) {
           sceneObj.format = story.default_format;
+          sceneJson = JSON.stringify(sceneObj);
+        }
+      }
+      // story-editor-tabs A7 (D2=a): seed scene.stats from story defs at create
+      // only. initialBeatScene is not touched. Explicit scene.stats always wins.
+      if (storyId && story?.stats_json) {
+        const defs = parseJson<Array<{ id: string; label: string; min: number; max: number; default: number }>>(story.stats_json, []);
+        if (defs.length) {
+          const sceneObj = parseJson<Scene>(sceneJson, {});
+          if (sceneObj.stats === undefined) {
+            const stats: Record<string, number> = {};
+            for (const row of defs) stats[row.id] = row.default;
+            sceneObj.stats = stats;
+          }
+          if (sceneObj.stat_defs === undefined) {
+            sceneObj.stat_defs = defs.map((row) => ({ id: row.id, label: row.label, min: row.min, max: row.max }));
+          }
           sceneJson = JSON.stringify(sceneObj);
         }
       }
