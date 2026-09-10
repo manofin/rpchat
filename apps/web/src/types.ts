@@ -47,6 +47,16 @@ export interface StoryOpening {
   present_ids: string[];
 }
 
+/**
+ * ADR-F8f extra start. GET/PUT wire field is `openings_extra`.
+ * Column is `openings_extra_json`. `opening_json` is the F8d object raw string.
+ */
+export interface StoryOpeningExtra {
+  id: string;
+  label: string;
+  opening_json: string;
+}
+
 export interface Story {
   id: string;
   name: string;
@@ -62,6 +72,8 @@ export interface Story {
   minor_cast: { name: string; note: string }[];
   scene_catalog: SceneCatalog;
   opening: StoryOpening;
+  /** ADR-F8f (0019 openings_extra_json). Empty array = no extras. */
+  openings_extra: StoryOpeningExtra[];
   archived: boolean;
   created_at: string;
   updated_at: string;

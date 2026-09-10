@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ApiError, get, post, postBinary, put } from '../lib/api';
-import type { ModelProfile, SceneCatalog, SceneCatalogPlace, Story } from '../types';
+import type { ModelProfile, SceneCatalog, SceneCatalogPlace, Story, StoryOpening, StoryOpeningExtra } from '../types';
 import {
   SHORTCUT_MAX,
   persistShortcuts,
@@ -58,6 +58,65 @@ const EMPTY: Draft = { name: '', tagline: '', cover: null, default_profile_name:
 const EMPTY_OPENING: OpeningDraft = {
   scenario: '', greeting: '', place_id: '', weather: '', day_index: '', clock_minutes: '', beat_goal: '', present_ids: [],
 };
+const OPENING_EXTRA_MAX = 7;
+type ExtraDraft = OpeningDraft & { id: string; label: string };
+
+function openingFieldsFrom(o: StoryOpening | undefined): OpeningDraft {
+  return {
+    scenario: o?.scenario ?? '',
+    greeting: o?.greeting ?? '',
+    place_id: o?.scene?.place_id ?? '',
+    weather: o?.scene?.weather ?? '',
+    day_index: o?.scene?.day_index != null ? String(o.scene.day_index) : '',
+    clock_minutes: o?.scene?.clock_minutes != null ? String(o.scene.clock_minutes) : '',
+    beat_goal: o?.scene?.beat_goal ?? '',
+    present_ids: o?.present_ids ?? [],
+  };
+}
+
+function parseExtraOpening(raw: string): OpeningDraft {
+  try {
+    const doc = JSON.parse(raw) as unknown;
+    if (doc && typeof doc === 'object' && !Array.isArray(doc)) return openingFieldsFrom(doc as StoryOpening);
+  } catch { /* damaged extra → empty F8d fields */ }
+  return { ...EMPTY_OPENING };
+}
+
+function extraToDraft(e: StoryOpeningExtra): ExtraDraft {
+  return { id: e.id, label: e.label, ...parseExtraOpening(e.opening_json) };
+}
+
+function emptyExtra(existing: ExtraDraft[]): ExtraDraft {
+  const used = new Set(existing.map((e) => e.id));
+  let n = existing.length + 1;
+  let id = `extra_${n}`;
+  while (used.has(id)) {
+    n += 1;
+    id = `extra_${n}`;
+  }
+  return { id, label: `시작 ${n}`, ...EMPTY_OPENING };
+}
+
+function buildOpeningBody(o: OpeningDraft) {
+  const scene: Record<string, unknown> = {};
+  if (o.place_id.trim()) scene.place_id = o.place_id.trim();
+  if (o.weather.trim()) scene.weather = o.weather.trim();
+  if (o.day_index.trim()) {
+    const n = Number(o.day_index);
+    if (Number.isInteger(n)) scene.day_index = n;
+  }
+  if (o.clock_minutes.trim()) {
+    const n = Number(o.clock_minutes);
+    if (Number.isInteger(n)) scene.clock_minutes = n;
+  }
+  if (o.beat_goal.trim()) scene.beat_goal = o.beat_goal.trim();
+  return {
+    scenario: o.scenario,
+    greeting: o.greeting,
+    scene,
+    present_ids: o.present_ids,
+  };
+}
 
 /** story-editor-tabs (A1): reflow only — no new field, no payload change.
  * A8 added the `lore` tab (real feature: story-scoped keyword book).
@@ -99,6 +158,7 @@ export function StoryEditor({
   const ui = useUi();
   const [d, setD] = useState<Draft>(EMPTY);
   const [opening, setOpening] = useState<OpeningDraft>(EMPTY_OPENING);
+  const [extras, setExtras] = useState<ExtraDraft[]>([]);
   const [catalogRest, setCatalogRest] = useState<Omit<SceneCatalog, 'places'>>(EMPTY_CATALOG_REST);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -131,20 +191,12 @@ export function StoryEditor({
         stats: (story.stats_json ?? []).map((s) => ({ ...s })),
       });
       setCatalogRest(rest);
-      const o = story.opening;
-      setOpening({
-        scenario: o?.scenario ?? '',
-        greeting: o?.greeting ?? '',
-        place_id: o?.scene?.place_id ?? '',
-        weather: o?.scene?.weather ?? '',
-        day_index: o?.scene?.day_index != null ? String(o.scene.day_index) : '',
-        clock_minutes: o?.scene?.clock_minutes != null ? String(o.scene.clock_minutes) : '',
-        beat_goal: o?.scene?.beat_goal ?? '',
-        present_ids: o?.present_ids ?? [],
-      });
+      setOpening(openingFieldsFrom(story.opening));
+      setExtras((story.openings_extra ?? []).map(extraToDraft));
     } else {
       setD(EMPTY);
       setOpening(EMPTY_OPENING);
+      setExtras([]);
       setCatalogRest(EMPTY_CATALOG_REST);
       setLore([]);
       setShortcuts([]);
@@ -173,24 +225,7 @@ export function StoryEditor({
     const places = d.places
       .map((p) => ({ ...p, id: p.id.trim(), name: p.name?.trim() || undefined }))
       .filter((p) => p.id);
-    const scene: Record<string, unknown> = {};
-    if (opening.place_id.trim()) scene.place_id = opening.place_id.trim();
-    if (opening.weather.trim()) scene.weather = opening.weather.trim();
-    if (opening.day_index.trim()) {
-      const n = Number(opening.day_index);
-      if (Number.isInteger(n)) scene.day_index = n;
-    }
-    if (opening.clock_minutes.trim()) {
-      const n = Number(opening.clock_minutes);
-      if (Number.isInteger(n)) scene.clock_minutes = n;
-    }
-    if (opening.beat_goal.trim()) scene.beat_goal = opening.beat_goal.trim();
-    const openingBody = {
-      scenario: opening.scenario,
-      greeting: opening.greeting,
-      scene,
-      present_ids: opening.present_ids,
-    };
+    const openingBody = buildOpeningBody(opening);
     setSaving(true);
     try {
       const body = {
@@ -199,6 +234,14 @@ export function StoryEditor({
         setting: d.setting, minor_cast,
         scene_catalog: { ...catalogRest, places },
         opening: openingBody,
+        openings_extra: extras
+          .map((e) => ({
+            id: e.id.trim(),
+            label: e.label.trim(),
+            opening_json: JSON.stringify(buildOpeningBody(e)),
+          }))
+          .filter((e) => e.id && e.label)
+          .slice(0, OPENING_EXTRA_MAX),
         stats_json: d.stats
           .map((s) => ({
             id: s.id.trim(),
@@ -247,6 +290,7 @@ export function StoryEditor({
               {t.key === 'lore' ? (story ? ` (${lore.length})` : ' (저장 후)') : ''}
               {t.key === 'shortcuts' ? (story ? ` (${shortcuts.length})` : ' (저장 후)') : ''}
               {t.key === 'stats' ? ` (${d.stats.length})` : ''}
+              {t.key === 'opening' ? ` (${extras.length})` : ''}
             </button>
           ))}
         </div>
@@ -377,6 +421,82 @@ export function StoryEditor({
                 </label>
               ))}
             </div>
+          )}
+
+          <div className="section-title">추가 시작 설정</div>
+          <div className="small muted" style={{ marginBottom: 8 }}>
+            기본 외에 최대 {OPENING_EXTRA_MAX}개. 각 항목은 id·라벨과 같은 시작 필드입니다.
+          </div>
+          {extras.map((e, i) => (
+            <div key={e.id || i} className="card" style={{ marginBottom: 8 }}>
+              <div className="field"><label>id</label>
+                <input value={e.id} maxLength={64} onChange={(ev) => setExtras((p) => p.map((x, j) => (j === i ? { ...x, id: ev.target.value } : x)))} />
+              </div>
+              <div className="field"><label>라벨</label>
+                <input value={e.label} maxLength={40} onChange={(ev) => setExtras((p) => p.map((x, j) => (j === i ? { ...x, label: ev.target.value } : x)))} />
+              </div>
+              <div className="field"><label>시작 설정 (시나리오)</label>
+                <textarea value={e.scenario} maxLength={8000} onChange={(ev) => setExtras((p) => p.map((x, j) => (j === i ? { ...x, scenario: ev.target.value } : x)))} />
+              </div>
+              <div className="field"><label>첫 대사</label>
+                <textarea value={e.greeting} maxLength={10000} onChange={(ev) => setExtras((p) => p.map((x, j) => (j === i ? { ...x, greeting: ev.target.value } : x)))} />
+              </div>
+              <div className="field">
+                <label>시작 장소</label>
+                <select value={e.place_id} onChange={(ev) => setExtras((p) => p.map((x, j) => (j === i ? { ...x, place_id: ev.target.value } : x)))}>
+                  <option value="">카탈로그 첫 장소</option>
+                  {d.places.filter((p) => p.id.trim()).map((p) => (
+                    <option key={p.id} value={p.id.trim()}>{p.name?.trim() || p.id.trim()}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>날씨</label>
+                <select value={e.weather} onChange={(ev) => setExtras((p) => p.map((x, j) => (j === i ? { ...x, weather: ev.target.value } : x)))}>
+                  <option value="">카탈로그 첫 날씨</option>
+                  {(catalogRest.weathers ?? []).map((w) => (
+                    <option key={w} value={w}>{w}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="field"><label>시계 (0–1439분)</label>
+                <input type="number" min={0} max={1439} value={e.clock_minutes} onChange={(ev) => setExtras((p) => p.map((x, j) => (j === i ? { ...x, clock_minutes: ev.target.value } : x)))} />
+              </div>
+              <div className="field"><label>일차 (≥1)</label>
+                <input type="number" min={1} value={e.day_index} onChange={(ev) => setExtras((p) => p.map((x, j) => (j === i ? { ...x, day_index: ev.target.value } : x)))} />
+              </div>
+              <div className="field"><label>이 비트 목표</label>
+                <input value={e.beat_goal} maxLength={500} onChange={(ev) => setExtras((p) => p.map((x, j) => (j === i ? { ...x, beat_goal: ev.target.value } : x)))} />
+              </div>
+              {hosted.length > 0 && (
+                <div className="field">
+                  <label>첫 장면 등장</label>
+                  {hosted.map((h) => (
+                    <label key={h.character_id} className="small" style={{ display: 'block', marginTop: 4 }}>
+                      <input
+                        type="checkbox"
+                        checked={e.present_ids.includes(h.character_id)}
+                        onChange={() => setExtras((p) => p.map((x, j) => (j === i ? {
+                          ...x,
+                          present_ids: x.present_ids.includes(h.character_id)
+                            ? x.present_ids.filter((id) => id !== h.character_id)
+                            : [...x.present_ids, h.character_id],
+                        } : x)))}
+                      />{' '}
+                      {h.name}
+                    </label>
+                  ))}
+                </div>
+              )}
+              <button className="btn ghost sm" type="button" onClick={() => setExtras((p) => p.filter((_, j) => j !== i))}>이 시작 빼기</button>
+            </div>
+          ))}
+          {extras.length < OPENING_EXTRA_MAX && (
+            <button
+              className="btn block"
+              type="button"
+              onClick={() => setExtras((p) => (p.length < OPENING_EXTRA_MAX ? [...p, emptyExtra(p)] : p))}
+            >＋ 시작 설정 추가</button>
           )}
         </>
       )}
