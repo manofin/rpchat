@@ -20,6 +20,8 @@ import type { CharacterRow, ConversationRow, LoreEntryRow, StoryCharacterRow, St
 
 export type StoryOpeningExtra = { id: string; label: string; opening_json: string };
 
+export type StoryEnding = { id: string; title: string; description: string; badge_label: string };
+
 /** Damaged / non-array → [] (GET/POST fallback). Authorship 400 lives in the PUT handler. */
 export function parseOpeningsExtra(raw: string | null | undefined): StoryOpeningExtra[] {
   if (raw == null || raw === '') return [];
@@ -61,6 +63,49 @@ function storedOpeningsExtra(extras: StoryOpeningExtra[]): string {
   );
 }
 
+/** Damaged / non-array → [] (GET fallback). Authorship 400 lives in the PUT handler. */
+export function parseEndings(raw: string | null | undefined): StoryEnding[] {
+  if (raw == null || raw === '') return [];
+  let doc: unknown;
+  try {
+    doc = JSON.parse(raw);
+  } catch {
+    console.warn('[parseEndings] damaged endings_json');
+    return [];
+  }
+  if (!Array.isArray(doc)) {
+    console.warn('[parseEndings] damaged endings_json');
+    return [];
+  }
+  const out: StoryEnding[] = [];
+  const seen = new Set<string>();
+  for (const item of doc) {
+    if (typeof item !== 'object' || item === null || Array.isArray(item)) continue;
+    const rec = item as Record<string, unknown>;
+    const id = typeof rec.id === 'string' ? rec.id.trim() : '';
+    const title = typeof rec.title === 'string' ? rec.title.trim() : '';
+    const description = typeof rec.description === 'string' ? rec.description : '';
+    const badge_label = typeof rec.badge_label === 'string' ? rec.badge_label : '';
+    if (!id || id.length > 64 || !title || title.length > 40) continue;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push({ id, title, description, badge_label });
+    if (out.length >= 7) break;
+  }
+  return out;
+}
+
+function storedEndings(endings: StoryEnding[]): string {
+  return JSON.stringify(
+    endings.map((e) => ({
+      id: e.id.trim(),
+      title: e.title.trim(),
+      description: e.description,
+      badge_label: e.badge_label,
+    })),
+  );
+}
+
 function extraOpeningJsonIsObject(raw: string): boolean {
   try {
     const doc = JSON.parse(raw) as unknown;
@@ -71,7 +116,7 @@ function extraOpeningJsonIsObject(raw: string): boolean {
 }
 
 export function storyOut(s: StoryRow) {
-  const { opening_json, stats_json, openings_extra_json, ...rest } = s;
+  const { opening_json, stats_json, openings_extra_json, endings_json, ...rest } = s;
   return {
     ...rest,
     minor_cast: parseJson<unknown[]>(s.minor_cast, []),
@@ -79,6 +124,7 @@ export function storyOut(s: StoryRow) {
     scene_catalog: parseSceneCatalog(s.scene_catalog ?? '{}'),
     opening: parseOpening(opening_json ?? '{}'),
     openings_extra: parseOpeningsExtra(openings_extra_json ?? '[]'),
+    endings: parseEndings(endings_json ?? '[]'),
     archived: !!s.archived,
   };
 }
@@ -262,6 +308,37 @@ const storySchema = z.object({
       });
     })
     .optional(),
+  // ADR-F8g: omit=preserve on PUT (same as openings_extra). Explicit [] clears endings.
+  endings: z
+    .array(
+      z
+        .object({
+          id: z.string().max(64),
+          title: z.string().max(40),
+          description: z.string().max(2000).optional().default(''),
+          badge_label: z.string().max(40).optional().default(''),
+        })
+        .strict(),
+    )
+    .max(7)
+    .superRefine((arr, ctx) => {
+      const seen = new Set<string>();
+      arr.forEach((row, i) => {
+        const id = row.id.trim();
+        const title = row.title.trim();
+        if (id.length < 1 || id.length > 64) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'id required', path: [i, 'id'] });
+        }
+        if (title.length < 1 || title.length > 40) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'title 1-40', path: [i, 'title'] });
+        }
+        if (id && seen.has(id)) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: `duplicate id ${id}`, path: [i, 'id'] });
+        }
+        if (id) seen.add(id);
+      });
+    })
+    .optional(),
 });
 
 const mappingSchema = z.object({
@@ -342,8 +419,8 @@ export function storyRoutes(ctx: Ctx) {
       }
       run(
         db,
-        `INSERT INTO stories (id, name, tagline, cover, default_profile_name, default_format, stats_json, setting, minor_cast, scene_catalog, opening_json, openings_extra_json, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO stories (id, name, tagline, cover, default_profile_name, default_format, stats_json, setting, minor_cast, scene_catalog, opening_json, openings_extra_json, endings_json, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         id,
         d.name,
         d.tagline,
@@ -357,6 +434,7 @@ export function storyRoutes(ctx: Ctx) {
         d.scene_catalog === undefined ? EMPTY_CATALOG_JSON : storedCatalog(d.scene_catalog),
         openingJson,
         d.openings_extra === undefined ? '[]' : storedOpeningsExtra(d.openings_extra),
+        d.endings === undefined ? '[]' : storedEndings(d.endings),
         t,
         t,
       );
@@ -422,6 +500,10 @@ export function storyRoutes(ctx: Ctx) {
         if (extraErrors.length) return reply.code(400).send({ error: 'invalid openings_extra', fields: extraErrors });
         sets.push('openings_extra_json=?');
         args.push(storedOpeningsExtra(d.openings_extra));
+      }
+      if (d.endings !== undefined) {
+        sets.push('endings_json=?');
+        args.push(storedEndings(d.endings));
       }
       sets.push('updated_at=?');
       args.push(nowIso());
@@ -594,6 +676,9 @@ export function storyRoutes(ctx: Ctx) {
           story_minor_cast_snapshot: null,
           story_participant_ids_snapshot: null,
           story_opening_snapshot: null,
+          story_endings_snapshot: null,
+          ended_at: null,
+          reached_ending_id: null,
         };
         const built = buildPrompt(db, virtualConv, [], config.model.contextTokens, ctx.resolvedModel());
         const fixedSection = built.budget.sections.find((s) => s.name === '시스템 규칙+카드+페르소나+장면')!;

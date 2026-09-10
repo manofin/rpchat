@@ -190,6 +190,7 @@ export function conversationRoutes(ctx: Ctx) {
       let storyMinorCastSnapshot: string | null = null;
       let storyParticipantIdsSnapshot: string | null = null;
       let storyOpeningSnapshot: string | null = null;
+      let storyEndingsSnapshot: string | null = null;
       if (d.storyId) {
         story = one<StoryRow>(db, 'SELECT * FROM stories WHERE id = ?', d.storyId) ?? null;
         if (!story) return reply.code(404).send({ error: 'story not found' });
@@ -206,6 +207,8 @@ export function conversationRoutes(ctx: Ctx) {
           const hit = parseOpeningsExtra(story.openings_extra_json).find((e) => e.id === requestedOpeningId);
           if (hit) storyOpeningSnapshot = hit.opening_json;
         }
+        // ADR-F8g E4=a: raw copy of the endings list at creation. 1:1 stays NULL.
+        storyEndingsSnapshot = story.endings_json ?? '[]';
       }
       // story-editor-tabs A12: creation-time fallback only, applied after the
       // story lookup above so a story's default_profile_name can stand in for
@@ -327,10 +330,10 @@ export function conversationRoutes(ctx: Ctx) {
       db.transaction(() => {
         run(
           db,
-          `INSERT INTO conversations (id, character_id, persona_id, title, mode, profile_name, scene_json, head_message_id, prompt_version, created_at, updated_at, last_message_at, story_id, story_applied_at, story_name_snapshot, story_setting_snapshot, story_minor_cast_snapshot, story_participant_ids_snapshot, story_opening_snapshot, persona_name_snapshot, persona_address_snapshot, persona_appearance_snapshot, persona_personality_snapshot, persona_relationship_snapshot, persona_applied_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO conversations (id, character_id, persona_id, title, mode, profile_name, scene_json, head_message_id, prompt_version, created_at, updated_at, last_message_at, story_id, story_applied_at, story_name_snapshot, story_setting_snapshot, story_minor_cast_snapshot, story_participant_ids_snapshot, story_opening_snapshot, story_endings_snapshot, persona_name_snapshot, persona_address_snapshot, persona_appearance_snapshot, persona_personality_snapshot, persona_relationship_snapshot, persona_applied_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           id, character.id, d.personaId ?? null, d.title ?? '', d.mode, profileName, sceneJson, PROMPT_VERSION, t, t,
-          storyId, storyAppliedAt, storyNameSnapshot, storySettingSnapshot, storyMinorCastSnapshot, storyParticipantIdsSnapshot, storyOpeningSnapshot,
+          storyId, storyAppliedAt, storyNameSnapshot, storySettingSnapshot, storyMinorCastSnapshot, storyParticipantIdsSnapshot, storyOpeningSnapshot, storyEndingsSnapshot,
           personaNameSnap, personaAddressSnap, personaAppearanceSnap, personaPersonalitySnap, personaRelationshipSnap, personaAppliedAt,
         );
         const conv = loadConversation(ctx, id)!;

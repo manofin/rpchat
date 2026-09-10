@@ -45,6 +45,12 @@ export interface StoryRow {
    * '[]' = no extras. Snapshot copies one chosen opening_json string, never this array.
    */
   openings_extra_json: string;
+  /**
+   * ADR-F8g (0020): endings as JSON array of
+   * {id, title, description, badge_label}.
+   * '[]' = no endings. Snapshot copies this raw string, never re-serialized.
+   */
+  endings_json: string;
   archived: number;
   created_at: string;
   updated_at: string;
@@ -233,6 +239,12 @@ export interface ConversationRow {
   story_participant_ids_snapshot: string | null;
   /** ADR-F8d: frozen copy of stories.opening_json. NULL = pre-0014 story room → '{}'. */
   story_opening_snapshot: string | null;
+  /** ADR-F8g: frozen copy of stories.endings_json. NULL = pre-0020 / 1:1 room → no endings. */
+  story_endings_snapshot: string | null;
+  /** ADR-F8g: set when the reader reaches an ending. NULL = room in progress. */
+  ended_at: string | null;
+  /** ADR-F8g: id of the reached ending (joins the snapshot). NULL = not ended. */
+  reached_ending_id: string | null;
 }
 
 export type MessageStatus = 'streaming' | 'complete' | 'interrupted' | 'error';
