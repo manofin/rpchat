@@ -57,6 +57,17 @@ export interface StoryOpeningExtra {
   opening_json: string;
 }
 
+/**
+ * ADR-F8g ending. GET/PUT wire field is `endings`.
+ * Column is `endings_json`.
+ */
+export interface StoryEnding {
+  id: string;
+  title: string;
+  description: string;
+  badge_label: string;
+}
+
 export interface Story {
   id: string;
   name: string;
@@ -74,6 +85,8 @@ export interface Story {
   opening: StoryOpening;
   /** ADR-F8f (0019 openings_extra_json). Empty array = no extras. */
   openings_extra: StoryOpeningExtra[];
+  /** ADR-F8g (0020 endings_json). Empty array = no endings. */
+  endings: StoryEnding[];
   archived: boolean;
   created_at: string;
   updated_at: string;

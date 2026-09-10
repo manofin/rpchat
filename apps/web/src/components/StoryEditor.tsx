@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ApiError, get, post, postBinary, put } from '../lib/api';
-import type { ModelProfile, SceneCatalog, SceneCatalogPlace, Story, StoryOpening, StoryOpeningExtra } from '../types';
+import type { ModelProfile, SceneCatalog, SceneCatalogPlace, Story, StoryEnding, StoryOpening, StoryOpeningExtra } from '../types';
 import {
   SHORTCUT_MAX,
   persistShortcuts,
@@ -61,6 +61,9 @@ const EMPTY_OPENING: OpeningDraft = {
 const OPENING_EXTRA_MAX = 7;
 type ExtraDraft = OpeningDraft & { id: string; label: string };
 
+const ENDINGS_MAX = 7;
+type EndingDraft = { id: string; title: string; description: string; badge_label: string };
+
 function openingFieldsFrom(o: StoryOpening | undefined): OpeningDraft {
   return {
     scenario: o?.scenario ?? '',
@@ -97,6 +100,21 @@ function emptyExtra(existing: ExtraDraft[]): ExtraDraft {
   return { id, label: `시작 ${n}`, ...EMPTY_OPENING };
 }
 
+function endingToDraft(e: StoryEnding): EndingDraft {
+  return { id: e.id, title: e.title, description: e.description ?? '', badge_label: e.badge_label ?? '' };
+}
+
+function emptyEnding(existing: EndingDraft[]): EndingDraft {
+  const used = new Set(existing.map((e) => e.id));
+  let n = existing.length + 1;
+  let id = `ending_${n}`;
+  while (used.has(id)) {
+    n += 1;
+    id = `ending_${n}`;
+  }
+  return { id, title: `엔딩 ${n}`, description: '', badge_label: '' };
+}
+
 function buildOpeningBody(o: OpeningDraft) {
   const scene: Record<string, unknown> = {};
   if (o.place_id.trim()) scene.place_id = o.place_id.trim();
@@ -122,11 +140,12 @@ function buildOpeningBody(o: OpeningDraft) {
  * A8 added the `lore` tab (real feature: story-scoped keyword book).
  * A9 (D3=a): `shortcuts` tab — localStorage macros, not part of PUT body.
  * A7 (D2=a): `stats` tab — stories.stats_json, display-only. */
-type Tab = 'profile' | 'story' | 'opening' | 'places' | 'lore' | 'shortcuts' | 'stats';
+type Tab = 'profile' | 'story' | 'opening' | 'endings' | 'places' | 'lore' | 'shortcuts' | 'stats';
 const TABS: Array<{ key: Tab; label: string }> = [
   { key: 'profile', label: '프로필' },
   { key: 'story', label: '스토리 설정' },
   { key: 'opening', label: '시작 설정' },
+  { key: 'endings', label: '엔딩' },
   { key: 'places', label: '장소' },
   { key: 'lore', label: '키워드북' },
   { key: 'shortcuts', label: '단축어' },
@@ -159,6 +178,7 @@ export function StoryEditor({
   const [d, setD] = useState<Draft>(EMPTY);
   const [opening, setOpening] = useState<OpeningDraft>(EMPTY_OPENING);
   const [extras, setExtras] = useState<ExtraDraft[]>([]);
+  const [endings, setEndings] = useState<EndingDraft[]>([]);
   const [catalogRest, setCatalogRest] = useState<Omit<SceneCatalog, 'places'>>(EMPTY_CATALOG_REST);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -193,10 +213,12 @@ export function StoryEditor({
       setCatalogRest(rest);
       setOpening(openingFieldsFrom(story.opening));
       setExtras((story.openings_extra ?? []).map(extraToDraft));
+      setEndings((story.endings ?? []).map(endingToDraft));
     } else {
       setD(EMPTY);
       setOpening(EMPTY_OPENING);
       setExtras([]);
+      setEndings([]);
       setCatalogRest(EMPTY_CATALOG_REST);
       setLore([]);
       setShortcuts([]);
@@ -242,6 +264,15 @@ export function StoryEditor({
           }))
           .filter((e) => e.id && e.label)
           .slice(0, OPENING_EXTRA_MAX),
+        endings: endings
+          .map((e) => ({
+            id: e.id.trim(),
+            title: e.title.trim(),
+            description: e.description,
+            badge_label: e.badge_label,
+          }))
+          .filter((e) => e.id && e.title)
+          .slice(0, ENDINGS_MAX),
         stats_json: d.stats
           .map((s) => ({
             id: s.id.trim(),
@@ -291,6 +322,7 @@ export function StoryEditor({
               {t.key === 'shortcuts' ? (story ? ` (${shortcuts.length})` : ' (저장 후)') : ''}
               {t.key === 'stats' ? ` (${d.stats.length})` : ''}
               {t.key === 'opening' ? ` (${extras.length})` : ''}
+              {t.key === 'endings' ? ` (${endings.length})` : ''}
             </button>
           ))}
         </div>
@@ -497,6 +529,39 @@ export function StoryEditor({
               type="button"
               onClick={() => setExtras((p) => (p.length < OPENING_EXTRA_MAX ? [...p, emptyExtra(p)] : p))}
             >＋ 시작 설정 추가</button>
+          )}
+        </>
+      )}
+
+      {tab === 'endings' && (
+        <>
+          <div className="section-title">엔딩</div>
+          <div className="small muted" style={{ marginBottom: 8 }}>
+            최대 {ENDINGS_MAX}개. 독자가 채팅에서 골라 방을 완결합니다. 상세 페이지에는 개수만 표시됩니다.
+          </div>
+          {endings.map((e, i) => (
+            <div key={e.id || i} className="card" style={{ marginBottom: 8 }}>
+              <div className="field"><label>id</label>
+                <input value={e.id} maxLength={64} onChange={(ev) => setEndings((p) => p.map((x, j) => (j === i ? { ...x, id: ev.target.value } : x)))} />
+              </div>
+              <div className="field"><label>제목 (1–40자)</label>
+                <input value={e.title} maxLength={40} onChange={(ev) => setEndings((p) => p.map((x, j) => (j === i ? { ...x, title: ev.target.value } : x)))} />
+              </div>
+              <div className="field"><label>설명</label>
+                <textarea value={e.description} maxLength={2000} onChange={(ev) => setEndings((p) => p.map((x, j) => (j === i ? { ...x, description: ev.target.value } : x)))} />
+              </div>
+              <div className="field"><label>뱃지</label>
+                <input value={e.badge_label} maxLength={40} onChange={(ev) => setEndings((p) => p.map((x, j) => (j === i ? { ...x, badge_label: ev.target.value } : x)))} />
+              </div>
+              <button className="btn ghost sm" type="button" onClick={() => setEndings((p) => p.filter((_, j) => j !== i))}>이 엔딩 빼기</button>
+            </div>
+          ))}
+          {endings.length < ENDINGS_MAX && (
+            <button
+              className="btn block"
+              type="button"
+              onClick={() => setEndings((p) => (p.length < ENDINGS_MAX ? [...p, emptyEnding(p)] : p))}
+            >＋ 엔딩 추가</button>
           )}
         </>
       )}
