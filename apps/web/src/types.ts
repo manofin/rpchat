@@ -169,6 +169,8 @@ export interface Conversation {
   persona_personality_snapshot: string | null;
   persona_relationship_snapshot: string | null;
   persona_applied_at: string | null;
+  /** Present on GET conversation; null on 1:1. A9 macros key off this. */
+  story_id: string | null;
   character_name?: string;
   preview?: string;
 }

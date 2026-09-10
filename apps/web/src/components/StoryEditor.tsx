@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react';
 import { ApiError, get, post, postBinary, put } from '../lib/api';
 import type { ModelProfile, SceneCatalog, SceneCatalogPlace, Story } from '../types';
+import {
+  SHORTCUT_MAX,
+  persistShortcuts,
+  readShortcuts,
+  removeShortcut,
+  upsertShortcut,
+  type Shortcut,
+} from '../lib/shortcutMacro';
 import { LorePanel, type LoreEntry } from './LorePanel';
 import { Modal, useUi } from './ui';
 
@@ -46,14 +54,16 @@ const EMPTY_OPENING: OpeningDraft = {
 };
 
 /** story-editor-tabs (A1): reflow only — no new field, no payload change.
- * A8 added the `lore` tab (real feature: story-scoped keyword book). */
-type Tab = 'profile' | 'story' | 'opening' | 'places' | 'lore';
+ * A8 added the `lore` tab (real feature: story-scoped keyword book).
+ * A9 (D3=a): `shortcuts` tab — localStorage macros, not part of PUT body. */
+type Tab = 'profile' | 'story' | 'opening' | 'places' | 'lore' | 'shortcuts';
 const TABS: Array<{ key: Tab; label: string }> = [
   { key: 'profile', label: '프로필' },
   { key: 'story', label: '스토리 설정' },
   { key: 'opening', label: '시작 설정' },
   { key: 'places', label: '장소' },
   { key: 'lore', label: '키워드북' },
+  { key: 'shortcuts', label: '단축어' },
 ];
 
 /**
@@ -85,6 +95,9 @@ export function StoryEditor({
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [lore, setLore] = useState<LoreEntry[]>([]);
+  const [shortcuts, setShortcuts] = useState<Shortcut[]>([]);
+  const [shortcutName, setShortcutName] = useState('');
+  const [shortcutText, setShortcutText] = useState('');
   const [profiles, setProfiles] = useState<ModelProfile[]>([]);
   const [tab, setTab] = useState<Tab>('profile');
 
@@ -94,6 +107,9 @@ export function StoryEditor({
     get<ModelProfile[]>('/api/profiles').then(setProfiles).catch(() => setProfiles([]));
     if (story) {
       get<LoreEntry[]>(`/api/stories/${story.id}/lore`).then(setLore).catch(() => setLore([]));
+      setShortcuts(readShortcuts(story.id));
+      setShortcutName('');
+      setShortcutText('');
       const { places, ...rest } = story.scene_catalog ?? { places: [], ...EMPTY_CATALOG_REST };
       setD({
         name: story.name,
@@ -122,6 +138,9 @@ export function StoryEditor({
       setOpening(EMPTY_OPENING);
       setCatalogRest(EMPTY_CATALOG_REST);
       setLore([]);
+      setShortcuts([]);
+      setShortcutName('');
+      setShortcutText('');
     }
   }, [open, story]);
 
@@ -202,12 +221,13 @@ export function StoryEditor({
               key={t.key}
               type="button"
               className={tab === t.key ? 'active' : ''}
-              disabled={t.key === 'lore' && !story}
+              disabled={(t.key === 'lore' || t.key === 'shortcuts') && !story}
               onClick={() => setTab(t.key)}
             >
               {t.label}
               {t.key === 'profile' && profileIncomplete ? ' *' : ''}
               {t.key === 'lore' ? (story ? ` (${lore.length})` : ' (저장 후)') : ''}
+              {t.key === 'shortcuts' ? (story ? ` (${shortcuts.length})` : ' (저장 후)') : ''}
             </button>
           ))}
         </div>
@@ -366,6 +386,67 @@ export function StoryEditor({
           <LorePanel createUrl={`/api/stories/${story.id}/lore`} lore={lore} setLore={setLore} />
         ) : (
           <div className="small muted">저장 후 키워드북을 추가할 수 있습니다.</div>
+        )
+      )}
+
+      {tab === 'shortcuts' && (
+        story ? (
+          <>
+            <div className="small muted" style={{ marginBottom: 8 }}>
+              입력창에서 <code>/이름</code> 을 치면 아래 텍스트로 바뀝니다. 보내기는 직접 합니다. 이 기기에만 저장됩니다 (최대 {SHORTCUT_MAX}개).
+            </div>
+            {shortcuts.map((s) => (
+              <div key={s.name} className="card" style={{ marginBottom: 8 }}>
+                <div className="field"><label>/{s.name}</label>
+                  <textarea
+                    value={s.text}
+                    onChange={(e) => {
+                      const next = upsertShortcut(shortcuts, s.name, e.target.value);
+                      if (!next.ok) return;
+                      setShortcuts(next.entries);
+                      persistShortcuts(story.id, next.entries);
+                    }}
+                  />
+                </div>
+                <button
+                  className="btn ghost sm"
+                  type="button"
+                  onClick={() => {
+                    const next = removeShortcut(shortcuts, s.name);
+                    setShortcuts(next);
+                    persistShortcuts(story.id, next);
+                  }}
+                >이 단축어 빼기</button>
+              </div>
+            ))}
+            {shortcuts.length < SHORTCUT_MAX && (
+              <>
+                <div className="field"><label>이름 (슬래시 없이)</label>
+                  <input value={shortcutName} onChange={(e) => setShortcutName(e.target.value)} maxLength={32} placeholder="예: 요약" />
+                </div>
+                <div className="field"><label>치환 텍스트</label>
+                  <textarea value={shortcutText} onChange={(e) => setShortcutText(e.target.value)} placeholder="입력창에 넣을 내용" />
+                </div>
+                <button
+                  className="btn block"
+                  type="button"
+                  onClick={() => {
+                    const next = upsertShortcut(shortcuts, shortcutName, shortcutText);
+                    if (!next.ok) {
+                      ui.toast(shortcuts.length >= SHORTCUT_MAX ? `최대 ${SHORTCUT_MAX}개` : '이름과 텍스트를 확인하세요', 'err');
+                      return;
+                    }
+                    setShortcuts(next.entries);
+                    persistShortcuts(story.id, next.entries);
+                    setShortcutName('');
+                    setShortcutText('');
+                  }}
+                >＋ 단축어 추가</button>
+              </>
+            )}
+          </>
+        ) : (
+          <div className="small muted">저장 후 단축어를 추가할 수 있습니다.</div>
         )
       )}
 

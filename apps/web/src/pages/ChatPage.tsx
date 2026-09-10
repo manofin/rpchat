@@ -12,6 +12,7 @@ import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { visibleChoices } from '../lib/choices';
 import { groupChatTurns, shouldReorderTurn, turnChoicesHost, visualAssistantOrder } from '../lib/chatLayout';
 import { wrapSpeechMarks } from '../lib/speechMarks';
+import { expandLeadingShortcut, readShortcuts } from '../lib/shortcutMacro';
 import { useDesktopLayout } from '../lib/useDesktopLayout';
 import {
   resolveBannerWatermarkId,
@@ -132,7 +133,9 @@ export function ChatPage({ id }: { id: string }) {
   const hasDraft = summaryRows?.some((s) => s.status !== 'approved') ?? false;
 
   async function submit() {
-    const text = draft.trim();
+    const storyId = chat.detail?.conversation.story_id ?? null;
+    const expanded = expandLeadingShortcut(draft, readShortcuts(storyId)).text;
+    const text = expanded.trim();
     if (!text || chat.generating) return;
     setDraft('');
     requestAnimationFrame(grow);
@@ -320,7 +323,7 @@ export function ChatPage({ id }: { id: string }) {
           <textarea
             ref={taRef}
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => setDraft(expandLeadingShortcut(e.target.value, readShortcuts(conv.story_id), { bare: false }).text)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
