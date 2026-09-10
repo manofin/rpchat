@@ -158,10 +158,11 @@ async function main() {
     assert.ok(names.includes('0009_conversation_story.sql'), JSON.stringify(names));
     const info = cols(db, 'conversations');
     // 0010-0012 add separate tables, not conversations columns; 0013 (F8e
-    // story-peer-cast-schema) appends story_participant_ids_snapshot.
+    // story-peer-cast-schema) appends story_participant_ids_snapshot;
+    // 0014 (F8d) appends story_opening_snapshot.
     assert.deepEqual(
       info.map((c) => c.name),
-      [...BASE_CONV_COLS, ...STORY_COLS, 'story_participant_ids_snapshot'],
+      [...BASE_CONV_COLS, ...STORY_COLS, 'story_participant_ids_snapshot', 'story_opening_snapshot'],
     );
     assert.equal(info.find((c) => c.name === 'character_id')?.notnull, 1);
   });

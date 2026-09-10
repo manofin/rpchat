@@ -5,13 +5,16 @@ import { PROMPT_VERSION, config } from '../config.js';
 import { many, nowIso, one, parseJson, run, uid } from '../db/index.js';
 import { buildPrompt, computeStoryInjection } from '../prompt/builder.js';
 import { parseSceneCatalog } from '../prompt/sceneCatalog.js';
+import { parseOpening, storedOpening, validateOpeningPut } from '../prompt/storyOpening.js';
 import type { CharacterRow, ConversationRow, StoryCharacterRow, StoryRow } from '../types.js';
 
 export function storyOut(s: StoryRow) {
+  const { opening_json, ...rest } = s;
   return {
-    ...s,
+    ...rest,
     minor_cast: parseJson<unknown[]>(s.minor_cast, []),
     scene_catalog: parseSceneCatalog(s.scene_catalog ?? '{}'),
+    opening: parseOpening(opening_json ?? '{}'),
     archived: !!s.archived,
   };
 }
@@ -118,6 +121,19 @@ const storySchema = z.object({
   // stored catalog alone" — see the PUT handler. Defaulting here is what made a
   // save from a client that does not know about catalogs erase one.
   scene_catalog: sceneCatalogSchema.optional(),
+  // ADR-F8d: same omit=preserve / explicit {} = empty contract as scene_catalog.
+  opening: z.object({
+    scenario: z.string().max(8000).optional(),
+    greeting: z.string().max(10000).optional(),
+    scene: z.object({
+      place_id: z.string().max(60).optional(),
+      weather: z.string().max(40).optional(),
+      day_index: z.number().int().optional(),
+      clock_minutes: z.number().int().optional(),
+      beat_goal: z.string().max(500).optional(),
+    }).optional(),
+    present_ids: z.array(z.string().min(1).max(100)).max(12).optional(),
+  }).optional(),
 });
 
 const mappingSchema = z.object({
@@ -158,10 +174,21 @@ export function storyRoutes(ctx: Ctx) {
       const d = p.data;
       const id = uid();
       const t = nowIso();
+      const openingJson = d.opening === undefined
+        ? '{}'
+        : (Object.keys(d.opening).length === 0 ? '{}' : storedOpening(parseOpening(JSON.stringify(d.opening))));
+      if (d.opening !== undefined && Object.keys(d.opening).length !== 0) {
+        const opening = parseOpening(openingJson);
+        const catalog = parseSceneCatalog(
+          d.scene_catalog === undefined ? EMPTY_CATALOG_JSON : storedCatalog(d.scene_catalog),
+        );
+        const fieldErrors = validateOpeningPut(opening, catalog, []);
+        if (fieldErrors.length) return reply.code(400).send({ error: 'invalid opening', fields: fieldErrors });
+      }
       run(
         db,
-        `INSERT INTO stories (id, name, tagline, setting, minor_cast, scene_catalog, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO stories (id, name, tagline, setting, minor_cast, scene_catalog, opening_json, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         id,
         d.name,
         d.tagline,
@@ -169,6 +196,7 @@ export function storyRoutes(ctx: Ctx) {
         JSON.stringify(d.minor_cast),
         // A new story with no catalog gets the empty one, as before.
         d.scene_catalog === undefined ? EMPTY_CATALOG_JSON : storedCatalog(d.scene_catalog),
+        openingJson,
         t,
         t,
       );
@@ -197,6 +225,20 @@ export function storyRoutes(ctx: Ctx) {
       if (d.scene_catalog !== undefined) {
         sets.push('scene_catalog=?');
         args.push(storedCatalog(d.scene_catalog));
+      }
+      if (d.opening !== undefined) {
+        const openingJson = Object.keys(d.opening).length === 0
+          ? '{}'
+          : storedOpening(parseOpening(JSON.stringify(d.opening)));
+        const opening = parseOpening(openingJson);
+        const catalog = parseSceneCatalog(
+          d.scene_catalog !== undefined ? storedCatalog(d.scene_catalog) : (s.scene_catalog ?? '{}'),
+        );
+        const hosted = hostedCharacters(db, s.id).map((c) => c.character_id);
+        const fieldErrors = validateOpeningPut(opening, catalog, hosted);
+        if (fieldErrors.length) return reply.code(400).send({ error: 'invalid opening', fields: fieldErrors });
+        sets.push('opening_json=?');
+        args.push(openingJson);
       }
       sets.push('updated_at=?');
       args.push(nowIso());
@@ -302,6 +344,7 @@ export function storyRoutes(ctx: Ctx) {
           story_setting_snapshot: null,
           story_minor_cast_snapshot: null,
           story_participant_ids_snapshot: null,
+          story_opening_snapshot: null,
         };
         const built = buildPrompt(db, virtualConv, [], config.model.contextTokens, ctx.resolvedModel());
         const fixedSection = built.budget.sections.find((s) => s.name === '시스템 규칙+카드+페르소나+장면')!;

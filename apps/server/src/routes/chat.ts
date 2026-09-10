@@ -8,9 +8,10 @@ import { getPath, insertMessage, messageOut, resolveTurnStart, setHead, updateMe
 import { buildSceneSnapshot, resolveSceneBase } from '../db/sceneBase.js';
 import { ModelError } from '../model/adapter.js';
 import {
-  finishBeat, passCWith, passFWith, planBeat, planPassE, partyCastForGenerate,
+  finishBeat, passCWith, passFWith, planBeat, planPassE, storyCastForGenerate,
   type BeatPlanInput,
 } from '../prompt/composeBeat.js';
+import type { CastMember } from '../prompt/cast.js';
 import {
   finishDialogBeat, planDialogBeat, type DialogPlanInput,
 } from '../prompt/composeDialog.js';
@@ -46,6 +47,37 @@ function storyFocusPlanFields(conv: ConversationRow): {
     story_room: Boolean(conv.story_id),
     participant_ids: parseParticipantSnapshot(conv.story_participant_ids_snapshot),
   };
+}
+
+/** Regen does not pass the user row; focus still needs the original user text. */
+function userTextFrom(db: Ctx['db'], parentId: string | null, userMessage?: MessageRow): string {
+  if (userMessage?.content) return userMessage.content;
+  if (!parentId) return '';
+  const parent = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', parentId);
+  return parent?.role === 'user' ? (parent.content ?? '') : '';
+}
+
+function loadStoryRoster(db: Ctx['db'], conv: ConversationRow): PartyTagRow[] {
+  const snapshot = parseParticipantSnapshot(conv.story_participant_ids_snapshot);
+  if (snapshot && snapshot.length) {
+    const rows = many<PartyTagRow>(
+      db,
+      `SELECT id, name, tags_json FROM characters WHERE archived = 0 AND id IN (${snapshot.map(() => '?').join(',')})`,
+      ...snapshot,
+    );
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    return snapshot.map((id) => byId.get(id)).filter((r): r is PartyTagRow => Boolean(r));
+  }
+  if (!conv.story_id) return [];
+  return many<PartyTagRow>(
+    db,
+    `SELECT c.id, c.name, c.tags_json
+       FROM story_characters sc
+       JOIN characters c ON c.id = sc.character_id
+      WHERE sc.story_id = ?
+      ORDER BY sc.sort_order ASC, c.name ASC`,
+    conv.story_id,
+  );
 }
 
 type SseBudget = {
@@ -245,20 +277,11 @@ export function chatRoutes(ctx: Ctx) {
     let convNow = loadConversation(ctx, conv.id)!;
 
     const generationId = uid();
-    // f9-tags-catalog: a party roster only exists for story-hosted conversations.
-    // story_id is null on every 1:1 row, so this costs a 1:1 turn zero queries.
-    const partyRoster: PartyTagRow[] = convNow.story_id
-      ? many<PartyTagRow>(
-          db,
-          `SELECT c.id, c.name, c.tags_json
-             FROM story_characters sc
-             JOIN characters c ON c.id = sc.character_id
-            WHERE sc.story_id = ?
-            ORDER BY sc.sort_order ASC, c.name ASC`,
-          convNow.story_id,
-        )
-      : [];
-    const partyCast = partyCastForGenerate(convNow, partyRoster);
+    // ADR-F8e: generate reads the frozen participant snapshot, not live
+    // story_characters. NULL snapshot (pre-0013) falls back to the hosted roster
+    // and the tagged partyCastForGenerate gate.
+    const partyRoster = loadStoryRoster(db, convNow);
+    const partyCast = storyCastForGenerate(convNow, partyRoster);
 
     // f9-swap-passes: a party conversation does not build a 1:1 prompt at all.
     // It assembles one beat out of several narrow calls (§5), so it takes its own
@@ -392,7 +415,7 @@ export function chatRoutes(ctx: Ctx) {
     conv: ConversationRow,
     parentId: string | null,
     convNow: ConversationRow,
-    cast: NonNullable<ReturnType<typeof partyCastForGenerate>>,
+    cast: CastMember[],
     roster: PartyTagRow[],
     generationId: string,
     userMessage: MessageRow | undefined,
@@ -418,7 +441,7 @@ export function chatRoutes(ctx: Ctx) {
     );
     const catalog = catalogFromStory(storyCatalogRow?.scene_catalog ?? '{}');
     const baseVersion = currentSceneVersion(scene);
-    const userText = userMessage?.content ?? '';
+    const userText = userTextFrom(db, parentId, userMessage);
 
     // Turn Pipeline step 2-4: propose → validate → apply. One short call; any
     // failure leaves the scene untouched and the beat continues.
@@ -813,7 +836,7 @@ export function chatRoutes(ctx: Ctx) {
     conv: ConversationRow,
     parentId: string | null,
     convNow: ConversationRow,
-    cast: NonNullable<ReturnType<typeof partyCastForGenerate>>,
+    cast: CastMember[],
     roster: PartyTagRow[],
     generationId: string,
     userMessage: MessageRow | undefined,
@@ -836,7 +859,7 @@ export function chatRoutes(ctx: Ctx) {
     );
     const catalog = catalogFromStory(storyCatalogRow?.scene_catalog ?? '{}');
     const baseVersion = currentSceneVersion(scene);
-    const userText = userMessage?.content ?? '';
+    const userText = userTextFrom(db, parentId, userMessage);
 
     // Scene delta — identical contract to the beat path, including the allow-list.
     let patch: Record<string, unknown> | null = null;
@@ -1112,7 +1135,7 @@ export function chatRoutes(ctx: Ctx) {
     conv: ConversationRow,
     parentId: string | null,
     convNow: ConversationRow,
-    cast: NonNullable<ReturnType<typeof partyCastForGenerate>>,
+    cast: CastMember[],
     roster: PartyTagRow[],
     generationId: string,
     userMessage: MessageRow | undefined,
@@ -1135,7 +1158,7 @@ export function chatRoutes(ctx: Ctx) {
     );
     const catalog = catalogFromStory(storyCatalogRow?.scene_catalog ?? '{}');
     const baseVersion = currentSceneVersion(scene);
-    const userText = userMessage?.content ?? '';
+    const userText = userTextFrom(db, parentId, userMessage);
 
     let patch: Record<string, unknown> | null = null;
     let clockParse: ClockParseStatus = 'null';

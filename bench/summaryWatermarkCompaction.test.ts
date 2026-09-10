@@ -378,7 +378,7 @@ t('tier name does not admit or reject a watermark by itself', () => {
 });
 
 t('PROMPT_VERSION records compact without a new API field', () => {
-  assert.equal(PROMPT_VERSION, '2026.08.22-r1+story+compact+roster');
+  assert.equal(PROMPT_VERSION, '2026.08.22-r1+story+compact+roster+opening');
   assert.ok(PROMPT_VERSION.includes('+compact'));
 });
 

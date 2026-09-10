@@ -8,8 +8,9 @@ import { deepestLeaf, getPath, insertMessage, messageOut, setHead, updateMessage
 import { buildPrompt, resolvePersona } from '../prompt/builder.js';
 import { substitute } from '../prompt/templates.js';
 import { catalogFromStory } from '../prompt/sceneCatalog.js';
-import { castFromCharacters, withConversationStarter, type PartyTagRow } from '../prompt/tagsCatalog.js';
+import { castFromCharacters, castFromParticipants, withConversationStarter, type PartyTagRow } from '../prompt/tagsCatalog.js';
 import { initialBeatScene, partySuppressesGreeting } from '../prompt/initScene.js';
+import { applyOpeningOverlay, parseOpening } from '../prompt/storyOpening.js';
 import type { CharacterRow, ConversationRow, MessageRow, PersonaRow, Scene, StoryRow } from '../types.js';
 import { characterOut, personaOut } from './characters.js';
 
@@ -175,6 +176,7 @@ export function conversationRoutes(ctx: Ctx) {
       let storySettingSnapshot: string | null = null;
       let storyMinorCastSnapshot: string | null = null;
       let storyParticipantIdsSnapshot: string | null = null;
+      let storyOpeningSnapshot: string | null = null;
       if (d.storyId) {
         const story = one<StoryRow>(db, 'SELECT * FROM stories WHERE id = ?', d.storyId);
         if (!story) return reply.code(404).send({ error: 'story not found' });
@@ -184,11 +186,16 @@ export function conversationRoutes(ctx: Ctx) {
         storyNameSnapshot = story.name;
         storySettingSnapshot = story.setting;
         storyMinorCastSnapshot = story.minor_cast;
+        // Raw copy, no re-serialize (F8b minor_cast precedent).
+        storyOpeningSnapshot = story.opening_json ?? '{}';
       }
       let sceneJson = JSON.stringify(d.scene);
       let partyOpening = false;
+      let openingGreeting = '';
       if (storyId) {
-        const catalogRow = one<{ scene_catalog: string }>(db, 'SELECT scene_catalog FROM stories WHERE id = ?', storyId);
+        const catalogRow = one<{ scene_catalog: string; opening_json: string }>(
+          db, 'SELECT scene_catalog, opening_json FROM stories WHERE id = ?', storyId,
+        );
         const catalog = catalogFromStory(catalogRow?.scene_catalog ?? '{}');
         const roster = many<PartyTagRow>(
           db,
@@ -199,12 +206,6 @@ export function conversationRoutes(ctx: Ctx) {
             ORDER BY sc.sort_order ASC, c.name ASC`,
           storyId,
         );
-        const tagged = castFromCharacters(roster, character.id);
-        const cast = tagged
-          ? withConversationStarter(tagged, { id: character.id, name: character.name })
-          : [];
-        sceneJson = JSON.stringify(initialBeatScene({ catalog, cast, overlay: d.scene }));
-        partyOpening = partySuppressesGreeting(cast);
         // ADR-F8e §7: snapshot at creation, single write, no live story_characters re-query afterward.
         // Host is always included even if not (yet) rostered via story_characters.
         // Optional participantIds (start-ui): preserve order, prepend host if absent, drop unknown (no host substitute).
@@ -226,6 +227,36 @@ export function conversationRoutes(ctx: Ctx) {
           participantIds = [character.id, ...roster.map((r) => r.id).filter((rid) => rid !== character.id)];
         }
         storyParticipantIdsSnapshot = JSON.stringify(participantIds);
+
+        const byId = new Map(roster.map((r) => [r.id, r]));
+        const participantRows: PartyTagRow[] = [];
+        for (const pid of participantIds) {
+          const row = byId.get(pid);
+          if (row) participantRows.push(row);
+          else if (pid === character.id) {
+            participantRows.push({ id: character.id, name: character.name, tags_json: character.tags_json });
+          }
+        }
+        const tagged = castFromCharacters(roster, character.id);
+        const cast = participantIds.length >= 2
+          ? withConversationStarter(castFromParticipants(participantRows, character.id), {
+            id: character.id,
+            name: character.name,
+          })
+          : (tagged
+            ? withConversationStarter(tagged, { id: character.id, name: character.name })
+            : []);
+        const opening = parseOpening(catalogRow?.opening_json ?? '{}');
+        const overlay = applyOpeningOverlay({
+          opening,
+          catalog,
+          hostedIds: roster.map((r) => r.id),
+          ownerId: character.id,
+          overlay: d.scene,
+        });
+        sceneJson = JSON.stringify(initialBeatScene({ catalog, cast, overlay }));
+        partyOpening = partySuppressesGreeting(cast);
+        openingGreeting = opening.greeting.trim();
       }
       let personaNameSnap: string | null = null;
       let personaAddressSnap: string | null = null;
@@ -245,17 +276,21 @@ export function conversationRoutes(ctx: Ctx) {
       db.transaction(() => {
         run(
           db,
-          `INSERT INTO conversations (id, character_id, persona_id, title, mode, profile_name, scene_json, head_message_id, prompt_version, created_at, updated_at, last_message_at, story_id, story_applied_at, story_name_snapshot, story_setting_snapshot, story_minor_cast_snapshot, story_participant_ids_snapshot, persona_name_snapshot, persona_address_snapshot, persona_appearance_snapshot, persona_personality_snapshot, persona_relationship_snapshot, persona_applied_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO conversations (id, character_id, persona_id, title, mode, profile_name, scene_json, head_message_id, prompt_version, created_at, updated_at, last_message_at, story_id, story_applied_at, story_name_snapshot, story_setting_snapshot, story_minor_cast_snapshot, story_participant_ids_snapshot, story_opening_snapshot, persona_name_snapshot, persona_address_snapshot, persona_appearance_snapshot, persona_personality_snapshot, persona_relationship_snapshot, persona_applied_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           id, character.id, d.personaId ?? null, d.title ?? '', d.mode, profileName, sceneJson, PROMPT_VERSION, t, t,
-          storyId, storyAppliedAt, storyNameSnapshot, storySettingSnapshot, storyMinorCastSnapshot, storyParticipantIdsSnapshot,
+          storyId, storyAppliedAt, storyNameSnapshot, storySettingSnapshot, storyMinorCastSnapshot, storyParticipantIdsSnapshot, storyOpeningSnapshot,
           personaNameSnap, personaAddressSnap, personaAppearanceSnap, personaPersonalitySnap, personaRelationshipSnap, personaAppliedAt,
         );
         const conv = loadConversation(ctx, id)!;
         const persona = resolvePersona(db, conv);
-        const greeting = partyOpening
-          ? ''
-          : substitute(character.first_message, character.name, persona?.name || '나').trim();
+        // ADR-F8d §9: non-empty story greeting wins (party included). Empty party
+        // greeting stays suppressed — do not fall back to character.first_message.
+        const greeting = openingGreeting
+          ? substitute(openingGreeting, character.name, persona?.name || '나').trim()
+          : (partyOpening
+            ? ''
+            : substitute(character.first_message, character.name, persona?.name || '나').trim());
         if (greeting) {
           const m = insertMessage(db, id, null, 'assistant', greeting, 'complete', { profile: profileName, prompt_version: PROMPT_VERSION });
           setHead(db, id, m.id);

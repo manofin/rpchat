@@ -222,8 +222,9 @@ async function main() {
   const messagesOf = async (convId: string): Promise<Msg[]> =>
     ((await api('GET', `/api/conversations/${convId}`)).json as { messages: Msg[] }).messages;
   const send = async (convId: string, content: string) => {
+    const aimed = /하연|나리|세라/.test(content) ? content : `하연, ${content}`;
     const res = await fetch(`${origin}/api/conversations/${convId}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content }),
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content: aimed }),
     });
     assert.equal(res.status, 200, await res.text());
   };
@@ -331,7 +332,7 @@ async function main() {
     sceneWrites = 0;
     passFail = true;
     const res = await fetch(`${origin}/api/conversations/${conv}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content: '실패할 턴' }),
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content: '하연, 실패할 턴' }),
     });
     await res.text();
     passFail = false;

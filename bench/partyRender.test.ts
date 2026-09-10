@@ -144,7 +144,7 @@ function main() {
   t('chat.ts imports composeBeat; 1:1 still buildPrompt(convNow); no live aux loop', () => {
     const src = srcOf(chatPath);
     assert.ok(/planBeat|composeBeat/.test(src));
-    assert.ok(/partyCastForGenerate/.test(src));
+    assert.ok(/storyCastForGenerate/.test(src));
     assert.ok(/buildPrompt\(\s*db,\s*convNow/.test(src));
     assert.equal(/from ['"].*pickSpeaker/.test(src), false);
     // f9-aux-speaker-generate wired aux speech, so chat.ts now imports EXTRA_LINE_CAP

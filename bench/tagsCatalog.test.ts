@@ -298,7 +298,7 @@ function main() {
   t('chat.ts gates roster load on story_id; 1:1 loads no roster', () => {
     const src = fs.readFileSync(chatPath, 'utf8');
     assert.ok(src.includes('story_id'));
-    assert.ok(src.includes('partyCastForGenerate'));
+    assert.ok(src.includes('storyCastForGenerate'));
   });
 
   t('1:1 HARD_RULES text untouched', () => {

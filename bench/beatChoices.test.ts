@@ -335,8 +335,8 @@ async function main() {
     // A party cast with no duty anywhere: enough members to take the beat path,
     // nobody `approveExtras` can hand a Pass E to.
     const lone = await char('혼자', ['party:place=교실']);
-    const mute1 = await char('말없음', ['party:place=교실']);
-    const mute2 = await char('조용함', ['party:place=교실']);
+    const mute1 = await char('말없음', ['party:place=교실', 'party:role=background']);
+    const mute2 = await char('조용함', ['party:place=교실', 'party:locked=1']);
     for (const [id, order] of [[lone.id, 0], [mute1.id, 1], [mute2.id, 2]] as const) {
       const add = await api('POST', `/api/stories/${soloStory}/characters`, { characterId: id, sortOrder: order });
       assert.equal(add.status, 201, add.text);

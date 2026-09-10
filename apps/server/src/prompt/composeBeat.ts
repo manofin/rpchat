@@ -5,7 +5,7 @@
  *   2 포커스 확정      server only (resolveFocus)
  *   3 extra 후보 닫기  eligibleExtras
  *   4 extra 신호       optional model signal — shipped OFF
- *   5 extra 최종 승인  approveExtras, default 0
+ *   5 extra 최종 승인  approveExtras (default 0); story rooms use approveStoryExtras (C1)
  *   6 ambient          narration points, never slots
  *   7 생성             Pass N / F / E — the caller runs these
  *   8 렌더             serializeBeat
@@ -22,9 +22,10 @@
  */
 import { applySceneDelta, type ApplySceneDeltaResult, type PartyCatalog } from './applySceneDelta.js';
 import { approveExtras, type ApprovedExtra } from './approveExtras.js';
+import { approveStoryExtras } from './approveStoryExtras.js';
 import { ambientPicks, ambientSeed, type AmbientPick } from './ambient.js';
 import { assignSpeakers, type AssignSpeakersOutput } from './assignSpeakers.js';
-import { resolveFocus, type FocusResult } from './resolveFocus.js';
+import { parseParticipantSnapshot, resolveFocus, type FocusResult } from './resolveFocus.js';
 import {
   renderPassE, renderPassF, renderPassN, splitFocusText, type PassCard,
 } from './passes.js';
@@ -33,7 +34,7 @@ import {
   assetPathFor, renderHeader, renderUi, serializeBeat,
   type BeatBlock, type BeatLine, type BeatUi,
 } from './renderBeat.js';
-import { castFromCharacters, withConversationStarter, type PartyTagRow } from './tagsCatalog.js';
+import { castFromCharacters, castFromParticipants, withConversationStarter, type PartyTagRow } from './tagsCatalog.js';
 import type { CastMember } from './cast.js';
 import type { Scene } from '../types.js';
 
@@ -74,7 +75,7 @@ export type BeatPlan = {
   focus: FocusResult;
   approved_extras: ApprovedExtra[];
   eligible_ids: string[];
-  rejected: ReturnType<typeof approveExtras>['rejected'];
+  rejected: Array<{ id: string; reason: string }>;
   ambient: AmbientPick[];
   assigned: AssignSpeakersOutput;
   /** The rows to persist, derived once so chat.ts and the benches agree. */
@@ -117,6 +118,53 @@ export function partyCastForGenerate(
     id: conv.character_id,
     name: starter?.name ?? conv.character_id,
   });
+}
+
+/**
+ * ADR-F8e generate gate. Story room + frozen snapshot ≥ 2 → beat cast without
+ * requiring `party:` tags (E1, F1). Snapshot of 1 → null (1:1 path).
+ * NULL snapshot (pre-0013 rooms) keeps the tagged `partyCastForGenerate` gate.
+ */
+export function storyCastForGenerate(
+  conv: { character_id: string; story_id: string | null; story_participant_ids_snapshot: string | null },
+  roster: PartyTagRow[],
+): CastMember[] | null {
+  if (!conv.story_id) return null;
+  const snapshot = parseParticipantSnapshot(conv.story_participant_ids_snapshot);
+  if (snapshot) {
+    if (snapshot.length < 2) return null;
+    const byId = new Map(roster.map((r) => [r.id, r]));
+    const rows: PartyTagRow[] = [];
+    for (const id of snapshot) {
+      const row = byId.get(id);
+      if (row) rows.push(row);
+    }
+    if (rows.length < 2) return null;
+    const starter = byId.get(conv.character_id);
+    return withConversationStarter(castFromParticipants(rows, conv.character_id), {
+      id: conv.character_id,
+      name: starter?.name ?? conv.character_id,
+    });
+  }
+  return partyCastForGenerate(conv, roster);
+}
+
+function storyExtrasAsApproved(input: Parameters<typeof approveStoryExtras>[0]): {
+  approved: ApprovedExtra[];
+  eligible_ids: string[];
+  rejected: Array<{ id: string; reason: string }>;
+} {
+  const r = approveStoryExtras(input);
+  return {
+    approved: r.approved.map((a) => ({
+      character_id: a.character_id,
+      name: a.name,
+      duty: 'peer',
+      hard_event: null,
+    })),
+    eligible_ids: r.eligible_ids,
+    rejected: r.rejected,
+  };
 }
 
 function cardFor(id: string, input: BeatPlanInput): PassCard {
@@ -162,18 +210,27 @@ export function planBeat(input: BeatPlanInput): BeatPlan {
   });
 
   // 3-5. Candidates closed, then approved. Default: nobody.
-  const approval = approveExtras({
-    cast: input.cast,
-    scene,
-    focus_id: focus.focus_id,
-    catalog,
-    applied_events: applied.discarded ? [] : applied.appliedEvents,
-    user_id: input.user_id ?? null,
-    mention_ids: focus.mention_ids,
-    matched_ids: focus.matched_ids,
-    focus_reason: focus.reason,
-    user_text: input.user_text,
-  });
+  // Story rooms (ADR-F8e C1): open extras up to K among speaking participants.
+  const approval = input.story_room === true
+    ? storyExtrasAsApproved({
+      cast: input.cast,
+      scene,
+      focus_id: focus.focus_id,
+      user_id: input.user_id ?? null,
+      previous_extra_ids: scene.last_beat?.extra_ids,
+    })
+    : approveExtras({
+      cast: input.cast,
+      scene,
+      focus_id: focus.focus_id,
+      catalog,
+      applied_events: applied.discarded ? [] : applied.appliedEvents,
+      user_id: input.user_id ?? null,
+      mention_ids: focus.mention_ids,
+      matched_ids: focus.matched_ids,
+      focus_reason: focus.reason,
+      user_text: input.user_text,
+    });
   const extraIds = approval.approved.map((e) => e.character_id);
 
   // 6. Ambient — the people with no line, noticed in narration only.

@@ -240,7 +240,7 @@ async function main() {
 
     const extraLines = msgs.filter((m) => m.meta.block_kind === 'line' && m.meta.speaker_name !== '나리');
     assert.ok(extraLines.length <= 2);
-    assert.equal(extraLines.some((m) => m.meta.speaker_name === '루나'), false);
+    assert.equal(extraLines.some((m) => m.meta.speaker_name === '한소연'), false, 'out-of-room 한소연 is not an extra');
 
     const ui = JSON.parse(msgs.find((m) => m.meta.block_kind === 'ui')!.content);
     assert.equal(typeof ui.user_sheet.hp, 'number');
@@ -249,7 +249,7 @@ async function main() {
     assert.ok(hanChip.locked || hanChip.chip === '🔒');
   });
 
-  await t('greeting persist: header + named line + extras ≤ 2 + ui, no 1:1 first_message', async () => {
+  await t('unnamed greeting persist: Pass N only (F8e C-focus-β), no invented host line, no 1:1 first_message', async () => {
     const start = await api('POST', '/api/conversations', {
       characterId: hayeon.id,
       storyId: story.id,
@@ -271,16 +271,9 @@ async function main() {
     const msgs = (detail.json as { messages: Array<{ role: string; content: string; meta: Record<string, unknown> }> }).messages;
     const kinds = msgs.filter((m) => m.role === 'assistant').map((m) => m.meta.block_kind);
     assert.ok(kinds.includes('header'), JSON.stringify(kinds));
-    assert.ok(kinds.includes('line'), JSON.stringify(kinds));
+    assert.ok(kinds.includes('narration'), JSON.stringify(kinds));
     assert.ok(kinds.includes('ui'), JSON.stringify(kinds));
-    const lines = msgs.filter((m) => m.meta.block_kind === 'line');
-    assert.ok(lines.length >= 1);
-    assert.ok(lines.every((m) => m.meta.speaker_character_id && m.meta.speaker_name));
-    const extraLines = lines.filter((m) => m.meta.speaker_character_id !== hayeon.id);
-    assert.ok(extraLines.length >= 1 && extraLines.length <= 2, JSON.stringify(extraLines.map((m) => m.meta.speaker_name)));
-    const focusLine = lines.find((m) => m.meta.speaker_character_id === hayeon.id);
-    assert.ok(focusLine, 'conversation partner must have a named line');
-    assert.equal(focusLine!.meta.speaker_name, '하연');
+    assert.equal(kinds.includes('line'), false, `unnamed story turn must not invent a speaker: ${JSON.stringify(kinds)}`);
   });
 
   await t('second send on the same conv is still a structured beat; scene place+clock survive', async () => {
@@ -315,7 +308,7 @@ async function main() {
     assert.ok(kinds.includes('line'));
     const extraLines = body.messages.filter((m) => m.meta.block_kind === 'line' && m.meta.speaker_name !== '나리');
     assert.ok(extraLines.length <= 4, 'two turns × extras ≤ 2');
-    assert.equal(extraLines.some((m) => m.meta.speaker_name === '루나'), false);
+    assert.equal(extraLines.some((m) => m.meta.speaker_name === '한소연'), false, 'out-of-room 한소연 is not an extra');
     const beat2 = kinds.slice(kinds.indexOf('ui') + 1);
     assert.ok(beat2.includes('header') && beat2.includes('line') && beat2.includes('ui'), JSON.stringify(beat2));
   });
@@ -340,14 +333,17 @@ async function main() {
     assert.equal(typeof body.conversation.scene.clock_minutes, 'number');
     const users = body.messages.filter((m) => m.role === 'user').map((m) => m.content);
     assert.equal(users[users.length - 1], aim);
-    const kinds = body.messages.filter((m) => m.role === 'assistant').map((m) => m.meta.block_kind);
+    const assistant = body.messages.filter((m) => m.role === 'assistant');
+    const kinds = assistant.map((m) => m.meta.block_kind);
     assert.equal(kinds.filter((k) => k === 'ui').length, 3, JSON.stringify(kinds));
-    const lines = body.messages.filter((m) => m.meta.block_kind === 'line');
+    const headerAt = kinds.map((k, i) => (k === 'header' ? i : -1)).filter((i) => i >= 0);
+    const beat3 = assistant.slice(headerAt[2] ?? 0);
+    const lines = beat3.filter((m) => m.meta.block_kind === 'line');
     assert.ok(lines.some((m) => m.meta.speaker_character_id === hayeon.id && m.meta.speaker_name === '하연'));
-    const extrasThis = lines.filter((m) => m.meta.speaker_character_id !== hayeon.id && m.meta.speaker_name !== '나리');
-    assert.ok(extrasThis.length <= 2);
-    assert.equal(lines.some((m) => m.meta.speaker_name === '루나'), false);
-    assert.equal(lines.some((m) => m.meta.speaker_name === '미르'), false);
+    const extrasThis = lines.filter((m) => m.meta.speaker_character_id !== hayeon.id);
+    assert.ok(extrasThis.length <= 2, JSON.stringify(extrasThis.map((m) => m.meta.speaker_name)));
+    assert.equal(beat3.some((m) => m.meta.speaker_name === '한소연'), false);
+    assert.equal(beat3.some((m) => m.meta.speaker_name === '미르'), false);
   });
 
   await app.close();

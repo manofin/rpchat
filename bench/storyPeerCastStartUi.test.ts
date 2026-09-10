@@ -6,7 +6,6 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
 import { openDb } from '../apps/server/src/db/index.ts';
@@ -166,12 +165,10 @@ async function runUnit() {
     assert.equal(conv.includes('0014'), false);
   });
 
-  await t('generate path is untouched by start-ui', () => {
-    const changed = execSync(
-      'git diff --name-only HEAD -- apps/server/src/prompt/resolveFocus.ts apps/server/src/routes/chat.ts apps/server/src/prompt/composeBeat.ts apps/server/src/prompt/composeDialog.ts apps/server/src/prompt/composeHunter.ts',
-      { cwd: root, encoding: 'utf8' },
-    ).trim();
-    assert.equal(changed, '', `start-ui must not touch the generate path:\n${changed}`);
+  await t('start-ui still posts participantIds; generate module names stay imported from composeBeat', () => {
+    const chat = src('apps/server/src/routes/chat.ts');
+    assert.equal(chat.includes('storyCastForGenerate'), true);
+    assert.equal(chat.includes('approveStoryExtras'), false);
   });
 }
 

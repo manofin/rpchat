@@ -37,6 +37,8 @@ export interface StoryRow {
   minor_cast: string;
   /** f9-place-catalog: JSON SceneCatalog. '{}' = no catalog (every delta key rejected). */
   scene_catalog: string;
+  /** ADR-F8d: story opening JSON. '{}' = all 4-A fallbacks. */
+  opening_json: string;
   archived: number;
   created_at: string;
   updated_at: string;
@@ -204,6 +206,8 @@ export interface ConversationRow {
   story_setting_snapshot: string | null;
   story_minor_cast_snapshot: string | null;
   story_participant_ids_snapshot: string | null;
+  /** ADR-F8d: frozen copy of stories.opening_json. NULL = pre-0014 story room → '{}'. */
+  story_opening_snapshot: string | null;
 }
 
 export type MessageStatus = 'streaming' | 'complete' | 'interrupted' | 'error';

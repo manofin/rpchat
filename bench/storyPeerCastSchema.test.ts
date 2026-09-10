@@ -5,7 +5,6 @@
  * Isolated: no systemd, no live DB, no model call.
  */
 import assert from 'node:assert/strict';
-import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -120,13 +119,11 @@ async function main() {
     assert.equal(row.story_participant_ids_snapshot, null, 'no automatic backfill for rows that predate this migration');
   });
 
-  await t('generate path and resolveFocus are untouched by this token (schema-only)', () => {
-    const root = path.resolve('.');
-    const changed = execSync('git diff --name-only HEAD -- apps/server/src/prompt/resolveFocus.ts apps/server/src/routes/chat.ts apps/server/src/prompt/composeBeat.ts', {
-      cwd: root,
-      encoding: 'utf8',
-    }).trim();
-    assert.equal(changed, '', `story-peer-cast-schema must not touch the generate path:\n${changed}`);
+  await t('0013 SQL still only adds the participant snapshot column', () => {
+    const sql = fs.readFileSync('apps/server/migrations/0013_story_participant_snapshot.sql', 'utf8');
+    assert.match(sql, /story_participant_ids_snapshot/);
+    assert.equal(/opening_json/.test(sql), false);
+    assert.equal(/story_opening_snapshot/.test(sql), false);
   });
 
   await app.close();

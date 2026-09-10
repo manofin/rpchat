@@ -208,6 +208,36 @@ export function withConversationStarter(
   ];
 }
 
+/**
+ * ADR-F8e E1: story-room speaking cast. Every participant is a speaker
+ * without a `party:` tag. `background` / `locked` still apply. `main` /
+ * `secondary` class is not read from the tag; the display slot is marked
+ * main only so assignSpeakers keeps a focus row.
+ */
+export function castFromParticipants(rows: PartyTagRow[], mainCharacterId: string): CastMember[] {
+  return rows.map((row) => {
+    const parsed = parsePartyTags(safeTags(row));
+    const aliases = [...parsed.aliases];
+    const head = hyphenHead(row.name);
+    if (head) pushUnique(aliases, head);
+    const role: CastRole = parsed.role === 'background'
+      ? 'background'
+      : row.id === mainCharacterId ? 'main' : 'secondary';
+    return {
+      id: row.id,
+      name: row.name,
+      aliases,
+      duties: parsed.duties,
+      place: parsed.place,
+      home_places: parsed.home_places,
+      role,
+      ...(parsed.talkativeness !== undefined ? { talkativeness: parsed.talkativeness } : {}),
+      ...(parsed.locked ? { locked: true } : {}),
+      ...(parsed.outfit ? { outfit: parsed.outfit } : {}),
+    };
+  });
+}
+
 export function catalogFromCharacters(rows: PartyTagRow[]): PartyCatalog {
   const locations: string[] = [];
   const weathers: string[] = [];

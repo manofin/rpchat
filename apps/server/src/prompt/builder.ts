@@ -11,6 +11,7 @@ import {
   OOC_INSTRUCTION, STORY_CHOICES_INSTRUCTION, renderCharacter, renderEpisode, renderLore, renderMemories, renderPersona, renderRules, renderScene, renderState, renderStory, renderSummary, substitute,
 } from './templates.js';
 import { resolveStory } from './resolveStory.js';
+import { resolveOpening } from './storyOpening.js';
 
 export interface BuiltPrompt {
   messages: ChatMessage[];
@@ -181,15 +182,19 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   const noteText = noteRaw ? `### 유저노트\n${noteRaw}` : null;
   const estFixed = (char: string, note: boolean) =>
     estimateTokens([rules, char, personaText, sceneText ?? '', note && noteText ? noteText : ''].join('\n\n'), cal);
-  let charText = renderCharacter(character, charName, userName, true);
+  // ADR-F8d 3-A: story opening.scenario replaces the card scenario; they are not merged.
+  const opening = isOoc ? null : resolveOpening(conv);
+  const openingScenario = (opening?.scenario ?? '').trim();
+  const cardForPrompt = openingScenario ? { ...character, scenario: openingScenario } : character;
+  let charText = renderCharacter(cardForPrompt, charName, userName, true);
   let noteIncluded = true;
   let fixedEst = estFixed(charText, noteIncluded);
   let fixedNote: string | undefined;
   if (fixedEst > budgets.fixed) {
-    const withoutEx = renderCharacter(character, charName, userName, false);
+    const withoutEx = renderCharacter(cardForPrompt, charName, userName, false);
     const room = budgets.fixed - estFixed(withoutEx, true);
     if (room > 80) {
-      charText = renderCharacter(character, charName, userName, true, truncateToTokens(character.example_dialogue, room - 20, cal));
+      charText = renderCharacter(cardForPrompt, charName, userName, true, truncateToTokens(character.example_dialogue, room - 20, cal));
       fixedNote = '예시 대화를 예산에 맞게 잘라 넣음';
     } else {
       charText = withoutEx;

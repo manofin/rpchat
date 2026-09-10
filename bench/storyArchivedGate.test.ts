@@ -185,7 +185,7 @@ async function main() {
     assert.doesNotMatch(conversationsSrc, /computeStoryInjection/);
     assert.match(builderSrc, /export function computeStoryInjection/);
     assert.match(builderSrc, /STORY_SETTING_SHARE\s*=\s*0\.7/);
-    assert.equal(PROMPT_VERSION, '2026.08.22-r1+story+compact+roster');
+    assert.equal(PROMPT_VERSION, '2026.08.22-r1+story+compact+roster+opening');
   });
 
   console.log(`passed ${passed}`);

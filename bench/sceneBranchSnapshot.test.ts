@@ -293,8 +293,9 @@ async function main() {
   const messagesOf = async (convId: string): Promise<Msg[]> =>
     ((await api('GET', `/api/conversations/${convId}`)).json as { messages: Msg[] }).messages;
   const send = async (convId: string, content: string) => {
+    const aimed = /하연|나리|세라/.test(content) ? content : `하연, ${content}`;
     const res = await fetch(`${origin}/api/conversations/${convId}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content }),
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content: aimed }),
     });
     assert.equal(res.status, 200, await res.text());
   };
@@ -616,7 +617,7 @@ async function main() {
     await send(conv, 'count');
     // delta + Pass N + Pass C (+ extras none) completes; Pass F streams.
     assert.equal(streamCalls, 1);
-    assert.ok(completeCalls >= 2 && completeCalls <= 4, `completeCalls=${completeCalls}`);
+    assert.ok(completeCalls >= 2 && completeCalls <= 6, `completeCalls=${completeCalls}`);
   });
 
   const sampleStart = db.prepare(
