@@ -4376,3 +4376,21 @@ BACKLOG:
   - 최종 HEAD `df1e157` clean-tree 실측: server/web `tsc --noEmit` 0, 전 벤치 127/127 FAIL 0
 - Dormant 배포 특성: 라이브 스토리 3개 전부 `endings_json='[]'`, 조건 저작 엔딩 0, 조건 편집 UI 없음. rule 통과 0개면 LLM 호출 0회 (§5) → 27개 진행 중 스토리 방 동작 불변. 배포는 DB ALTER 없는 빌드+재시작만. Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0.
 - STATUS.md·planning_documents/는 저장소 밖(`/home/hermes/rpchat/`)이라 이 체인에서 제외 — F8g/F8h 인덱스 행은 저장소 밖 동기화扱い.
+## [2026-09-11T06:15:00Z] `story-ending-conditions-ui` F8h follow-up — StoryEditor 조건 저작 폼 + U1 reboot observation
+
+- F8h 클로즈 후속 체인 (4fe8cec 이후, 본 블록에서 처음 기록): `4fe8cec` docs → push(origin/master 동기화) → deploy(원장 0020 불변, dormant) → smoke-rule PASS → smoke-llm PASS(N=2 상한·Batch 1회·~11s·사이드이펙트 0 실측) → ADR-F8h closed + §6 "최대 N개" 개정. 상세 실측치는 각 락 보고에 귀속, PROGRESS 누락분은 본 블록의 7f709f4 항목부터 복원.
+- Commit `7f709f41ab05c231f64bf27d52d383990cae147d` (`feat(story): ending conditions authoring form in StoryEditor, F8h follow-up`), parent `4fe8cec`, 4 files, +333/-18. `git describe` 계열 v0.0.19-206 (316 commits).
+  - `apps/web/src/lib/endingConditions.ts` (new) — React 없는 순수 함수: `conditionsToDraft`/`buildConditions`/`hasNarrativeHint`/`emptyConditionsDraft`. 정제: min_turns 1 이상 정수만 (0·음수·소수·NaN 생략, 서버 400 방지 — 구현 중 `parseInt("2.5")→2` 절삭 발견해 `Number`+`isInteger`로 교체), 빈 Key·NaN 스탯 제거 + 외부 저작 `lte` carrying, flags trim·중복 제거, 전부 비면 `undefined` (`{}` 송신 금지 — stories.ts read 규약).
+  - `apps/web/src/components/StoryEditor.tsx` — 엔딩 카드에 조건 4종 폼 (최소 턴수/스탯 KV 동적행/플래그 동적행/서사 힌트 textarea) + hint 입력 시 "매 턴 백그라운드 LLM 판정(약 11초)" 비용 고지. 저장 시 `buildConditions` 경유, 빈 조건은 키 생략.
+  - `bench/storyEndingConditionsUi.test.ts` (new, 11항) — sg/tgrep 원칙 첫 적용: ast-grep 구조 펜스 2 + tgrep 리터럴 1 + 순수함수 8. 구현 중 `assert.equal` 객체비교·ast-grep 무매칭 exit 1 두 자해(自害) 수정.
+  - `bench/storyEndingConditions.test.ts` — Slice 1 구 pass-through 정규식 펜스를 ast-grep 기반으로 opportunistic 교체 (해당 파일 수정 시점 원칙).
+- Gates: pre-commit `tsc` 양쪽 EXIT 0 + 신규 11/11·조건 16/16; post-commit clean-tree 전수 128/128 FAIL 0 + `tsc` OK. SECRET_SCAN 0, 마이그레이션 0, 라이브 DB·서비스 untouched (edit/commit 단계).
+- Push: `4fe8cec..7f709f4` master→master, 로컬=origin/master=`7f709f4`, ahead/behind 없음.
+- Deploy `activate-staging-7f709f4`: worktree 격리 빌드 (server `tsc` OK + web `vite build` EXIT 0, precache 11 entries 1487.24 KiB). 신규 번들 `index-Dpf06tbB.js` (조건 폼 4종 + 비용 고지 포함 확인). FINGERPRINT.tsv 74행 sha256 `fb5c78e0…`. `backups/dist-pre-7f709f4-20260911T015525Z` 보관 후 swap → restart, active, MainPID 621733, NRestarts=0. `/api/health` 200 db:ok, `/` 200, LIVE_MATCHES_STAGED. 원장 0020 head 불변.
+- U1 (Ubuntu reboot observation) closed by event — 호스트 재부팅 2026-09-11 03:30:48 (uptime 리셋). 아래 전부 Hermes read-only 재실측 + 사용자 실측 일치:
+  - 유닛 자동 기동: 부팅 7초 후 (03:30:55), 수동 개입 0. MainPID 1600 (배포 시 621733은 재부팅으로 소멸 — 배포 결함 아님), NRestarts=0 (카운터 리셋).
+  - DB `PRAGMA integrity_check` = ok. 행수 3/36/17/1116 베이스라인 동일. 고아 streaming 메시지 0건.
+  - 모델 도달성: `model.ok`, latency 14ms(사용자 실측)/28ms(Hermes 재실측).
+  - 배포 artifact: 재부팅 전 dist 그대로 서빙 (`index-Dpf06tbB.js` == 디스크 동일, health 200 db:ok).
+  - 결론: 7f709f4 배포는 재부팅을 건너서도 살아남음. U1 종료 선언은 사용자 판단에 위임, 측정값은 본 블록으로 완결.
+- Next: 사용자 실기 스모크(StoryEditor 조건 저작, 브라우저·Serve HTTPS 경유 — 에이전트 수행 불가, 결과 수령 후 기록) → F8h 클로즈 → D4/D5/D6 ADR (D6는 ADR-F8d 후속으로 §9 대체 관계 명시).
