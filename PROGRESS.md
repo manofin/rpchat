@@ -4345,3 +4345,34 @@ BACKLOG:
   - `git diff --cached --check` empty EXIT 0; secret/forbidden-path scan 0
   - server/web `tsc --noEmit` 0; 13종 벤치 전부 exit 0
 - Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0. DB 0. NOT YET LIVE (needs staging + activate).
+
+## [2026-09-11T00:58:09Z] `story-ending-eval` F8h slices 1–4 — ending auto-evaluator (rule + LLM assist + suggestion banner)
+
+- ADR-F8h §8 order. Chain `c553d1f → 79c0645e → 1ca7d9b → cd837531 → fdba115 → df1e157` (5 commits, all parents = BASE pins). `git describe --tags` `v0.0.19-205-gdf1e157`. Push 0 (origin/master = c553d1f, 5 commits local-only at write time).
+- V1–V4 consensus ahead of slices: Hybrid(a) / Async(a) / Suggestion(a) / conditions 확장. Evaluator는 eligibility만 판정, `ended_at` 직접 변경 금지; 최종 완결은 사용자 확정 + 서버 재검증 경유. confidence는 정렬/권한에 사용 금지, 관측용.
+- Slice 1 commit `79c0645ea3c933b46463f346fa46b46994fe99dc` (`feat(story): ending conditions schema, F8h slice 1`), M3+A1, +362/-4.
+  - `apps/server/src/routes/stories.ts` — `parseEndings`/`storedEndings`/zod `conditions` (`min_turns`/`required_stats`/`required_flags`/`narrative_hint`), `endings_json` 내장 (새 컬럼 0, 마이그레이션 없음)
+  - `bench/storyEndingConditions.test.ts` (new, 16/16)
+  - 1차 락 SCOPE `benches/...` vs 실경로 `bench/...` 불일치로 literal 규율상 중단 → 정정락 재발행 후 진행
+- Red-fix commit `1ca7d9bcbbd2b33374dca45c04349dd2511004a1` (`test(bench): update pins and fences for 0018-0020 and A11 guards`), bench 6 files, +22/-8. 0018/0019/0020 핀, BottomSheet 9→11, applySceneDelta import 매칭, submit latch prefix 매칭. apps·마이그레이션 untouched. 124/124.
+- Slice 2 commit `cd837531a079bfcc161662a3538267cfbae1416b` (`feat(story): ending eval rule, suggestion read and confirm revalidation, F8h slice 2`).
+  - `apps/server/src/endingEval.ts` (new, EVALUATION_VERSION=1) — OOC 제외 user 카운트, 미정의 스탯=불충족, narrative_hint 비게이트, `turn_no` 미참조, ended/1:1 → []
+  - `apps/server/src/routes/conversations.ts` — GET ending-suggestions (순수 재계산, 상시 200) + POST end turnId 재검증 (D1 403 → stale 409 → ended 409, idempotent, 410 없음)
+  - `apps/web/src/types.ts` — `EndingSuggestion`/`EndingSuggestionsResponse`
+  - `bench/storyEndingEvalRule.test.ts` (new, 19항) + 조건벤치 펜스 축소 (F8g intact, confirm-path는 Slice 2 소유 명시)
+  - 커밋 전 121/125 4 FAIL은 stash 대조로 펜스-only 입증, 커밋 후 clean-tree 125/125
+- Slice 3 commit `fdba115c0e52a3171a68c8550fc07cb3ce35aa6c` (`feat(story): narrative_hint LLM assist judge with N/K cost guards, async trigger, F8h slice 3`).
+  - `apps/server/src/endingJudge.ts` (new) — N=2 (hint 보유 통과자만, rank 순), K=5 최근 턴, timeout 20s, max_tokens 512, temperature 0, never-throw; 관측은 `ctx.log.info` 1건/엔딩. `generation_log`·`budget_json`·큐·`ended_at` 쓰기·재시도 없음
+  - `apps/server/src/routes/chat.ts` — 완료 직후 `void fireEndingEvalJob` 4곳 (1:1 OOC 제외 + beat + dialog + hunter), non-blocking
+  - `bench/storyEndingEvalLlm.test.ts` (new, 16항) + guard-only 펜스 5곳에 승인 훅 allowlist
+  - 커밋 후 clean-tree 126/126
+- Slice 4 commit `df1e157f5889b0eddc82a407bcc843af3921def4` (`feat(story): ending suggestion banner with turnId confirm and stale handling, F8h slice 4`), 4 files, +290/-1. Server 무변경.
+  - `apps/web/src/lib/endingSuggestion.ts` (new) — `useEndingSuggestions` (턴 완료 후 GET, story방·미완결·non-streaming에서만 조회, 조회 실패 무시) + 순수 함수 3종
+  - `apps/web/src/pages/ChatPage.tsx` — V3 배너 (`role="status"`, "엔딩 [제목] 도달 가능", ✕ 닫기, 강제 잠금 없음, ended 방 미노출). 클릭 → `ui.confirm` → POST `/end { endingId, turnId }`. 409 stale → 토스트 + 재조회 유도, 403 → 토스트 후 닫기. F8g 수동 "엔딩 선택" 플로우 untouched
+  - `bench/storyEndingSuggestionUi.test.ts` (new, 9항)
+  - 커밋 후 clean-tree 127/127
+- Gates this bind (workdir `/home/hermes/rpchat/app`):
+  - 각 commit 락마다 BASE 핀·index empty·`git diff --cached --check` EXIT 0·secret scan 0·마이그레이션 0 확인
+  - 최종 HEAD `df1e157` clean-tree 실측: server/web `tsc --noEmit` 0, 전 벤치 127/127 FAIL 0
+- Dormant 배포 특성: 라이브 스토리 3개 전부 `endings_json='[]'`, 조건 저작 엔딩 0, 조건 편집 UI 없음. rule 통과 0개면 LLM 호출 0회 (§5) → 27개 진행 중 스토리 방 동작 불변. 배포는 DB ALTER 없는 빌드+재시작만. Live dist / Serve / PID not rechecked this turn. Push 0. Deploy 0. Restart 0. Galaxy 0.
+- STATUS.md·planning_documents/는 저장소 밖(`/home/hermes/rpchat/`)이라 이 체인에서 제외 — F8g/F8h 인덱스 행은 저장소 밖 동기화扱い.
