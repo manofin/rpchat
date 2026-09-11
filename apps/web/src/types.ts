@@ -82,7 +82,8 @@ export interface StoryEnding {
 /**
  * ADR-F8h Slice 2 (story-ending-eval-rule): suggestion payload.
  * Served by GET /api/conversations/:id/ending-suggestions, echoed back as
- * `turnId` on POST .../end. Banner UI is slice 4 — no component reads this yet.
+ * `turnId` on POST .../end. Slice 4 banner UI reads this via
+ * useEndingSuggestions (apps/web/src/lib/endingSuggestion.ts).
  */
 export interface EndingSuggestion {
   ending_id: string;

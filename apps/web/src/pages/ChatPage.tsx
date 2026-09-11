@@ -19,6 +19,7 @@ import {
   shouldShowSummaryBanner,
   suppressSummaryBanner,
 } from '../lib/summaryBanner';
+import { shouldRefetchAfterEndError, useEndingSuggestions } from '../lib/endingSuggestion';
 import { useChat } from './useChat';
 import { ChatDrawer } from './ChatDrawer';
 import { ChatListRail } from './ChatListRail';
@@ -53,6 +54,29 @@ export function ChatPage({ id }: { id: string }) {
   const [endingOpen, setEndingOpen] = useState(false);
   const [endingPick, setEndingPick] = useState('');
   const [endingSaving, setEndingSaving] = useState(false);
+
+  /** ADR-F8h Slice 4: V3 제안형 엔딩 배너. 강제 잠금 없음, 닫기 가능. */
+  const endingBanner = useEndingSuggestions(id, { detail: chat.detail, generating: chat.generating, loading: chat.loading });
+
+  /** 배너에서 확정: 사용자 클릭 + confirm 경유, turnId 포함. */
+  async function confirmSuggestedEnding(endingId: string, title: string) {
+    const target = endingBanner.visible.find((s) => s.ending_id === endingId);
+    if (!target || endingBanner.confirmingId || chat.detail?.conversation.ended_at) return;
+    if (!(await ui.confirm(`엔딩 [${title}]에 도달할 수 있습니다. 이 결말로 대화를 완결할까요? 이후에는 메시지를 보낼 수 없습니다.`, { danger: true, okLabel: '완결' }))) return;
+    const r = await endingBanner.confirm(target);
+    if (r.ok) {
+      await chat.reload();
+      return;
+    }
+    if (shouldRefetchAfterEndError(r)) {
+      // 409 stale: 턴이 어긋남 — 배너는 닫혔고 최신 제안 재조회 유도.
+      ui.toast('대화가 더 진행되어 제안을 새로 확인합니다.', 'err');
+      await endingBanner.refresh();
+    } else {
+      // 403 conditions not met + 기타: 알림 후 배너 닫힘.
+      ui.toast(r.message, 'err');
+    }
+  }
 
   useEffect(() => { setSummaryRows(null); }, [id]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -352,6 +376,29 @@ export function ChatPage({ id }: { id: string }) {
         <div className="banner" role="status" style={{ margin: '8px 12px 0' }}>
           <div><strong>완결{reachedEnding ? ` — ${reachedEnding.title}` : ''}</strong>{reachedEnding?.badge_label ? ` · ${reachedEnding.badge_label}` : ''}</div>
           {reachedEnding?.description ? <div className="small" style={{ whiteSpace: 'pre-wrap', marginTop: 4 }}>{reachedEnding.description}</div> : null}
+        </div>
+      )}
+      {!ended && endingBanner.visible.length > 0 && (
+        <div role="status" aria-live="polite" style={{ margin: '8px 12px 0', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {endingBanner.visible.map((s) => (
+            <div key={s.ending_id} className="banner" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                type="button"
+                className="btn sm ghost"
+                style={{ flex: 1, textAlign: 'left' }}
+                disabled={endingBanner.confirmingId === s.ending_id}
+                onClick={() => void confirmSuggestedEnding(s.ending_id, s.title)}
+              >
+                {endingBanner.confirmingId === s.ending_id ? '완결 중…' : `엔딩 [${s.title}] 도달 가능`}
+              </button>
+              <button
+                type="button"
+                className="btn sm ghost"
+                aria-label="제안 닫기"
+                onClick={() => endingBanner.dismiss(s.ending_id)}
+              >✕</button>
+            </div>
+          ))}
         </div>
       )}
       {!ended && endingChoices.length > 0 && (
