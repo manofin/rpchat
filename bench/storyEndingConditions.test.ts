@@ -25,6 +25,16 @@ async function t(name: string, fn: () => Promise<void> | void) {
   console.log(`ok ${passed} ${name}`);
 }
 
+/** ast-grep 구조 매칭 히트 수 (무매칭 exit 1 → 0). */
+function sgHits(pattern: string, file: string): number {
+  try {
+    const out = execSync(`ast-grep -p '${pattern}' --lang tsx ${file}`, { encoding: 'utf8' });
+    return out.split('\n').filter((l) => l.trim().length > 0).length;
+  } catch {
+    return 0;
+  }
+}
+
 const FULL = {
   min_turns: 40,
   required_stats: { affection: { gte: 70 }, suspicion: { lte: 20 } },
@@ -206,9 +216,11 @@ async function main() {
   });
 
   await t('StoryEditor round-trips conditions instead of erasing them on save', () => {
-    const src = fs.readFileSync('apps/web/src/components/StoryEditor.tsx', 'utf8');
-    assert.match(src, /e\.conditions \? \{ conditions: e\.conditions \} : \{\}/);
-    assert.equal(/conditions:\s*\{\s*min_turns/.test(src), false, 'no authoring UI in this slice');
+    // 조건 저작 UI 슬라이스 이후 계약: pass-through가 아니라 buildConditions
+    // 정제 경유 (빈 조건은 키 생략, `{}` 송신 금지). AST 기반 — 주석 오탐 없음.
+    const hits = sgHits('buildConditions($C)', 'apps/web/src/components/StoryEditor.tsx');
+    assert.ok(hits >= 1, 'save path sanitizes via buildConditions');
+    assert.equal(sgHits('conditions: e.conditions', 'apps/web/src/components/StoryEditor.tsx'), 0, 'raw pass-through gone');
   });
 
   await app.close();

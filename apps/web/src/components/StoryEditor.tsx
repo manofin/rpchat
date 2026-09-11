@@ -14,6 +14,13 @@ import {
   emptyStat,
   type StoryStatDef,
 } from '../lib/storyStats';
+import {
+  buildConditions,
+  conditionsToDraft,
+  emptyConditionsDraft,
+  hasNarrativeHint,
+  type ConditionsDraft,
+} from '../lib/endingConditions';
 import { LorePanel, type LoreEntry } from './LorePanel';
 import { Modal, useUi } from './ui';
 
@@ -63,17 +70,16 @@ type ExtraDraft = OpeningDraft & { id: string; label: string };
 
 const ENDINGS_MAX = 7;
 /**
- * ADR-F8h: `conditions` has no editor UI yet (that is the eval-ui slice), but the
- * PUT body replaces the whole `endings` array — so an ending authored with
- * conditions would lose them on the next unrelated save. Same failure the
- * `EMPTY_CATALOG_REST` round-trip above exists to prevent. Carried untouched.
+ * ADR-F8h 후속 "엔딩 조건 저작 UI": 조건은 폼에서 직접 저작한다.
+ * 드래프트는 항상 `cond`를 들고 다니고, 저장 시 `buildConditions`로 정제한다
+ * (빈 조건 → 키 자체를 생략, `{}` 송신 금지 — stories.ts read 경로 규약).
  */
 type EndingDraft = {
   id: string;
   title: string;
   description: string;
   badge_label: string;
-  conditions?: StoryEnding['conditions'];
+  cond: ConditionsDraft;
 };
 
 function openingFieldsFrom(o: StoryOpening | undefined): OpeningDraft {
@@ -118,7 +124,7 @@ function endingToDraft(e: StoryEnding): EndingDraft {
     title: e.title,
     description: e.description ?? '',
     badge_label: e.badge_label ?? '',
-    ...(e.conditions ? { conditions: e.conditions } : {}),
+    cond: conditionsToDraft(e.conditions),
   };
 }
 
@@ -130,7 +136,7 @@ function emptyEnding(existing: EndingDraft[]): EndingDraft {
     n += 1;
     id = `ending_${n}`;
   }
-  return { id, title: `엔딩 ${n}`, description: '', badge_label: '' };
+  return { id, title: `엔딩 ${n}`, description: '', badge_label: '', cond: emptyConditionsDraft() };
 }
 
 function buildOpeningBody(o: OpeningDraft) {
@@ -283,14 +289,17 @@ export function StoryEditor({
           .filter((e) => e.id && e.label)
           .slice(0, OPENING_EXTRA_MAX),
         endings: endings
-          .map((e) => ({
-            id: e.id.trim(),
-            title: e.title.trim(),
-            description: e.description,
-            badge_label: e.badge_label,
-            // ADR-F8h round-trip — never authored here, never dropped here.
-            ...(e.conditions ? { conditions: e.conditions } : {}),
-          }))
+          .map((e) => {
+            const conditions = buildConditions(e.cond);
+            return {
+              id: e.id.trim(),
+              title: e.title.trim(),
+              description: e.description,
+              badge_label: e.badge_label,
+              // 빈 조건은 키 자체를 생략 (`{}` 송신 금지 — read 경로 규약).
+              ...(conditions ? { conditions } : {}),
+            };
+          })
           .filter((e) => e.id && e.title)
           .slice(0, ENDINGS_MAX),
         stats_json: d.stats
@@ -320,6 +329,10 @@ export function StoryEditor({
 
   const profileIncomplete = !d.name.trim();
   const tabIndex = TABS.findIndex((t) => t.key === tab);
+
+  /** ADR-F8h 조건 저작: i번째 엔딩의 cond 드래프트만 갱신. */
+  const patchCond = (i: number, fn: (c: ConditionsDraft) => ConditionsDraft) =>
+    setEndings((p) => p.map((x, j) => (j === i ? { ...x, cond: fn(x.cond) } : x)));
 
   return (
     <Modal
@@ -572,6 +585,57 @@ export function StoryEditor({
               </div>
               <div className="field"><label>뱃지</label>
                 <input value={e.badge_label} maxLength={40} onChange={(ev) => setEndings((p) => p.map((x, j) => (j === i ? { ...x, badge_label: ev.target.value } : x)))} />
+              </div>
+              <div className="field"><label>도달 조건 — 최소 턴 수 (1 이상, 비우면 미사용)</label>
+                <input
+                  type="number" min={1} step={1} inputMode="numeric" placeholder="예: 10"
+                  value={e.cond.minTurns}
+                  onChange={(ev) => patchCond(i, (c) => ({ ...c, minTurns: ev.target.value.replace(/[^0-9]/g, '') }))}
+                />
+              </div>
+              <div className="field"><label>도달 조건 — 필요 스탯 (이름 + 최소치)</label>
+                {e.cond.stats.map((s, k) => (
+                  <div key={k} className="row" style={{ gap: 6, marginBottom: 6 }}>
+                    <input
+                      value={s.key} maxLength={60} placeholder="스탯 이름" style={{ flex: 2 }}
+                      onChange={(ev) => patchCond(i, (c) => ({ ...c, stats: c.stats.map((r, j) => (j === k ? { ...r, key: ev.target.value } : r)) }))}
+                    />
+                    <input
+                      type="number" inputMode="numeric" placeholder="최소치" style={{ flex: 1 }}
+                      value={s.min}
+                      onChange={(ev) => patchCond(i, (c) => ({ ...c, stats: c.stats.map((r, j) => (j === k ? { ...r, min: ev.target.value } : r)) }))}
+                    />
+                    <button className="btn ghost sm" type="button" aria-label="스탯 조건 빼기"
+                      onClick={() => patchCond(i, (c) => ({ ...c, stats: c.stats.filter((_, j) => j !== k) }))}>✕</button>
+                  </div>
+                ))}
+                <button className="btn ghost sm" type="button"
+                  onClick={() => patchCond(i, (c) => ({ ...c, stats: [...c.stats, { key: '', min: '' }] }))}>＋ 스탯 조건 추가</button>
+              </div>
+              <div className="field"><label>도달 조건 — 필요 플래그</label>
+                {e.cond.flags.map((f, k) => (
+                  <div key={k} className="row" style={{ gap: 6, marginBottom: 6 }}>
+                    <input
+                      value={f} maxLength={80} placeholder="플래그 key" style={{ flex: 1 }}
+                      onChange={(ev) => patchCond(i, (c) => ({ ...c, flags: c.flags.map((x, j) => (j === k ? ev.target.value : x)) }))}
+                    />
+                    <button className="btn ghost sm" type="button" aria-label="플래그 조건 빼기"
+                      onClick={() => patchCond(i, (c) => ({ ...c, flags: c.flags.filter((_, j) => j !== k) }))}>✕</button>
+                  </div>
+                ))}
+                <button className="btn ghost sm" type="button"
+                  onClick={() => patchCond(i, (c) => ({ ...c, flags: [...c.flags, ''] }))}>＋ 플래그 추가</button>
+              </div>
+              <div className="field"><label>도달 조건 — 서사 힌트 (선택)</label>
+                <textarea
+                  value={e.cond.hint} maxLength={500} placeholder="예: 주인공이 이름을 다시 불렀다"
+                  onChange={(ev) => patchCond(i, (c) => ({ ...c, hint: ev.target.value }))}
+                />
+                {hasNarrativeHint(e.cond) && (
+                  <div className="small" style={{ marginTop: 4 }}>
+                    서사 힌트가 있으면 매 턴 백그라운드 LLM 판정(약 11초) 비용이 발생합니다.
+                  </div>
+                )}
               </div>
               <button className="btn ghost sm" type="button" onClick={() => setEndings((p) => p.filter((_, j) => j !== i))}>이 엔딩 빼기</button>
             </div>
