@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { get, post, postBinary, put } from '../lib/api';
 import {
   FIELD_LIMITS,
@@ -7,6 +7,12 @@ import {
   overLimitFields,
   type LimitedField,
 } from '../lib/characterFieldLimits';
+import {
+  CHARACTER_DRAFT_DEBOUNCE_MS,
+  flushCharacterDraft,
+  readCharacterDraft,
+  removeCharacterDraft,
+} from '../lib/characterDraftStore';
 import type { Character } from '../types';
 import { LorePanel, type LoreEntry } from './LorePanel';
 import { Modal, useUi } from './ui';
@@ -64,10 +70,28 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
   const [lore, setLore] = useState<LoreEntry[]>([]);
   const [tab, setTab] = useState<Tab>('setup');
   const [uploading, setUploading] = useState(false);
+  const [pendingDraft, setPendingDraft] = useState<Draft | null>(null);
+  const dirtyRef = useRef(false);
+  const suppressRef = useRef(false);
+  const dRef = useRef(d);
+  dRef.current = d;
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function clearTimer() {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
+    const id = character?.id ?? null;
+    dirtyRef.current = false;
+    suppressRef.current = false;
+    clearTimer();
     setTab('setup');
+    setPendingDraft(readCharacterDraft(id));
     if (character) {
       const { id, created_at, updated_at, archived, conversation_count, last_chat_at, ...rest } = character;
       setD(rest as Draft);
@@ -76,9 +100,23 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
       setD(EMPTY);
       setLore([]);
     }
+    return () => {
+      clearTimer();
+      flushCharacterDraft(id, dRef.current, { dirty: dirtyRef.current, suppress: suppressRef.current });
+    };
   }, [open, character]);
 
-  const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((p) => ({ ...p, [k]: v }));
+  const set = <K extends keyof Draft>(k: K, v: Draft[K]) => {
+    dirtyRef.current = true;
+    suppressRef.current = false;
+    setD((p) => ({ ...p, [k]: v }));
+    clearTimer();
+    const id = character?.id ?? null;
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      flushCharacterDraft(id, dRef.current, { dirty: dirtyRef.current, suppress: suppressRef.current });
+    }, CHARACTER_DRAFT_DEBOUNCE_MS);
+  };
 
   async function save() {
     if (!d.name.trim()) return ui.toast('이름은 필수', 'err');
@@ -100,6 +138,11 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
     setSaving(true);
     try {
       const saved = character ? await put<Character>(`/api/characters/${character.id}`, d) : await post<Character>('/api/characters', d);
+      suppressRef.current = true;
+      dirtyRef.current = false;
+      clearTimer();
+      removeCharacterDraft(character?.id ?? null);
+      setPendingDraft(null);
       ui.toast('저장됨');
       onSaved(saved);
     } catch (e) {
@@ -107,6 +150,20 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
     } finally {
       setSaving(false);
     }
+  }
+
+  function restoreDraft() {
+    if (!pendingDraft) return;
+    setD(pendingDraft);
+    setPendingDraft(null);
+  }
+
+  function discardDraft() {
+    suppressRef.current = true;
+    dirtyRef.current = false;
+    clearTimer();
+    removeCharacterDraft(character?.id ?? null);
+    setPendingDraft(null);
   }
 
   function addTag() {
@@ -142,6 +199,16 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
       }
       footer={<><button className="btn" onClick={onClose}>취소</button><button className="btn primary" disabled={saving || uploading} onClick={save}>{saving ? '저장 중…' : '저장'}</button></>}
     >
+      {pendingDraft ? (
+        <div className="banner warn" role="status">
+          <div>저장되지 않은 초안이 있습니다.</div>
+          <div className="row" style={{ marginTop: 8, gap: 8 }}>
+            <button type="button" className="btn sm" onClick={restoreDraft}>복원</button>
+            <button type="button" className="btn sm" onClick={discardDraft}>폐기</button>
+          </div>
+        </div>
+      ) : null}
+
       {tab === 'setup' && (
         <>
           <div className="field">
