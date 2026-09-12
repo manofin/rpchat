@@ -4394,3 +4394,28 @@ BACKLOG:
   - 배포 artifact: 재부팅 전 dist 그대로 서빙 (`index-Dpf06tbB.js` == 디스크 동일, health 200 db:ok).
   - 결론: 7f709f4 배포는 재부팅을 건너서도 살아남음. U1 종료 선언은 사용자 판단에 위임, 측정값은 본 블록으로 완결.
 - Next: 사용자 실기 스모크(StoryEditor 조건 저작, 브라우저·Serve HTTPS 경유 — 에이전트 수행 불가, 결과 수령 후 기록) → F8h 클로즈 → D4/D5/D6 ADR (D6는 ADR-F8d 후속으로 §9 대체 관계 명시).
+
+## [2026-09-12T02:25:00Z] `roster-add-remove-deploy-backfill` provenance backfill for 1b601c7 (web-only, already live)
+
+- Backfill only — no code change, no new deploy this entry. 1b601c7 was independently verified LIVE by a cross-session audit (Claude Code, this Mac) on 2026-09-12; this entry restores the provenance PROGRESS.md was missing (0 prior mentions).
+- Commit `1b601c7c3e0c94a80bcf570f41967b1446155cfe` (`feat(story): add/remove participating characters in StoryEditor start tab`), parent `9a54a61`, 1 file (`apps/web/src/components/StoryEditor.tsx`), +88/-19. Author/committer timestamp `2026-09-11T14:50:24Z`. Pushed — `origin/master == HEAD == 1b601c7` (re-verified 2026-09-12T02:22Z).
+- **Reconstructed deploy timeline** (dist mtimes + `backups/` + journal cross-referenced). The git commit was made ~5h AFTER the code was already serving live — this was an informal build→swap→restart, iterated twice, then formalized into one commit later:
+  - `07:21:28Z` backup `backups/dist-pre-storyeditor-roster-fix-20260911T072128Z` (pre-state bundle: `index-Dpf06tbB.js`, the `7f709f4` build).
+  - `07:21:47Z` restart → `index-5h1TMweW.js` live. Contains participant **add** UI and a first pass at the **remove** confirm dialog; the remove-success toast string (`참여 캐릭터를 뺐습니다`) is absent — confirmed by direct string search against the backed-up bundle file, not inferred.
+  - `09:55:08Z` backup `backups/dist-pre-roster-remove-fix-20260911T095508Z` (pre-state bundle: `index-5h1TMweW.js`).
+  - `09:55:15Z` new bundle built; `09:55:26Z` restart → `index-CGRSQ70Y.js` live. Adds the remove-success toast — matches the backup's descriptive slug "roster-remove-fix".
+  - `14:50:24Z` commit `1b601c7` formalizes both stages' accumulated working-tree diff as a single commit.
+  - `index-CGRSQ70Y.js` is still the live bundle as of this backfill: `index.html` references it, HTTP-served content sha256 `c2a50c08…` matches disk byte-for-byte.
+- **Verification-method correction, recorded for the record**: an earlier catch-up in this same session wrongly reported 1b601c7 as undeployed, having grepped the production bundle for pre-minification JS identifiers (`addingRoster`, `addRosterMember`, `addPickId`) — these do not survive `vite build`'s minifier and can never appear in a production bundle. Re-verified against three UI string literals unique to the 1b601c7 diff (`참여 캐릭터 추가됨`, `이 캐릭터를 스토리에서 뺄까요? 캐릭터 자체는 남습니다.`, `참여 캐릭터를 뺐습니다`) — all three present verbatim in `index-CGRSQ70Y.js`.
+- `apps/server/dist` confirmed untouched (1b601c7 is web-only; no server dist file has an mtime newer than the `7f709f4` baseline) — consistent with the single-file web diff.
+- Gap acknowledged, not papered over: neither intermediate deploy (`07:21`, `09:55`) has its own PROGRESS.md entry, and neither backup is indexed by commit hash — unlike every other `dist-pre-<hash>` backup in `backups/` — because no commit existed yet at either deploy time. This entry is the first record of both. No staging-dir isolation was used for either stage (unlike `activate-staging-<hash>` deploys elsewhere in this log). No further code or deploy action taken here; live state is unchanged by writing this entry.
+
+## [2026-09-12T02:25:00Z] `u2-reboot-observation` second Ubuntu host reboot, closed by event
+
+- Second host reboot after U1 (`2026-09-11T03:30:48Z`) — same event class, same signature, closed the same way: read-only re-measurement, no corrective action needed.
+- Boot `2026-09-11T22:30:41Z` (`uptime -s`). Unit auto-start `2026-09-11T22:30:48Z` — 7s after boot, 0 manual intervention (same margin as U1). `NRestarts=0` (counter reset by the reboot, as expected). `MainPID=1592`.
+- `/api/health`: `ok:true`, `db:ok`, `model.ok:true`, latency 10–12ms across two independent samples.
+- DB: `PRAGMA integrity_check` = `ok`. Row counts `stories 3 / conversations 36 / characters 17 / messages 1116` — unchanged from the pre-reboot baseline (same baseline U1 also confirmed). 0 orphaned `status='streaming'` rows (checked fresh this entry, not part of U1's original set).
+- Deploy artifact: serving `index-CGRSQ70Y.js` (the `1b601c7` bundle, see `roster-add-remove-deploy-backfill` above) — unchanged across the reboot, matches disk sha256.
+- Cross-verified by two independent parties reading the same live state (Hermes; this Claude Code session, both 2026-09-12).
+- Conclusion: this reboot, like U1, was survived cleanly with zero data loss and zero manual recovery steps beyond the FileVault-equivalent unlock this host does not require. No new gate needed; this closes the observation.
