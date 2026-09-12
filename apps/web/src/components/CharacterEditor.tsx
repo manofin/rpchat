@@ -13,6 +13,13 @@ import {
   readCharacterDraft,
   removeCharacterDraft,
 } from '../lib/characterDraftStore';
+import {
+  INSERTABLE_TOKENS,
+  applyTokenCaretRestore,
+  insertCharacterToken,
+  type InsertableToken,
+  type TokenChipField,
+} from '../lib/characterTokenInsert';
 import type { Character } from '../types';
 import { LorePanel, type LoreEntry } from './LorePanel';
 import { Modal, useUi } from './ui';
@@ -62,6 +69,30 @@ function FieldCount({ value, field }: { value: string; field: LimitedField }) {
   );
 }
 
+function TokenChips({
+  field,
+  onInsert,
+}: {
+  field: TokenChipField;
+  onInsert: (field: TokenChipField, token: InsertableToken) => void;
+}) {
+  return (
+    <div className="row" style={{ gap: 6, marginTop: 6 }}>
+      {INSERTABLE_TOKENS.map((tok) => (
+        <button
+          key={tok}
+          type="button"
+          className="btn sm ghost"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onInsert(field, tok)}
+        >
+          {tok}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function CharacterEditor({ open, character, onClose, onSaved }: { open: boolean; character: Character | null; onClose: () => void; onSaved: (c: Character) => void }) {
   const ui = useUi();
   const [d, setD] = useState<Draft>(EMPTY);
@@ -76,6 +107,7 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
   const dRef = useRef(d);
   dRef.current = d;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fieldRefs = useRef<Partial<Record<TokenChipField, HTMLInputElement | HTMLTextAreaElement | null>>>({});
 
   function clearTimer() {
     if (timerRef.current) {
@@ -117,6 +149,30 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
       flushCharacterDraft(id, dRef.current, { dirty: dirtyRef.current, suppress: suppressRef.current });
     }, CHARACTER_DRAFT_DEBOUNCE_MS);
   };
+
+  function insertToken(field: TokenChipField, token: InsertableToken) {
+    const el = fieldRefs.current[field] ?? null;
+    const current = dRef.current[field] ?? '';
+    let start: number | null = null;
+    let end: number | null = null;
+    try {
+      if (el && typeof el.selectionStart === 'number' && typeof el.selectionEnd === 'number') {
+        start = el.selectionStart;
+        end = el.selectionEnd;
+      }
+    } catch {
+      start = null;
+      end = null;
+    }
+    const inserted = insertCharacterToken(current, token, start, end);
+    if (inserted.text.length > FIELD_LIMITS[field]) return;
+    set(field, inserted.text);
+    const expectedNode = el;
+    const caret = inserted.caret;
+    requestAnimationFrame(() => {
+      applyTokenCaretRestore(fieldRefs.current[field] ?? null, expectedNode, caret);
+    });
+  }
 
   async function save() {
     if (!d.name.trim()) return ui.toast('이름은 필수', 'err');
@@ -218,8 +274,9 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
           </div>
           <div className="field">
             <label>한 줄 소개</label>
-            <input value={d.tagline} onChange={(e) => set('tagline', e.target.value)} maxLength={FIELD_LIMITS.tagline} />
+            <input ref={(el) => { fieldRefs.current.tagline = el; }} value={d.tagline} onChange={(e) => set('tagline', e.target.value)} maxLength={FIELD_LIMITS.tagline} />
             <FieldCount value={d.tagline} field="tagline" />
+            <TokenChips field="tagline" onInsert={insertToken} />
           </div>
           <div className="field"><label>아바타 URL (선택)</label><input value={d.avatar ?? ''} onChange={(e) => set('avatar', e.target.value || null)} placeholder="비워두면 이니셜 표시" maxLength={FIELD_LIMITS.avatar} /></div>
           {character && character.id !== FROST_CHARACTER_ID && (
@@ -259,13 +316,15 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
         <>
           <div className="field">
             <label>첫 메시지</label>
-            <textarea value={d.first_message} onChange={(e) => set('first_message', e.target.value)} maxLength={FIELD_LIMITS.first_message} placeholder="{{char}}, {{user}} 치환 가능" />
+            <textarea ref={(el) => { fieldRefs.current.first_message = el; }} value={d.first_message} onChange={(e) => set('first_message', e.target.value)} maxLength={FIELD_LIMITS.first_message} placeholder="{{char}}, {{user}} 치환 가능" />
             <FieldCount value={d.first_message} field="first_message" />
+            <TokenChips field="first_message" onInsert={insertToken} />
           </div>
           <div className="field">
             <label>예시 대화</label>
-            <textarea value={d.example_dialogue} onChange={(e) => set('example_dialogue', e.target.value)} maxLength={FIELD_LIMITS.example_dialogue} style={{ minHeight: 120 }} placeholder={'{{user}}: ...\n{{char}}: ...'} />
+            <textarea ref={(el) => { fieldRefs.current.example_dialogue = el; }} value={d.example_dialogue} onChange={(e) => set('example_dialogue', e.target.value)} maxLength={FIELD_LIMITS.example_dialogue} style={{ minHeight: 120 }} placeholder={'{{user}}: ...\n{{char}}: ...'} />
             <FieldCount value={d.example_dialogue} field="example_dialogue" />
+            <TokenChips field="example_dialogue" onInsert={insertToken} />
             <span className="hint">컨텍스트가 부족하면 이 블록이 먼저 잘립니다.</span>
           </div>
         </>
@@ -275,23 +334,27 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
         <>
           <div className="field">
             <label>성격</label>
-            <textarea value={d.personality} onChange={(e) => set('personality', e.target.value)} maxLength={FIELD_LIMITS.personality} />
+            <textarea ref={(el) => { fieldRefs.current.personality = el; }} value={d.personality} onChange={(e) => set('personality', e.target.value)} maxLength={FIELD_LIMITS.personality} />
             <FieldCount value={d.personality} field="personality" />
+            <TokenChips field="personality" onInsert={insertToken} />
           </div>
           <div className="field">
             <label>말투</label>
-            <textarea value={d.speech_style} onChange={(e) => set('speech_style', e.target.value)} maxLength={FIELD_LIMITS.speech_style} placeholder="예: 반말, 짧고 툭툭 던지는 말투. 문장 끝을 흐림." />
+            <textarea ref={(el) => { fieldRefs.current.speech_style = el; }} value={d.speech_style} onChange={(e) => set('speech_style', e.target.value)} maxLength={FIELD_LIMITS.speech_style} placeholder="예: 반말, 짧고 툭툭 던지는 말투. 문장 끝을 흐림." />
             <FieldCount value={d.speech_style} field="speech_style" />
+            <TokenChips field="speech_style" onInsert={insertToken} />
           </div>
           <div className="field">
             <label>기본 장면 / 시나리오</label>
-            <textarea value={d.scenario} onChange={(e) => set('scenario', e.target.value)} maxLength={FIELD_LIMITS.scenario} />
+            <textarea ref={(el) => { fieldRefs.current.scenario = el; }} value={d.scenario} onChange={(e) => set('scenario', e.target.value)} maxLength={FIELD_LIMITS.scenario} />
             <FieldCount value={d.scenario} field="scenario" />
+            <TokenChips field="scenario" onInsert={insertToken} />
           </div>
           <div className="field">
             <label>금기 / 하지 말 것</label>
-            <textarea value={d.taboos} onChange={(e) => set('taboos', e.target.value)} maxLength={FIELD_LIMITS.taboos} />
+            <textarea ref={(el) => { fieldRefs.current.taboos = el; }} value={d.taboos} onChange={(e) => set('taboos', e.target.value)} maxLength={FIELD_LIMITS.taboos} />
             <FieldCount value={d.taboos} field="taboos" />
+            <TokenChips field="taboos" onInsert={insertToken} />
           </div>
         </>
       )}
@@ -300,8 +363,9 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
         <>
           <div className="field">
             <label>설명 / 배경</label>
-            <textarea value={d.description} onChange={(e) => set('description', e.target.value)} maxLength={FIELD_LIMITS.description} />
+            <textarea ref={(el) => { fieldRefs.current.description = el; }} value={d.description} onChange={(e) => set('description', e.target.value)} maxLength={FIELD_LIMITS.description} />
             <FieldCount value={d.description} field="description" />
+            <TokenChips field="description" onInsert={insertToken} />
           </div>
           <div className="field">
             <label>태그</label>
