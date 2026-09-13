@@ -14,6 +14,12 @@ import {
   removeCharacterDraft,
 } from '../lib/characterDraftStore';
 import {
+  hasIncompleteExamplePairs,
+  initialExampleEditorState,
+  serializeExamplePairs,
+  type ExamplePair,
+} from '../lib/characterExamplePairs';
+import {
   INSERTABLE_TOKENS,
   applyTokenCaretRestore,
   insertCharacterToken,
@@ -93,6 +99,42 @@ function TokenChips({
   );
 }
 
+type ExamplePairRow = ExamplePair & { id: string };
+type ExamplePairSide = 'user' | 'char';
+type ExampleEditorMode = 'structured' | 'raw';
+
+let exampleRowSeq = 0;
+function allocExampleRowId(): string {
+  exampleRowSeq += 1;
+  return `exrow-${exampleRowSeq}`;
+}
+
+function createExampleRow(user = '', char = ''): ExamplePairRow {
+  return { id: allocExampleRowId(), user, char };
+}
+
+function pairRefKey(rowId: string, side: ExamplePairSide): string {
+  return `${rowId}:${side}`;
+}
+
+function PairUtteranceChips({ onInsert }: { onInsert: (token: InsertableToken) => void }) {
+  return (
+    <div className="row" style={{ gap: 6, marginTop: 6 }}>
+      {INSERTABLE_TOKENS.map((tok) => (
+        <button
+          key={tok}
+          type="button"
+          className="btn sm ghost"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onInsert(tok)}
+        >
+          {tok}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function CharacterEditor({ open, character, onClose, onSaved }: { open: boolean; character: Character | null; onClose: () => void; onSaved: (c: Character) => void }) {
   const ui = useUi();
   const [d, setD] = useState<Draft>(EMPTY);
@@ -108,6 +150,25 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
   dRef.current = d;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fieldRefs = useRef<Partial<Record<TokenChipField, HTMLInputElement | HTMLTextAreaElement | null>>>({});
+  const [exampleMode, setExampleMode] = useState<ExampleEditorMode>('structured');
+  const [exampleRows, setExampleRows] = useState<ExamplePairRow[]>(() => [createExampleRow()]);
+  const exampleRowsRef = useRef(exampleRows);
+  exampleRowsRef.current = exampleRows;
+  const pairFieldRefs = useRef<Map<string, HTMLTextAreaElement | null>>(new Map());
+
+  function applyExampleSource(raw: string) {
+    const init = initialExampleEditorState(raw);
+    if (init.mode === 'structured') {
+      const rows = init.pairs.map((p) => createExampleRow(p.user, p.char));
+      exampleRowsRef.current = rows;
+      setExampleRows(rows);
+      setExampleMode('structured');
+      return;
+    }
+    exampleRowsRef.current = [];
+    setExampleRows([]);
+    setExampleMode('raw');
+  }
 
   function clearTimer() {
     if (timerRef.current) {
@@ -127,9 +188,11 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
     if (character) {
       const { id, created_at, updated_at, archived, conversation_count, last_chat_at, ...rest } = character;
       setD(rest as Draft);
+      applyExampleSource(rest.example_dialogue);
       get<LoreEntry[]>(`/api/characters/${character.id}/lore`).then(setLore).catch(() => setLore([]));
     } else {
       setD(EMPTY);
+      applyExampleSource(EMPTY.example_dialogue);
       setLore([]);
     }
     return () => {
@@ -176,6 +239,10 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
 
   async function save() {
     if (!d.name.trim()) return ui.toast('이름은 필수', 'err');
+    if (exampleMode === 'structured' && hasIncompleteExamplePairs(exampleRows)) {
+      ui.toast('예시 대화의 사용자 발화와 캐릭터 발화를 모두 입력하거나, 미완성 쌍을 삭제해 주세요.');
+      return;
+    }
     const overs = overLimitFields({
       name: d.name,
       tagline: d.tagline,
@@ -211,6 +278,7 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
   function restoreDraft() {
     if (!pendingDraft) return;
     setD(pendingDraft);
+    applyExampleSource(pendingDraft.example_dialogue);
     setPendingDraft(null);
   }
 
@@ -226,6 +294,52 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
     const t = tagInput.trim();
     if (t && !d.tags.includes(t)) set('tags', [...d.tags, t]);
     setTagInput('');
+  }
+
+  function commitExampleRows(next: ExamplePairRow[]) {
+    const rows = next.length === 0 ? [createExampleRow()] : next;
+    exampleRowsRef.current = rows;
+    setExampleRows(rows);
+    set('example_dialogue', serializeExamplePairs(rows));
+  }
+
+  function insertPairToken(rowId: string, side: ExamplePairSide, token: InsertableToken) {
+    const key = pairRefKey(rowId, side);
+    const el = pairFieldRefs.current.get(key) ?? null;
+    const row = exampleRowsRef.current.find((r) => r.id === rowId);
+    if (!row) return;
+    const current = side === 'user' ? row.user : row.char;
+    let start: number | null = null;
+    let end: number | null = null;
+    try {
+      if (el && typeof el.selectionStart === 'number' && typeof el.selectionEnd === 'number') {
+        start = el.selectionStart;
+        end = el.selectionEnd;
+      }
+    } catch {
+      start = null;
+      end = null;
+    }
+    const inserted = insertCharacterToken(current, token, start, end);
+    const next = exampleRowsRef.current.map((r) => (
+      r.id === rowId ? { ...r, [side]: inserted.text } : r
+    ));
+    const serialized = serializeExamplePairs(next);
+    if (serialized.length > FIELD_LIMITS.example_dialogue) return;
+    commitExampleRows(next);
+    const expectedNode = el;
+    requestAnimationFrame(() => {
+      const live = pairFieldRefs.current.get(key) ?? null;
+      applyTokenCaretRestore(live, expectedNode, inserted.caret);
+    });
+  }
+
+  function addExamplePair() {
+    commitExampleRows([...exampleRowsRef.current, createExampleRow()]);
+  }
+
+  function removeExamplePair(rowId: string) {
+    commitExampleRows(exampleRowsRef.current.filter((r) => r.id !== rowId));
   }
 
   const setupIncomplete = !d.name.trim();
@@ -322,9 +436,38 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
           </div>
           <div className="field">
             <label>예시 대화</label>
-            <textarea ref={(el) => { fieldRefs.current.example_dialogue = el; }} value={d.example_dialogue} onChange={(e) => set('example_dialogue', e.target.value)} maxLength={FIELD_LIMITS.example_dialogue} style={{ minHeight: 120 }} placeholder={'{{user}}: ...\n{{char}}: ...'} />
+            {exampleMode === 'raw' ? (
+              <>
+                <textarea ref={(el) => { fieldRefs.current.example_dialogue = el; }} value={d.example_dialogue} onChange={e => set('example_dialogue', e.target.value)} maxLength={FIELD_LIMITS.example_dialogue} style={{ minHeight: 120 }} placeholder={'{{user}}: ...\n{{char}}: ...'} />
+                <TokenChips field="example_dialogue" onInsert={insertToken} />
+              </>
+            ) : (
+              <>
+                {exampleRows.map((row) => (
+                  <div key={row.id} className="field">
+                    <label>사용자 발화</label>
+                    <textarea
+                      ref={(el) => { pairFieldRefs.current.set(pairRefKey(row.id, 'user'), el); }}
+                      value={row.user}
+                      onChange={(e) => commitExampleRows(exampleRowsRef.current.map((r) => (r.id === row.id ? { ...r, user: e.target.value } : r)))}
+                      style={{ minHeight: 64 }}
+                    />
+                    <PairUtteranceChips onInsert={(tok) => insertPairToken(row.id, 'user', tok)} />
+                    <label>캐릭터 발화</label>
+                    <textarea
+                      ref={(el) => { pairFieldRefs.current.set(pairRefKey(row.id, 'char'), el); }}
+                      value={row.char}
+                      onChange={(e) => commitExampleRows(exampleRowsRef.current.map((r) => (r.id === row.id ? { ...r, char: e.target.value } : r)))}
+                      style={{ minHeight: 64 }}
+                    />
+                    <PairUtteranceChips onInsert={(tok) => insertPairToken(row.id, 'char', tok)} />
+                    <button type="button" className="btn sm" onClick={() => removeExamplePair(row.id)}>쌍 삭제</button>
+                  </div>
+                ))}
+                <button type="button" className="btn sm" onClick={addExamplePair}>쌍 추가</button>
+              </>
+            )}
             <FieldCount value={d.example_dialogue} field="example_dialogue" />
-            <TokenChips field="example_dialogue" onInsert={insertToken} />
             <span className="hint">컨텍스트가 부족하면 이 블록이 먼저 잘립니다.</span>
           </div>
         </>
