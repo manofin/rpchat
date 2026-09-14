@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { del, get, patch, post } from '../lib/api';
 import { back, navigate } from '../lib/router';
 import type { Character, Conversation, Persona, Scene } from '../types';
-import { Avatar, relTime } from '../components/view';
+import { Avatar, relTime, softHue } from '../components/view';
 import { CharacterEditor } from '../components/CharacterEditor';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { characterHeroEmpty, resolveConversationCount, resolveLastChatAt } from '../lib/characterChatStats';
@@ -50,33 +50,48 @@ export function CharacterPage({ id }: { id: string }) {
       </div>
       <div className="content">
         <div className="char-hero">
-          <div className="char-hero-main">
-            <Avatar name={char.name} avatar={char.avatar} size="lg" />
-            <div className="char-hero-copy">
-              <h2 className="char-hero-name">{char.name}</h2>
-              {char.tagline ? <p className="char-hero-tag">{char.tagline}</p> : null}
-              {char.tags.length > 0 && (
-                <div className="tags" style={{ marginTop: 10 }}>
-                  {char.tags.map((t) => <span key={t} className="tag">#{t}</span>)}
-                </div>
-              )}
-              <div className="char-hero-meta muted small">
-                {characterHeroEmpty(convCount)
-                  ? '아직 대화 없음'
-                  : `대화 ${convCount}개${lastChat ? ` · ${relTime(lastChat)}` : ''}`}
-              </div>
+          <div
+            className="char-hero-cover"
+            style={!char.avatar ? ({ ['--disc-hue']: String(softHue(char.name)) } as CSSProperties) : undefined}
+          >
+            {char.avatar ? (
+              <img className="char-hero-cover-img" src={char.avatar} alt="" />
+            ) : (
+              <div className="char-hero-cover-soft" aria-hidden />
+            )}
+            <div className="char-hero-cover-scrim" aria-hidden />
+            <div className="char-hero-cover-avatar">
+              <Avatar name={char.name} avatar={char.avatar} size="lg" />
             </div>
           </div>
-          {char.description && <p className="char-hero-desc">{char.description}</p>}
-          <div className="char-hero-actions">
-            <button className="btn primary block disc-start-cta" onClick={() => setStarter(true)}>
-              💬 대화하기
-            </button>
-            {resume && (
-              <button className="btn block" onClick={() => navigate(`/chat/${resume.id}`)}>
-                이어하기 · {resume.title || '최근 대화'}
+          <div className="char-hero-body">
+            <div className="char-hero-main">
+              <div className="char-hero-copy">
+                <h2 className="char-hero-name">{char.name}</h2>
+                {char.tagline ? <p className="char-hero-tag">{char.tagline}</p> : null}
+                {char.tags.length > 0 && (
+                  <div className="tags" style={{ marginTop: 10 }}>
+                    {char.tags.map((t) => <span key={t} className="tag">#{t}</span>)}
+                  </div>
+                )}
+                <div className="char-hero-meta muted small">
+                  {characterHeroEmpty(convCount)
+                    ? '아직 대화 없음'
+                    : `대화 ${convCount}개${lastChat ? ` · ${relTime(lastChat)}` : ''}`}
+                </div>
+              </div>
+            </div>
+            {char.description && <p className="char-hero-desc">{char.description}</p>}
+            <div className="char-hero-actions">
+              <button className="btn primary block disc-start-cta" onClick={() => setStarter(true)}>
+                💬 대화하기
               </button>
-            )}
+              {resume && (
+                <button className="btn block" onClick={() => navigate(`/chat/${resume.id}`)}>
+                  이어하기 · {resume.title || '최근 대화'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
