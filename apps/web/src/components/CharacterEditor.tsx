@@ -26,6 +26,7 @@ import {
   type InsertableToken,
   type TokenChipField,
 } from '../lib/characterTokenInsert';
+import { isAvatarFileInputVisible, validateStagedAvatarFile } from '../lib/characterAvatarStaging';
 import type { Character } from '../types';
 import { LorePanel, type LoreEntry } from './LorePanel';
 import { Modal, useUi } from './ui';
@@ -143,6 +144,10 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
   const [lore, setLore] = useState<LoreEntry[]>([]);
   const [tab, setTab] = useState<Tab>('setup');
   const [uploading, setUploading] = useState(false);
+  const [stagedAvatar, setStagedAvatar] = useState<File | null>(null);
+  const [stagedAvatarPreview, setStagedAvatarPreview] = useState<string | null>(null);
+  const stagedFileRef = useRef<File | null>(null);
+  const stagedPreviewRef = useRef<string | null>(null);
   const [pendingDraft, setPendingDraft] = useState<Draft | null>(null);
   const dirtyRef = useRef(false);
   const suppressRef = useRef(false);
@@ -201,6 +206,20 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
     };
   }, [open, character]);
 
+  useEffect(() => {
+    return () => {
+      const prev = stagedPreviewRef.current;
+      stagedPreviewRef.current = null;
+      stagedFileRef.current = null;
+      if (!prev) return;
+      try {
+        URL.revokeObjectURL(prev);
+      } catch {
+        /* revoke must not throw the editor */
+      }
+    };
+  }, []);
+
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => {
     dirtyRef.current = true;
     suppressRef.current = false;
@@ -237,6 +256,64 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
     });
   }
 
+  function revokeCurrentPreview() {
+    const prev = stagedPreviewRef.current;
+    stagedPreviewRef.current = null;
+    if (!prev) return;
+    try {
+      URL.revokeObjectURL(prev);
+    } catch {
+      /* revoke must not throw the editor */
+    }
+  }
+
+  function clearStagedAvatar() {
+    stagedFileRef.current = null;
+    revokeCurrentPreview();
+    setStagedAvatar(null);
+    setStagedAvatarPreview(null);
+  }
+
+  async function onAvatarFileChosen(file: File) {
+    if (character) {
+      if (file.size > AVATAR_MAX_BYTES) {
+        ui.toast(`파일이 ${AVATAR_MAX_BYTES / 1024 / 1024}MB를 넘습니다`, 'err');
+        return;
+      }
+      setUploading(true);
+      try {
+        const saved = await postBinary<Character>(`/api/characters/${character.id}/avatar`, file, file.type || 'application/octet-stream');
+        set('avatar', saved.avatar);
+        ui.toast('아바타 업로드됨');
+      } catch (err) {
+        ui.toast((err as Error).message, 'err');
+      } finally {
+        setUploading(false);
+      }
+      return;
+    }
+    const reject = validateStagedAvatarFile(file);
+    if (reject === 'too-large') {
+      ui.toast(`파일이 ${AVATAR_MAX_BYTES / 1024 / 1024}MB를 넘습니다`, 'err');
+      return;
+    }
+    if (reject === 'bad-type') {
+      ui.toast('jpeg/png/webp만 사용할 수 있습니다', 'err');
+      return;
+    }
+    revokeCurrentPreview();
+    let next: string | null = null;
+    try {
+      next = URL.createObjectURL(file);
+    } catch {
+      next = null;
+    }
+    stagedPreviewRef.current = next;
+    stagedFileRef.current = file;
+    setStagedAvatar(file);
+    setStagedAvatarPreview(next);
+  }
+
   async function save() {
     if (!d.name.trim()) return ui.toast('이름은 필수', 'err');
     if (exampleMode === 'structured' && hasIncompleteExamplePairs(exampleRows)) {
@@ -260,7 +337,17 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
     }
     setSaving(true);
     try {
-      const saved = character ? await put<Character>(`/api/characters/${character.id}`, d) : await post<Character>('/api/characters', d);
+      let saved = character ? await put<Character>(`/api/characters/${character.id}`, d) : await post<Character>('/api/characters', d);
+      if (!character) {
+        const file = stagedFileRef.current;
+        if (file) {
+          saved = await postBinary<Character>(`/api/characters/${saved.id}/avatar`, file, file.type || 'application/octet-stream').catch(() => {
+            ui.toast('캐릭터는 저장됐지만 이미지 업로드에 실패했습니다', 'warn');
+            return saved;
+          });
+        }
+        clearStagedAvatar();
+      }
       suppressRef.current = true;
       dirtyRef.current = false;
       clearTimer();
@@ -349,7 +436,7 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
     <Modal
       open={open}
       title={character ? '캐릭터 편집' : '새 캐릭터'}
-      onClose={onClose}
+      onClose={() => { clearStagedAvatar(); onClose(); }}
       toolbar={
         <div className="tabs" style={{ padding: '0 0 10px' }}>
           {TABS.map((t) => (
@@ -393,7 +480,7 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
             <TokenChips field="tagline" onInsert={insertToken} />
           </div>
           <div className="field"><label>아바타 URL (선택)</label><input value={d.avatar ?? ''} onChange={(e) => set('avatar', e.target.value || null)} placeholder="비워두면 이니셜 표시" maxLength={FIELD_LIMITS.avatar} /></div>
-          {character && character.id !== FROST_CHARACTER_ID && (
+          {isAvatarFileInputVisible(character?.id, FROST_CHARACTER_ID) && (
             <div className="field">
               <label>아바타 파일</label>
               <input
@@ -404,22 +491,12 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
                   const file = e.target.files?.[0];
                   e.target.value = '';
                   if (!file) return;
-                  if (file.size > AVATAR_MAX_BYTES) {
-                    ui.toast(`파일이 ${AVATAR_MAX_BYTES / 1024 / 1024}MB를 넘습니다`, 'err');
-                    return;
-                  }
-                  setUploading(true);
-                  try {
-                    const saved = await postBinary<Character>(`/api/characters/${character.id}/avatar`, file, file.type || 'application/octet-stream');
-                    set('avatar', saved.avatar);
-                    ui.toast('아바타 업로드됨');
-                  } catch (err) {
-                    ui.toast((err as Error).message, 'err');
-                  } finally {
-                    setUploading(false);
-                  }
+                  await onAvatarFileChosen(file);
                 }}
               />
+              {stagedAvatar && stagedAvatarPreview ? (
+                <img src={stagedAvatarPreview} alt="" className="avatar" style={{ maxHeight: 96 }} />
+              ) : null}
               <span className="hint">jpeg/png/webp · 최대 {AVATAR_MAX_BYTES / 1024 / 1024}MB. 변환 없음.</span>
             </div>
           )}
