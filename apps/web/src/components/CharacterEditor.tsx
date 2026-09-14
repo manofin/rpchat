@@ -27,7 +27,14 @@ import {
   type TokenChipField,
 } from '../lib/characterTokenInsert';
 import { isAvatarFileInputVisible, validateStagedAvatarFile } from '../lib/characterAvatarStaging';
+import {
+  AUTHORING_TARGET_FIELDS,
+  applyAndClipGeneratedField,
+  generateCharacterField,
+  type AuthoringTargetField,
+} from '../lib/characterGenerate';
 import type { Character } from '../types';
+import { AuthoringDraftButton, AuthoringGeneratePanel } from './CharacterFieldGenerate';
 import { LorePanel, type LoreEntry } from './LorePanel';
 import { Modal, useUi } from './ui';
 
@@ -160,6 +167,10 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
   const exampleRowsRef = useRef(exampleRows);
   exampleRowsRef.current = exampleRows;
   const pairFieldRefs = useRef<Map<string, HTMLTextAreaElement | null>>(new Map());
+  const [genField, setGenField] = useState<AuthoringTargetField | null>(null);
+  const [genPrompt, setGenPrompt] = useState('');
+  const [genBusy, setGenBusy] = useState(false);
+  const [genPreview, setGenPreview] = useState<string | null>(null);
 
   function applyExampleSource(raw: string) {
     const init = initialExampleEditorState(raw);
@@ -190,6 +201,10 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
     clearTimer();
     setTab('setup');
     setPendingDraft(readCharacterDraft(id));
+    setGenField(null);
+    setGenPrompt('');
+    setGenPreview(null);
+    setGenBusy(false);
     if (character) {
       const { id, created_at, updated_at, archived, conversation_count, last_chat_at, ...rest } = character;
       setD(rest as Draft);
@@ -378,6 +393,65 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
     setPendingDraft(null);
   }
 
+  function openAuthoringGenerate(field: AuthoringTargetField) {
+    setGenField(field);
+    setGenPrompt('');
+    setGenPreview(null);
+  }
+
+  function closeAuthoringGenerate() {
+    if (genBusy) return;
+    setGenField(null);
+    setGenPrompt('');
+    setGenPreview(null);
+  }
+
+  function authoringContext(): Partial<Record<AuthoringTargetField, string>> {
+    const cur = dRef.current;
+    const ctx: Partial<Record<AuthoringTargetField, string>> = {};
+    for (const field of AUTHORING_TARGET_FIELDS) {
+      const v = cur[field];
+      if (typeof v === 'string' && v.trim()) ctx[field] = v;
+    }
+    return ctx;
+  }
+
+  function currentAuthoringValue(field: AuthoringTargetField): string {
+    const v = dRef.current[field];
+    return typeof v === 'string' ? v : '';
+  }
+
+  function injectAuthoringText(field: AuthoringTargetField, generated: string, mode: 'replace' | 'append') {
+    const next = applyAndClipGeneratedField(field, currentAuthoringValue(field), generated, mode);
+    set(field, next);
+    if (field === 'example_dialogue') applyExampleSource(next);
+    setGenPreview(null);
+    setGenField(null);
+    setGenPrompt('');
+  }
+
+  async function runAuthoringGenerate() {
+    if (!genField || genBusy) return;
+    const prompt = genPrompt.trim();
+    if (!prompt) return;
+    setGenBusy(true);
+    setGenPreview(null);
+    try {
+      const res = await generateCharacterField({
+        targetField: genField,
+        prompt,
+        name: dRef.current.name || undefined,
+        characterId: character?.id,
+        context: authoringContext(),
+      });
+      setGenPreview(res.text);
+    } catch (err) {
+      ui.toast((err as Error).message, 'err');
+    } finally {
+      setGenBusy(false);
+    }
+  }
+
   function addTag() {
     const t = tagInput.trim();
     if (t && !d.tags.includes(t)) set('tags', [...d.tags, t]);
@@ -467,6 +541,22 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
         </div>
       ) : null}
 
+      {genField ? (
+        <AuthoringGeneratePanel
+          field={genField}
+          busy={genBusy}
+          prompt={genPrompt}
+          preview={genPreview}
+          hasExisting={currentAuthoringValue(genField).trim().length > 0}
+          onPrompt={setGenPrompt}
+          onGenerate={() => { void runAuthoringGenerate(); }}
+          onReplace={() => { if (genPreview != null) injectAuthoringText(genField, genPreview, 'replace'); }}
+          onAppend={() => { if (genPreview != null) injectAuthoringText(genField, genPreview, 'append'); }}
+          onInsert={() => { if (genPreview != null) injectAuthoringText(genField, genPreview, 'replace'); }}
+          onClose={closeAuthoringGenerate}
+        />
+      ) : null}
+
       {tab === 'setup' && (
         <>
           <div className="field">
@@ -478,6 +568,7 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
             <label>한 줄 소개</label>
             <input ref={(el) => { fieldRefs.current.tagline = el; }} value={d.tagline} onChange={(e) => set('tagline', e.target.value)} maxLength={FIELD_LIMITS.tagline} />
             <FieldCount value={d.tagline} field="tagline" />
+            <AuthoringDraftButton field="tagline" disabled={genBusy} onOpen={openAuthoringGenerate} />
             <TokenChips field="tagline" onInsert={insertToken} />
           </div>
           <div className="field"><label>아바타 URL (선택)</label><input value={d.avatar ?? ''} onChange={(e) => set('avatar', e.target.value || null)} placeholder="비워두면 이니셜 표시" maxLength={FIELD_LIMITS.avatar} /></div>
@@ -510,12 +601,14 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
             <label>플레이 가이드</label>
             <textarea value={d.play_guide ?? ''} onChange={(e) => set('play_guide', e.target.value)} maxLength={FIELD_LIMITS.play_guide} />
             <FieldCount value={d.play_guide ?? ''} field="play_guide" />
+            <AuthoringDraftButton field="play_guide" disabled={genBusy} onOpen={openAuthoringGenerate} />
             <span className="hint">AI 에 전달되지 않음. 나만 보는 메모.</span>
           </div>
           <div className="field">
             <label>첫 메시지</label>
             <textarea ref={(el) => { fieldRefs.current.first_message = el; }} value={d.first_message} onChange={(e) => set('first_message', e.target.value)} maxLength={FIELD_LIMITS.first_message} placeholder="{{char}}, {{user}} 치환 가능" />
             <FieldCount value={d.first_message} field="first_message" />
+            <AuthoringDraftButton field="first_message" disabled={genBusy} onOpen={openAuthoringGenerate} />
             <TokenChips field="first_message" onInsert={insertToken} />
           </div>
           <div className="field">
@@ -552,6 +645,7 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
               </>
             )}
             <FieldCount value={d.example_dialogue} field="example_dialogue" />
+            <AuthoringDraftButton field="example_dialogue" disabled={genBusy} onOpen={openAuthoringGenerate} />
             <span className="hint">컨텍스트가 부족하면 이 블록이 먼저 잘립니다.</span>
           </div>
         </>
@@ -563,24 +657,28 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
             <label>성격</label>
             <textarea ref={(el) => { fieldRefs.current.personality = el; }} value={d.personality} onChange={(e) => set('personality', e.target.value)} maxLength={FIELD_LIMITS.personality} />
             <FieldCount value={d.personality} field="personality" />
+            <AuthoringDraftButton field="personality" disabled={genBusy} onOpen={openAuthoringGenerate} />
             <TokenChips field="personality" onInsert={insertToken} />
           </div>
           <div className="field">
             <label>말투</label>
             <textarea ref={(el) => { fieldRefs.current.speech_style = el; }} value={d.speech_style} onChange={(e) => set('speech_style', e.target.value)} maxLength={FIELD_LIMITS.speech_style} placeholder="예: 반말, 짧고 툭툭 던지는 말투. 문장 끝을 흐림." />
             <FieldCount value={d.speech_style} field="speech_style" />
+            <AuthoringDraftButton field="speech_style" disabled={genBusy} onOpen={openAuthoringGenerate} />
             <TokenChips field="speech_style" onInsert={insertToken} />
           </div>
           <div className="field">
             <label>기본 장면 / 시나리오</label>
             <textarea ref={(el) => { fieldRefs.current.scenario = el; }} value={d.scenario} onChange={(e) => set('scenario', e.target.value)} maxLength={FIELD_LIMITS.scenario} />
             <FieldCount value={d.scenario} field="scenario" />
+            <AuthoringDraftButton field="scenario" disabled={genBusy} onOpen={openAuthoringGenerate} />
             <TokenChips field="scenario" onInsert={insertToken} />
           </div>
           <div className="field">
             <label>금기 / 하지 말 것</label>
             <textarea ref={(el) => { fieldRefs.current.taboos = el; }} value={d.taboos} onChange={(e) => set('taboos', e.target.value)} maxLength={FIELD_LIMITS.taboos} />
             <FieldCount value={d.taboos} field="taboos" />
+            <AuthoringDraftButton field="taboos" disabled={genBusy} onOpen={openAuthoringGenerate} />
             <TokenChips field="taboos" onInsert={insertToken} />
           </div>
         </>
@@ -592,6 +690,7 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
             <label>설명 / 배경</label>
             <textarea ref={(el) => { fieldRefs.current.description = el; }} value={d.description} onChange={(e) => set('description', e.target.value)} maxLength={FIELD_LIMITS.description} />
             <FieldCount value={d.description} field="description" />
+            <AuthoringDraftButton field="description" disabled={genBusy} onOpen={openAuthoringGenerate} />
             <TokenChips field="description" onInsert={insertToken} />
           </div>
           <div className="field">
