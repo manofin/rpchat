@@ -318,7 +318,9 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   const sumBudget = Math.max(0, budgets.memory - memEst);
   const stateCap = Math.min(200, sumBudget);
   const stateRendered = renderState(stateRow?.content ?? null);
-  const stateText = stateRendered ? truncateToTokens(stateRendered, stateCap, cal) : null;
+  const stateCore = stateRendered ? truncateToTokens(stateRendered, stateCap, cal) : null;
+  const stateUnknownConstraint = '※ 현재 상태에 행방불명·미해결·미상으로 기재된 사실은 임의로 원인이나 주체를 지어내지 않고 알 수 없는 상태로 유지한다.';
+  const stateText = stateCore ? `${stateCore}\n\n${stateUnknownConstraint}` : null;
   const stateEst = stateText ? estimateTokens(stateText, cal) : 0;
   // recentGuard 를 episode/scene 공용으로 먼저 정의 (상수는 summaryBudget.ts에서)
   const recentGuardIds = new Set(history.slice(-SCENE_RECENT_GUARD).map((m) => m.id));

@@ -105,7 +105,19 @@ export function memoryRoutes(ctx: Ctx) {
       if (!s) return reply.code(404).send({ error: 'not found' });
       const p = summaryPatch.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
-      run(db, 'UPDATE summaries SET content = COALESCE(?, content), status = COALESCE(?, status) WHERE id = ?', p.data.content ?? null, p.data.status ?? null, s.id);
+      const bundleTiers = new Set(['whole', 'state', 'scene']);
+      const shouldBundle = p.data.status === 'approved' && bundleTiers.has(s.tier);
+      db.transaction(() => {
+        if (shouldBundle) {
+          run(
+            db,
+            `UPDATE summaries SET status = 'approved'
+             WHERE conversation_id = ? AND created_at = ? AND status = 'draft' AND tier IN ('whole', 'state', 'scene')`,
+            s.conversation_id, s.created_at,
+          );
+        }
+        run(db, 'UPDATE summaries SET content = COALESCE(?, content), status = COALESCE(?, status) WHERE id = ?', p.data.content ?? null, p.data.status ?? null, s.id);
+      })();
       return one<SummaryRow>(db, 'SELECT * FROM summaries WHERE id = ?', s.id);
     });
 
