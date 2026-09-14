@@ -7,6 +7,16 @@ import { config } from '../config.js';
 import { many, nowIso, one, parseJson, run, uid } from '../db/index.js';
 import type { CharacterRow, LoreEntryRow, PersonaRow } from '../types.js';
 import { importCard } from '../cardImport.js';
+import { ModelError } from '../model/adapter.js';
+import {
+  AUTHORING_CONTEXT_KEYS,
+  AUTHORING_PROFILE,
+  AUTHORING_TARGET_FIELDS,
+  assembleAuthoringMessages,
+  overlayAuthoringContext,
+  truncateAuthoringText,
+  type AuthoringContext,
+} from '../authoring/generate.js';
 import {
   AVATAR_EXT,
   AVATAR_MAX_BYTES,
@@ -48,6 +58,28 @@ const characterSchema = z.object({
   tags: z.array(z.string().max(30)).max(20).default([]),
   scene_background: z.string().max(300).nullable().optional(),
   voice_profile: z.string().max(100).nullable().optional(),
+});
+
+const generateSchema = z.object({
+  targetField: z.enum(AUTHORING_TARGET_FIELDS),
+  prompt: z.string().trim().min(1).max(2000),
+  name: z.string().min(1).max(80).optional(),
+  characterId: z.string().min(1).nullable().optional(),
+  context: z
+    .object({
+      name: z.string().optional(),
+      tagline: z.string().optional(),
+      description: z.string().optional(),
+      personality: z.string().optional(),
+      speech_style: z.string().optional(),
+      scenario: z.string().optional(),
+      first_message: z.string().optional(),
+      example_dialogue: z.string().optional(),
+      taboos: z.string().optional(),
+      play_guide: z.string().optional(),
+    })
+    .optional()
+    .nullable(),
 });
 
 const LORE_TITLE_MAX = 120;
@@ -102,6 +134,61 @@ export function characterRoutes(ctx: Ctx) {
       );
       run(db, 'INSERT INTO lorebooks (id, character_id, name, created_at) VALUES (?, ?, ?, ?)', uid(), id, `${d.name} 로어북`, t);
       return reply.code(201).send(characterOut(one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', id)!));
+    });
+
+    app.post('/api/characters/generate', async (req, reply) => {
+      const p = generateSchema.safeParse(req.body);
+      if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
+      const d = p.data;
+      let dbRow: AuthoringContext | null = null;
+      if (d.characterId) {
+        const c = one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', d.characterId);
+        if (!c) return reply.code(404).send({ error: 'not found' });
+        dbRow = {};
+        for (const k of AUTHORING_CONTEXT_KEYS) dbRow[k] = c[k];
+      }
+      const merged = overlayAuthoringContext(dbRow, d.context ?? null, d.name);
+      const messages = assembleAuthoringMessages(d.targetField, d.prompt, merged);
+      const model = AUTHORING_PROFILE.model || ctx.resolvedModel();
+      if (!model) return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
+      const controller = new AbortController();
+      let text = '';
+      let finishReason: string | null = 'stop';
+      let promptTokens = 0;
+      let completionTokens = 0;
+      try {
+        const r = await ctx.queue.run(
+          () =>
+            ctx.model.complete({
+              model,
+              messages,
+              temperature: AUTHORING_PROFILE.temperature,
+              top_p: AUTHORING_PROFILE.top_p,
+              max_tokens: AUTHORING_PROFILE.max_tokens,
+              signal: controller.signal,
+            }),
+          controller.signal,
+        );
+        text = r.text;
+        finishReason = r.finishReason;
+        promptTokens = r.usage?.prompt_tokens ?? 0;
+        completionTokens = r.usage?.completion_tokens ?? 0;
+      } catch (err) {
+        const msg =
+          err instanceof ModelError
+            ? err.message
+            : (err as Error)?.name === 'TimeoutError'
+              ? '모델 응답 시간 초과'
+              : (err as Error).message;
+        return reply.code(503).send({ error: msg });
+      }
+      return {
+        targetField: d.targetField,
+        text: truncateAuthoringText(d.targetField, text),
+        profile: AUTHORING_PROFILE.name,
+        finish_reason: finishReason ?? 'stop',
+        usage: { prompt_tokens: promptTokens, completion_tokens: completionTokens },
+      };
     });
 
     app.get<{ Params: { id: string } }>('/api/characters/:id', async (req, reply) => {
