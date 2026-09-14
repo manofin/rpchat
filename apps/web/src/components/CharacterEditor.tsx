@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { get, post, postBinary, put } from '../lib/api';
+import { del, get, post, postBinary, put } from '../lib/api';
 import {
   FIELD_LIMITS,
   fieldCountTone,
@@ -33,7 +33,7 @@ import {
   generateCharacterField,
   type AuthoringTargetField,
 } from '../lib/characterGenerate';
-import type { Character } from '../types';
+import type { Character, CharacterStoryLink } from '../types';
 import { AuthoringDraftButton, AuthoringGeneratePanel } from './CharacterFieldGenerate';
 import { LorePanel, type LoreEntry } from './LorePanel';
 import { Modal, useUi } from './ui';
@@ -121,6 +121,56 @@ function createExampleRow(user = '', char = ''): ExamplePairRow {
   return { id: allocExampleRowId(), user, char };
 }
 
+/* C4-story-link-helpers */
+export async function loadCharacterStoryLinks(
+  characterId: string | null | undefined,
+  getFn: <T>(path: string) => Promise<T>,
+): Promise<CharacterStoryLink[]> {
+  if (!characterId) return [];
+  try {
+    return await getFn<CharacterStoryLink[]>(`/api/characters/${characterId}/stories`);
+  } catch {
+    return [];
+  }
+}
+
+export async function loadCharacterStoryUi(
+  characterId: string | null | undefined,
+  getFn: <T>(path: string) => Promise<T>,
+): Promise<{ links: CharacterStoryLink[]; catalog: Array<{ id: string; name: string }> }> {
+  if (!characterId) return { links: [], catalog: [] };
+  const links = await loadCharacterStoryLinks(characterId, getFn);
+  try {
+    const stories = await getFn<Array<{ id: string; name: string }>>('/api/stories');
+    return { links, catalog: stories.map((s) => ({ id: s.id, name: s.name })) };
+  } catch {
+    return { links, catalog: [] };
+  }
+}
+
+export async function addCharacterStoryLink(
+  storyId: string,
+  characterId: string,
+  postFn: (path: string, body: unknown) => Promise<unknown>,
+  getFn: <T>(path: string) => Promise<T>,
+): Promise<CharacterStoryLink[]> {
+  await postFn(`/api/stories/${storyId}/characters`, { characterId });
+  return loadCharacterStoryLinks(characterId, getFn);
+}
+
+export async function removeCharacterStoryLink(
+  storyId: string,
+  characterId: string,
+  delFn: (path: string) => Promise<unknown>,
+  getFn: <T>(path: string) => Promise<T>,
+  confirmFn: (msg: string, opts?: { danger?: boolean; okLabel?: string }) => Promise<boolean>,
+): Promise<CharacterStoryLink[] | null> {
+  if (!(await confirmFn('이 스토리에서 뺄까요? 스토리 자체는 남습니다.', { okLabel: '빼기' }))) return null;
+  await delFn(`/api/stories/${storyId}/characters/${characterId}`);
+  return loadCharacterStoryLinks(characterId, getFn);
+}
+/* C4-story-link-helpers-end */
+
 function pairRefKey(rowId: string, side: ExamplePairSide): string {
   return `${rowId}:${side}`;
 }
@@ -171,6 +221,9 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
   const [genPrompt, setGenPrompt] = useState('');
   const [genBusy, setGenBusy] = useState(false);
   const [genPreview, setGenPreview] = useState<string | null>(null);
+  const [linkedStories, setLinkedStories] = useState<CharacterStoryLink[]>([]);
+  const [storyCatalog, setStoryCatalog] = useState<Array<{ id: string; name: string }>>([]);
+  const [storyPickId, setStoryPickId] = useState('');
 
   function applyExampleSource(raw: string) {
     const init = initialExampleEditorState(raw);
@@ -234,6 +287,31 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!open || !character?.id) {
+      setLinkedStories([]);
+      setStoryCatalog([]);
+      setStoryPickId('');
+      return;
+    }
+    let cancelled = false;
+    const characterId = character.id;
+    void (async () => {
+      try {
+        const data = await loadCharacterStoryUi(characterId, get);
+        if (cancelled) return;
+        setLinkedStories(data.links);
+        setStoryCatalog(data.catalog);
+      } catch {
+        if (!cancelled) {
+          setLinkedStories([]);
+          setStoryCatalog([]);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [open, character?.id]);
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => {
     dirtyRef.current = true;
@@ -506,6 +584,30 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
 
   const setupIncomplete = !d.name.trim();
   const tabIndex = TABS.findIndex((t) => t.key === tab);
+  const linkedIds = new Set(linkedStories.map((s) => s.id));
+  const availableStories = storyCatalog.filter((s) => !linkedIds.has(s.id));
+
+  async function addLinkedStory() {
+    if (!character?.id || !storyPickId) return;
+    try {
+      const next = await addCharacterStoryLink(storyPickId, character.id, post, get);
+      setStoryPickId('');
+      setLinkedStories(next);
+    } catch (e) {
+      ui.toast((e as Error).message, 'err');
+    }
+  }
+
+  async function removeLinkedStory(storyId: string) {
+    if (!character?.id) return;
+    try {
+      const next = await removeCharacterStoryLink(storyId, character.id, del, get, ui.confirm);
+      if (next === null) return;
+      setLinkedStories(next);
+    } catch (e) {
+      ui.toast((e as Error).message, 'err');
+    }
+  }
 
   return (
     <Modal
@@ -697,6 +799,39 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
             <label>태그</label>
             <div className="row"><input value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())} placeholder="입력 후 Enter" /><button className="btn sm" onClick={addTag}>추가</button></div>
             <div className="tags" style={{ marginTop: 6 }}>{d.tags.map((t) => <span key={t} className="tag" onClick={() => set('tags', d.tags.filter((x) => x !== t))}>{t} ✕</span>)}</div>
+          </div>
+          <div className="field">
+            <label>연결된 스토리</label>
+            {!character ? (
+              <div className="muted small">캐릭터를 저장한 뒤 스토리에 연결할 수 있습니다.</div>
+            ) : (
+              <>
+                {linkedStories.length === 0 ? (
+                  <div className="muted small">연결된 스토리가 없습니다.</div>
+                ) : (
+                  <div className="list" style={{ marginBottom: 8 }}>
+                    {linkedStories.map((s) => (
+                      <div key={s.id} className="list-item">
+                        <div className="body">
+                          <div className="t">{s.name}</div>
+                          <div className="p">{s.tagline || ' '}</div>
+                        </div>
+                        <button type="button" className="btn ghost icon" onClick={() => { void removeLinkedStory(s.id); }} aria-label="빼기">✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {availableStories.length > 0 && (
+                  <div className="row" style={{ gap: 8 }}>
+                    <select value={storyPickId} onChange={(e) => setStoryPickId(e.target.value)}>
+                      <option value="">스토리 선택</option>
+                      {availableStories.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                    <button type="button" className="btn sm" disabled={!storyPickId} onClick={() => { void addLinkedStory(); }}>추가</button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </>
       )}

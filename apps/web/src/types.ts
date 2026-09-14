@@ -6,6 +6,16 @@ export interface StoryCharacter {
   name: string;
 }
 
+/** C4 reverse lookup — GET /api/characters/:id/stories. Not part of Character/Draft. */
+export interface CharacterStoryLink {
+  id: string;
+  name: string;
+  tagline: string;
+  archived: boolean;
+  role: string;
+  sort_order: number;
+}
+
 /** f9-place-catalog — one entry of `stories.scene_catalog.places`. */
 export interface SceneCatalogPlace {
   id: string;

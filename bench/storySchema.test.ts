@@ -63,7 +63,15 @@ async function main() {
   });
 
   await t('GET /api/characters source has no story_characters filter', () => {
-    assert.equal(charSrc.includes('story_characters'), false);
+    // C4 가 합법적으로 역방향 조회를 추가함 — 검사 범위를 목록 핸들러로 좁힘.
+    const startTok = "app.get('/api/characters', async () => {";
+    const endTok = "app.post('/api/characters'";
+    const start = charSrc.indexOf(startTok);
+    const end = charSrc.indexOf(endTok);
+    assert.ok(start >= 0, 'GET /api/characters list handler start missing');
+    assert.ok(end > start, 'GET /api/characters list handler end missing');
+    const listHandlerSrc = charSrc.slice(start, end);
+    assert.equal(listHandlerSrc.includes('story_characters'), false);
   });
 
   await t('HomePage character tab still uses GET /api/characters (no hide filter)', () => {

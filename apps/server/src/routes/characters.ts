@@ -197,6 +197,28 @@ export function characterRoutes(ctx: Ctx) {
       return characterOut(c);
     });
 
+    app.get<{ Params: { id: string } }>('/api/characters/:id/stories', async (req, reply) => {
+      const c = one<{ id: string }>(db, 'SELECT id FROM characters WHERE id = ?', req.params.id);
+      if (!c) return reply.code(404).send({ error: 'not found' });
+      const rows = many<{ id: string; name: string; tagline: string; role: string; sort_order: number }>(
+        db,
+        `SELECT s.id, s.name, s.tagline, sc.role, sc.sort_order
+         FROM story_characters sc
+         JOIN stories s ON s.id = sc.story_id
+         WHERE sc.character_id = ? AND s.archived = 0
+         ORDER BY s.updated_at DESC, s.id`,
+        req.params.id,
+      );
+      return rows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        tagline: r.tagline,
+        archived: false,
+        role: r.role,
+        sort_order: r.sort_order,
+      }));
+    });
+
     // ---- 외부 카드 가져오기 (Character Card V2/V3 PNG, 또는 V1/V2 JSON) ----
     // PNG 를 base64 로 받으므로 이 라우트만 본문 상한을 넉넉히(8MB) 둔다.
     const importSchema = z.object({

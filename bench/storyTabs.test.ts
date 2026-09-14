@@ -68,7 +68,14 @@ t('TAB-05 home tabs stay inject-free; worlds unused; characters unfiltered', () 
   assert.equal(/\bFROM\s+stories\b/i.test(builderSrc), false);
   assert.equal(homeSrc.includes('worlds'), false);
   assert.equal(homeSrc.includes('world_id'), false);
-  assert.equal(charSrc.includes('story_characters'), false);
+  // C4 가 합법적으로 역방향 조회를 추가함 — 검사 범위를 목록 핸들러로 좁힘.
+  const startTok = "app.get('/api/characters', async () => {";
+  const endTok = "app.post('/api/characters'";
+  const start = charSrc.indexOf(startTok);
+  const end = charSrc.indexOf(endTok);
+  assert.ok(start >= 0, 'GET /api/characters list handler start missing');
+  assert.ok(end > start, 'GET /api/characters list handler end missing');
+  assert.equal(charSrc.slice(start, end).includes('story_characters'), false);
 });
 
 console.log(`passed ${passed}`);
