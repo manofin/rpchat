@@ -50,10 +50,10 @@ t('existing swipe sibling selection remains in ChatPage', () => {
   assert.match(src, /selectSibling|swipe|touchstart|onTouchStart/);
 });
 
-t('no conversation_settings table or play_guide model added', () => {
+t('no conversation_settings table; server diff clean', () => {
   const changed = git('diff --name-only HEAD -- apps/server apps/web');
   assert.doesNotMatch(changed, /conversation_settings/);
-  assert.doesNotMatch(changed, /play_guide/);
+  // C3 가 합법적으로 play_guide 를 추가함 — /play_guide/ 부재 검사는 제거.
   const serverDiff = git('diff HEAD -- apps/server');
   assert.equal(serverDiff.trim(), '');
 });

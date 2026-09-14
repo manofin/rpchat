@@ -13,6 +13,7 @@ export const FIELD_LIMITS = {
   first_message: 10000,
   example_dialogue: 20000,
   taboos: 5000,
+  play_guide: 500,
 } as const;
 
 export type LimitedField = keyof typeof FIELD_LIMITS;

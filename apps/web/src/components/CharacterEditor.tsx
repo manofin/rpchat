@@ -52,7 +52,7 @@ const DEFAULT_TAGS = ['party:role=secondary'];
 
 const EMPTY: Draft = {
   name: '', tagline: '', avatar: null, description: '', personality: '', speech_style: '', scenario: '',
-  first_message: '', example_dialogue: '', taboos: '', tags: DEFAULT_TAGS, // scene/voice optional
+  first_message: '', example_dialogue: '', taboos: '', play_guide: '', tags: DEFAULT_TAGS, // scene/voice optional
 };
 
 /** C1 tab-shell reflow only — no new field, no payload change. */
@@ -331,6 +331,7 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
       first_message: d.first_message,
       example_dialogue: d.example_dialogue,
       taboos: d.taboos,
+      play_guide: d.play_guide,
     });
     if (overs.length) {
       ui.toast(`글자 수 초과: ${overs.join(', ')} (그래도 저장 시도)`, 'warn');
@@ -364,7 +365,7 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
 
   function restoreDraft() {
     if (!pendingDraft) return;
-    setD(pendingDraft);
+    setD({ ...EMPTY, ...pendingDraft, play_guide: pendingDraft.play_guide ?? '' });
     applyExampleSource(pendingDraft.example_dialogue);
     setPendingDraft(null);
   }
@@ -505,6 +506,12 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
 
       {tab === 'intro' && (
         <>
+          <div className="field">
+            <label>플레이 가이드</label>
+            <textarea value={d.play_guide ?? ''} onChange={(e) => set('play_guide', e.target.value)} maxLength={FIELD_LIMITS.play_guide} />
+            <FieldCount value={d.play_guide ?? ''} field="play_guide" />
+            <span className="hint">AI 에 전달되지 않음. 나만 보는 메모.</span>
+          </div>
           <div className="field">
             <label>첫 메시지</label>
             <textarea ref={(el) => { fieldRefs.current.first_message = el; }} value={d.first_message} onChange={(e) => set('first_message', e.target.value)} maxLength={FIELD_LIMITS.first_message} placeholder="{{char}}, {{user}} 치환 가능" />

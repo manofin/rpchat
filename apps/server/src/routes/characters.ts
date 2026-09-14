@@ -44,6 +44,7 @@ const characterSchema = z.object({
   first_message: z.string().max(10000).default(''),
   example_dialogue: z.string().max(20000).default(''),
   taboos: z.string().max(5000).default(''),
+  play_guide: z.string().max(500).default(''),
   tags: z.array(z.string().max(30)).max(20).default([]),
   scene_background: z.string().max(300).nullable().optional(),
   voice_profile: z.string().max(100).nullable().optional(),
@@ -94,9 +95,9 @@ export function characterRoutes(ctx: Ctx) {
       const t = nowIso();
       run(
         db,
-        `INSERT INTO characters (id, name, tagline, avatar, description, personality, speech_style, scenario, first_message, example_dialogue, taboos, tags_json, scene_background, voice_profile, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        id, d.name, d.tagline, d.avatar ?? null, d.description, d.personality, d.speech_style, d.scenario, d.first_message, d.example_dialogue, d.taboos,
+        `INSERT INTO characters (id, name, tagline, avatar, description, personality, speech_style, scenario, first_message, example_dialogue, taboos, play_guide, tags_json, scene_background, voice_profile, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        id, d.name, d.tagline, d.avatar ?? null, d.description, d.personality, d.speech_style, d.scenario, d.first_message, d.example_dialogue, d.taboos, d.play_guide,
         JSON.stringify(d.tags), d.scene_background ?? null, d.voice_profile ?? null, t, t,
       );
       run(db, 'INSERT INTO lorebooks (id, character_id, name, created_at) VALUES (?, ?, ?, ?)', uid(), id, `${d.name} 로어북`, t);
@@ -160,8 +161,8 @@ export function characterRoutes(ctx: Ctx) {
       const d = p.data;
       run(
         db,
-        `UPDATE characters SET name=?, tagline=?, avatar=?, description=?, personality=?, speech_style=?, scenario=?, first_message=?, example_dialogue=?, taboos=?, tags_json=?, scene_background=?, voice_profile=?, updated_at=? WHERE id=?`,
-        d.name, d.tagline, d.avatar ?? null, d.description, d.personality, d.speech_style, d.scenario, d.first_message, d.example_dialogue, d.taboos,
+        `UPDATE characters SET name=?, tagline=?, avatar=?, description=?, personality=?, speech_style=?, scenario=?, first_message=?, example_dialogue=?, taboos=?, play_guide=?, tags_json=?, scene_background=?, voice_profile=?, updated_at=? WHERE id=?`,
+        d.name, d.tagline, d.avatar ?? null, d.description, d.personality, d.speech_style, d.scenario, d.first_message, d.example_dialogue, d.taboos, d.play_guide,
         JSON.stringify(d.tags), d.scene_background ?? null, d.voice_profile ?? null, nowIso(), c.id,
       );
       return characterOut(one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', c.id)!);

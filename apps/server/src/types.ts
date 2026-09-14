@@ -21,6 +21,7 @@ export interface CharacterRow {
   first_message: string;
   example_dialogue: string;
   taboos: string;
+  play_guide: string;
   tags_json: string;
   scene_background: string | null;
   voice_profile: string | null;

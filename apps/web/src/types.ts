@@ -154,6 +154,7 @@ export interface Character {
   first_message: string;
   example_dialogue: string;
   taboos: string;
+  play_guide: string;
   tags: string[];
   archived: boolean;
   created_at: string;
