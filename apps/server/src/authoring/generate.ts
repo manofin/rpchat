@@ -38,6 +38,18 @@ export const AUTHORING_FIELD_LIMITS: Record<AuthoringTargetField, number> = {
   play_guide: 500,
 };
 
+export const AUTHORING_FIELD_MAX_TOKENS: Record<AuthoringTargetField, number> = {
+  tagline: 80,
+  description: 400,
+  personality: 400,
+  speech_style: 400,
+  taboos: 400,
+  first_message: 500,
+  scenario: 600,
+  example_dialogue: 600,
+  play_guide: 600,
+};
+
 export const AUTHORING_CONTEXT_KEYS = [...AUTHORING_TARGET_FIELDS, 'name'] as const;
 export type AuthoringContextKey = (typeof AUTHORING_CONTEXT_KEYS)[number];
 export type AuthoringContext = Partial<Record<AuthoringContextKey, string | null | undefined>>;
