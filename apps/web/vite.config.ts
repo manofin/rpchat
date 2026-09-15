@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-// 개발 시 /api 는 로컬 서버(8787)로 프록시. 프로덕션은 서버가 dist 를 직접 서빙하므로 동일 출처.
+// 개발 시 /api·/media 는 로컬 서버(8787)로 프록시. 프로덕션은 서버가 dist 를 직접 서빙하므로 동일 출처.
 export default defineConfig({
   plugins: [
     react(),
@@ -30,13 +30,18 @@ export default defineConfig({
         // runtimeCaching 을 채우지 않는 것이 계약이다 — 오프라인은 셸 가용성만.
         globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/media\//],
         runtimeCaching: [],
       },
     }),
   ],
   server: {
-    proxy: { '/api': { target: 'http://127.0.0.1:8787', changeOrigin: false } },
+    // /media (avatars, covers, scene assets) must reach the API in split-origin dev,
+    // same as /api — otherwise <img src="/media/..."> gets the Vite SPA HTML.
+    proxy: {
+      '/api': { target: 'http://127.0.0.1:8787', changeOrigin: false },
+      '/media': { target: 'http://127.0.0.1:8787', changeOrigin: false },
+    },
   },
   build: { sourcemap: false, target: 'es2022' },
 });
