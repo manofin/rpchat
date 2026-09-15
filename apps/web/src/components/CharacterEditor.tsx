@@ -583,6 +583,19 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
     commitExampleRows(exampleRowsRef.current.filter((r) => r.id !== rowId));
   }
 
+  function moveExamplePair(rowId: string, direction: 'up' | 'down') {
+    const rows = exampleRowsRef.current;
+    const i = rows.findIndex((r) => r.id === rowId);
+    if (i < 0) return;
+    const j = direction === 'up' ? i - 1 : i + 1;
+    if (j < 0 || j >= rows.length) return;
+    const next = rows.slice();
+    const swapped = next[i];
+    next[i] = next[j];
+    next[j] = swapped;
+    commitExampleRows(next);
+  }
+
   const setupIncomplete = !d.name.trim();
   const tabIndex = TABS.findIndex((t) => t.key === tab);
   const linkedIds = new Set(linkedStories.map((s) => s.id));
@@ -723,7 +736,7 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
               </>
             ) : (
               <>
-                {exampleRows.map((row) => (
+                {exampleRows.map((row, i) => (
                   <div key={row.id} className="field">
                     <label>사용자 발화</label>
                     <textarea
@@ -741,6 +754,8 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
                       style={{ minHeight: 64 }}
                     />
                     <PairUtteranceChips onInsert={(tok) => insertPairToken(row.id, 'char', tok)} />
+                    <button type="button" className="btn sm" disabled={i === 0} onClick={() => moveExamplePair(row.id, 'up')}>위로</button>
+                    <button type="button" className="btn sm" disabled={i === exampleRows.length - 1} onClick={() => moveExamplePair(row.id, 'down')}>아래로</button>
                     <button type="button" className="btn sm" onClick={() => removeExamplePair(row.id)}>쌍 삭제</button>
                   </div>
                 ))}
