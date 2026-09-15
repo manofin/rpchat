@@ -27,6 +27,8 @@ import {
   publicAvatarPath,
 } from '../media/avatar.js';
 
+const AUTHORING_TIMEOUT_MS = 30000;
+
 export function characterOut(c: CharacterRow) {
   return { ...c, tags: parseJson<string[]>(c.tags_json, []), archived: !!c.archived };
 }
@@ -153,6 +155,15 @@ export function characterRoutes(ctx: Ctx) {
       const model = AUTHORING_PROFILE.model || ctx.resolvedModel();
       if (!model) return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
       const controller = new AbortController();
+      const timeoutTimer = setTimeout(() => controller.abort(new Error('timeout')), AUTHORING_TIMEOUT_MS);
+      // Client disconnect guard: abort inference if client closes before response completes
+      const closeHandler = () => {
+        if (!(reply.raw as any)?.writableEnded) {
+          controller.abort();
+        }
+      };
+      req.raw?.on('close', closeHandler);
+      reply.raw?.on('close', closeHandler);
       let text = '';
       let finishReason: string | null = 'stop';
       let promptTokens = 0;
@@ -174,14 +185,22 @@ export function characterRoutes(ctx: Ctx) {
         finishReason = r.finishReason;
         promptTokens = r.usage?.prompt_tokens ?? 0;
         completionTokens = r.usage?.completion_tokens ?? 0;
+        clearTimeout(timeoutTimer);
       } catch (err) {
+        const isTimeout = (err as Error)?.message === 'timeout';
         const msg =
           err instanceof ModelError
             ? err.message
-            : (err as Error)?.name === 'TimeoutError'
-              ? '모델 응답 시간 초과'
-              : (err as Error).message;
-        return reply.code(503).send({ error: msg });
+            : isTimeout
+              ? '초안 생성 시간이 초과되었습니다.'
+              : (err as Error)?.name === 'TimeoutError'
+                ? '모델 응답 시간 초과'
+                : (err as Error).message;
+        return reply.code(isTimeout ? 504 : 503).send({ error: isTimeout ? 'timeout' : msg, ...(isTimeout ? { message: '초안 생성 시간이 초과되었습니다.' } : {}) });
+      } finally {
+        clearTimeout(timeoutTimer);
+        req.raw?.removeListener('close', closeHandler);
+        reply.raw?.removeListener('close', closeHandler);
       }
       return {
         targetField: d.targetField,
