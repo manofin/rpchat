@@ -34,6 +34,7 @@ import {
   type AuthoringTargetField,
 } from '../lib/characterGenerate';
 import type { Character, CharacterStoryLink } from '../types';
+import { CharacterPromptPreview } from './CharacterPromptPreview';
 import { AuthoringDraftButton, AuthoringGeneratePanel } from './CharacterFieldGenerate';
 import { LorePanel, type LoreEntry } from './LorePanel';
 import { Modal, useUi } from './ui';
@@ -783,6 +784,7 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
             <AuthoringDraftButton field="taboos" disabled={genBusy} onOpen={openAuthoringGenerate} />
             <TokenChips field="taboos" onInsert={insertToken} />
           </div>
+          <CharacterPromptPreview characterId={character?.id} />
         </>
       )}
 

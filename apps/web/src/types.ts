@@ -173,6 +173,25 @@ export interface Character {
   last_chat_at?: string | null;
 }
 
+/** GET /api/characters/:id/prompt-preview — saved character only. */
+export interface CharacterPromptPreview {
+  charName: string;
+  userName: string;
+  promptVersion: string;
+  model: string;
+  contextTokens: number;
+  sections: Array<{
+    name: string;
+    est_tokens: number;
+    budget: number;
+    note?: string;
+    kind?: 'system' | 'story' | 'lore' | 'memory' | 'summary' | 'recent';
+  }>;
+  totalEstTokens: number;
+  fixedExcerpt: string;
+  fixedTruncated: boolean;
+}
+
 export interface Persona {
   id: string;
   name: string;
