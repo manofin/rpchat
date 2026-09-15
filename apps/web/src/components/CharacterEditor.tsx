@@ -33,7 +33,7 @@ import {
   generateCharacterField,
   type AuthoringTargetField,
 } from '../lib/characterGenerate';
-import type { Character, CharacterStoryLink } from '../types';
+import type { Character, CharacterAssetGroup, CharacterStoryLink } from '../types';
 import { CharacterPromptPreview } from './CharacterPromptPreview';
 import { AuthoringDraftButton, AuthoringGeneratePanel } from './CharacterFieldGenerate';
 import { LorePanel, type LoreEntry } from './LorePanel';
@@ -172,6 +172,49 @@ export async function removeCharacterStoryLink(
 }
 /* C4-story-link-helpers-end */
 
+/* C8-asset-helpers */
+export async function loadCharacterAssets(
+  characterId: string | null | undefined,
+  getFn: <T>(path: string) => Promise<T>,
+): Promise<CharacterAssetGroup[]> {
+  if (!characterId) return [];
+  try {
+    return await getFn<CharacterAssetGroup[]>(`/api/characters/${characterId}/assets`);
+  } catch {
+    return [];
+  }
+}
+
+export async function uploadCharacterAsset(
+  characterId: string,
+  outfit: string,
+  n: string,
+  body: Blob,
+  postBinaryFn: (path: string, body: Blob, contentType: string) => Promise<unknown>,
+  getFn: <T>(path: string) => Promise<T>,
+): Promise<CharacterAssetGroup[]> {
+  await postBinaryFn(
+    `/api/characters/${characterId}/assets/${encodeURIComponent(outfit)}/${encodeURIComponent(n)}`,
+    body,
+    'image/webp',
+  );
+  return loadCharacterAssets(characterId, getFn);
+}
+
+export async function deleteCharacterAsset(
+  characterId: string,
+  outfit: string,
+  n: string,
+  delFn: (path: string) => Promise<unknown>,
+  getFn: <T>(path: string) => Promise<T>,
+  confirmFn: (msg: string, opts?: { danger?: boolean; okLabel?: string }) => Promise<boolean>,
+): Promise<CharacterAssetGroup[] | null> {
+  if (!(await confirmFn('이 상황 이미지를 삭제할까요?', { danger: true, okLabel: '삭제' }))) return null;
+  await delFn(`/api/characters/${characterId}/assets/${encodeURIComponent(outfit)}/${encodeURIComponent(n)}`);
+  return loadCharacterAssets(characterId, getFn);
+}
+/* C8-asset-helpers-end */
+
 function pairRefKey(rowId: string, side: ExamplePairSide): string {
   return `${rowId}:${side}`;
 }
@@ -225,6 +268,10 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
   const [linkedStories, setLinkedStories] = useState<CharacterStoryLink[]>([]);
   const [storyCatalog, setStoryCatalog] = useState<Array<{ id: string; name: string }>>([]);
   const [storyPickId, setStoryPickId] = useState('');
+  const [assetGroups, setAssetGroups] = useState<CharacterAssetGroup[]>([]);
+  const [assetOutfit, setAssetOutfit] = useState('');
+  const [assetN, setAssetN] = useState('0');
+  const [assetBusy, setAssetBusy] = useState(false);
 
   function applyExampleSource(raw: string) {
     const init = initialExampleEditorState(raw);
@@ -310,6 +357,22 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
           setStoryCatalog([]);
         }
       }
+    })();
+    return () => { cancelled = true; };
+  }, [open, character?.id]);
+
+  useEffect(() => {
+    if (!open || !character?.id) {
+      setAssetGroups([]);
+      setAssetOutfit('');
+      setAssetN('0');
+      return;
+    }
+    let cancelled = false;
+    const characterId = character.id;
+    void (async () => {
+      const groups = await loadCharacterAssets(characterId, get);
+      if (!cancelled) setAssetGroups(groups);
     })();
     return () => { cancelled = true; };
   }, [open, character?.id]);
@@ -623,6 +686,39 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
     }
   }
 
+  async function onAssetFileChosen(file: File) {
+    if (!character?.id || assetBusy) return;
+    const outfit = assetOutfit.trim();
+    const n = assetN.trim();
+    if (!outfit || !n) {
+      ui.toast('의상과 번호를 입력하세요', 'err');
+      return;
+    }
+    setAssetBusy(true);
+    try {
+      const next = await uploadCharacterAsset(character.id, outfit, n, file, postBinary, get);
+      setAssetGroups(next);
+    } catch (e) {
+      ui.toast((e as Error).message, 'err');
+    } finally {
+      setAssetBusy(false);
+    }
+  }
+
+  async function onAssetDelete(outfit: string, n: number) {
+    if (!character?.id || assetBusy) return;
+    setAssetBusy(true);
+    try {
+      const next = await deleteCharacterAsset(character.id, outfit, String(n), del, get, ui.confirm);
+      if (next === null) return;
+      setAssetGroups(next);
+    } catch (e) {
+      ui.toast((e as Error).message, 'err');
+    } finally {
+      setAssetBusy(false);
+    }
+  }
+
   return (
     <Modal
       open={open}
@@ -708,6 +804,68 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
               <span className="hint">jpeg/png/webp · 최대 {AVATAR_MAX_BYTES / 1024 / 1024}MB. 변환 없음.</span>
             </div>
           )}
+          <div className="field">
+            <label>상황 이미지</label>
+            {!character?.id ? (
+              <span className="hint">캐릭터를 저장한 뒤 상황 이미지를 올릴 수 있습니다.</span>
+            ) : (
+              <>
+                {assetGroups.length === 0 ? (
+                  <span className="hint">등록된 상황 이미지 없음</span>
+                ) : (
+                  assetGroups.map((g) => (
+                    <div key={g.outfit}>
+                      <span className="hint">{g.outfit}</span>
+                      {g.files.map((n) => (
+                        <span key={`${g.outfit}:${n}`}>
+                          {n}
+                          {character.id !== FROST_CHARACTER_ID && (
+                            <button
+                              type="button"
+                              className="btn sm"
+                              disabled={assetBusy}
+                              onClick={() => { void onAssetDelete(g.outfit, n); }}
+                            >
+                              삭제
+                            </button>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  ))
+                )}
+                {character.id !== FROST_CHARACTER_ID && (
+                  <>
+                    <input
+                      className="field"
+                      value={assetOutfit}
+                      onChange={(e) => setAssetOutfit(e.target.value)}
+                      placeholder="의상"
+                      maxLength={64}
+                    />
+                    <input
+                      className="field"
+                      value={assetN}
+                      onChange={(e) => setAssetN(e.target.value)}
+                      placeholder="번호"
+                    />
+                    <input
+                      type="file"
+                      accept="image/webp"
+                      disabled={assetBusy}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (!file) return;
+                        await onAssetFileChosen(file);
+                      }}
+                    />
+                    <span className="hint">webp · 최대 2MB · 캐릭터당 50장. 같은 의상/번호는 덮어씁니다.</span>
+                  </>
+                )}
+              </>
+            )}
+          </div>
         </>
       )}
 

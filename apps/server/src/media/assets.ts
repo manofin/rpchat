@@ -9,7 +9,8 @@
  * A missing file is a normal outcome, not an error state: the beat renders as
  * name + line with no image.
  *
- * Pure except for the explicit filesystem check in `resolveAssetPath`.
+ * Read (`resolveAssetPath`) and write share `resolvedAssetFile` — segment, index,
+ * path.resolve, and root-prefix checks live in one place.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -17,6 +18,18 @@ import path from 'node:path';
 export const ASSET_MIME = 'image/webp';
 /** Same ceiling as F3 avatars. A scene asset has no reason to be larger. */
 export const ASSET_MAX_BYTES = 2 * 1024 * 1024;
+/** Per-character file cap (character directory tree, not per-outfit). */
+export const ASSET_MAX_COUNT = 50;
+
+export class AssetReject extends Error {
+  constructor(
+    public status: 400 | 403 | 404 | 413 | 415,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'AssetReject';
+  }
+}
 
 /** WEBP magic bytes: "RIFF" ... "WEBP". Same sniff the avatar path uses. */
 export function isWebp(buf: Buffer): boolean {
@@ -25,6 +38,12 @@ export function isWebp(buf: Buffer): boolean {
     buf.toString('ascii', 0, 4) === 'RIFF' &&
     buf.toString('ascii', 8, 12) === 'WEBP'
   );
+}
+
+export function inspectSceneAsset(buf: Buffer): void {
+  if (!buf || buf.length === 0) throw new AssetReject(400, 'empty');
+  if (buf.length > ASSET_MAX_BYTES) throw new AssetReject(413, 'too large');
+  if (!isWebp(buf)) throw new AssetReject(415, 'unsupported type');
 }
 
 /**
@@ -50,6 +69,28 @@ export function isAssetIndex(v: string): boolean {
 
 export type AssetRef = { characterId: string; outfit: string; n: string };
 
+export type CharacterAssetGroup = { outfit: string; files: number[] };
+
+export function assetsRoot(dataDir: string): string {
+  return path.join(dataDir, 'media', 'assets');
+}
+
+/**
+ * Shared pre-path gate for read and write. Returns the resolved file path only
+ * when every segment, the index, and the root prefix check pass. Does not
+ * require the file to exist (write creates it).
+ */
+export function resolvedAssetFile(root: string, ref: AssetRef): string | null {
+  if (!isSafeAssetSegment(ref.characterId)) return null;
+  if (!isSafeAssetSegment(ref.outfit)) return null;
+  if (!isAssetIndex(ref.n)) return null;
+
+  const full = path.resolve(root, ref.characterId, ref.outfit, `${ref.n}.webp`);
+  const rootResolved = path.resolve(root);
+  if (!full.startsWith(rootResolved + path.sep)) return null;
+  return full;
+}
+
 /**
  * Resolves a request to an on-disk file, or null.
  *
@@ -59,13 +100,8 @@ export type AssetRef = { characterId: string; outfit: string; n: string };
  * cannot distinguish "no such character" from "traversal blocked".
  */
 export function resolveAssetPath(root: string, ref: AssetRef): string | null {
-  if (!isSafeAssetSegment(ref.characterId)) return null;
-  if (!isSafeAssetSegment(ref.outfit)) return null;
-  if (!isAssetIndex(ref.n)) return null;
-
-  const full = path.resolve(root, ref.characterId, ref.outfit, `${ref.n}.webp`);
-  const rootResolved = path.resolve(root);
-  if (full !== rootResolved && !full.startsWith(rootResolved + path.sep)) return null;
+  const full = resolvedAssetFile(root, ref);
+  if (!full) return null;
 
   let stat: fs.Stats;
   try {
@@ -87,4 +123,55 @@ export function readAsset(fullPath: string): Buffer | null {
     return null;
   }
   return isWebp(buf) ? buf : null;
+}
+
+export function listCharacterAssets(root: string, characterId: string): CharacterAssetGroup[] {
+  if (!isSafeAssetSegment(characterId)) return [];
+  const charDir = path.resolve(root, characterId);
+  const rootResolved = path.resolve(root);
+  if (!charDir.startsWith(rootResolved + path.sep)) return [];
+  let outfits: string[];
+  try {
+    outfits = fs.readdirSync(charDir);
+  } catch {
+    return [];
+  }
+  const groups: CharacterAssetGroup[] = [];
+  for (const outfit of outfits.sort((a, b) => a.localeCompare(b))) {
+    const files: number[] = [];
+    let names: string[];
+    try {
+      names = fs.readdirSync(path.join(charDir, outfit));
+    } catch {
+      continue;
+    }
+    for (const name of names) {
+      const m = /^(0|[1-9][0-9]{0,3})\.webp$/.exec(name);
+      if (!m) continue;
+      const full = resolvedAssetFile(root, { characterId, outfit, n: m[1] });
+      if (!full) continue;
+      try {
+        if (!fs.statSync(full).isFile()) continue;
+      } catch {
+        continue;
+      }
+      files.push(Number(m[1]));
+    }
+    if (files.length === 0) continue;
+    files.sort((a, b) => a - b);
+    groups.push({ outfit, files });
+  }
+  return groups;
+}
+
+export function countCharacterAssets(root: string, characterId: string): number {
+  return listCharacterAssets(root, characterId).reduce((n, g) => n + g.files.length, 0);
+}
+
+export function rmdirIfEmpty(dir: string): void {
+  try {
+    if (fs.readdirSync(dir).length === 0) fs.rmdirSync(dir);
+  } catch {
+    /* missing or not empty */
+  }
 }

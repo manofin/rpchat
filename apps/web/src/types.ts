@@ -173,6 +173,12 @@ export interface Character {
   last_chat_at?: string | null;
 }
 
+/** GET /api/characters/:id/assets — disk listing, no draft field. */
+export interface CharacterAssetGroup {
+  outfit: string;
+  files: number[];
+}
+
 /** GET /api/characters/:id/prompt-preview — saved character only. */
 export interface CharacterPromptPreview {
   charName: string;

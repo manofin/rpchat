@@ -27,6 +27,16 @@ import {
   inspectAvatar,
   publicAvatarPath,
 } from '../media/avatar.js';
+import {
+  ASSET_MAX_COUNT,
+  AssetReject,
+  assetsRoot,
+  countCharacterAssets,
+  inspectSceneAsset,
+  listCharacterAssets,
+  resolvedAssetFile,
+  rmdirIfEmpty,
+} from '../media/assets.js';
 
 const AUTHORING_TIMEOUT_MS = 30000;
 
@@ -406,6 +416,56 @@ export function characterRoutes(ctx: Ctx) {
         const avatar = publicAvatarPath(id, kind);
         run(db, 'UPDATE characters SET avatar = ?, updated_at = ? WHERE id = ?', avatar, nowIso(), id);
         return characterOut(one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', id)!);
+      },
+    );
+
+    app.get<{ Params: { id: string } }>('/api/characters/:id/assets', async (req, reply) => {
+      const id = req.params.id;
+      if (!one(db, 'SELECT 1 FROM characters WHERE id = ?', id)) return reply.code(404).send({ error: 'not found' });
+      return listCharacterAssets(assetsRoot(config.dataDir), id);
+    });
+
+    app.post<{ Params: { id: string; outfit: string; n: string }; Body: Buffer }>(
+      '/api/characters/:id/assets/:outfit/:n',
+      { bodyLimit: AVATAR_MAX_BYTES },
+      async (req, reply) => {
+        const { id, outfit, n } = req.params;
+        if (id === FROST_CHARACTER_ID) return reply.code(403).send({ error: 'frost character' });
+        if (!one(db, 'SELECT 1 FROM characters WHERE id = ?', id)) return reply.code(404).send({ error: 'not found' });
+        const full = resolvedAssetFile(assetsRoot(config.dataDir), { characterId: id, outfit, n });
+        if (!full) return reply.code(404).send({ error: 'not found' });
+        const buf = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+        try {
+          inspectSceneAsset(buf);
+        } catch (e) {
+          if (e instanceof AssetReject) return reply.code(e.status).send({ error: e.message });
+          throw e;
+        }
+        const root = assetsRoot(config.dataDir);
+        const exists = fs.existsSync(full);
+        if (!exists && countCharacterAssets(root, id) >= ASSET_MAX_COUNT) {
+          return reply.code(400).send({ error: 'asset quota' });
+        }
+        fs.mkdirSync(path.dirname(full), { recursive: true });
+        fs.writeFileSync(full, buf);
+        return { ok: true, outfit, n: Number(n) };
+      },
+    );
+
+    app.delete<{ Params: { id: string; outfit: string; n: string } }>(
+      '/api/characters/:id/assets/:outfit/:n',
+      async (req, reply) => {
+        const { id, outfit, n } = req.params;
+        if (id === FROST_CHARACTER_ID) return reply.code(403).send({ error: 'frost character' });
+        if (!one(db, 'SELECT 1 FROM characters WHERE id = ?', id)) return reply.code(404).send({ error: 'not found' });
+        const root = assetsRoot(config.dataDir);
+        const full = resolvedAssetFile(root, { characterId: id, outfit, n });
+        if (!full) return reply.code(404).send({ error: 'not found' });
+        if (!fs.existsSync(full)) return reply.code(404).send({ error: 'not found' });
+        fs.unlinkSync(full);
+        rmdirIfEmpty(path.dirname(full));
+        rmdirIfEmpty(path.join(root, id));
+        return { ok: true };
       },
     );
 
