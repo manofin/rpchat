@@ -3,9 +3,10 @@ import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../ctx.js';
-import { config } from '../config.js';
+import { PROMPT_VERSION, config } from '../config.js';
 import { many, nowIso, one, parseJson, run, uid } from '../db/index.js';
-import type { CharacterRow, LoreEntryRow, PersonaRow } from '../types.js';
+import { buildPrompt } from '../prompt/builder.js';
+import type { CharacterRow, ConversationRow, LoreEntryRow, PersonaRow } from '../types.js';
 import { importCard } from '../cardImport.js';
 import { ModelError } from '../model/adapter.js';
 import {
@@ -28,6 +29,19 @@ import {
 } from '../media/avatar.js';
 
 const AUTHORING_TIMEOUT_MS = 30000;
+
+/** Character prompt-preview excerpt cap (bytes of the assembled system/fixed text). */
+export const CHARACTER_PROMPT_PREVIEW_EXCERPT_MAX = 4000;
+
+function excerptFixedBlock(text: string): { fixedExcerpt: string; fixedTruncated: boolean } {
+  if (text.length <= CHARACTER_PROMPT_PREVIEW_EXCERPT_MAX) {
+    return { fixedExcerpt: text, fixedTruncated: false };
+  }
+  return {
+    fixedExcerpt: text.slice(0, CHARACTER_PROMPT_PREVIEW_EXCERPT_MAX),
+    fixedTruncated: true,
+  };
+}
 
 export function characterOut(c: CharacterRow) {
   return { ...c, tags: parseJson<string[]>(c.tags_json, []), archived: !!c.archived };
@@ -237,6 +251,66 @@ export function characterRoutes(ctx: Ctx) {
         role: r.role,
         sort_order: r.sort_order,
       }));
+    });
+
+    // ---- 캐릭터 프롬프트 미리보기 (모델 호출 없음, 대화/메시지 쓰기 0) ----
+    app.get<{ Params: { id: string } }>('/api/characters/:id/prompt-preview', async (req, reply) => {
+      const character = one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', req.params.id);
+      if (!character) return reply.code(404).send({ error: 'not found' });
+
+      const virtualConv: ConversationRow = {
+        id: 'preview',
+        character_id: character.id,
+        persona_id: null,
+        title: '',
+        mode: 'chat',
+        profile_name: 'rp-balanced',
+        scene_json: '{}',
+        head_message_id: null,
+        prompt_version: PROMPT_VERSION,
+        favorite: 0,
+        archived: 0,
+        created_at: '',
+        updated_at: '',
+        last_message_at: null,
+        user_note: null,
+        persona_name_snapshot: null,
+        persona_address_snapshot: null,
+        persona_appearance_snapshot: null,
+        persona_personality_snapshot: null,
+        persona_relationship_snapshot: null,
+        persona_applied_at: null,
+        story_id: null,
+        story_applied_at: null,
+        story_name_snapshot: null,
+        story_setting_snapshot: null,
+        story_minor_cast_snapshot: null,
+        story_participant_ids_snapshot: null,
+        story_opening_snapshot: null,
+        story_endings_snapshot: null,
+        ended_at: null,
+        reached_ending_id: null,
+      };
+      const built = buildPrompt(db, virtualConv, [], config.model.contextTokens, ctx.resolvedModel());
+      const sys = built.messages.find((m) => m.role === 'system');
+      let raw = sys?.content ?? '';
+      if (!raw && built.messages[0]) {
+        const c = built.messages[0].content;
+        const split = c.indexOf('\n\n---\n\n');
+        raw = split >= 0 ? c.slice(0, split) : c;
+      }
+      const { fixedExcerpt, fixedTruncated } = excerptFixedBlock(raw);
+      return {
+        charName: built.charName,
+        userName: built.userName,
+        promptVersion: PROMPT_VERSION,
+        model: built.model,
+        contextTokens: config.model.contextTokens,
+        sections: built.budget.sections,
+        totalEstTokens: built.budget.est_total,
+        fixedExcerpt,
+        fixedTruncated,
+      };
     });
 
     // ---- 외부 카드 가져오기 (Character Card V2/V3 PNG, 또는 V1/V2 JSON) ----
