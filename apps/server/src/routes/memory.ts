@@ -295,7 +295,7 @@ export function memoryRoutes(ctx: Ctx) {
       const coversFrom = targets[0].covers_from_message_id ?? targets[0].covers_until_message_id;
       const coversUntil = targets[targets.length - 1].covers_until_message_id;
       db.transaction(() => {
-        run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', epId, conv.id, episodeText, coversUntil, coversFrom, 'draft', t, 'episode');
+        run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier, rel_character_id, rel_persona_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', epId, conv.id, episodeText, coversUntil, coversFrom, 'draft', t, 'episode', conv.character_id, conv.persona_id);
         run(db, `UPDATE summaries SET rolled_up_into = ? WHERE id IN (${targets.map(() => '?').join(',')})`, epId, ...targets.map((s) => s.id));
       })();
       return { episode: one<SummaryRow>(db, 'SELECT * FROM summaries WHERE id = ?', epId), rolledScenes: targets.map((s) => s.id) };
