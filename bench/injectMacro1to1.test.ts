@@ -1,13 +1,13 @@
 /** npx tsx bench/injectMacro1to1.test.ts
  * inject-macro-1to1 — attach InjectContext to 1:1 buildPrompt (ADR §6.2).
- * Temp/memory DB + light Fastify. LIVE_NO_TOUCH. Party path still unconsumed.
+ * Temp/memory DB + light Fastify. LIVE_NO_TOUCH. Party IC attach: injectMacroParty.test.ts.
  *
  *   non-OOC + inject → system has instruction AND STORY_CHOICES
  *   isOoc + inject   → inject absent; OOC_INSTRUCTION present
  *   omit inject      → baseline choices; no 주입 지침 section
  *   budget           → inject in used/sections; long inject keeps full instruction; recent drops more
  *   no persist       → user content ≠ instruction (API)
- *   party            → source + GenParams: inject never in party prompts
+ *   party wiring     → early-return threads inject; GenParams include instruction on IC passes
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -268,30 +268,28 @@ async function main() {
     );
   });
 
-  // --- source-level party-unconsumed ---
-  await t('party early-return does not pass inject into generateBeat/Dialog/Hunter', () => {
+  // --- source-level party wiring (attach details: injectMacroParty) ---
+  await t('party early-return threads inject into generateBeat/Dialog/Hunter; 1:1 still buildPrompt', () => {
     const chatSrc = fs.readFileSync('apps/server/src/routes/chat.ts', 'utf8');
-    // Locate the partyCast early-return block and the 1:1 buildPrompt call.
     const partyBlockMatch = chatSrc.match(
       /if \(partyCast && partyCast\.length\) \{[\s\S]*?return generateBeat\([^;]+;/,
     );
     assert.ok(partyBlockMatch, 'party early-return block missing');
     const partyBlock = partyBlockMatch![0];
-    assert.ok(!/\binject\b/.test(partyBlock), 'party early-return must not wire inject');
+    assert.ok(/\binject\b/.test(partyBlock), 'party early-return must wire inject');
     assert.ok(
       chatSrc.includes('buildPrompt(db, convNow, history, config.model.contextTokens, ctx.resolvedModel(), undefined, { inject })'),
       '1:1 path must pass { inject } into buildPrompt',
     );
-    // Party pass renderers take no InjectContext.
     for (const fn of ['generateBeat', 'generateDialog', 'generateHunter'] as const) {
       const re = new RegExp(`async function ${fn}\\([\\s\\S]*?\\)\\s*\\{`);
       const m = chatSrc.match(re);
       assert.ok(m, `${fn} signature missing`);
-      assert.ok(!/\binject\b/i.test(m![0]), `${fn} must not accept inject`);
+      assert.ok(/\binject\b/i.test(m![0]), `${fn} must accept inject`);
     }
   });
 
-  // --- Fastify: no-persist + 1:1 attach + party unconsumed ---
+  // --- Fastify: no-persist + 1:1 attach + party consumed (light) ---
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-inject-macro-1to1-'));
   const liveDb = openDb(tmp, path.resolve('apps/server/migrations'));
   liveDb
@@ -505,15 +503,7 @@ async function main() {
     assert.equal(add.status, 201, add.text);
   }
 
-  await t('party path + inject → unconsumed (omit≡inject GenParams; marker absent)', async () => {
-    const startA = await api('POST', '/api/conversations', {
-      characterId: hayeon.id,
-      storyId: story.id,
-      mode: 'story',
-    });
-    assert.equal(startA.status, 201, startA.text);
-    const convA = (startA.json as { id: string }).id;
-
+  await t('party path + inject → IC GenParams include instruction; content ≠ instruction', async () => {
     const startB = await api('POST', '/api/conversations', {
       characterId: hayeon.id,
       storyId: story.id,
@@ -523,19 +513,7 @@ async function main() {
     const convB = (startB.json as { id: string }).id;
 
     const userLine = '나리, 네 이야기 말인데.';
-    const partyMarker = 'PARTY_INJECT_MUST_NOT_APPEAR_QQQ';
-
-    capturedParams.length = 0;
-    const omitRes = await fetch(`${origin}/api/conversations/${convA}/messages`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ content: userLine }),
-    });
-    assert.equal(omitRes.status, 200, await omitRes.clone().text());
-    await omitRes.text();
-    const omitSnap = JSON.stringify(
-      capturedParams.map((p) => p.messages.map((m) => ({ role: m.role, content: m.content }))),
-    );
+    const partyMarker = 'PARTY_INJECT_1TO1_REGRESSION_QQQ';
 
     capturedParams.length = 0;
     const injRes = await fetch(`${origin}/api/conversations/${convB}/messages`, {
@@ -543,29 +521,26 @@ async function main() {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         content: userLine,
-        inject_instruction: `${partyMarker}: party must ignore.`,
+        inject_instruction: `${partyMarker}: party IC attach.`,
       }),
     });
     assert.equal(injRes.status, 200, await injRes.clone().text());
     const injEvents = parseSse(await injRes.text());
     assert.ok(injEvents.some((e) => e.type === 'done'));
     const injFlat = flattenGenMessages(capturedParams);
-    const injSnap = JSON.stringify(
-      capturedParams.map((p) => p.messages.map((m) => ({ role: m.role, content: m.content }))),
+    assert.ok(injFlat.includes(partyMarker), 'party GenParams must include inject on IC passes');
+    assert.ok(injFlat.includes('## 규칙'), 'party IC passes still have ## 규칙');
+    assert.ok(
+      injFlat.includes('## 규칙\n' + partyMarker) || injFlat.includes(`## 규칙\n${partyMarker}:`),
+      'inject must sit immediately after ## 규칙',
     );
 
-    assert.ok(!injFlat.includes(partyMarker), 'party GenParams must not contain inject instruction');
-    assert.ok(!injFlat.includes('PARTY_INJECT_MUST_NOT_APPEAR'));
-    // Ambient extras pick is nondeterministic across convs; strip that line then compare.
-    const stripAmbient = (s: string) =>
-      s.replace(/- 이번 턴에 몸짓으로 존재감만 드러낼 사람: [^\n]*/g, '- 이번 턴에 몸짓으로 존재감만 드러낼 사람: <stripped>');
-    assert.equal(
-      stripAmbient(injSnap),
-      stripAmbient(omitSnap),
-      'party prompts must match omit vs inject (aside from ambient extras lottery)',
-    );
-    // No inject prepended before ## 규칙 (marker already absent; also no unique inject-only prefix)
-    assert.equal(injFlat.includes(partyMarker + '\n## 규칙'), false);
+    const detail = await api('GET', `/api/conversations/${convB}`);
+    const msgs = (detail.json as any).messages as Array<{ role: string; content: string }>;
+    const user = msgs.find((m) => m.role === 'user' && m.content === userLine);
+    assert.ok(user);
+    assert.ok(!user!.content.includes(partyMarker));
+    assert.ok(!JSON.stringify(msgs).includes(partyMarker), 'must not persist instruction into history');
   });
 
   await app.close();
