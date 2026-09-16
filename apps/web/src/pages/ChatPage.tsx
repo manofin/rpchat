@@ -277,8 +277,19 @@ export function ChatPage({ id }: { id: string }) {
             })}
           </nav>
         )}
-        {desktop ? <div className="chat-rail-head">대화</div> : <div className="drawer-section-label">이 캐릭터의 대화</div>}
-        <ChatListRail characterId={char.id} activeId={id} onPick={() => setListOpen(false)} />
+        {desktop ? (
+          <>
+            <div className="chat-rail-head">전체 대화</div>
+            <ChatListRail activeId={id} onPick={() => setListOpen(false)} />
+            <div className="chat-rail-head">이 캐릭터</div>
+            <ChatListRail characterId={char.id} activeId={id} onPick={() => setListOpen(false)} />
+          </>
+        ) : (
+          <>
+            <div className="drawer-section-label">이 캐릭터의 대화</div>
+            <ChatListRail characterId={char.id} activeId={id} onPick={() => setListOpen(false)} />
+          </>
+        )}
       </OverlayDrawer>
 
       <div className="chat-main">

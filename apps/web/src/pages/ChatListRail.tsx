@@ -10,15 +10,19 @@ export function ChatListRail({
   activeId,
   onPick,
 }: {
-  characterId: string;
-  activeId: string;
+  /** When set, lists that character only; when omitted, lists all rooms (recent-first). */
+  characterId?: string;
+  activeId?: string;
   onPick?: () => void;
 }) {
   const [rows, setRows] = useState<Conversation[] | null>(null);
 
   useEffect(() => {
     let live = true;
-    get<Conversation[]>(`/api/conversations?characterId=${characterId}`)
+    const url = characterId
+      ? `/api/conversations?characterId=${encodeURIComponent(characterId)}`
+      : '/api/conversations';
+    get<Conversation[]>(url)
       .then((list) => {
         if (live) setRows(list);
       })
@@ -48,7 +52,11 @@ export function ChatListRail({
           }}
         >
           <span className="t">{c.title || '대화'}</span>
-          <span className="p">{relTime(c.last_message_at) || c.preview || ''}</span>
+          <span className="p">
+            {[c.character_name, c.story_name_snapshot].filter(Boolean).join(' · ') || ''}
+            {(c.character_name || c.story_name_snapshot) && (c.preview || c.last_message_at) ? ' · ' : ''}
+            {relTime(c.last_message_at) || c.preview || ''}
+          </span>
         </button>
       ))}
     </div>

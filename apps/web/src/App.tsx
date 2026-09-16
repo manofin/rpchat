@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { get } from './lib/api';
 import { UNAUTHORIZED_EVENT } from './lib/api';
 import { match, useRoute } from './lib/router';
@@ -7,6 +7,8 @@ import { SearchPage } from './pages/SearchPage';
 import { useVisualViewport } from './lib/viewport';
 import { Spinner, UiProvider } from './components/ui';
 import { HomePage } from './pages/HomePage';
+import { ChatsPage } from './pages/ChatsPage';
+import { BottomTabBar } from './components/BottomTabBar';
 import { CharacterPage } from './pages/CharacterPage';
 import { StoryPage } from './pages/StoryPage';
 import { ChatPage } from './pages/ChatPage';
@@ -75,14 +77,27 @@ export default function App() {
 function Router() {
   const path = useRoute();
   const conversationSettings = resolveSettingsRoute(path);
+  // Chat fullscreen (+ conversation settings under /chat/:id) — no bottom tab bar (keyboard/composer untouched).
   if (conversationSettings) return <ConversationSettingsPage route={conversationSettings} />;
   const chat = match(path, '/chat/:id');
   if (chat) return <ChatPage id={chat.id} />;
+
+  let page: ReactElement;
   const story = match(path, '/story/:id');
-  if (story) return <StoryPage id={story.id} />;
-  const character = match(path, '/character/:id');
-  if (character) return <CharacterPage id={character.id} />;
-  if (match(path, '/search')) return <SearchPage />;
-  if (match(path, '/settings')) return <SettingsPage />;
-  return <HomePage />;
+  if (story) page = <StoryPage id={story.id} />;
+  else {
+    const character = match(path, '/character/:id');
+    if (character) page = <CharacterPage id={character.id} />;
+    else if (match(path, '/chats')) page = <ChatsPage />;
+    else if (match(path, '/search')) page = <SearchPage />;
+    else if (match(path, '/settings')) page = <SettingsPage />;
+    else page = <HomePage />;
+  }
+
+  return (
+    <div className="tab-shell">
+      <div className="tab-shell-body">{page}</div>
+      <BottomTabBar />
+    </div>
+  );
 }
