@@ -33,7 +33,7 @@ import { parseParticipantSnapshot } from '../prompt/resolveFocus.js';
 import type { PassCard } from '../prompt/passes.js';
 import type { CharacterRow } from '../types.js';
 import { buildPrompt } from '../prompt/builder.js';
-import { parseInjectInstruction, type InjectContext } from '../prompt/injectContext.js';
+import { parseInjectInstruction, prependInjectToRules, type InjectContext } from '../prompt/injectContext.js';
 import { dumpGenerationPrompt } from '../prompt/dump.js';
 import { extractChoices, sanitizeAssistantContent } from '../prompt/templates.js';
 import { estimateTokens, updateCalibration } from '../prompt/tokens.js';
@@ -271,7 +271,7 @@ export function chatRoutes(ctx: Ctx) {
      * here with the same user message as the parent.
      */
     regenTurnStartId?: string | null,
-    /** inject-macro carrier; 1:1 buildPrompt consumes; party early-return still omits */
+    /** inject-macro carrier; 1:1 buildPrompt + party IC passes (N/F/E/S/H) consume */
     inject?: InjectContext,
   ) {
     inject = inject ?? { instruction: null };
@@ -296,12 +296,12 @@ export function chatRoutes(ctx: Ctx) {
       // state, so a conversation opts in without touching any other conversation.
       const fmt = (JSON.parse(convNow.scene_json || '{}') as Scene).format;
       if (fmt === 'dialog') {
-        return generateDialog(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage, regenTurnStartId ?? null);
+        return generateDialog(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage, regenTurnStartId ?? null, inject);
       }
       if (fmt === 'hunter') {
-        return generateHunter(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage, regenTurnStartId ?? null);
+        return generateHunter(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage, regenTurnStartId ?? null, inject);
       }
-      return generateBeat(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage, regenTurnStartId ?? null);
+      return generateBeat(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage, regenTurnStartId ?? null, inject);
     }
 
     const history = getPath(db, convNow);
@@ -427,7 +427,11 @@ export function chatRoutes(ctx: Ctx) {
     generationId: string,
     userMessage: MessageRow | undefined,
     regenTurnStartId: string | null,
+    inject: InjectContext = { instruction: null },
   ) {
+    // Party IC passes apply inject regardless of 1:1 isOoc (party has no isOoc gate today).
+    // prependInjectToRules is the single attach hook; MAX 800 is validation-only — full instruction each pass.
+    const injectInstr = inject.instruction;
     const model = ctx.resolvedModel();
     if (!model) return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
 
@@ -580,7 +584,7 @@ export function chatRoutes(ctx: Ctx) {
       const nDeadline = withDeadline(PASS_N_TIMEOUT_MS, controller.signal);
       try {
         const out = await ctx.queue.run(() => ctx.model.complete({
-          model, messages: [{ role: 'user', content: plan.pass_n }],
+          model, messages: [{ role: 'user', content: prependInjectToRules(plan.pass_n, injectInstr) }],
           temperature: 0.8, top_p: 0.95, max_tokens: PASS_N_MAX_TOKENS, stop: [],
           signal: nDeadline.signal,
         }), controller.signal);
@@ -597,7 +601,9 @@ export function chatRoutes(ctx: Ctx) {
       // Pass F — the focus speaks. The only streamed pass, and the only one whose
       // failure is a turn failure.
       let focusText = '';
-      const passF = passFWith(planInput, plan, narration);
+      // IC Pass F: one shared prependInjectToRules hook (not format-local attach)
+      const passFRaw = passFWith(planInput, plan, narration);
+      const passF = passFRaw ? prependInjectToRules(passFRaw, injectInstr) : null;
       if (passF && plan.focus.focus_id) {
         const focusName = cast.find((c) => c.id === plan.focus.focus_id)?.name ?? '';
         focusSeq = emitted.length;
@@ -642,7 +648,7 @@ export function chatRoutes(ctx: Ctx) {
         const eDeadline = withDeadline(PASS_E_TIMEOUT_MS, controller.signal);
         try {
           const out = await ctx.queue.run(() => ctx.model.complete({
-            model, messages: [{ role: 'user', content: e.prompt }],
+            model, messages: [{ role: 'user', content: prependInjectToRules(e.prompt, injectInstr) }],
             temperature: 0.85, top_p: 0.95, max_tokens: AUX_MAX_TOKENS, stop: [],
             signal: eDeadline.signal,
           }), controller.signal);
@@ -850,7 +856,10 @@ export function chatRoutes(ctx: Ctx) {
     generationId: string,
     userMessage: MessageRow | undefined,
     regenTurnStartId: string | null,
+    inject: InjectContext = { instruction: null },
   ) {
+    // Party IC passes apply inject regardless of 1:1 isOoc (party has no isOoc gate today).
+    const injectInstr = inject.instruction;
     const model = ctx.resolvedModel();
     if (!model) return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
 
@@ -996,7 +1005,7 @@ export function chatRoutes(ctx: Ctx) {
       let lastPersist = Date.now();
       const result = await ctx.queue.run(() => ctx.model.stream(
         {
-          model, messages: [{ role: 'user', content: plan.pass_s }],
+          model, messages: [{ role: 'user', content: prependInjectToRules(plan.pass_s, injectInstr) }],
           temperature: 0.9, top_p: 0.95, max_tokens: PASS_S_MAX_TOKENS, stop: [], signal: controller.signal,
         },
         (delta) => {
@@ -1151,7 +1160,10 @@ export function chatRoutes(ctx: Ctx) {
     generationId: string,
     userMessage: MessageRow | undefined,
     regenTurnStartId: string | null,
+    inject: InjectContext = { instruction: null },
   ) {
+    // Party IC passes apply inject regardless of 1:1 isOoc (party has no isOoc gate today).
+    const injectInstr = inject.instruction;
     const model = ctx.resolvedModel();
     if (!model) return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
 
@@ -1288,7 +1300,7 @@ export function chatRoutes(ctx: Ctx) {
       let lastPersist = Date.now();
       const result = await ctx.queue.run(() => ctx.model.stream(
         {
-          model, messages: [{ role: 'user', content: plan.pass_h }],
+          model, messages: [{ role: 'user', content: prependInjectToRules(plan.pass_h, injectInstr) }],
           temperature: 0.9, top_p: 0.95, max_tokens: PASS_H_MAX_TOKENS, stop: [], signal: controller.signal,
         },
         (delta) => {
