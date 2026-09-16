@@ -1,14 +1,16 @@
 /** npx tsx bench/injectMacroParty.test.ts
- * inject-macro-party — prepend InjectContext into party IC ## 규칙 (ADR §6.3).
+ * inject-macro-party — prepend InjectContext into party IC ## 규칙 (ADR §6.3)
+ * + budget hard gate: shrink recent narrations under inject pressure.
  * Unit/helper + plan/compose fixtures. LIVE_NO_TOUCH. Client Out. No hermes.
  *
  *   helper           → null omit; insert after ## 규칙; missing header throws; no truncate
+ *   attachInject     → short no-shrink; tight budget shrinks recent; extreme throws
  *   beat N/F/E       → inject present in rules; omit absent
  *   dialog S / hunter H
  *   plan.ui/focus/roster omit≡inject (plan never sees inject)
  *   Pass C           → unchanged / helper not applied
- *   long × multi-pass → full instruction every IC pass
- *   one-hook source  → prependInjectToRules only
+ *   long × multi-pass → full instruction every IC pass (+ recent shrink under tight budget)
+ *   one-hook source  → prependInjectToRules + attachInjectToIcPass family
  *   persist          → content ≠ instruction (light Fastify party send)
  *   1:1 regression   → run separately: injectMacro1to1 / injectMacroApi
  */
@@ -27,7 +29,9 @@ import { chatRoutes } from '../apps/server/src/routes/chat.js';
 import {
   INJECT_INSTRUCTION_MAX,
   prependInjectToRules,
+  attachInjectToIcPass,
 } from '../apps/server/src/prompt/injectContext.js';
+import { estimateTokens } from '../apps/server/src/prompt/tokens.js';
 import {
   finishBeat,
   passCWith,
@@ -171,6 +175,94 @@ async function main() {
     assert.equal(out.includes(long.slice(0, long.length - 1)) && out.includes(long), true);
   });
 
+  // ── attachInjectToIcPass budget hard gate ────────────────────────────────
+  await t('attachInjectToIcPass: null/empty → byte-stable omit, droppedRecent 0', () => {
+    const base = 'intro\n## 규칙\n- a\n';
+    assert.deepEqual(attachInjectToIcPass(base, null, { promptTokenBudget: 10 }), { prompt: base, droppedRecent: 0 });
+    assert.deepEqual(attachInjectToIcPass(base, '', { promptTokenBudget: 10 }), { prompt: base, droppedRecent: 0 });
+    assert.deepEqual(attachInjectToIcPass(base, undefined, { promptTokenBudget: 10 }), { prompt: base, droppedRecent: 0 });
+  });
+
+  await t('attachInjectToIcPass: short instruction under budget → no unnecessary shrink', () => {
+    const base = [
+      '## 앞서 이미 서술된 것 (화면에 남아 있다. 다시 쓰지 말 것)',
+      '오래된 서술 한 줄.',
+      '최신 서술 한 줄.',
+      '',
+      '## 규칙',
+      '- bullet',
+      '',
+    ].join('\n');
+    const short = `${MARKER}: short`;
+    const prependOnly = prependInjectToRules(base, short);
+    const hugeBudget = 100_000;
+    const out = attachInjectToIcPass(base, short, { promptTokenBudget: hugeBudget });
+    assert.equal(out.droppedRecent, 0);
+    assert.equal(out.prompt, prependOnly);
+    assert.ok(out.prompt.includes(short));
+    assert.ok(out.prompt.includes('오래된 서술 한 줄.'));
+    assert.ok(out.prompt.includes('최신 서술 한 줄.'));
+  });
+
+  await t('attachInjectToIcPass: tight budget shrinks oldest recent first; inject intact', () => {
+    const oldLine = 'OLD_RECENT_NARRATION_' + '가나다라마바사아자차카타파하'.repeat(8);
+    const newLine = 'NEW_RECENT_NARRATION_' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.repeat(8);
+    const base = [
+      '너는 장면 서술자다.',
+      '',
+      '## 앞서 이미 서술된 것 (화면에 남아 있다. 다시 쓰지 말 것)',
+      oldLine,
+      newLine,
+      '',
+      '## 사용자 입력',
+      '안녕',
+      '',
+      '## 규칙',
+      '- 서술문만 쓴다.',
+      '',
+      '서술:',
+    ].join('\n');
+    const pad = 'KEEP_THIS_WHOLE_INSTRUCTION_UNTRUNCATED ';
+    let longInject = `${MARKER}: ` + pad.repeat(20);
+    if (longInject.length > INJECT_INSTRUCTION_MAX) longInject = longInject.slice(0, INJECT_INSTRUCTION_MAX);
+
+    const withAll = prependInjectToRules(base, longInject);
+    const estAll = estimateTokens(withAll);
+    // Budget between (inject+fixed+newest) and (inject+fixed+both recent)
+    const withoutOldest = prependInjectToRules(
+      base.replace(oldLine + '\n', ''),
+      longInject,
+    );
+    const estWithoutOldest = estimateTokens(withoutOldest);
+    assert.ok(estAll > estWithoutOldest, 'dropping oldest must reduce est');
+    const tight = estWithoutOldest; // should force at least one drop
+    assert.ok(estAll > tight, 'synthetic budget must be over full prompt');
+
+    const out = attachInjectToIcPass(base, longInject, { promptTokenBudget: tight });
+    assert.ok(out.droppedRecent > 0, `expected shrink, got droppedRecent=${out.droppedRecent}`);
+    assert.ok(out.prompt.includes(longInject), 'full instruction must remain');
+    assert.ok(!out.prompt.includes(oldLine), 'oldest recent must be dropped first');
+    assert.ok(out.prompt.includes(newLine), 'newest recent should be kept when possible');
+    assert.ok(estimateTokens(out.prompt) <= tight, `final est ${estimateTokens(out.prompt)} > budget ${tight}`);
+    // Protected sections untouched
+    assert.ok(out.prompt.includes('## 사용자 입력'));
+    assert.ok(out.prompt.includes('## 규칙\n' + longInject));
+  });
+
+  await t('attachInjectToIcPass: extreme fixed+inject over budget with no recent → throws', () => {
+    const base = '## 규칙\n- bullet only, no recent section\n';
+    const pad = 'X';
+    let longInject = `${MARKER}: ` + pad.repeat(700);
+    if (longInject.length > INJECT_INSTRUCTION_MAX) longInject = longInject.slice(0, INJECT_INSTRUCTION_MAX);
+    const withInject = prependInjectToRules(base, longInject);
+    const est = estimateTokens(withInject);
+    const tiny = Math.max(1, est - 5);
+    assert.throws(
+      () => attachInjectToIcPass(base, longInject, { promptTokenBudget: tiny }),
+      /exceeds pass prompt budget|never truncated/,
+    );
+  });
+
   // ── beat N / F / E ──────────────────────────────────────────────────────
   const i = beatInput();
   const planOmit = planBeat(i);
@@ -286,8 +378,11 @@ async function main() {
     assert.ok(beatBody.includes('passCWith(planInput, finished)'));
     assert.equal(beatBody.includes('prependInjectToRules(passCWith'), false);
     assert.equal(/prependInjectToRules\(\s*passCWith/.test(beatBody), false);
+    assert.equal(beatBody.includes('attachInjectToIcPass(passCWith'), false);
+    assert.equal(/attachInjectToIcPass\(\s*passCWith/.test(beatBody), false);
     // delta also untouched
     assert.equal(beatBody.includes('prependInjectToRules(renderSceneDeltaPrompt'), false);
+    assert.equal(beatBody.includes('attachInjectToIcPass(renderSceneDeltaPrompt'), false);
   });
 
   // ── long instruction × multi-pass ───────────────────────────────────────
@@ -297,22 +392,26 @@ async function main() {
     if (longInject.length > INJECT_INSTRUCTION_MAX) longInject = longInject.slice(0, INJECT_INSTRUCTION_MAX);
     assert.ok(longInject.length >= 400, `expected near-max length, got ${longInject.length}`);
 
+    const huge = 100_000;
     const n0 = planOmit.pass_n;
-    const n1 = prependInjectToRules(n0, longInject);
-    assert.ok(n1.includes(longInject));
-    // Differ only by the insert after ## 규칙
+    const n1 = attachInjectToIcPass(n0, longInject, { promptTokenBudget: huge });
+    assert.equal(n1.droppedRecent, 0);
+    assert.ok(n1.prompt.includes(longInject));
+    // Differ only by the insert after ## 규칙 when under budget
     const expectedN = n0.replace('## 규칙\n', `## 규칙\n${longInject}\n`);
-    assert.equal(n1, expectedN);
+    assert.equal(n1.prompt, expectedN);
 
     const f0 = passFWith(i, planOmit, narration)!;
-    const f1 = prependInjectToRules(f0, longInject);
-    assert.ok(f1.includes(longInject));
-    assert.equal(f1, f0.replace('## 규칙\n', `## 규칙\n${longInject}\n`));
+    const f1 = attachInjectToIcPass(f0, longInject, { promptTokenBudget: huge });
+    assert.equal(f1.droppedRecent, 0);
+    assert.ok(f1.prompt.includes(longInject));
+    assert.equal(f1.prompt, f0.replace('## 규칙\n', `## 규칙\n${longInject}\n`));
 
     for (const e of planPassE(i, planOmit, narration, focusText)) {
-      const e1 = prependInjectToRules(e.prompt, longInject);
-      assert.ok(e1.includes(longInject), `E ${e.name} truncated inject`);
-      assert.equal(e1, e.prompt.replace('## 규칙\n', `## 규칙\n${longInject}\n`));
+      const e1 = attachInjectToIcPass(e.prompt, longInject, { promptTokenBudget: huge });
+      assert.equal(e1.droppedRecent, 0);
+      assert.ok(e1.prompt.includes(longInject), `E ${e.name} truncated inject`);
+      assert.equal(e1.prompt, e.prompt.replace('## 규칙\n', `## 규칙\n${longInject}\n`));
     }
 
     const dPlan = planDialogBeat({
@@ -326,9 +425,10 @@ async function main() {
       cards: CARDS,
       main_character_id: 'hayeon',
     });
-    const s1 = prependInjectToRules(dPlan.pass_s, longInject);
-    assert.ok(s1.includes(longInject));
-    assert.equal(s1, dPlan.pass_s.replace('## 규칙\n', `## 규칙\n${longInject}\n`));
+    const s1 = attachInjectToIcPass(dPlan.pass_s, longInject, { promptTokenBudget: huge });
+    assert.equal(s1.droppedRecent, 0);
+    assert.ok(s1.prompt.includes(longInject));
+    assert.equal(s1.prompt, dPlan.pass_s.replace('## 규칙\n', `## 규칙\n${longInject}\n`));
 
     const hPlan = planHunterBeat({
       conversation_id: 'h2',
@@ -341,28 +441,75 @@ async function main() {
       cards: CARDS,
       main_character_id: 'hayeon',
     });
-    const h1 = prependInjectToRules(hPlan.pass_h, longInject);
-    assert.ok(h1.includes(longInject));
-    assert.equal(h1, hPlan.pass_h.replace('## 규칙\n', `## 규칙\n${longInject}\n`));
+    const h1 = attachInjectToIcPass(hPlan.pass_h, longInject, { promptTokenBudget: huge });
+    assert.equal(h1.droppedRecent, 0);
+    assert.ok(h1.prompt.includes(longInject));
+    assert.equal(h1.prompt, hPlan.pass_h.replace('## 규칙\n', `## 규칙\n${longInject}\n`));
+  });
+
+  await t('long instruction × Pass N with recent → tight budget shrinks recent, inject full each pass', () => {
+    const pad = 'KEEP_THIS_WHOLE_INSTRUCTION_UNTRUNCATED ';
+    let longInject = `${MARKER}: ` + pad.repeat(20);
+    if (longInject.length > INJECT_INSTRUCTION_MAX) longInject = longInject.slice(0, INJECT_INSTRUCTION_MAX);
+
+    const oldN = 'OLD_PARTY_RECENT_' + '서술배경조명공간'.repeat(12);
+    const newN = 'NEW_PARTY_RECENT_' + '카메라구도인물'.repeat(12);
+    const withRecent = planBeat(beatInput({ recent_narrations: [oldN, newN] }));
+    assert.ok(withRecent.pass_n.includes('## 앞서 이미 서술된 것'));
+    assert.ok(withRecent.pass_n.includes(oldN));
+    assert.ok(withRecent.pass_n.includes(newN));
+
+    const full = prependInjectToRules(withRecent.pass_n, longInject);
+    const estFull = estimateTokens(full);
+    // Budget just under full so at least one oldest-recent drop is required
+    const tight = estFull - 1;
+    const out = attachInjectToIcPass(withRecent.pass_n, longInject, { promptTokenBudget: tight });
+    assert.ok(out.droppedRecent > 0);
+    assert.ok(out.prompt.includes(longInject));
+    assert.equal(out.prompt.includes(longInject), true);
+    assert.ok(estimateTokens(out.prompt) <= tight);
+    // Prefer dropping oldest first
+    if (out.droppedRecent === 1) {
+      assert.ok(!out.prompt.includes(oldN));
+      assert.ok(out.prompt.includes(newN));
+    } else {
+      assert.ok(!out.prompt.includes(oldN));
+    }
+
+    // F/E still carry full inject under generous budget (no recent section there)
+    const fRaw = passFWith(beatInput({ recent_narrations: [oldN, newN] }), withRecent, narration)!;
+    const fOut = attachInjectToIcPass(fRaw, longInject, { promptTokenBudget: 100_000 });
+    assert.ok(fOut.prompt.includes(longInject));
+    assert.equal(fOut.droppedRecent, 0);
   });
 
   // ── one-hook source assert ──────────────────────────────────────────────
-  await t('source: prependInjectToRules is the single party attach function', () => {
+  await t('source: prependInjectToRules + attachInjectToIcPass is the single party attach family', () => {
     const chatSrc = src('apps/server/src/routes/chat.ts');
     const injSrc = src('apps/server/src/prompt/injectContext.ts');
     assert.ok(injSrc.includes('export function prependInjectToRules'));
+    assert.ok(injSrc.includes('export function attachInjectToIcPass'));
     assert.ok(injSrc.includes('pass-multiplication'));
     assert.ok(injSrc.includes('party has no isOoc gate'));
+    assert.ok(injSrc.includes('never truncate') || injSrc.includes('never truncated') || injSrc.includes('inject is never truncated'));
+    assert.ok(injSrc.includes('## 앞서 이미 서술된 것'));
 
-    // Exactly one definition
+    // Exactly one definition each
     assert.equal((injSrc.match(/export function prependInjectToRules/g) || []).length, 1);
+    assert.equal((injSrc.match(/export function attachInjectToIcPass/g) || []).length, 1);
 
-    // chat.ts uses the helper on IC passes
-    assert.ok(chatSrc.includes('prependInjectToRules(plan.pass_n'));
-    assert.ok(chatSrc.includes('prependInjectToRules(passFRaw') || chatSrc.includes('prependInjectToRules(passF'));
-    assert.ok(chatSrc.includes('prependInjectToRules(e.prompt'));
-    assert.ok(chatSrc.includes('prependInjectToRules(plan.pass_s'));
-    assert.ok(chatSrc.includes('prependInjectToRules(plan.pass_h'));
+    // chat.ts uses the wrapper on IC passes (not bare prepend at send sites)
+    assert.ok(chatSrc.includes('attachInjectToIcPass(plan.pass_n'));
+    assert.ok(chatSrc.includes('attachInjectToIcPass(passFRaw') || chatSrc.includes('attachInjectToIcPass(passF'));
+    assert.ok(chatSrc.includes('attachInjectToIcPass(e.prompt'));
+    assert.ok(chatSrc.includes('attachInjectToIcPass(plan.pass_s'));
+    assert.ok(chatSrc.includes('attachInjectToIcPass(plan.pass_h'));
+    assert.ok(chatSrc.includes('promptTokenBudget'));
+    assert.ok(chatSrc.includes('config.model.contextTokens'));
+    // Bare prepend only lives inside injectContext (wrapper); chat must not call it at send sites
+    assert.equal(/prependInjectToRules\(\s*plan\.pass_/.test(chatSrc), false);
+    assert.equal(/prependInjectToRules\(\s*e\.prompt/.test(chatSrc), false);
+    assert.equal(/prependInjectToRules\(\s*passFRaw/.test(chatSrc), false);
 
     // No duplicate "## 규칙" inject paste bodies in format modules
     for (const rel of [
@@ -376,6 +523,7 @@ async function main() {
     ]) {
       const body = src(rel);
       assert.equal(body.includes('prependInjectToRules'), false, `${rel} must not re-implement attach`);
+      assert.equal(body.includes('attachInjectToIcPass'), false, `${rel} must not re-implement attach`);
       assert.equal(body.includes('inject_instruction'), false, `${rel} must not special-case inject`);
       // No pasted "insert after ## 규칙" logic
       assert.equal(/indexOf\(\s*['"]## 규칙['"]\s*\)/.test(body), false, `${rel} must not paste header indexOf`);

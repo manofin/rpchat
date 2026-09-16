@@ -33,10 +33,10 @@ import { parseParticipantSnapshot } from '../prompt/resolveFocus.js';
 import type { PassCard } from '../prompt/passes.js';
 import type { CharacterRow } from '../types.js';
 import { buildPrompt } from '../prompt/builder.js';
-import { parseInjectInstruction, prependInjectToRules, type InjectContext } from '../prompt/injectContext.js';
+import { parseInjectInstruction, attachInjectToIcPass, type InjectContext } from '../prompt/injectContext.js';
 import { dumpGenerationPrompt } from '../prompt/dump.js';
 import { extractChoices, sanitizeAssistantContent } from '../prompt/templates.js';
-import { estimateTokens, updateCalibration } from '../prompt/tokens.js';
+import { estimateTokens, getCalibration, updateCalibration } from '../prompt/tokens.js';
 import type { ConversationRow, MessageRow, Scene } from '../types.js';
 import { loadConversation } from './conversations.js';
 import { fireEndingEvalJob } from '../endingJudge.js';
@@ -430,8 +430,12 @@ export function chatRoutes(ctx: Ctx) {
     inject: InjectContext = { instruction: null },
   ) {
     // Party IC passes apply inject regardless of 1:1 isOoc (party has no isOoc gate today).
-    // prependInjectToRules is the single attach hook; MAX 800 is validation-only — full instruction each pass.
+    // attachInjectToIcPass → prependInjectToRules is the single attach family; MAX 800 is
+    // validation-only — full instruction each pass; recent narrations shrink under pressure.
     const injectInstr = inject.instruction;
+    const injectCal = getCalibration(db);
+    const icPromptBudget = (completionMax: number) =>
+      Math.max(512, config.model.contextTokens - completionMax - 64);
     const model = ctx.resolvedModel();
     if (!model) return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
 
@@ -584,7 +588,7 @@ export function chatRoutes(ctx: Ctx) {
       const nDeadline = withDeadline(PASS_N_TIMEOUT_MS, controller.signal);
       try {
         const out = await ctx.queue.run(() => ctx.model.complete({
-          model, messages: [{ role: 'user', content: prependInjectToRules(plan.pass_n, injectInstr) }],
+          model, messages: [{ role: 'user', content: attachInjectToIcPass(plan.pass_n, injectInstr, { promptTokenBudget: icPromptBudget(PASS_N_MAX_TOKENS), calibration: injectCal }).prompt }],
           temperature: 0.8, top_p: 0.95, max_tokens: PASS_N_MAX_TOKENS, stop: [],
           signal: nDeadline.signal,
         }), controller.signal);
@@ -601,9 +605,11 @@ export function chatRoutes(ctx: Ctx) {
       // Pass F — the focus speaks. The only streamed pass, and the only one whose
       // failure is a turn failure.
       let focusText = '';
-      // IC Pass F: one shared prependInjectToRules hook (not format-local attach)
+      // IC Pass F: one shared attachInjectToIcPass hook (not format-local attach)
       const passFRaw = passFWith(planInput, plan, narration);
-      const passF = passFRaw ? prependInjectToRules(passFRaw, injectInstr) : null;
+      const passF = passFRaw
+        ? attachInjectToIcPass(passFRaw, injectInstr, { promptTokenBudget: icPromptBudget(500), calibration: injectCal }).prompt
+        : null;
       if (passF && plan.focus.focus_id) {
         const focusName = cast.find((c) => c.id === plan.focus.focus_id)?.name ?? '';
         focusSeq = emitted.length;
@@ -648,7 +654,7 @@ export function chatRoutes(ctx: Ctx) {
         const eDeadline = withDeadline(PASS_E_TIMEOUT_MS, controller.signal);
         try {
           const out = await ctx.queue.run(() => ctx.model.complete({
-            model, messages: [{ role: 'user', content: prependInjectToRules(e.prompt, injectInstr) }],
+            model, messages: [{ role: 'user', content: attachInjectToIcPass(e.prompt, injectInstr, { promptTokenBudget: icPromptBudget(AUX_MAX_TOKENS), calibration: injectCal }).prompt }],
             temperature: 0.85, top_p: 0.95, max_tokens: AUX_MAX_TOKENS, stop: [],
             signal: eDeadline.signal,
           }), controller.signal);
@@ -860,6 +866,9 @@ export function chatRoutes(ctx: Ctx) {
   ) {
     // Party IC passes apply inject regardless of 1:1 isOoc (party has no isOoc gate today).
     const injectInstr = inject.instruction;
+    const injectCal = getCalibration(db);
+    const icPromptBudget = (completionMax: number) =>
+      Math.max(512, config.model.contextTokens - completionMax - 64);
     const model = ctx.resolvedModel();
     if (!model) return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
 
@@ -1005,7 +1014,7 @@ export function chatRoutes(ctx: Ctx) {
       let lastPersist = Date.now();
       const result = await ctx.queue.run(() => ctx.model.stream(
         {
-          model, messages: [{ role: 'user', content: prependInjectToRules(plan.pass_s, injectInstr) }],
+          model, messages: [{ role: 'user', content: attachInjectToIcPass(plan.pass_s, injectInstr, { promptTokenBudget: icPromptBudget(PASS_S_MAX_TOKENS), calibration: injectCal }).prompt }],
           temperature: 0.9, top_p: 0.95, max_tokens: PASS_S_MAX_TOKENS, stop: [], signal: controller.signal,
         },
         (delta) => {
@@ -1164,6 +1173,9 @@ export function chatRoutes(ctx: Ctx) {
   ) {
     // Party IC passes apply inject regardless of 1:1 isOoc (party has no isOoc gate today).
     const injectInstr = inject.instruction;
+    const injectCal = getCalibration(db);
+    const icPromptBudget = (completionMax: number) =>
+      Math.max(512, config.model.contextTokens - completionMax - 64);
     const model = ctx.resolvedModel();
     if (!model) return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
 
@@ -1300,7 +1312,7 @@ export function chatRoutes(ctx: Ctx) {
       let lastPersist = Date.now();
       const result = await ctx.queue.run(() => ctx.model.stream(
         {
-          model, messages: [{ role: 'user', content: prependInjectToRules(plan.pass_h, injectInstr) }],
+          model, messages: [{ role: 'user', content: attachInjectToIcPass(plan.pass_h, injectInstr, { promptTokenBudget: icPromptBudget(PASS_H_MAX_TOKENS), calibration: injectCal }).prompt }],
           temperature: 0.9, top_p: 0.95, max_tokens: PASS_H_MAX_TOKENS, stop: [], signal: controller.signal,
         },
         (delta) => {
