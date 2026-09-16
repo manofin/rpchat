@@ -33,6 +33,62 @@ const memoryPatch = z.object({
 });
 const summaryPatch = z.object({ content: z.string().min(1).max(6000).optional(), status: z.enum(['draft', 'approved']).optional() });
 
+
+/** Shared warn body for PATCH-pin and POST when Jaccard duplicate needs confirm. HTTP 200, never 409. */
+export type MemoryDupWarn = {
+  pinned: false;
+  warn: 'duplicate';
+  conflict: { kind: 'duplicate'; withMemoryId: string | null; reason: string };
+};
+
+function wantsConfirm(req: { query?: unknown }): boolean {
+  const q = (req.query ?? {}) as Record<string, unknown>;
+  const v = q.confirm;
+  return v === '1' || v === 1 || v === true || v === 'true';
+}
+
+/** Same peer set as GET /memories: pinned+candidate in conversation OR character-scoped. */
+function memoryPeers(
+  db: Ctx['db'],
+  conversationId: string | null,
+  characterId: string | null,
+  excludeId?: string | null,
+): MemoryRow[] {
+  if (!conversationId && !characterId) return [];
+  let rows: MemoryRow[];
+  if (conversationId) {
+    const charId =
+      characterId ??
+      one<{ character_id: string }>(db, 'SELECT character_id FROM conversations WHERE id = ?', conversationId)?.character_id ??
+      null;
+    if (!charId) {
+      rows = many<MemoryRow>(db, `SELECT * FROM memories WHERE status IN ('pinned', 'candidate') AND conversation_id = ?`, conversationId);
+    } else {
+      rows = many<MemoryRow>(
+        db,
+        `SELECT * FROM memories WHERE status IN ('pinned', 'candidate') AND (conversation_id = ? OR (scope = 'character' AND character_id = ?))`,
+        conversationId,
+        charId,
+      );
+    }
+  } else {
+    rows = many<MemoryRow>(
+      db,
+      `SELECT * FROM memories WHERE status IN ('pinned', 'candidate') AND scope = 'character' AND character_id = ?`,
+      characterId,
+    );
+  }
+  return excludeId ? rows.filter((r) => r.id !== excludeId) : rows;
+}
+
+function duplicateWarn(v: { kind: string; withMemoryId: string | null; reason: string }): MemoryDupWarn {
+  return {
+    pinned: false,
+    warn: 'duplicate',
+    conflict: { kind: 'duplicate', withMemoryId: v.withMemoryId, reason: v.reason },
+  };
+}
+
 export function memoryRoutes(ctx: Ctx) {
   const { db } = ctx;
   return async function plugin(app: FastifyInstance) {
@@ -63,13 +119,22 @@ export function memoryRoutes(ctx: Ctx) {
         characterId = characterId ?? conv.character_id;
       }
       if (!d.conversationId && !characterId) return reply.code(400).send({ error: 'conversationId 또는 characterId 필요' });
+      const content = d.content.trim();
+      // Pin path: warn on Jaccard duplicate unless ?confirm=1 (HTTP 200 warn schema — never 409).
+      if (d.status === 'pinned' && !wantsConfirm(req)) {
+        const peers = memoryPeers(db, d.conversationId ?? null, characterId, null);
+        const v = classify({ id: '', content }, peers);
+        if (v.kind === 'duplicate') {
+          return reply.code(200).send(duplicateWarn(v));
+        }
+      }
       const id = uid();
       const t = nowIso();
       run(
         db,
         `INSERT INTO memories (id, conversation_id, character_id, content, source, status, importance, scope, evidence_message_ids_json, created_at, updated_at)
          VALUES (?, ?, ?, ?, 'user', ?, ?, ?, ?, ?, ?)`,
-        id, d.conversationId ?? null, characterId, d.content.trim(), d.status, d.importance, d.scope, JSON.stringify(d.evidenceMessageIds), t, t,
+        id, d.conversationId ?? null, characterId, content, d.status, d.importance, d.scope, JSON.stringify(d.evidenceMessageIds), t, t,
       );
       return reply.code(201).send(memoryOut(one<MemoryRow>(db, 'SELECT * FROM memories WHERE id = ?', id)!));
     });
@@ -80,12 +145,23 @@ export function memoryRoutes(ctx: Ctx) {
       const p = memoryPatch.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
       const d = p.data;
+      const pinning = d.status === 'pinned' && m.status !== 'pinned';
+      if (pinning && !wantsConfirm(req)) {
+        const content = (d.content?.trim() ?? m.content);
+        const peers = memoryPeers(db, m.conversation_id, m.character_id, m.id);
+        const v = classify({ id: m.id, content }, peers);
+        if (v.kind === 'duplicate') {
+          // DB unchanged — still candidate (or prior non-pinned status).
+          return reply.code(200).send(duplicateWarn(v));
+        }
+      }
       run(
         db,
         'UPDATE memories SET content = COALESCE(?, content), scope = COALESCE(?, scope), importance = COALESCE(?, importance), status = COALESCE(?, status), updated_at = ? WHERE id = ?',
         d.content?.trim() ?? null, d.scope ?? null, d.importance ?? null, d.status ?? null, nowIso(), m.id,
       );
-      return memoryOut(one<MemoryRow>(db, 'SELECT * FROM memories WHERE id = ?', m.id)!);
+      const out = memoryOut(one<MemoryRow>(db, 'SELECT * FROM memories WHERE id = ?', m.id)!);
+      return out;
     });
 
     app.delete<{ Params: { id: string } }>('/api/memories/:id', async (req, reply) => {

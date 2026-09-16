@@ -23,7 +23,7 @@ export interface Verdict {
 }
 
 /** 중복 컷: P1-2b-0 캘리브레이션 — 6행 15쌍 실측 bigram 자카드 max=0.096, 3.6배 마진 */
-const CAL_CUT = 0.35;
+export const CAL_CUT = 0.35;
 const MIN_ENTITY_OVERLAP = 2;
 
 /** 부정 마커 사전 (명시적, 확장 가능). '죽'은 명사 '죽음' 오염으로 제외 (P1-2b-fix) */
