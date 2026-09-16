@@ -1,26 +1,27 @@
-/** App chrome tabs — rpchat routes only (no StoryForge works/image). */
+/** App chrome tabs — mobile bottom bar + desktop topnav (rpchat routes only). */
 export type NavTab = {
   href: string;
   label: string;
   match: (path: string) => boolean;
 };
 
-function homeTab(): string | null {
-  if (typeof window === 'undefined') return null;
-  return new URLSearchParams(window.location.search).get('tab');
-}
-
+/** 홈 | 채팅 | 설정 — discovery stays on Home (story/character sub-tabs). */
 export const NAV_TABS: NavTab[] = [
   {
     href: '/',
     label: '홈',
-    match: (p) => p === '/' && homeTab() !== 'character',
+    match: (p) => p === '/' || p.startsWith('/character') || p.startsWith('/story'),
   },
   {
-    href: '/?tab=character',
-    label: '캐릭터',
-    match: (p) => p.startsWith('/character') || (p === '/' && homeTab() === 'character'),
+    href: '/chats',
+    label: '채팅',
+    match: (p) => p === '/chats' || p.startsWith('/chats/'),
   },
-  { href: '/search', label: '검색', match: (p) => p.startsWith('/search') },
   { href: '/settings', label: '설정', match: (p) => p.startsWith('/settings') },
 ];
+
+/** True when the mobile bottom tab bar should show (tab-shell only; never on /chat/:id). */
+export function showBottomTabBar(path: string): boolean {
+  if (path.startsWith('/chat/') || path === '/chat') return false;
+  return true;
+}

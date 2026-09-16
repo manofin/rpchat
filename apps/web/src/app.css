@@ -1593,3 +1593,87 @@ textarea { resize: none; }
   color: var(--kami-text-muted);
   margin-top: 4px;
 }
+
+/* ---- shell-rooms-nav: bottom tabs + chats list inset ---- */
+.tab-shell {
+  display: flex;
+  flex-direction: column;
+  height: var(--app-height);
+  min-height: 0;
+  --bottom-nav-h: 56px;
+  --bottom-nav-offset: calc(var(--bottom-nav-h) + var(--safe-bottom));
+}
+.tab-shell-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.tab-shell-body > .screen,
+.tab-shell-body > .page,
+.tab-shell-body > .settings-screen,
+.tab-shell-body > .center {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* Push page scroll content above the fixed bottom bar (mobile). */
+.tab-shell .content,
+.tab-shell .chats-page-scroll {
+  padding-bottom: calc(12px + var(--bottom-nav-offset));
+}
+.app-bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  gap: 0;
+  min-height: calc(var(--bottom-nav-h) + var(--safe-bottom));
+  padding: 4px 4px var(--safe-bottom);
+  background: var(--kami-deep);
+  border-top: 1px solid var(--kami-line);
+  padding-left: max(4px, var(--safe-left));
+  padding-right: max(4px, var(--safe-right));
+}
+.app-bottom-nav-item {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 0;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--kami-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.app-bottom-nav-item.is-active {
+  color: var(--kami-text-strong);
+  background: rgba(228, 87, 79, 0.10);
+}
+.app-bottom-nav-item:focus-visible {
+  outline: 2px solid var(--role-coral);
+  outline-offset: 2px;
+}
+.app-bottom-nav-label { line-height: 1.2; }
+@media (min-width: 768px) {
+  .tab-shell { --bottom-nav-offset: 0px; }
+  .app-bottom-nav { display: none; }
+  .tab-shell .content,
+  .tab-shell .chats-page-scroll {
+    padding-bottom: calc(12px + var(--safe-bottom));
+  }
+}
+.chats-list .list-item .p.muted {
+  opacity: 0.85;
+}
