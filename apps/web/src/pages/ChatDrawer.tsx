@@ -196,7 +196,23 @@ export function MemoryTab({ conversationId, open, onApplied, onClose }: { conver
   useEffect(() => { if (open) load(); }, [open, conversationId]);
 
   async function setStatus(id: string, status: 'pinned' | 'rejected') {
-    await patch(`/api/memories/${id}`, { status });
+    if (status === 'pinned') {
+      const r = await patch<{ pinned?: boolean; warn?: string; conflict?: Memory['conflict']; status?: string }>(
+        `/api/memories/${id}`,
+        { status: 'pinned' },
+      );
+      if (r && r.pinned === false && r.warn === 'duplicate') {
+        const reason = r.conflict?.reason ? ` (${r.conflict.reason})` : '';
+        const ok = await ui.confirm(
+          `기존 기억과 중복 가능성이 있습니다.${reason} 그래도 채택할까요?`,
+          { okLabel: '채택' },
+        );
+        if (!ok) return;
+        await patch(`/api/memories/${id}?confirm=1`, { status: 'pinned' });
+      }
+    } else {
+      await patch(`/api/memories/${id}`, { status });
+    }
     await load();
     onApplied();
   }
@@ -205,7 +221,8 @@ export function MemoryTab({ conversationId, open, onApplied, onClose }: { conver
   async function merge(cand: Memory) {
     const canonicalId = cand.conflict?.withMemoryId ?? null;
     const canonical = canonicalId ? [...pinned, ...candidates].find((m) => m.id === canonicalId) : null;
-    if (canonical && canonical.status === 'candidate') await patch(`/api/memories/${canonicalId}`, { status: 'pinned' });
+    // User already chose 병합 — pin with confirm=1 so dup-warn does not re-prompt.
+    if (canonical && canonical.status === 'candidate') await patch(`/api/memories/${canonicalId}?confirm=1`, { status: 'pinned' });
     await patch(`/api/memories/${cand.id}`, { status: 'rejected' });
     await load();
     onApplied();
@@ -222,7 +239,20 @@ export function MemoryTab({ conversationId, open, onApplied, onClose }: { conver
   }
   async function add() {
     if (!text.trim()) return;
-    await post('/api/memories', { conversationId, content: text.trim(), status: 'pinned', scope: 'conversation' });
+    const body = { conversationId, content: text.trim(), status: 'pinned' as const, scope: 'conversation' as const };
+    const r = await post<{ pinned?: boolean; warn?: string; conflict?: Memory['conflict']; id?: string; status?: string }>(
+      '/api/memories',
+      body,
+    );
+    if (r && r.pinned === false && r.warn === 'duplicate') {
+      const reason = r.conflict?.reason ? ` (${r.conflict.reason})` : '';
+      const ok = await ui.confirm(
+        `기존 기억과 중복 가능성이 있습니다.${reason} 그래도 추가할까요?`,
+        { okLabel: '추가' },
+      );
+      if (!ok) return;
+      await post('/api/memories?confirm=1', body);
+    }
     setText('');
     await load();
     onApplied();
