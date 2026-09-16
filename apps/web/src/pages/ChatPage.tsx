@@ -10,6 +10,7 @@ import {
 import { OverlayDrawer } from '../components/OverlayDrawer';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { visibleChoices } from '../lib/choices';
+import { sanitizeBubbleContent } from '../lib/sanitizeBubble';
 import { groupChatTurns, shouldReorderTurn, turnChoicesHost, visualAssistantOrder } from '../lib/chatLayout';
 import { wrapSpeechMarks } from '../lib/speechMarks';
 import { expandLeadingShortcut, readShortcuts } from '../lib/shortcutMacro';
@@ -689,11 +690,16 @@ function MessageView(props: {
         onTouchEnd={onTouchEnd}
         onTouchCancel={onTouchCancel}
       >
-        {m.content
-          ? (lineSpeech && !props.streaming
-              ? renderContent(wrapSpeechMarks(m.content))
-              : renderContent(m.content))
-          : props.streaming ? '' : <span className="muted">…</span>}
+        {(() => {
+          // leak-choices-ui: strip leaked choices/BeatUi JSON from ordinary bubbles only.
+          // Real `block_kind:'ui'` never reaches this branch.
+          const shown = props.streaming ? m.content : sanitizeBubbleContent(m.content);
+          return shown
+            ? (lineSpeech && !props.streaming
+                ? renderContent(wrapSpeechMarks(shown))
+                : renderContent(shown))
+            : props.streaming ? '' : <span className="muted">…</span>;
+        })()}
         {props.streaming && <span className="cursor" />}
         {m.status === 'error' && <div className="small" style={{ color: 'var(--danger)', marginTop: 6 }}>{m.meta.error ?? '생성 실패'}</div>}
         {m.status === 'interrupted' && <div className="small muted" style={{ marginTop: 4 }}>(중단됨)</div>}
