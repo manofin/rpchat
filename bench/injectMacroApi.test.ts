@@ -5,7 +5,7 @@
  *   omit field              → ok; send works; instruction effectively null
  *   valid short string      → parsed; inserted user content ≠ instruction
  *   over max                → 400; no truncated inject row in storage
- *   carrier unconsumed      → GenParams.messages unchanged vs omit (no systemParts / ## 규칙 side effect)
+ *   1:1 attach (post-1to1)  → GenParams system includes instruction (+ choices); content still ≠ instruction
  *   regression              → existing send without field still SSE-completes
  *   branch                  → same accept/bound shape
  */
@@ -257,7 +257,7 @@ async function main() {
     assert.ok(!afterMsgs.some((m) => m.content === userLine));
   });
 
-  await t('carrier unconsumed: GenParams.messages identical omit vs inject (no ## 규칙 / systemParts side effect)', async () => {
+  await t('1:1 attach: GenParams system includes instruction; omit lacks marker; content still ≠ instruction', async () => {
     const convA = await newConv('carrier-omit');
     const convB = await newConv('carrier-inject');
     const userLine = '같은 본문으로 비교.';
@@ -270,9 +270,8 @@ async function main() {
     });
     assert.equal(omitRes.status, 200);
     await omitRes.text();
-    const omitSnap = JSON.stringify(
-      capturedParams.map((p) => p.messages.map((m) => ({ role: m.role, content: m.content }))),
-    );
+    const omitFlat = flattenGenMessages(capturedParams);
+    assert.ok(!omitFlat.includes(MARKER), 'omit path must not invent inject marker');
 
     capturedParams.length = 0;
     const injRes = await fetch(`${origin}/api/conversations/${convB.id}/messages`, {
@@ -280,20 +279,23 @@ async function main() {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         content: userLine,
-        inject_instruction: `${MARKER}: attach later, not now.`,
+        inject_instruction: `${MARKER}: attach on 1:1.`,
       }),
     });
     assert.equal(injRes.status, 200);
     const injEvents = parseSse(await injRes.text());
     assert.ok(injEvents.some((e) => e.type === 'done'), 'assistant path still completes');
     const injFlat = flattenGenMessages(capturedParams);
-    const injSnap = JSON.stringify(
-      capturedParams.map((p) => p.messages.map((m) => ({ role: m.role, content: m.content }))),
-    );
 
-    assert.ok(!injFlat.includes(MARKER), 'instruction must not appear in any GenParams message content');
-    // 1:1 path: no systemParts / ## 규칙 attach this slice — prompt must match omit
-    assert.equal(injSnap, omitSnap, 'prompt assembly must be unchanged when inject field present');
+    // inject-macro-1to1: 1:1 buildPrompt consumes the carrier
+    assert.ok(injFlat.includes(MARKER), '1:1 GenParams must include inject instruction');
+    assert.ok(injFlat.includes('<choices>') || injFlat.includes('입력 초안'), 'choices coexist with inject');
+
+    const detail = await api('GET', `/api/conversations/${convB.id}`);
+    const msgs = (detail.json as any).messages as Array<{ role: string; content: string }>;
+    const user = msgs.find((m) => m.role === 'user' && m.content === userLine);
+    assert.ok(user);
+    assert.ok(!user!.content.includes(MARKER), 'instruction must not persist into user content');
   });
 
   await t('regression: existing send without field still SSE-completes with tokens', async () => {
@@ -348,7 +350,8 @@ async function main() {
     const branched = afterMsgs.find((m) => m.role === 'user' && m.content === branchBody);
     assert.ok(branched);
     assert.ok(!JSON.stringify(afterMsgs).includes(branchMarker));
-    assert.ok(!flattenGenMessages(capturedParams).includes(branchMarker));
+    // 1to1 attach: branch generate also goes through buildPrompt with inject
+    assert.ok(flattenGenMessages(capturedParams).includes(branchMarker), 'branch 1:1 must attach inject');
 
     const over = await api('POST', `/api/conversations/${conv.id}/branch`, {
       messageId: userMsg!.id,
