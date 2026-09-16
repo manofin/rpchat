@@ -33,6 +33,7 @@ import { parseParticipantSnapshot } from '../prompt/resolveFocus.js';
 import type { PassCard } from '../prompt/passes.js';
 import type { CharacterRow } from '../types.js';
 import { buildPrompt } from '../prompt/builder.js';
+import { parseInjectInstruction, type InjectContext } from '../prompt/injectContext.js';
 import { dumpGenerationPrompt } from '../prompt/dump.js';
 import { extractChoices, sanitizeAssistantContent } from '../prompt/templates.js';
 import { estimateTokens, updateCalibration } from '../prompt/tokens.js';
@@ -270,7 +271,12 @@ export function chatRoutes(ctx: Ctx) {
      * here with the same user message as the parent.
      */
     regenTurnStartId?: string | null,
+    /** inject-macro-api carrier; unused until inject-macro-1to1 / party attach */
+    inject?: InjectContext,
   ) {
+    // inject-macro-1to1 will attach; this slice is accept + bound only
+    inject = inject ?? { instruction: null };
+    void inject;
     interruptOrphanStreaming(db, { keepMessageIds: ctx.queue.activeList.map((g) => g.messageId) });
     if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
 
@@ -1410,16 +1416,21 @@ export function chatRoutes(ctx: Ctx) {
   }
 
   return async function plugin(app: FastifyInstance) {
-    const sendSchema = z.object({ content: z.string().min(1).max(8000) });
+    const sendSchema = z.object({
+      content: z.string().min(1).max(8000),
+      inject_instruction: z.string().optional(),
+    });
     app.post<{ Params: { id: string } }>('/api/conversations/:id/messages', async (req, reply) => {
       const conv = loadConversation(ctx, req.params.id);
       if (!conv) return reply.code(404).send({ error: 'not found' });
       if (conv.ended_at) return reply.code(409).send({ error: 'already ended' });
       const p = sendSchema.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
+      const inj = parseInjectInstruction(p.data.inject_instruction);
+      if (!inj.ok) return reply.code(400).send({ error: inj.error });
       if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
       const user = insertMessage(db, conv.id, conv.head_message_id, 'user', p.data.content.trim(), 'complete', {});
-      return generate(req, reply, conv, user.id, user);
+      return generate(req, reply, conv, user.id, user, undefined, inj.ctx);
     });
 
     const regenSchema = z.object({ messageId: z.string().min(1) });
@@ -1457,18 +1468,24 @@ export function chatRoutes(ctx: Ctx) {
     });
 
     // 사용자 메시지 수정 후 재생성 = 같은 부모 아래 새 user 분기 + 생성
-    const branchSchema = z.object({ messageId: z.string().min(1), content: z.string().min(1).max(8000) });
+    const branchSchema = z.object({
+      messageId: z.string().min(1),
+      content: z.string().min(1).max(8000),
+      inject_instruction: z.string().optional(),
+    });
     app.post<{ Params: { id: string } }>('/api/conversations/:id/branch', async (req, reply) => {
       const conv = loadConversation(ctx, req.params.id);
       if (!conv) return reply.code(404).send({ error: 'not found' });
       if (conv.ended_at) return reply.code(409).send({ error: 'already ended' });
       const p = branchSchema.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
+      const inj = parseInjectInstruction(p.data.inject_instruction);
+      if (!inj.ok) return reply.code(400).send({ error: inj.error });
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ? AND conversation_id = ?', p.data.messageId, conv.id);
       if (!m || m.role !== 'user') return reply.code(404).send({ error: 'user message not found' });
       if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
       const user = insertMessage(db, conv.id, m.parent_id, 'user', p.data.content.trim(), 'complete', {});
-      return generate(req, reply, conv, user.id, user);
+      return generate(req, reply, conv, user.id, user, undefined, inj.ctx);
     });
 
     app.post<{ Params: { id: string } }>('/api/generations/:id/abort', async (req, reply) => {
