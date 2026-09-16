@@ -183,16 +183,82 @@ export function renderSummaryPrompt(charName: string, userName: string, previous
   ].join('\n');
 }
 
-/** 스토리 모드 선택지 파싱: <choices>[...]</choices> 또는 말미의 JSON 배열. 실패 시 본문만 반환. */
+/** BeatUi-shaped trailing JSON (location_badge / roster / …) — echo fuel, not prose. */
+export function isBeatUiShape(v: unknown): boolean {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return false;
+  const o = v as Record<string, unknown>;
+  return (
+    'location_badge' in o ||
+    'roster' in o ||
+    'user_sheet' in o ||
+    'intent_hint' in o ||
+    'focus_id' in o ||
+    'custom_stats' in o
+  );
+}
+
+/** Strip a trailing BeatUi JSON object if present. Leaves mid-body JSON alone. */
+export function stripTrailingBeatUiJson(text: string): string {
+  const trimmed = text.replace(/\s+$/, '');
+  // Last top-level `{…}` at end of string.
+  const m = trimmed.match(/(\n|^)(\s*)(\{[\s\S]*\})\s*$/);
+  if (!m || m.index == null) return text;
+  const jsonPart = m[3];
+  try {
+    const obj = JSON.parse(jsonPart);
+    if (!isBeatUiShape(obj)) return text;
+    return trimmed.slice(0, m.index).replace(/\s+$/, '');
+  } catch {
+    return text;
+  }
+}
+
+/**
+ * Find the last `<choices>…</choices>` whose *trailing* remainder is only
+ * whitespace or BeatUi JSON — never a mid-body tag followed by more narrative.
+ */
+function findTerminalChoices(text: string): RegExpExecArray | null {
+  const re = /<choices>\s*(\[[\s\S]*?\])\s*<\/choices>/gi;
+  let last: RegExpExecArray | null = null;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const after = text.slice(m.index + m[0].length);
+    if (/^\s*$/.test(after)) {
+      last = m;
+      continue;
+    }
+    const stripped = stripTrailingBeatUiJson(after);
+    if (stripped.replace(/\s+/g, '') === '') last = m;
+  }
+  return last;
+}
+
+/**
+ * 스토리/1:1 선택지 파싱.
+ * - 마지막 terminal `<choices>…</choices>`만 대상 (EOL `$` 불필요 — trailing BeatUi JSON 허용).
+ * - 파싱 실패해도 태그(+말미 BeatUi JSON)는 스트립 → 본문만 반환 (fail-open on choices, fail-closed on leak).
+ * - 본문 중간 choices 유사 텍스트는 terminal이 아니면 건드리지 않음.
+ */
 export function extractChoices(text: string): { content: string; choices: string[] | null } {
-  const m = text.match(/<choices>\s*(\[[\s\S]*?\])\s*<\/choices>\s*$/i) ?? text.match(/```(?:json|choices)?\s*(\[[\s\S]*?\])\s*```\s*$/i);
-  if (!m) return { content: text, choices: null };
+  const m =
+    findTerminalChoices(text) ??
+    (() => {
+      const fence = text.match(/```(?:json|choices)?\s*(\[[\s\S]*?\])\s*```\s*$/i);
+      return fence;
+    })();
+  if (!m || m.index == null) {
+    const stripped = stripTrailingBeatUiJson(text);
+    return { content: stripped === text ? text : stripped, choices: null };
+  }
+  const before = text.slice(0, m.index);
+  const after = text.slice(m.index + m[0].length);
+  const body = stripTrailingBeatUiJson(before + after).replace(/\s+$/, '');
   try {
     const arr = JSON.parse(m[1]);
-    if (!Array.isArray(arr)) return { content: text, choices: null };
+    if (!Array.isArray(arr)) return { content: body || before.replace(/\s+$/, ''), choices: null };
     const choices = arr.map((x) => String(x).trim()).filter(Boolean).slice(0, 3);
-    return { content: text.slice(0, m.index).trimEnd(), choices: choices.length ? choices : null };
+    return { content: body || before.replace(/\s+$/, ''), choices: choices.length ? choices : null };
   } catch {
-    return { content: text, choices: null };
+    return { content: body || before.replace(/\s+$/, ''), choices: null };
   }
 }

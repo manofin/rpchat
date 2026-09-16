@@ -139,11 +139,12 @@ t('13b extractChoices: 긴 1인칭 초안 3개, 본문 보존', () => {
   assert.doesNotMatch(parsed.content, /민간인으로 살게/);
 });
 
-t('13c extractChoices: 초안 속 미이스케이프 큰따옴표면 본문만', () => {
+t('13c extractChoices: 깨진 JSON이어도 태그는 스트립 (leak-choices-ui)', () => {
   const raw = '본문입니다.\n<choices>["말 한다 "안 돼" 하고","다른 초안 2","다른 초안 3"]</choices>';
   const parsed = extractChoices(raw);
   assert.equal(parsed.choices, null);
-  assert.equal(parsed.content, raw);
+  assert.equal(parsed.content, '본문입니다.');
+  assert.doesNotMatch(parsed.content, /<choices>/);
 });
 
 t('14 extractChoices: 선택지 없으면 본문 그대로', () => {

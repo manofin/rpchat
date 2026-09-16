@@ -186,6 +186,49 @@ export function loadApprovedEpisodeCandidates(
   return many<SummaryRow>(db, querySql, ...episodeRelationInjectBinds(conv));
 }
 
+
+/** Recent-turn kinds that are echo fuel for 1:1 (raw BeatUi JSON / header / thought). */
+const ECHO_BLOCK_KINDS = new Set(['ui', 'header', 'thought']);
+
+export function isEchoFuelMessage(m: Pick<MessageRow, 'meta_json'>): boolean {
+  const kind = parseJson<{ block_kind?: string }>(m.meta_json, {}).block_kind;
+  return !!kind && ECHO_BLOCK_KINDS.has(kind);
+}
+
+/**
+ * Natural-language stand-in for the latest `ui` block so party/room awareness
+ * survives after raw BeatUi JSON is dropped from recent turns.
+ */
+export function partyContextFromHistory(history: Array<Pick<MessageRow, 'content' | 'meta_json'>>): string | null {
+  for (let i = history.length - 1; i >= 0; i--) {
+    const meta = parseJson<{ block_kind?: string }>(history[i].meta_json, {});
+    if (meta.block_kind !== 'ui') continue;
+    try {
+      const ui = JSON.parse(history[i].content) as {
+        location_badge?: string | null;
+        intent_hint?: string | null;
+        roster?: Array<{ name?: string; in_room?: boolean; locked?: boolean }>;
+      };
+      if (!ui || typeof ui !== 'object') continue;
+      const lines: string[] = [];
+      if (ui.location_badge) lines.push(`장소: ${ui.location_badge}`);
+      for (const r of ui.roster ?? []) {
+        const name = String(r.name ?? '').trim();
+        if (!name) continue;
+        const where = r.in_room === false ? '자리 비움' : '방 안';
+        const lock = r.locked ? ', 잠김' : '';
+        lines.push(`- ${name} (${where}${lock})`);
+      }
+      if (ui.intent_hint) lines.push(`힌트: ${ui.intent_hint}`);
+      if (!lines.length) continue;
+      return `### 현재 장면·파티\n${lines.join('\n')}`;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
 /**
  * 프롬프트 조립 (계획서 4.1 순서):
  * 시스템 규칙 → 캐릭터 카드 → 페르소나 → 장면 → 고정 기억 → 활성 로어 → 요약 → 최근 N개 → 현재 입력
@@ -476,6 +519,8 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
     if (skip.has(i)) continue;
     if (compactEnd != null && i <= compactEnd) continue;
     const m = history[i];
+    // leak-choices-ui: never feed raw ui/header/thought blocks into recent turns (echo fuel).
+    if (isEchoFuelMessage(m)) continue;
     const t = estimateMessageTokens(m.content, cal);
     if (recent.length > 0 && recentEst + t > recentBudget) {
       dropped++;
@@ -488,7 +533,8 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   used += recentEst;
 
   // 5) 시스템 메시지 합성
-  const systemParts = [rules, charText, personaText, noteIncluded ? noteText : null, sceneText, storyText, renderMemories(memItems), stateText, renderSummary(summaryText), episodeText, sceneTierText, loreText].filter((x): x is string => !!x);
+  const partyCtx = partyContextFromHistory(history);
+  const systemParts = [rules, charText, personaText, noteIncluded ? noteText : null, sceneText, partyCtx, storyText, renderMemories(memItems), stateText, renderSummary(summaryText), episodeText, sceneTierText, loreText].filter((x): x is string => !!x);
   if (isOoc) systemParts.push(OOC_INSTRUCTION);
   else systemParts.push(substitute(STORY_CHOICES_INSTRUCTION, charName, userName));
   const systemText = systemParts.join('\n\n');
