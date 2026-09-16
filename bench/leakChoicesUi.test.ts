@@ -10,6 +10,8 @@ import fs from 'node:fs';
 import {
   extractChoices,
   stripTrailingBeatUiJson,
+  stripTrailingChoicesDebris,
+  stripLeakTail,
   isBeatUiShape,
 } from '../apps/server/src/prompt/templates.ts';
 import {
@@ -109,6 +111,36 @@ function main() {
     assert.match(src, /if \(isEchoFuelMessage\(m\)\) continue;/);
     assert.match(src, /partyContextFromHistory\(history\)/);
     assert.match(src, /partyCtx/);
+  });
+
+
+  t('Finley: orphan </choices> + BeatUi — extractChoices drops close tag', () => {
+    const raw =
+      '빗소리가 처마를 스쳤다. 서리가 만년필을 내려놓았다.\n</choices>\n' +
+      JSON.stringify(FIXTURE_UI);
+    const r = extractChoices(raw);
+    assert.equal(r.choices, null);
+    assert.match(r.content, /빗소리/);
+    assert.doesNotMatch(r.content, /<\/?choices>/i);
+    assert.doesNotMatch(r.content, /location_badge/);
+  });
+
+  t('Finley: orphan </choices> + BeatUi — client sanitize drops close tag', () => {
+    const raw =
+      '빗소리가 처마를 스쳤다. 서리가 만년필을 내려놓았다.\n</choices>\n' +
+      JSON.stringify(FIXTURE_UI);
+    const cleaned = sanitizeBubbleContent(raw);
+    assert.match(cleaned, /빗소리/);
+    assert.doesNotMatch(cleaned, /<\/?choices>/i);
+    assert.doesNotMatch(cleaned, /location_badge/);
+  });
+
+  t('stripTrailingChoicesDebris: repeated orphan closes; mid-body close kept', () => {
+    assert.equal(stripTrailingChoicesDebris('본문\n</choices>'), '본문');
+    assert.equal(stripTrailingChoicesDebris('본문\n</choices>\n</choices>'), '본문');
+    const mid = '그는 </choices> 라고 말했고 끝.';
+    assert.equal(stripTrailingChoicesDebris(mid), mid);
+    assert.equal(stripLeakTail('본문\n</choices>\n' + JSON.stringify(FIXTURE_UI)), '본문');
   });
 
   t('client sanitizeBubbleContent: same fixture cleaned; mid-body left alone', () => {

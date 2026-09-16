@@ -30,6 +30,26 @@ function stripTrailingBeatUiJson(text: string): string {
   }
 }
 
+/** Orphan `</choices>` / dangling `<choices>…` at EOL only (Finley hotfix). */
+function stripTrailingChoicesDebris(text: string): string {
+  let out = text.replace(/\s+$/, '');
+  for (;;) {
+    const close = out.match(/\n?\s*<\/choices>\s*$/i);
+    if (!close || close.index == null) break;
+    out = out.slice(0, close.index).replace(/\s+$/, '');
+  }
+  // Trailing unmatched <choices>… with NO closing tag anywhere after the open.
+  const open = out.match(/\n?\s*<choices>(?:(?!<\/choices>)[\s\S])*$/i);
+  if (open && open.index != null) {
+    out = out.slice(0, open.index).replace(/\s+$/, '');
+  }
+  return out;
+}
+
+function stripLeakTail(text: string): string {
+  return stripTrailingChoicesDebris(stripTrailingBeatUiJson(text));
+}
+
 function findTerminalChoices(text: string): RegExpExecArray | null {
   const re = /<choices>\s*(\[[\s\S]*?\])\s*<\/choices>/gi;
   let last: RegExpExecArray | null = null;
@@ -40,7 +60,7 @@ function findTerminalChoices(text: string): RegExpExecArray | null {
       last = m;
       continue;
     }
-    const stripped = stripTrailingBeatUiJson(after);
+    const stripped = stripLeakTail(after);
     if (stripped.replace(/\s+/g, '') === '') last = m;
   }
   return last;
@@ -54,6 +74,6 @@ export function sanitizeBubbleContent(content: string): string {
   if (m && m.index != null) {
     out = content.slice(0, m.index) + content.slice(m.index + m[0].length);
   }
-  out = stripTrailingBeatUiJson(out);
+  out = stripLeakTail(out);
   return out.replace(/\s+$/, '');
 }

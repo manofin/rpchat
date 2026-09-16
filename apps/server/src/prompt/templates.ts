@@ -214,6 +214,32 @@ export function stripTrailingBeatUiJson(text: string): string {
 }
 
 /**
+ * Strip dangling/orphan choices tags at the end only (Finley: `본문\n</choices>\n{BeatUi}`).
+ * Mid-body `</choices>` left alone. Also drops a trailing unmatched `<choices>…` open.
+ */
+export function stripTrailingChoicesDebris(text: string): string {
+  let out = text.replace(/\s+$/, '');
+  // Repeated orphan close tags at EOL
+  for (;;) {
+    const close = out.match(/\n?\s*<\/choices>\s*$/i);
+    if (!close || close.index == null) break;
+    out = out.slice(0, close.index).replace(/\s+$/, '');
+  }
+  // Trailing unmatched open (optional incomplete JSON body, no close)
+  // Trailing unmatched <choices>… with NO closing tag anywhere after the open.
+  const open = out.match(/\n?\s*<choices>(?:(?!<\/choices>)[\s\S])*$/i);
+  if (open && open.index != null) {
+    out = out.slice(0, open.index).replace(/\s+$/, '');
+  }
+  return out;
+}
+
+/** BeatUi JSON then orphan choices tags — apply in that order (Finley shape). */
+export function stripLeakTail(text: string): string {
+  return stripTrailingChoicesDebris(stripTrailingBeatUiJson(text));
+}
+
+/**
  * Find the last `<choices>…</choices>` whose *trailing* remainder is only
  * whitespace or BeatUi JSON — never a mid-body tag followed by more narrative.
  */
@@ -227,7 +253,7 @@ function findTerminalChoices(text: string): RegExpExecArray | null {
       last = m;
       continue;
     }
-    const stripped = stripTrailingBeatUiJson(after);
+    const stripped = stripLeakTail(after);
     if (stripped.replace(/\s+/g, '') === '') last = m;
   }
   return last;
@@ -247,12 +273,12 @@ export function extractChoices(text: string): { content: string; choices: string
       return fence;
     })();
   if (!m || m.index == null) {
-    const stripped = stripTrailingBeatUiJson(text);
+    const stripped = stripLeakTail(text);
     return { content: stripped === text ? text : stripped, choices: null };
   }
   const before = text.slice(0, m.index);
   const after = text.slice(m.index + m[0].length);
-  const body = stripTrailingBeatUiJson(before + after).replace(/\s+$/, '');
+  const body = stripLeakTail(before + after).replace(/\s+$/, '');
   try {
     const arr = JSON.parse(m[1]);
     if (!Array.isArray(arr)) return { content: body || before.replace(/\s+$/, ''), choices: null };
