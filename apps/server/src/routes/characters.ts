@@ -28,6 +28,7 @@ import {
   publicAvatarPath,
 } from '../media/avatar.js';
 import {
+  ASSET_MAX_BYTES,
   ASSET_MAX_COUNT,
   AssetReject,
   assetsRoot,
@@ -427,7 +428,7 @@ export function characterRoutes(ctx: Ctx) {
 
     app.post<{ Params: { id: string; outfit: string; n: string }; Body: Buffer }>(
       '/api/characters/:id/assets/:outfit/:n',
-      { bodyLimit: AVATAR_MAX_BYTES },
+      { bodyLimit: ASSET_MAX_BYTES },
       async (req, reply) => {
         const { id, outfit, n } = req.params;
         if (id === FROST_CHARACTER_ID) return reply.code(403).send({ error: 'frost character' });

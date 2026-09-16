@@ -138,10 +138,14 @@ export function listCharacterAssets(root: string, characterId: string): Characte
   }
   const groups: CharacterAssetGroup[] = [];
   for (const outfit of outfits.sort((a, b) => a.localeCompare(b))) {
+    // Same segment gate as write/read — skip before readdir (defense consistency).
+    if (!isSafeAssetSegment(outfit)) continue;
+    const outfitDir = path.resolve(charDir, outfit);
+    if (!outfitDir.startsWith(rootResolved + path.sep)) continue;
     const files: number[] = [];
     let names: string[];
     try {
-      names = fs.readdirSync(path.join(charDir, outfit));
+      names = fs.readdirSync(outfitDir);
     } catch {
       continue;
     }
