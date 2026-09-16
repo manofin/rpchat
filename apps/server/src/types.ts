@@ -326,6 +326,9 @@ export interface SummaryRow {
   tier: 'scene' | 'episode' | 'whole' | 'state';
   status: 'draft' | 'approved';
   created_at: string;
+  /** episode-relation Scope B; NULL on non-episode / grandfathered rows until write slice. */
+  rel_character_id: string | null;
+  rel_persona_id: string | null;
 }
 
 export interface ChatMessage {
