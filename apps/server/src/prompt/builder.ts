@@ -12,6 +12,7 @@ import {
 } from './templates.js';
 import { resolveStory } from './resolveStory.js';
 import { resolveOpening } from './storyOpening.js';
+import type { InjectContext } from './injectContext.js';
 
 export interface BuiltPrompt {
   messages: ChatMessage[];
@@ -235,7 +236,7 @@ export function partyContextFromHistory(history: Array<Pick<MessageRow, 'content
  * history: 현재 활성 분기의 메시지(시간순). 마지막 원소가 현재 사용자 입력이어야 한다(인사 재생성 시 빈 배열).
  */
 
-export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[], contextTokens: number, defaultModel: string, profileName?: string, opts?: { diagnostics?: boolean }): BuiltPrompt {
+export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[], contextTokens: number, defaultModel: string, profileName?: string, opts?: { diagnostics?: boolean; inject?: InjectContext }): BuiltPrompt {
   const character = one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', conv.character_id);
   if (!character) throw new Error('캐릭터를 찾을 수 없음');
   const persona = resolvePersona(db, conv);
@@ -491,6 +492,16 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   });
   used += memEst + sumEst;
 
+  // 3b) inject-macro-1to1: per-turn instruction (non-OOC only). Count into used
+  // before recentBudget so pressure shrinks recent — never silent-truncate the instruction.
+  const injectText = (!isOoc && opts?.inject?.instruction) ? opts.inject.instruction : null;
+  let injectEst = 0;
+  if (injectText) {
+    injectEst = estimateTokens(injectText, cal);
+    sections.push({ name: '주입 지침', est_tokens: injectEst, budget: injectEst, kind: 'system' });
+    used += injectEst;
+  }
+
   // 4) 최근 대화: 남은 예산 전부. OOC 쌍은 제외(현재 입력 제외)
   const recentBudget = Math.max(0, available - used);
   const skip = new Set<number>();
@@ -536,7 +547,11 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   const partyCtx = partyContextFromHistory(history);
   const systemParts = [rules, charText, personaText, noteIncluded ? noteText : null, sceneText, partyCtx, storyText, renderMemories(memItems), stateText, renderSummary(summaryText), episodeText, sceneTierText, loreText].filter((x): x is string => !!x);
   if (isOoc) systemParts.push(OOC_INSTRUCTION);
-  else systemParts.push(substitute(STORY_CHOICES_INSTRUCTION, charName, userName));
+  else {
+    // Order: choices first, then inject (both coexist when inject present).
+    systemParts.push(substitute(STORY_CHOICES_INSTRUCTION, charName, userName));
+    if (injectText) systemParts.push(injectText);
+  }
   const systemText = systemParts.join('\n\n');
 
   let turns: ChatMessage[] = recent.map((m) => ({ role: m.role, content: m.content }));

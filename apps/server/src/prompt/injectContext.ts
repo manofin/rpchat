@@ -1,6 +1,6 @@
 /**
- * inject-macro-api — optional per-turn instruction carrier.
- * This slice accepts + bounds only; attach happens in later slices.
+ * inject-macro — optional per-turn instruction carrier.
+ * api = accept + bound; 1to1 attaches on the 1:1 buildPrompt path (party still unconsumed).
  */
 
 /** 800 = input-validation ceiling (abuse bound), NOT a guarantee that party multi-pass prepend is budget-safe */

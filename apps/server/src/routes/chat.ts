@@ -271,12 +271,10 @@ export function chatRoutes(ctx: Ctx) {
      * here with the same user message as the parent.
      */
     regenTurnStartId?: string | null,
-    /** inject-macro-api carrier; unused until inject-macro-1to1 / party attach */
+    /** inject-macro carrier; 1:1 buildPrompt consumes; party early-return still omits */
     inject?: InjectContext,
   ) {
-    // inject-macro-1to1 will attach; this slice is accept + bound only
     inject = inject ?? { instruction: null };
-    void inject;
     interruptOrphanStreaming(db, { keepMessageIds: ctx.queue.activeList.map((g) => g.messageId) });
     if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
 
@@ -310,7 +308,7 @@ export function chatRoutes(ctx: Ctx) {
 
     let built;
     try {
-      built = buildPrompt(db, convNow, history, config.model.contextTokens, ctx.resolvedModel());
+      built = buildPrompt(db, convNow, history, config.model.contextTokens, ctx.resolvedModel(), undefined, { inject });
     } catch (err) {
       return reply.code(500).send({ error: `프롬프트 조립 실패: ${(err as Error).message}` });
     }
