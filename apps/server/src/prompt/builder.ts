@@ -145,10 +145,53 @@ export function resolvePersona(db: DB, conv: ConversationRow): PersonaRow | null
 }
 
 /**
+ * ADR §5 OR-by-union episode candidate SQL (prod path — never a single naive OR).
+ * UNION (not UNION ALL) dedupes dual-match rows before ORDER BY / LIMIT.
+ * NULL persona → rel_persona_id IS NULL bucket (never = NULL).
+ */
+export function episodeRelationInjectParts(personaId: string | null): {
+  convSql: string;
+  relSql: string;
+  unionSql: string;
+  querySql: string;
+} {
+  const convSql =
+    `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'episode' AND status = 'approved'`;
+  const relSql =
+    personaId == null
+      ? `SELECT * FROM summaries WHERE tier = 'episode' AND status = 'approved' AND rel_character_id = ? AND rel_persona_id IS NULL`
+      : `SELECT * FROM summaries WHERE tier = 'episode' AND status = 'approved' AND rel_character_id = ? AND rel_persona_id = ?`;
+  const unionSql = `${convSql} UNION ${relSql}`;
+  return {
+    convSql,
+    relSql,
+    unionSql,
+    querySql: `${unionSql} ORDER BY created_at DESC LIMIT 5`,
+  };
+}
+
+export function episodeRelationInjectBinds(
+  conv: Pick<ConversationRow, 'id' | 'character_id' | 'persona_id'>,
+): unknown[] {
+  if (conv.persona_id == null) return [conv.id, conv.character_id];
+  return [conv.id, conv.character_id, conv.persona_id];
+}
+
+/** Episode candidates for inject: conversation branch ∪ relation branch, deduped. */
+export function loadApprovedEpisodeCandidates(
+  db: DB,
+  conv: Pick<ConversationRow, 'id' | 'character_id' | 'persona_id'>,
+): SummaryRow[] {
+  const { querySql } = episodeRelationInjectParts(conv.persona_id);
+  return many<SummaryRow>(db, querySql, ...episodeRelationInjectBinds(conv));
+}
+
+/**
  * 프롬프트 조립 (계획서 4.1 순서):
  * 시스템 규칙 → 캐릭터 카드 → 페르소나 → 장면 → 고정 기억 → 활성 로어 → 요약 → 최근 N개 → 현재 입력
  * history: 현재 활성 분기의 메시지(시간순). 마지막 원소가 현재 사용자 입력이어야 한다(인사 재생성 시 빈 배열).
  */
+
 export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[], contextTokens: number, defaultModel: string, profileName?: string, opts?: { diagnostics?: boolean }): BuiltPrompt {
   const character = one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', conv.character_id);
   if (!character) throw new Error('캐릭터를 찾을 수 없음');
@@ -326,9 +369,10 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   const recentGuardIds = new Set(history.slice(-SCENE_RECENT_GUARD).map((m) => m.id));
   // episode: 최신 approved 1건, 예약(상태 후 잔여의 35%), recentGuard 적용
   const afterState = Math.max(0, sumBudget - stateEst);
-  const episodeRow = pickOnPath(
-    many<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'episode' AND status = 'approved' ORDER BY created_at DESC LIMIT 5`, conv.id),
+  const episodeRow = pickEpisodeCandidate(
+    loadApprovedEpisodeCandidates(db, conv),
     pathIds,
+    conv.id,
   );
   let episodeText: string | null = null;
   let episodeEst = 0;
@@ -493,6 +537,24 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
 /** 후보(created_at DESC로 정렬된) 중 현재 활성 경로에 실제로 있는 첫 건. 다른 가지에서 만든 요약을 걸러낸다. */
 function pickOnPath(rows: SummaryRow[], pathIds: Set<string>): SummaryRow | null {
   return rows.find((r) => !r.covers_until_message_id || pathIds.has(r.covers_until_message_id)) ?? null;
+}
+
+/**
+ * Episode pick: same-conversation rows keep branch path guard;
+ * other-conversation relation rows are eligible without local pathIds
+ * (covers_* belong to the source room).
+ */
+function pickEpisodeCandidate(
+  rows: SummaryRow[],
+  pathIds: Set<string>,
+  convId: string,
+): SummaryRow | null {
+  return (
+    rows.find((r) => {
+      if (r.conversation_id !== convId) return true;
+      return !r.covers_until_message_id || pathIds.has(r.covers_until_message_id);
+    }) ?? null
+  );
 }
 
 function mergeConsecutive(turns: ChatMessage[]): ChatMessage[] {
