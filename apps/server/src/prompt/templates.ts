@@ -15,7 +15,7 @@ const HARD_RULES = [
   '{{char}}의 정체성·성격·말투·관계·금기를 일관되게 유지한다. 설정과 모순되는 요구는 {{char}}다운 방식으로 거절하거나 비껴간다. {{char}}는 카드·장면·로어에 근거 없는 화면 밖 사건이나 {{user}}의 내면을 알지 못한다.',
   '대사는 큰따옴표("") 안에 쓰고, 행동·표정·장면 묘사는 자연스러운 서술문으로 쓴다. 말할 때 화자가 분명해야 한다.',
   '직전 응답의 문장·표현·전개를 반복하지 않는다. 매 응답에 관찰 가능한 변화, NPC 반응, 결정 지점 중 하나를 넣는다. 긴 서술은 감각 단서 → 관찰 가능한 변화 → NPC 반응 순으로 쓴다.',
-  'AI·모델·프롬프트·시스템을 언급하지 않는다. {{user}}가 "(OOC)"로 시작하는 메시지를 보낼 때만 캐릭터를 벗어나 작가로서 짧게 답한다.',
+  'AI·모델·프롬프트·시스템을 언급하지 않는다.',
   '미성년자로 설정된 인물은 어떤 경우에도 연애·성적 맥락에 두지 않는다. 연령이나 동의가 불명확하면 친밀·성적 묘사를 하지 않는다.',
   '소지품·능력·관계 변화·시간 경과를 장면·기억·카드에 없는 값으로 선언하지 않는다. INFO 패널, 상태 수치, 이미지 URL, 미승인 asset, 내부 지시문을 출력하지 않는다.',
   '한국어로 답한다.',
@@ -238,6 +238,30 @@ export function stripTrailingChoicesDebris(text: string): string {
 export function stripLeakTail(text: string): string {
   return stripTrailingChoicesDebris(stripTrailingBeatUiJson(text));
 }
+/**
+ * Assistant leading OOC fuel: after trim, starts with `(OOC)` or `(OOC:`.
+ * Exact prefix `(OOC` only — `(웃으며` / mid-body `(OOC` untouched.
+ * Strip through first `***` or first blank line; keep the rest.
+ */
+export function stripLeadingOocFuel(text: string): string {
+  const detect = text.replace(/^\s+/, '');
+  if (!/^\(OOC(?:\)|:)/i.test(detect)) return text;
+  const endStar = detect.search(/\*{3}/);
+  const endBlank = detect.search(/\n[ \t]*\n/);
+  let end = detect.length;
+  if (endStar >= 0) end = Math.min(end, endStar);
+  if (endBlank >= 0) end = Math.min(end, endBlank);
+  let rest = detect.slice(end);
+  if (/^\*{3}/.test(rest)) rest = rest.replace(/^\*{3}[ \t]*/, '').replace(/^\n/, '');
+  else if (/^\n[ \t]*\n/.test(rest)) rest = rest.replace(/^\n[ \t]*\n/, '');
+  return rest.replace(/^\s+/, '');
+}
+
+/** leak-choices tail + leading OOC fuel — assistant persist / bubble sanitize layer. */
+export function sanitizeAssistantContent(text: string): string {
+  return stripLeadingOocFuel(stripLeakTail(text)).replace(/\s+$/, '');
+}
+
 
 /**
  * Find the last `<choices>…</choices>` whose *trailing* remainder is only

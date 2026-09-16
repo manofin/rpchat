@@ -46,8 +46,24 @@ function stripTrailingChoicesDebris(text: string): string {
   return out;
 }
 
+
+/** Assistant leading `(OOC)` / `(OOC:` fuel — same contract as server stripLeadingOocFuel. */
+function stripLeadingOocFuel(text: string): string {
+  const detect = text.replace(/^\s+/, '');
+  if (!/^\(OOC(?:\)|:)/i.test(detect)) return text;
+  const endStar = detect.search(/\*{3}/);
+  const endBlank = detect.search(/\n[ \t]*\n/);
+  let end = detect.length;
+  if (endStar >= 0) end = Math.min(end, endStar);
+  if (endBlank >= 0) end = Math.min(end, endBlank);
+  let rest = detect.slice(end);
+  if (/^\*{3}/.test(rest)) rest = rest.replace(/^\*{3}[ \t]*/, '').replace(/^\n/, '');
+  else if (/^\n[ \t]*\n/.test(rest)) rest = rest.replace(/^\n[ \t]*\n/, '');
+  return rest.replace(/^\s+/, '');
+}
+
 function stripLeakTail(text: string): string {
-  return stripTrailingChoicesDebris(stripTrailingBeatUiJson(text));
+  return stripLeadingOocFuel(stripTrailingChoicesDebris(stripTrailingBeatUiJson(text)));
 }
 
 function findTerminalChoices(text: string): RegExpExecArray | null {

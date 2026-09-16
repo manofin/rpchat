@@ -34,7 +34,7 @@ import type { PassCard } from '../prompt/passes.js';
 import type { CharacterRow } from '../types.js';
 import { buildPrompt } from '../prompt/builder.js';
 import { dumpGenerationPrompt } from '../prompt/dump.js';
-import { extractChoices } from '../prompt/templates.js';
+import { extractChoices, sanitizeAssistantContent } from '../prompt/templates.js';
 import { estimateTokens, updateCalibration } from '../prompt/tokens.js';
 import type { ConversationRow, MessageRow, Scene } from '../types.js';
 import { loadConversation } from './conversations.js';
@@ -368,7 +368,7 @@ export function chatRoutes(ctx: Ctx) {
         );
         const parsed = !built.isOoc ? extractChoices(result.text) : { content: result.text, choices: null };
         updateMessage(db, assistant.id, {
-          content: parsed.content.trim(),
+          content: sanitizeAssistantContent(parsed.content).trim(),
           status: 'complete',
           meta: { usage: result.usage, finish_reason: result.finishReason, choices: parsed.choices ?? undefined },
         });
@@ -382,13 +382,13 @@ export function chatRoutes(ctx: Ctx) {
     } catch (err) {
       const aborted = controller.signal.aborted;
       if (aborted) {
-        updateMessage(db, assistant.id, { content: buffer.trim(), status: 'interrupted', meta: { finish_reason: 'aborted' } });
+        updateMessage(db, assistant.id, { content: sanitizeAssistantContent(buffer).trim(), status: 'interrupted', meta: { finish_reason: 'aborted' } });
         logRow('interrupted', { finish: 'aborted' });
         sse.send({ type: 'done', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', assistant.id)!), usage: null, ttftMs: null, totalMs: Date.now() - t0 });
       } else {
         const msg = err instanceof ModelError ? err.message : (err as Error)?.name === 'TimeoutError' ? '모델 응답 시간 초과' : (err as Error).message;
         ctx.log.error({ err, generationId }, '생성 실패');
-        updateMessage(db, assistant.id, { content: buffer.trim(), status: 'error', meta: { error: msg } });
+        updateMessage(db, assistant.id, { content: sanitizeAssistantContent(buffer).trim(), status: 'error', meta: { error: msg } });
         logRow('error', { finish: 'error' });
         sse.send({ type: 'error', message: msg, messageId: assistant.id });
       }
