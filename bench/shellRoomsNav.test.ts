@@ -22,11 +22,13 @@ function main() {
   const css = fs.readFileSync('apps/web/src/app.css', 'utf8');
   const inputbarBefore = css.includes('.inputbar { flex: 0 0 auto;');
 
-  t('NAV_TABS = 홈 | 채팅 | 설정', () => {
+  t('NAV_TABS = 홈 | 채팅 | 명령어 | 설정', () => {
     assert.match(nav, /href: '\/'/);
     assert.match(nav, /href: '\/chats'/);
+    assert.match(nav, /href: '\/shortcuts'/);
     assert.match(nav, /href: '\/settings'/);
     assert.match(nav, /label: '채팅'/);
+    assert.match(nav, /label: '명령어'/);
   });
 
   t('showBottomTabBar hides on /chat/:id', () => {
@@ -34,6 +36,7 @@ function main() {
     assert.equal(showBottomTabBar('/chat/abc/settings'), false);
     assert.equal(showBottomTabBar('/'), true);
     assert.equal(showBottomTabBar('/chats'), true);
+    assert.equal(showBottomTabBar('/shortcuts'), true);
     assert.equal(showBottomTabBar('/settings'), true);
   });
 
@@ -42,10 +45,11 @@ function main() {
     assert.match(bar, /showBottomTabBar/);
   });
 
-  t('App: ChatPage outside tab-shell; /chats inside with BottomTabBar', () => {
+  t('App: ChatPage outside tab-shell; /chats and /shortcuts inside with BottomTabBar', () => {
     assert.match(app, /if \(chat\) return <ChatPage/);
     assert.match(app, /<BottomTabBar \/>/);
     assert.match(app, /match\(path, '\/chats'\)/);
+    assert.match(app, /match\(path, '\/shortcuts'\)/);
     assert.match(app, /className="tab-shell"/);
   });
 
