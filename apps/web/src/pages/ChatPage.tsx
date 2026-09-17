@@ -173,8 +173,7 @@ export function ChatPage({ id }: { id: string }) {
   const hasDraft = summaryRows?.some((s) => s.status !== 'approved') ?? false;
 
   async function submit() {
-    const storyId = chat.detail?.conversation.story_id ?? null;
-    const resolved = resolveShortcutSubmit(draft, readShortcuts(storyId));
+    const resolved = resolveShortcutSubmit(draft, readShortcuts());
     const text = resolved.content.trim();
     const inject = resolved.inject_instruction;
     // Inject-alone may have empty content; must not fall back to putting command body into content.
@@ -432,7 +431,7 @@ export function ChatPage({ id }: { id: string }) {
           <textarea
             ref={taRef}
             value={draft}
-            onChange={(e) => setDraft(expandLeadingShortcut(e.target.value, readShortcuts(conv.story_id), { bare: false }).text)}
+            onChange={(e) => setDraft(expandLeadingShortcut(e.target.value, readShortcuts(), { bare: false }).text)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();

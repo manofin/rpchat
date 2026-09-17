@@ -233,7 +233,7 @@ export function StoryEditor({
     get<Character[]>('/api/characters').then(setChars).catch(() => setChars([]));
     if (story) {
       get<LoreEntry[]>(`/api/stories/${story.id}/lore`).then(setLore).catch(() => setLore([]));
-      setShortcuts(readShortcuts(story.id));
+      setShortcuts(readShortcuts());
       setShortcutName('');
       setShortcutText('');
       setShortcutMode('insert');
@@ -772,7 +772,7 @@ export function StoryEditor({
                         return;
                       }
                       setShortcuts(next.entries);
-                      persistShortcuts(story.id, next.entries);
+                      persistShortcuts(next.entries);
                     }}
                   />
                 </div>
@@ -785,7 +785,7 @@ export function StoryEditor({
                         const next = upsertShortcut(shortcuts, s.name, s.text, 'insert');
                         if (!next.ok) return;
                         setShortcuts(next.entries);
-                        persistShortcuts(story.id, next.entries);
+                        persistShortcuts(next.entries);
                       }}
                     >입력창에 넣기</button>
                     <button
@@ -800,7 +800,7 @@ export function StoryEditor({
                           return;
                         }
                         setShortcuts(next.entries);
-                        persistShortcuts(story.id, next.entries);
+                        persistShortcuts(next.entries);
                       }}
                     >지침으로 주입</button>
                   </div>
@@ -816,7 +816,7 @@ export function StoryEditor({
                   onClick={() => {
                     const next = removeShortcut(shortcuts, s.name);
                     setShortcuts(next);
-                    persistShortcuts(story.id, next);
+                    persistShortcuts(next);
                   }}
                 >이 단축어 빼기</button>
               </div>
@@ -869,7 +869,7 @@ export function StoryEditor({
                       return;
                     }
                     setShortcuts(next.entries);
-                    persistShortcuts(story.id, next.entries);
+                    persistShortcuts(next.entries);
                     setShortcutName('');
                     setShortcutText('');
                     setShortcutMode('insert');

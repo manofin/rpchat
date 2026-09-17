@@ -18,8 +18,11 @@ try {
 
 const {
   INJECT_INSTRUCTION_MAX,
+  SHORTCUT_STORAGE_KEY,
   expandLeadingShortcut,
   parseShortcuts,
+  persistShortcuts,
+  readShortcuts,
   resolveShortcutSubmit,
   serializeShortcuts,
   upsertShortcut,
@@ -30,6 +33,24 @@ function t(name: string, fn: () => void) {
   fn();
   passed++;
   console.log(`ok ${passed} ${name}`);
+}
+
+type Kv = {
+  getItem(k: string): string | null;
+  setItem(k: string, v: string): void;
+  removeItem(k: string): void;
+  readonly length: number;
+  key(i: number): string | null;
+};
+function memKv(init: Record<string, string> = {}): Kv {
+  const m = new Map(Object.entries(init));
+  return {
+    getItem: (k) => (m.has(k) ? m.get(k)! : null),
+    setItem: (k, v) => { m.set(k, v); },
+    removeItem: (k) => { m.delete(k); },
+    get length() { return m.size; },
+    key(i) { return [...m.keys()][i] ?? null; },
+  };
 }
 
 const ROOT = path.resolve('apps/web/src');
@@ -135,6 +156,42 @@ t('IMC-11 server sendSchema allows empty content when inject present (companion 
   assert.ok(serverChatSrc.includes('inject-macro-client'));
   // must not reintroduce min(1) on send/branch content
   assert.equal(/content: z\.string\(\)\.min\(1\)\.max\(8000\)/.test(serverChatSrc), false);
+});
+
+
+t('IMC-12 inject no-pollute regression: inject body never becomes content', () => {
+  const body = 'POLLUTE_MARKER_NEVER_IN_CONTENT';
+  const entries = [{ name: '주입', text: body, mode: 'inject' as const }];
+  for (const draft of ['/주입', '/주입 ', '/주입  hello', '/주입\n말']) {
+    const r = resolveShortcutSubmit(draft, entries);
+    assert.equal(r.mode, 'inject');
+    assert.equal(r.inject_instruction, body);
+    assert.ok(!r.content.includes('POLLUTE_MARKER'));
+    assert.notEqual(r.content, body);
+  }
+  // expand must not rewrite draft for inject
+  assert.equal(expandLeadingShortcut('/주입 hello', entries).text, '/주입 hello');
+});
+
+t('IMC-13 1:1 path: readShortcuts() works without storyId; resolve inject content ≠ text', () => {
+  const kv = memKv();
+  persistShortcuts([{ name: '짧게', text: '이번만짧게', mode: 'inject' }], kv);
+  const entries = readShortcuts(kv);
+  assert.equal(kv.getItem(SHORTCUT_STORAGE_KEY) !== null, true);
+  const r = resolveShortcutSubmit('/짧게', entries);
+  assert.equal(r.inject_instruction, '이번만짧게');
+  assert.equal(r.content, '');
+  assert.notEqual(r.content, r.inject_instruction);
+  // ChatPage source: global read, no storyId arg
+  assert.ok(chatSrc.includes('readShortcuts()'));
+  assert.equal(chatSrc.includes('readShortcuts(storyId)'), false);
+});
+
+t('IMC-14 StoryEditor global persist only (no story.id)', () => {
+  assert.equal(editorSrc.includes('persistShortcuts(story.id'), false);
+  assert.equal(editorSrc.includes('readShortcuts(story.id)'), false);
+  assert.ok(editorSrc.includes('persistShortcuts('));
+  assert.ok(editorSrc.includes('readShortcuts()'));
 });
 
 console.log(`passed ${passed}`);
