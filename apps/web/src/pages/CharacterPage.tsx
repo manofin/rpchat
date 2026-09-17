@@ -6,6 +6,7 @@ import { Avatar, relTime, softHue } from '../components/view';
 import { CharacterEditor } from '../components/CharacterEditor';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { characterHeroEmpty, resolveConversationCount, resolveLastChatAt } from '../lib/characterChatStats';
+import { publicTags } from '../lib/publicTags';
 
 export function CharacterPage({ id }: { id: string }) {
   const ui = useUi();
@@ -69,9 +70,9 @@ export function CharacterPage({ id }: { id: string }) {
               <div className="char-hero-copy">
                 <h2 className="char-hero-name">{char.name}</h2>
                 {char.tagline ? <p className="char-hero-tag">{char.tagline}</p> : null}
-                {char.tags.length > 0 && (
+                {publicTags(char.tags).length > 0 && (
                   <div className="tags" style={{ marginTop: 10 }}>
-                    {char.tags.map((t) => <span key={t} className="tag">#{t}</span>)}
+                    {publicTags(char.tags).map((t) => <span key={t} className="tag">#{t}</span>)}
                   </div>
                 )}
                 <div className="char-hero-meta muted small">
