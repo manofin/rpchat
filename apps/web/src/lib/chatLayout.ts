@@ -47,6 +47,24 @@ export function drawerKeydown(
   return null;
 }
 
+/**
+ * empty-turn: inject-only 단축어가 남긴 content='' user 행은 화면에 그리지 않는다.
+ * 빈 말풍선은 `…` 로 렌더되어 사용자가 빈 메시지를 보낸 것처럼 보이지만 실제로는
+ * 지침만 전달된 턴이다. 대체 표시(`…`, `/이름`, 실행 칩)는 두지 않는다 — 명령 실행
+ * 흔적은 별도 타입이 필요한 후속 UX 작업이다.
+ *
+ * assistant 는 대상이 아니다. 스트리밍 중 assistant 는 content='' 로 시작하고 그
+ * 자리의 `▍` 커서가 유일한 진행 표시다. 조건은 정확히 role=user 이고 공백뿐인 경우다.
+ */
+export function isEmptyUserMessage(m: Message): boolean {
+  return m.role === 'user' && !m.content.trim();
+}
+
+/** 렌더 대상 목록. 서버 경로(chat.messages)는 그대로 두고 표시에서만 뺀다. */
+export function visibleChatMessages(messages: Message[]): Message[] {
+  return messages.filter((m) => !isEmptyUserMessage(m));
+}
+
 export type ChatTurn = {
   user: Message | null;
   assistants: Message[];

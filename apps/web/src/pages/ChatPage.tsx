@@ -11,7 +11,7 @@ import { OverlayDrawer } from '../components/OverlayDrawer';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { visibleChoices } from '../lib/choices';
 import { sanitizeBubbleContent } from '../lib/sanitizeBubble';
-import { groupChatTurns, shouldReorderTurn, turnChoicesHost, visualAssistantOrder } from '../lib/chatLayout';
+import { groupChatTurns, isEmptyUserMessage, shouldReorderTurn, turnChoicesHost, visibleChatMessages, visualAssistantOrder } from '../lib/chatLayout';
 import { wrapSpeechMarks } from '../lib/speechMarks';
 import { expandLeadingShortcut, readShortcuts, resolveShortcutSubmit } from '../lib/shortcutMacro';
 import { useDesktopLayout } from '../lib/useDesktopLayout';
@@ -192,6 +192,8 @@ export function ChatPage({ id }: { id: string }) {
   const persona = chat.detail!.persona;
   const lastAssistant = [...chat.messages].reverse().find((m) => m.role === 'assistant');
   const lastMsg = chat.messages[chat.messages.length - 1];
+  // empty-turn: 표시용 목록. 요약 워터마크·배너·스크롤은 서버 경로 그대로 chat.messages 를 쓴다.
+  const shownMessages = visibleChatMessages(chat.messages);
 
   const reorderTurns = !desktop && shouldReorderTurn(conv.scene.format);
   const ended = !!conv.ended_at;
@@ -332,9 +334,9 @@ export function ChatPage({ id }: { id: string }) {
       })()}
 
       <div className="chat-scroll" ref={scrollRef} onScroll={onScroll}>
-        {chat.messages.length === 0 && <div className="sysline" style={{ margin: 'auto' }}>첫 메시지를 보내 대화를 시작하세요.</div>}
+        {shownMessages.length === 0 && <div className="sysline" style={{ margin: 'auto' }}>첫 메시지를 보내 대화를 시작하세요.</div>}
         {reorderTurns
-          ? groupChatTurns(chat.messages).map((turn, ti) => {
+          ? groupChatTurns(shownMessages).map((turn, ti) => {
               const visual = visualAssistantOrder(turn.assistants, true);
               const host = turnChoicesHost(turn.assistants);
               const showTurnChoices = !!(host && host.id === lastAssistant?.id && host.meta.choices && host.meta.choices.length > 0 && !chat.generating);
@@ -346,7 +348,7 @@ export function ChatPage({ id }: { id: string }) {
                 </div>
               );
             })
-          : chat.messages.map((m) => (
+          : shownMessages.map((m) => (
             <MessageView key={m.id} {...messageViewProps(m)} />
           ))}
         {chat.error && chat.detail && <div className="banner err" style={{ margin: '4px 0' }}>{chat.error}</div>}
@@ -564,6 +566,11 @@ function MessageView(props: {
   const [dragX, setDragX] = useState(0);
   const hasSiblings = m.siblings.count > 1;
   const canDrag = m.role === 'assistant' && !props.generating && !props.streaming && (hasSiblings || props.isLastAssistant);
+
+  // empty-turn 보조 방어. 주 방어는 목록 단계의 visibleChatMessages 다(래퍼·간격까지
+  // 같이 사라진다). 여기서는 다른 호출자가 빈 user 행을 직접 넘겼을 때 `…` 말풍선이
+  // 다시 생기지 않도록만 막는다. 훅 선언 뒤라 호출 순서는 바뀌지 않는다.
+  if (isEmptyUserMessage(m)) return null;
 
   function onTouchStart(e: React.TouchEvent) {
     if (!canDrag) return;
