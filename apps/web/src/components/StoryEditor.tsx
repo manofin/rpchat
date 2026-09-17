@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { ApiError, del, get, post, postBinary, put } from '../lib/api';
 import type { Character, ModelProfile, SceneCatalog, SceneCatalogPlace, Story, StoryEnding, StoryOpening, StoryOpeningExtra } from '../types';
 import {
+  INJECT_INSTRUCTION_MAX,
   SHORTCUT_MAX,
   persistShortcuts,
   readShortcuts,
   removeShortcut,
   upsertShortcut,
   type Shortcut,
+  type ShortcutMode,
 } from '../lib/shortcutMacro';
 import {
   STAT_MAX,
@@ -210,6 +212,7 @@ export function StoryEditor({
   const [shortcuts, setShortcuts] = useState<Shortcut[]>([]);
   const [shortcutName, setShortcutName] = useState('');
   const [shortcutText, setShortcutText] = useState('');
+  const [shortcutMode, setShortcutMode] = useState<ShortcutMode>('insert');
   const [profiles, setProfiles] = useState<ModelProfile[]>([]);
   // 참여 캐릭터 추가 (시작 설정 탭, 첫 장면 등장 위): StoryPage.tsx 참여 캐릭터 섹션과
   // 같은 add-only 패턴. roster는 hosted prop을 열릴 때 seed하고 추가 시 로컬로 갱신 —
@@ -233,6 +236,7 @@ export function StoryEditor({
       setShortcuts(readShortcuts(story.id));
       setShortcutName('');
       setShortcutText('');
+      setShortcutMode('insert');
       const { places, ...rest } = story.scene_catalog ?? { places: [], ...EMPTY_CATALOG_REST };
       setD({
         name: story.name,
@@ -750,20 +754,61 @@ export function StoryEditor({
         story ? (
           <>
             <div className="small muted" style={{ marginBottom: 8 }}>
-              입력창에서 <code>/이름</code> 을 치면 아래 텍스트로 바뀝니다. 보내기는 직접 합니다. 이 기기에만 저장됩니다 (최대 {SHORTCUT_MAX}개).
+              입력창에서 <code>/이름</code> 을 치면 모드에 따라 동작합니다. <strong>입력창에 넣기</strong>는 텍스트로 치환되고, <strong>지침으로 주입</strong>은 메시지 본문에 넣지 않고 이번 턴 지침으로만 보냅니다. 보내기는 직접 합니다. 이 기기에만 저장됩니다 (최대 {SHORTCUT_MAX}개).
             </div>
-            {shortcuts.map((s) => (
+            {shortcuts.map((s) => {
+              const mode: ShortcutMode = s.mode === 'inject' ? 'inject' : 'insert';
+              return (
               <div key={s.name} className="card" style={{ marginBottom: 8 }}>
                 <div className="field"><label>/{s.name}</label>
                   <textarea
                     value={s.text}
                     onChange={(e) => {
-                      const next = upsertShortcut(shortcuts, s.name, e.target.value);
-                      if (!next.ok) return;
+                      const next = upsertShortcut(shortcuts, s.name, e.target.value, mode);
+                      if (!next.ok) {
+                        if (next.reason === 'inject_too_long') {
+                          ui.toast(`지침 주입 텍스트는 ${INJECT_INSTRUCTION_MAX}자를 넘을 수 없습니다`, 'err');
+                        }
+                        return;
+                      }
                       setShortcuts(next.entries);
                       persistShortcuts(story.id, next.entries);
                     }}
                   />
+                </div>
+                <div className="field"><label>모드</label>
+                  <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                      className={`btn sm ${mode === 'insert' ? '' : 'ghost'}`}
+                      type="button"
+                      onClick={() => {
+                        const next = upsertShortcut(shortcuts, s.name, s.text, 'insert');
+                        if (!next.ok) return;
+                        setShortcuts(next.entries);
+                        persistShortcuts(story.id, next.entries);
+                      }}
+                    >입력창에 넣기</button>
+                    <button
+                      className={`btn sm ${mode === 'inject' ? '' : 'ghost'}`}
+                      type="button"
+                      onClick={() => {
+                        const next = upsertShortcut(shortcuts, s.name, s.text, 'inject');
+                        if (!next.ok) {
+                          if (next.reason === 'inject_too_long') {
+                            ui.toast(`지침 주입 텍스트는 ${INJECT_INSTRUCTION_MAX}자를 넘을 수 없습니다`, 'err');
+                          }
+                          return;
+                        }
+                        setShortcuts(next.entries);
+                        persistShortcuts(story.id, next.entries);
+                      }}
+                    >지침으로 주입</button>
+                  </div>
+                  <div className="small muted" style={{ marginTop: 4 }}>
+                    {mode === 'inject'
+                      ? '보낼 때 본문에는 넣지 않고 inject_instruction 으로만 전달합니다.'
+                      : '입력창 텍스트로 치환합니다 (기존 동작).'}
+                  </div>
                 </div>
                 <button
                   className="btn ghost sm"
@@ -775,28 +820,59 @@ export function StoryEditor({
                   }}
                 >이 단축어 빼기</button>
               </div>
-            ))}
+              );
+            })}
             {shortcuts.length < SHORTCUT_MAX && (
               <>
                 <div className="field"><label>이름 (슬래시 없이)</label>
                   <input value={shortcutName} onChange={(e) => setShortcutName(e.target.value)} maxLength={32} placeholder="예: 요약" />
                 </div>
-                <div className="field"><label>치환 텍스트</label>
-                  <textarea value={shortcutText} onChange={(e) => setShortcutText(e.target.value)} placeholder="입력창에 넣을 내용" />
+                <div className="field"><label>모드</label>
+                  <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                      className={`btn sm ${shortcutMode === 'insert' ? '' : 'ghost'}`}
+                      type="button"
+                      onClick={() => setShortcutMode('insert')}
+                    >입력창에 넣기</button>
+                    <button
+                      className={`btn sm ${shortcutMode === 'inject' ? '' : 'ghost'}`}
+                      type="button"
+                      onClick={() => setShortcutMode('inject')}
+                    >지침으로 주입</button>
+                  </div>
+                  <div className="small muted" style={{ marginTop: 4 }}>
+                    {shortcutMode === 'inject'
+                      ? `지침은 최대 ${INJECT_INSTRUCTION_MAX}자. 메시지 내용과 분리됩니다.`
+                      : '입력창에 치환 텍스트를 넣습니다.'}
+                  </div>
+                </div>
+                <div className="field"><label>{shortcutMode === 'inject' ? '지침 텍스트' : '치환 텍스트'}</label>
+                  <textarea
+                    value={shortcutText}
+                    onChange={(e) => setShortcutText(e.target.value)}
+                    placeholder={shortcutMode === 'inject' ? '이번 턴에만 주입할 지침' : '입력창에 넣을 내용'}
+                  />
                 </div>
                 <button
                   className="btn block"
                   type="button"
                   onClick={() => {
-                    const next = upsertShortcut(shortcuts, shortcutName, shortcutText);
+                    const next = upsertShortcut(shortcuts, shortcutName, shortcutText, shortcutMode);
                     if (!next.ok) {
-                      ui.toast(shortcuts.length >= SHORTCUT_MAX ? `최대 ${SHORTCUT_MAX}개` : '이름과 텍스트를 확인하세요', 'err');
+                      if (next.reason === 'inject_too_long') {
+                        ui.toast(`지침 주입 텍스트는 ${INJECT_INSTRUCTION_MAX}자를 넘을 수 없습니다`, 'err');
+                      } else if (next.reason === 'full' || shortcuts.length >= SHORTCUT_MAX) {
+                        ui.toast(`최대 ${SHORTCUT_MAX}개`, 'err');
+                      } else {
+                        ui.toast('이름과 텍스트를 확인하세요', 'err');
+                      }
                       return;
                     }
                     setShortcuts(next.entries);
                     persistShortcuts(story.id, next.entries);
                     setShortcutName('');
                     setShortcutText('');
+                    setShortcutMode('insert');
                   }}
                 >＋ 단축어 추가</button>
               </>

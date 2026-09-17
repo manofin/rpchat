@@ -1,7 +1,7 @@
 /** npx tsx bench/shortcutMacro.test.ts
  * story-editor-tabs A9 — client slash macros (D3=a). Helper + source inventory.
  * Helper/bench PASS is not a product PASS. No live HTTP / systemd / DB /
- * commit / deploy / restart. apps/server must stay byte-untouched vs HEAD.
+ * commit / deploy / restart. LIVE_NO_TOUCH.
  */
 import assert from 'node:assert/strict';
 import { execSync } from 'node:child_process';
@@ -20,12 +20,14 @@ try {
 
 const {
   SHORTCUT_MAX,
+  INJECT_INSTRUCTION_MAX,
   expandLeadingShortcut,
   normalizeShortcutName,
   parseShortcuts,
   persistShortcuts,
   readShortcuts,
   removeShortcut,
+  resolveShortcutSubmit,
   serializeShortcuts,
   shortcutStorageKey,
   upsertShortcut,
@@ -125,6 +127,7 @@ t('SM-05 editor has 단축어 tab; PUT body has no shortcuts; lore tab still the
 
 t('SM-06 ChatPage expands on submit; 1:1 (null story_id) is a no-op path', () => {
   assert.ok(chatSrc.includes('expandLeadingShortcut'));
+  assert.ok(chatSrc.includes('resolveShortcutSubmit'));
   assert.ok(chatSrc.includes('readShortcuts'));
   assert.ok(chatSrc.includes('story_id'));
   assert.ok(typesSrc.includes('story_id: string | null'));
@@ -132,14 +135,17 @@ t('SM-06 ChatPage expands on submit; 1:1 (null story_id) is a no-op path', () =>
   assert.equal(helperSrc.includes('buildPrompt'), false);
 });
 
-t('SM-07 A9 does not touch apps/server vs HEAD (D3=a)', () => {
-  const changed = execSync('git diff --name-only HEAD -- apps/server', { encoding: 'utf8' }).trim();
-  assert.equal(changed, '', `A9 apps/server must stay empty: ${changed}`);
+t('SM-07 inject-macro-client: no hermes; attach/budget prompt files frozen vs HEAD', () => {
+  // sendSchema empty-content refine for inject-alone is allowed in apps/server/src/routes/chat.ts.
+  // Attach logic / prompt builders stay untouched.
   const frozen = execSync(
-    'git diff --name-only HEAD -- apps/server/src/prompt/builder.ts apps/server/src/prompt/templates.ts apps/server/src/prompt/resolveFocus.ts apps/server/src/routes/chat.ts apps/server/src/prompt/composeBeat.ts',
+    'git diff --name-only HEAD -- apps/server/src/prompt/builder.ts apps/server/src/prompt/templates.ts apps/server/src/prompt/resolveFocus.ts apps/server/src/prompt/composeBeat.ts apps/server/src/prompt/injectContext.ts',
     { encoding: 'utf8' },
   ).trim();
-  assert.equal(frozen, '', `A9 must not touch frozen files: ${frozen}`);
+  assert.equal(frozen, '', `must not touch frozen prompt/attach files: ${frozen}`);
+  assert.equal(helperSrc.includes('hermes'), false);
+  assert.ok(typeof resolveShortcutSubmit === 'function');
+  assert.equal(INJECT_INSTRUCTION_MAX, 800);
 });
 
 console.log(`passed ${passed}`);
