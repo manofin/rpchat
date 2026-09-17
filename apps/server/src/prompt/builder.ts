@@ -506,6 +506,15 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   const recentBudget = Math.max(0, available - used);
   const skip = new Set<number>();
   history.forEach((m, i) => {
+    // empty-turn: 내용 없는 user 행은 모델 입력에서 뺀다. inject-only 단축어는
+    // routes/chat.ts 의 POST messages/branch 에서 content='' 인 user 행을 complete 로
+    // 남기는데, 그 행이 그대로 턴이 되면 모델은 "사용자가 아무 말도 하지 않았다"를
+    // 입력으로 받는다(라이브에서 "무반응/무시"로 서사에 반영된 적이 있다). 지침은
+    // system 블록의 inject 로 이미 전달되므로 이 행에는 옮길 내용이 없다.
+    // 마지막 인덱스(현재 턴)도 예외로 두지 않는다 — 오염이 생기는 자리가 바로
+    // 현재 턴이다. 비워진 끝자리는 아래 "마지막이 user 가 아니면" 폴백이 기존
+    // 문구로 메운다. 새 문구를 만들지 않는다.
+    if (m.role === 'user' && !m.content.trim()) skip.add(i);
     if (i === history.length - 1) return;
     if (isOocMessage(m)) {
       skip.add(i);
