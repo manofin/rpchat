@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { get, post } from '../lib/api';
+import { isPublicTag, publicTags } from '../lib/publicTags';
 import { navigate, useLocation } from '../lib/router';
 import type { Character, Health, Story } from '../types';
 import { DiscCover, relTime } from '../components/view';
@@ -83,7 +84,7 @@ export function HomePage() {
     for (const c of chars) {
       for (const t of c.tags ?? []) {
         const key = t.trim();
-        if (!key) continue;
+        if (!key || !isPublicTag(key)) continue;
         counts.set(key, (counts.get(key) ?? 0) + 1);
       }
     }
@@ -93,6 +94,13 @@ export function HomePage() {
       .map(([t]) => t);
   }, [chars]);
 
+  // Edge: stale/internal tag filter → ignore (show all); never blank the page.
+  useEffect(() => {
+    if (charFilter !== 'all' && charFilter !== 'recent' && !isPublicTag(charFilter)) {
+      setCharFilter('all');
+    }
+  }, [charFilter]);
+
   const filteredChars = useMemo(() => {
     if (!chars) return null;
     let list = [...chars];
@@ -101,7 +109,11 @@ export function HomePage() {
         .filter((c) => c.conversation_count || c.last_chat_at)
         .sort((a, b) => String(b.last_chat_at ?? '').localeCompare(String(a.last_chat_at ?? '')));
     } else if (charFilter !== 'all') {
-      list = list.filter((c) => (c.tags ?? []).includes(charFilter));
+      if (!isPublicTag(charFilter)) {
+        // ignore internal/stale filter — show all
+      } else {
+        list = list.filter((c) => publicTags(c.tags).includes(charFilter));
+      }
     }
     return list;
   }, [chars, charFilter]);
@@ -227,9 +239,9 @@ export function HomePage() {
                     <div className="disc-card-body">
                       <div className="disc-card-tag">{c.tagline || ' '}</div>
                       {c.description ? <p className="disc-card-desc">{c.description}</p> : null}
-                      {(c.tags?.length ?? 0) > 0 && (
+                      {publicTags(c.tags).length > 0 && (
                         <div className="disc-card-tags">
-                          {c.tags.slice(0, 4).map((t) => <span key={t} className="tag">#{t}</span>)}
+                          {publicTags(c.tags).slice(0, 4).map((t) => <span key={t} className="tag">#{t}</span>)}
                         </div>
                       )}
                       <div className="disc-card-meta">
