@@ -257,6 +257,34 @@ async function main() {
     assert.ok(!afterMsgs.some((m) => m.content === userLine));
   });
 
+  await t('inject-alone: empty content + valid inject_instruction → 200; user content empty; ≠ instruction', async () => {
+    capturedParams.length = 0;
+    const conv = await newConv('inject-alone');
+    const instruction = `${MARKER}: inject alone, no speech.`;
+    const res = await fetch(`${origin}/api/conversations/${conv.id}/messages`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ content: '', inject_instruction: instruction }),
+    });
+    const bodyText = await res.text();
+    assert.equal(res.status, 200, `expected SSE 200 for inject-alone, got ${res.status}: ${bodyText}`);
+    const events = parseSse(bodyText);
+    assert.ok(events.some((e) => e.type === 'done'), 'done missing');
+    const detail = await api('GET', `/api/conversations/${conv.id}`);
+    const msgs = (detail.json as any).messages as Array<{ role: string; content: string }>;
+    const user = msgs.find((m) => m.role === 'user');
+    assert.ok(user);
+    assert.equal(user!.content, '');
+    assert.notEqual(user!.content, instruction.trim());
+    assert.ok(!user!.content.includes(MARKER));
+  });
+
+  await t('empty content without inject_instruction → 400', async () => {
+    const conv = await newConv('empty-no-inject');
+    const res = await api('POST', `/api/conversations/${conv.id}/messages`, { content: '   ' });
+    assert.equal(res.status, 400, res.text);
+  });
+
   await t('1:1 attach: GenParams system includes instruction; omit lacks marker; content still ≠ instruction', async () => {
     const convA = await newConv('carrier-omit');
     const convB = await newConv('carrier-inject');

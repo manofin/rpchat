@@ -127,7 +127,13 @@ export function useChat(conversationId: string) {
     }
   }, [state.generating, applyEvent, reload]);
 
-  const send = useCallback((content: string) => runStream(`/api/conversations/${conversationId}/messages`, { content }), [runStream, conversationId]);
+  const send = useCallback((content: string, opts?: { inject_instruction?: string }) => {
+    const body: { content: string; inject_instruction?: string } = { content };
+    if (opts?.inject_instruction != null && opts.inject_instruction !== '') {
+      body.inject_instruction = opts.inject_instruction;
+    }
+    return runStream(`/api/conversations/${conversationId}/messages`, body);
+  }, [runStream, conversationId]);
   const regenerate = useCallback((messageId: string) => runStream(`/api/conversations/${conversationId}/regenerate`, { messageId }), [runStream, conversationId]);
   const branchEdit = useCallback((messageId: string, content: string) => runStream(`/api/conversations/${conversationId}/branch`, { messageId, content }), [runStream, conversationId]);
 

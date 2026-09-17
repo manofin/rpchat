@@ -1438,8 +1438,11 @@ export function chatRoutes(ctx: Ctx) {
   }
 
   return async function plugin(app: FastifyInstance) {
+    // inject-macro-client: allow empty/whitespace content when inject_instruction
+    // parses to a real instruction (inject-alone). Still reject empty when no inject.
+    // Attach/budget untouched. DB insertMessage already allows '' (assistant streaming).
     const sendSchema = z.object({
-      content: z.string().min(1).max(8000),
+      content: z.string().max(8000),
       inject_instruction: z.string().optional(),
     });
     app.post<{ Params: { id: string } }>('/api/conversations/:id/messages', async (req, reply) => {
@@ -1450,8 +1453,12 @@ export function chatRoutes(ctx: Ctx) {
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
       const inj = parseInjectInstruction(p.data.inject_instruction);
       if (!inj.ok) return reply.code(400).send({ error: inj.error });
+      const content = p.data.content.trim();
+      if (!content && !inj.ctx.instruction) {
+        return reply.code(400).send({ error: 'content required when inject_instruction is absent' });
+      }
       if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
-      const user = insertMessage(db, conv.id, conv.head_message_id, 'user', p.data.content.trim(), 'complete', {});
+      const user = insertMessage(db, conv.id, conv.head_message_id, 'user', content, 'complete', {});
       return generate(req, reply, conv, user.id, user, undefined, inj.ctx);
     });
 
@@ -1492,7 +1499,7 @@ export function chatRoutes(ctx: Ctx) {
     // 사용자 메시지 수정 후 재생성 = 같은 부모 아래 새 user 분기 + 생성
     const branchSchema = z.object({
       messageId: z.string().min(1),
-      content: z.string().min(1).max(8000),
+      content: z.string().max(8000),
       inject_instruction: z.string().optional(),
     });
     app.post<{ Params: { id: string } }>('/api/conversations/:id/branch', async (req, reply) => {
@@ -1503,10 +1510,14 @@ export function chatRoutes(ctx: Ctx) {
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
       const inj = parseInjectInstruction(p.data.inject_instruction);
       if (!inj.ok) return reply.code(400).send({ error: inj.error });
+      const content = p.data.content.trim();
+      if (!content && !inj.ctx.instruction) {
+        return reply.code(400).send({ error: 'content required when inject_instruction is absent' });
+      }
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ? AND conversation_id = ?', p.data.messageId, conv.id);
       if (!m || m.role !== 'user') return reply.code(404).send({ error: 'user message not found' });
       if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
-      const user = insertMessage(db, conv.id, m.parent_id, 'user', p.data.content.trim(), 'complete', {});
+      const user = insertMessage(db, conv.id, m.parent_id, 'user', content, 'complete', {});
       return generate(req, reply, conv, user.id, user, undefined, inj.ctx);
     });
 

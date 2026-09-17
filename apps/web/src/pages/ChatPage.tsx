@@ -13,7 +13,7 @@ import { visibleChoices } from '../lib/choices';
 import { sanitizeBubbleContent } from '../lib/sanitizeBubble';
 import { groupChatTurns, shouldReorderTurn, turnChoicesHost, visualAssistantOrder } from '../lib/chatLayout';
 import { wrapSpeechMarks } from '../lib/speechMarks';
-import { expandLeadingShortcut, readShortcuts } from '../lib/shortcutMacro';
+import { expandLeadingShortcut, readShortcuts, resolveShortcutSubmit } from '../lib/shortcutMacro';
 import { useDesktopLayout } from '../lib/useDesktopLayout';
 import {
   resolveBannerWatermarkId,
@@ -174,13 +174,15 @@ export function ChatPage({ id }: { id: string }) {
 
   async function submit() {
     const storyId = chat.detail?.conversation.story_id ?? null;
-    const expanded = expandLeadingShortcut(draft, readShortcuts(storyId)).text;
-    const text = expanded.trim();
-    if (!text || chat.generating || chat.detail?.conversation.ended_at) return;
+    const resolved = resolveShortcutSubmit(draft, readShortcuts(storyId));
+    const text = resolved.content.trim();
+    const inject = resolved.inject_instruction;
+    // Inject-alone may have empty content; must not fall back to putting command body into content.
+    if ((!text && !inject) || chat.generating || chat.detail?.conversation.ended_at) return;
     setDraft('');
     requestAnimationFrame(grow);
     stickyRef.current = true;
-    await chat.send(text);
+    await chat.send(text, inject ? { inject_instruction: inject } : undefined);
   }
 
   if (chat.loading) return <div className="screen"><div className="topbar"><button className="btn ghost icon" onClick={() => back('/')}>‹</button></div><Spinner /></div>;
