@@ -1698,6 +1698,7 @@ textarea { resize: none; }
   align-items: stretch;
   justify-content: space-around;
   gap: 0;
+  min-width: 0;
   min-height: calc(var(--bottom-nav-h) + var(--safe-bottom));
   padding: 4px 4px var(--safe-bottom);
   background: var(--kami-deep);
@@ -1707,6 +1708,7 @@ textarea { resize: none; }
 }
 .app-bottom-nav-item {
   flex: 1 1 0;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1729,7 +1731,7 @@ textarea { resize: none; }
   outline: 2px solid var(--role-coral);
   outline-offset: 2px;
 }
-.app-bottom-nav-label { line-height: 1.2; }
+.app-bottom-nav-label { line-height: 1.2; min-width: 0; overflow-wrap: anywhere; }
 @media (min-width: 768px) {
   .tab-shell { --bottom-nav-offset: 0px; }
   .app-bottom-nav { display: none; }

@@ -14,6 +14,7 @@ import { StoryPage } from './pages/StoryPage';
 import { ChatPage } from './pages/ChatPage';
 import { ConversationSettingsPage } from './pages/ConversationSettingsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { ShortcutsPage } from './pages/ShortcutsPage';
 import { LoginPage } from './pages/LoginPage';
 
 interface Me {
@@ -89,6 +90,7 @@ function Router() {
     const character = match(path, '/character/:id');
     if (character) page = <CharacterPage id={character.id} />;
     else if (match(path, '/chats')) page = <ChatsPage />;
+    else if (match(path, '/shortcuts')) page = <ShortcutsPage />;
     else if (match(path, '/search')) page = <SearchPage />;
     else if (match(path, '/settings')) page = <SettingsPage />;
     else page = <HomePage />;

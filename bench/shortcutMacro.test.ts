@@ -141,21 +141,16 @@ t('SM-04 global save/load/upsert/remove; missing kv is safe', () => {
   assert.ok(serializeShortcuts([{ name: '요약', text: 'A' }]).includes('요약'));
 });
 
-t('SM-05 editor has 단축어 tab; PUT body has no shortcuts; lore tab still there; global API', () => {
-  assert.ok(editorSrc.includes("key: 'shortcuts'"));
-  assert.ok(editorSrc.includes("label: '단축어'"));
-  assert.ok(editorSrc.includes('persistShortcuts'));
-  assert.ok(editorSrc.includes('readShortcuts'));
+t('SM-05 editor has no 단축어 tab; PUT body has no shortcuts; lore tab still there; hub owns CRUD', () => {
+  assert.equal(editorSrc.includes("key: 'shortcuts'"), false);
+  assert.equal(editorSrc.includes("label: '단축어'"), false);
+  assert.equal(editorSrc.includes('persistShortcuts'), false);
+  assert.equal(editorSrc.includes('readShortcuts'), false);
   assert.equal(editorSrc.includes('shortcuts_json'), false);
   assert.equal(/put<Story>\(`\/api\/stories\/\$\{story\.id\}`, body\)/.test(editorSrc)
     || editorSrc.includes('put<Story>(`/api/stories/${story.id}`, body)'), true);
   assert.equal(editorSrc.includes('shortcuts:'), false);
   assert.ok(editorSrc.includes("key: 'lore'"));
-  // StoryEditor uses global API — no persistShortcuts(story.id) / readShortcuts(story.id)
-  assert.equal(editorSrc.includes('persistShortcuts(story.id'), false);
-  assert.equal(editorSrc.includes('readShortcuts(story.id)'), false);
-  assert.ok(editorSrc.includes('readShortcuts()'));
-  assert.ok(editorSrc.includes('persistShortcuts('));
 });
 
 t('SM-06 ChatPage expands on submit; 1:1 (null story_id) uses global readShortcuts()', () => {
