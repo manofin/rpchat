@@ -530,11 +530,13 @@ textarea { resize: none; }
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 16px 0 10px;
-  color: var(--kami-text-muted);
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
+  margin: 20px 0 12px;
+  color: var(--kami-text);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: none;
+  opacity: 0.92;
 }
 /* 장면 전환은 알약이 아니라 구분선이다 — 카드가 하나 더 쌓이지 않는다. */
 .beat-header::before,
@@ -550,8 +552,62 @@ textarea { resize: none; }
   color: var(--kami-text-muted);
   font-size: 14px;
   line-height: 1.9;
+  font-style: italic;
+  font-family: "Noto Serif KR", serif;
   white-space: pre-wrap;
 }
+/* Mixed turn blocks: narration (italic, no bubble) + dialogue bubbles. */
+.beat-turn-blocks {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+.beat-dialogue {
+  align-self: flex-start;
+  max-width: min(100%, 36rem);
+  margin: 2px 8px 8px;
+}
+.beat-dialogue-bubble {
+  /* high-contrast speech surface — typography+layout, not color alone */
+  background: var(--kami-surface);
+  border: 1px solid var(--kami-line-soft);
+  border-radius: 8px;
+  padding: 10px 13px;
+  color: var(--kami-text-strong);
+  font-family: "Noto Serif KR", serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.85;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.beat-dialogue.is-focus .beat-dialogue-bubble {
+  border-left: 3px solid var(--kami-ink);
+}
+.beat-dialogue-speaker {
+  font-weight: 650;
+  color: var(--kami-text-strong);
+  font-style: normal;
+}
+.beat-dialogue-sep {
+  font-weight: 500;
+  color: var(--kami-text-strong);
+  font-style: normal;
+}
+.beat-dialogue-speech {
+  font-style: normal;
+  color: var(--kami-text-strong);
+}
+/* Line bubbles also carry the [Name] : "speech" contract. */
+.msg.beat-line .bubble .beat-dialogue-speaker,
+.msg.beat-line .bubble .beat-dialogue-sep,
+.msg.beat-line .bubble .beat-dialogue-speech {
+  font-style: normal;
+  color: var(--kami-text-strong);
+}
+.msg.beat-line .bubble .beat-dialogue-speaker { font-weight: 650; }
 /* dialog-format — the INFO sheet. A monospaced label column so 정보/계약/침식/목표
    line up as a sheet; the beat's pill header is the wrong shape for five rows. */
 .beat-info {
@@ -610,6 +666,7 @@ textarea { resize: none; }
   font-family: "Noto Serif KR", serif;
   font-size: 14px;
   line-height: 1.9;
+  font-style: italic;
 }
 .beat-line-hunter {
   align-self: stretch;
@@ -652,6 +709,7 @@ textarea { resize: none; }
   align-items: baseline;
   color: var(--kami-text-strong);
   font-size: 13px;
+  min-height: 1.4em;
 }
 .beat-ui-stats {
   font-variant-numeric: tabular-nums;
@@ -1184,6 +1242,11 @@ textarea { resize: none; }
   .chat-back-btn { display: none; }
   .chat-topbar { gap: 4px; }
   .beat-narration { line-height: 1.9; }
+  .cast-status { padding: 2px 6px 4px; }
+  .cast-status .beat-ui { padding: 4px 6px; }
+  .beat-header { margin: 14px 0 8px; font-size: 11px; }
+  .beat-dialogue { margin: 2px 4px 6px; max-width: 100%; }
+  .msg.beat-line .bubble { font-size: 15px; line-height: 1.8; }
   .overlay-drawer { z-index: 60; }
   /* Composer (status + input) stays pinned so ■ and 세계관에 반영 중… do not scroll apart. */
   .chat-main .composer {

@@ -1,4 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { wrapSpeechMarks } from '../lib/speechMarks';
+import { parseTurnBlocks } from '../lib/turnBlocks';
 
 export function Avatar({ name, avatar, size }: { name: string; avatar?: string | null; size?: 'sm' | 'lg' }) {
   const cls = `avatar${size ? ` ${size}` : ''}`;
@@ -31,8 +33,58 @@ export function BeatHeader({ text }: { text: string }) {
   return <div className="beat-header">{text}</div>;
 }
 
-export function BeatNarration({ text, variant }: { text: string; variant?: 'hunter' }) {
-  return <div className={`beat-narration${variant === 'hunter' ? ' hunter' : ''}`}>{text}</div>;
+export function BeatNarration({ text, variant, streaming }: { text: string; variant?: 'hunter'; streaming?: boolean }) {
+  const blocks = parseTurnBlocks(text, { streaming });
+  const onlyNarration = blocks.length === 1 && blocks[0].kind === 'narration';
+  if (onlyNarration) {
+    return (
+      <div className={`beat-narration${variant === 'hunter' ? ' hunter' : ''}`}>
+        {blocks[0].text}
+      </div>
+    );
+  }
+  return (
+    <div className={`beat-turn-blocks${variant === 'hunter' ? ' hunter' : ''}`}>
+      {blocks.map((b, i) =>
+        b.kind === 'narration' ? (
+          <div key={i} className={`beat-narration${variant === 'hunter' ? ' hunter' : ''}`}>{b.text}</div>
+        ) : (
+          <DialogueLine key={i} speaker={b.speaker} speech={b.text} streaming={streaming} />
+        ),
+      )}
+    </div>
+  );
+}
+
+/**
+ * MUST dialogue contract: `[Character Name] : "spoken text"` inside a high-contrast bubble.
+ * Speaker must be provided by meta or a clear `[Name]` parse — never invented here.
+ */
+export function DialogueLine({
+  speaker,
+  speech,
+  focused,
+  streaming,
+}: {
+  speaker: string | null;
+  speech: string;
+  focused?: boolean;
+  streaming?: boolean;
+}) {
+  const spoken = streaming ? speech : wrapSpeechMarks(speech);
+  return (
+    <div className={`beat-dialogue${focused ? ' is-focus' : ''}`}>
+      <div className="bubble beat-dialogue-bubble">
+        {speaker ? (
+          <>
+            <span className="beat-dialogue-speaker">[{speaker}]</span>
+            <span className="beat-dialogue-sep"> : </span>
+          </>
+        ) : null}
+        <span className="beat-dialogue-speech">{renderContent(spoken)}</span>
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -131,14 +183,15 @@ export function BeatUiPanel({ ui }: { ui: BeatUiData }) {
   for (const s of ui.custom_stats ?? []) {
     if (typeof s.value === 'number' && s.label) stats.push(`${s.label} ${s.value}`);
   }
-  const hasStrip = Boolean(ui.location_badge || stats.length);
+  const badge = typeof ui.location_badge === 'string' ? ui.location_badge.trim() : ui.location_badge;
+  const hasStrip = Boolean(badge || stats.length);
   const hasRoster = Boolean(ui.roster?.length);
   if (!hasStrip && !hasRoster && !ui.intent_hint) return null;
   return (
     <div className="beat-ui beat-ui-panel">
       {hasStrip ? (
         <div className="beat-ui-strip">
-          {ui.location_badge ? <span className="beat-ui-badge">{ui.location_badge}</span> : null}
+          {badge ? <span className="beat-ui-badge">{badge}</span> : null}
           {stats.length ? <span className="beat-ui-stats">{stats.join(' · ')}</span> : null}
         </div>
       ) : null}

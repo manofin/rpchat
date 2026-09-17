@@ -636,7 +636,7 @@ function MessageView(props: {
     else if (kind === 'info') body = <BeatInfoSheet text={m.content} />;
     else if (kind === 'panel') body = <BeatHunterPanel text={m.content} />;
     else if (kind === 'system') body = <BeatSystem text={m.content} />;
-    else if (kind === 'narration') body = <BeatNarration text={m.content} variant={props.sceneFormat === 'hunter' ? 'hunter' : undefined} />;
+    else if (kind === 'narration') body = <BeatNarration text={m.content} variant={props.sceneFormat === 'hunter' ? 'hunter' : undefined} streaming={props.streaming} />;
     // 속마음 말풍선 제거: Pass F 는 `속마음:` 분리·저장을 그대로 하고(행은 남는다),
     // 화면에만 그리지 않는다. 나중에 별도 명령으로 이 행들을 모아 보여줄 여지를 남긴다.
     else if (kind === 'thought') body = null;
@@ -696,11 +696,25 @@ function MessageView(props: {
           // leak-choices-ui: strip leaked choices/BeatUi JSON from ordinary bubbles only.
           // Real `block_kind:'ui'` never reaches this branch.
           const shown = props.streaming ? m.content : sanitizeBubbleContent(m.content);
-          return shown
-            ? (lineSpeech && !props.streaming
-                ? renderContent(wrapSpeechMarks(shown))
-                : renderContent(shown))
-            : props.streaming ? '' : <span className="muted">…</span>;
+          if (!shown) return props.streaming ? '' : <span className="muted">…</span>;
+          // R1 MUST: completed party/dialog lines render as [Name] : "speech".
+          // Streaming stays raw in the same bubble to avoid style flicker.
+          if (lineSpeech && !props.streaming) {
+            const speaker = m.meta.speaker_name ?? (m.meta.speaker_character_id ? props.charName : null);
+            const spoken = wrapSpeechMarks(shown);
+            return (
+              <>
+                {speaker ? (
+                  <>
+                    <span className="beat-dialogue-speaker">[{speaker}]</span>
+                    <span className="beat-dialogue-sep"> : </span>
+                  </>
+                ) : null}
+                <span className="beat-dialogue-speech">{renderContent(spoken)}</span>
+              </>
+            );
+          }
+          return renderContent(shown);
         })()}
         {props.streaming && <span className="cursor" />}
         {m.status === 'error' && <div className="small" style={{ color: 'var(--danger)', marginTop: 6 }}>{m.meta.error ?? '생성 실패'}</div>}
