@@ -1,11 +1,14 @@
 /**
  * story-editor-tabs A9 (D3=a): client-only slash macros.
- * Stored in localStorage per story id. Never sent on PUT /api/stories.
+ * Stored in one global localStorage key (shortcut-global). Never sent on PUT /api/stories.
  * inject-macro-client (ADR §6.4): mode insert|inject; inject posts inject_instruction only.
  */
 
 export const SHORTCUT_MAX = 20;
+/** Legacy per-story keys: `rpchat.shortcuts.<storyId>`. Used only for migration scan. */
 export const SHORTCUT_STORAGE_PREFIX = 'rpchat.shortcuts.';
+/** Global A9 shortcuts key (exact). */
+export const SHORTCUT_STORAGE_KEY = 'rpchat.shortcuts';
 
 /**
  * Client mirror of apps/server/src/prompt/injectContext.ts INJECT_INSTRUCTION_MAX.
@@ -20,6 +23,10 @@ export type Shortcut = { name: string; text: string; mode?: ShortcutMode };
 export type ShortcutKv = {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+  /** localStorage-like enumeration for legacy migration */
+  readonly length?: number;
+  key?(index: number): string | null;
 };
 
 export type ShortcutSubmitResolved = {
@@ -31,6 +38,7 @@ export type ShortcutSubmitResolved = {
 
 const NAME_RE = /^[^\s/]{1,32}$/;
 
+/** Legacy helper: per-story key under SHORTCUT_STORAGE_PREFIX (migration / tests). */
 export function shortcutStorageKey(storyId: string): string {
   return `${SHORTCUT_STORAGE_PREFIX}${storyId}`;
 }
@@ -46,6 +54,10 @@ function normalizeMode(raw: unknown): ShortcutMode {
   return raw === 'inject' ? 'inject' : 'insert';
 }
 
+/**
+ * Parse stored JSON. Does **not** truncate at SHORTCUT_MAX so migrated oversize
+ * lists round-trip. Upsert still enforces MAX when adding a *new* name.
+ */
 export function parseShortcuts(raw: string | null | undefined): Shortcut[] {
   if (!raw) return [];
   try {
@@ -63,7 +75,6 @@ export function parseShortcuts(raw: string | null | undefined): Shortcut[] {
       const mode = normalizeMode(rec.mode);
       // Legacy localStorage entries omit mode → insert; keep omit for insert to stay byte-stable.
       out.push(mode === 'inject' ? { name, text, mode: 'inject' } : { name, text });
-      if (out.length >= SHORTCUT_MAX) break;
     }
     return out;
   } catch {
@@ -155,29 +166,83 @@ export function resolveShortcutSubmit(draft: string, entries: Shortcut[]): Short
   return { content: expanded.text, matched: expanded.matched, mode: 'insert' };
 }
 
-export function readShortcuts(
-  storyId: string | null | undefined,
-  storage?: ShortcutKv | null,
-): Shortcut[] {
-  if (!storyId) return [];
+function resolveKv(storage?: ShortcutKv | null): ShortcutKv | null {
+  if (storage) return storage;
+  if (typeof localStorage === 'undefined') return null;
+  return localStorage;
+}
+
+/** Enumerate keys: length/key(i) (localStorage) or Object.keys for map-like doubles. */
+export function listShortcutKvKeys(kv: ShortcutKv): string[] {
+  if (typeof kv.length === 'number' && typeof kv.key === 'function') {
+    const out: string[] = [];
+    for (let i = 0; i < kv.length; i++) {
+      const k = kv.key(i);
+      if (typeof k === 'string') out.push(k);
+    }
+    return out;
+  }
+  // Map-like / plain-object test double: own enumerable string keys that look like storage keys
+  return Object.keys(kv as object).filter(
+    (k) => k !== 'getItem' && k !== 'setItem' && k !== 'removeItem' && k !== 'length' && k !== 'key',
+  );
+}
+
+/**
+ * Idempotent migration: if `rpchat.shortcuts` already set, skip.
+ * Else scan legacy `rpchat.shortcuts.*` keys, merge (localeCompare order; later wins),
+ * preserve all entries even if count > SHORTCUT_MAX, write global, remove legacy.
+ */
+export function migrateShortcutsIfNeeded(kv: ShortcutKv): void {
+  if (kv.getItem(SHORTCUT_STORAGE_KEY) !== null) return;
+
+  const legacyKeys = listShortcutKvKeys(kv)
+    .filter((k) => k.startsWith(SHORTCUT_STORAGE_PREFIX))
+    .sort((a, b) => a.localeCompare(b));
+
+  if (legacyKeys.length === 0) return;
+
+  const out: Shortcut[] = [];
+  const indexByName = new Map<string, number>();
+  for (const key of legacyKeys) {
+    const entries = parseShortcuts(kv.getItem(key));
+    for (const e of entries) {
+      const idx = indexByName.get(e.name);
+      if (idx !== undefined) {
+        out[idx] = e; // later key wins for same name
+      } else {
+        indexByName.set(e.name, out.length);
+        out.push(e);
+      }
+    }
+  }
+
+  kv.setItem(SHORTCUT_STORAGE_KEY, serializeShortcuts(out));
+  for (const key of legacyKeys) {
+    kv.removeItem(key);
+  }
+}
+
+export function readShortcuts(storage?: ShortcutKv | null): Shortcut[] {
   try {
-    const kv = storage ?? (typeof localStorage === 'undefined' ? null : localStorage);
+    const kv = resolveKv(storage);
     if (!kv) return [];
-    return parseShortcuts(kv.getItem(shortcutStorageKey(storyId)));
+    migrateShortcutsIfNeeded(kv);
+    return parseShortcuts(kv.getItem(SHORTCUT_STORAGE_KEY));
   } catch {
     return [];
   }
 }
 
 export function persistShortcuts(
-  storyId: string,
   entries: Shortcut[],
   storage?: ShortcutKv | null,
 ): void {
   try {
-    const kv = storage ?? (typeof localStorage === 'undefined' ? null : localStorage);
+    const kv = resolveKv(storage);
     if (!kv) return;
-    kv.setItem(shortcutStorageKey(storyId), serializeShortcuts(entries));
+    migrateShortcutsIfNeeded(kv);
+    kv.setItem(SHORTCUT_STORAGE_KEY, serializeShortcuts(entries));
   } catch {
     /* private mode / no storage */
   }
