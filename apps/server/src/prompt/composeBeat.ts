@@ -20,12 +20,13 @@
  *
  * Pure: no DB, no fetch, no model.
  */
-import { applySceneDelta, type ApplySceneDeltaResult, type PartyCatalog } from './applySceneDelta.js';
+import { type ApplySceneDeltaResult, type PartyCatalog } from './applySceneDelta.js';
 import { approveExtras, type ApprovedExtra } from './approveExtras.js';
 import { approveStoryExtras } from './approveStoryExtras.js';
 import { ambientPicks, ambientSeed, type AmbientPick } from './ambient.js';
 import { assignSpeakers, type AssignSpeakersOutput } from './assignSpeakers.js';
-import { parseParticipantSnapshot, resolveFocus, type FocusResult } from './resolveFocus.js';
+import { planPartyCore, userNameOf } from './partyChannel.js';
+import { parseParticipantSnapshot, type FocusResult } from './resolveFocus.js';
 import {
   renderPassE, renderPassF, renderPassN, splitFocusText, type PassCard,
 } from './passes.js';
@@ -171,43 +172,10 @@ function cardFor(id: string, input: BeatPlanInput): PassCard {
   return input.cards?.[id] ?? { name: input.cast.find((c) => c.id === id)?.name ?? id };
 }
 
-function userNameOf(input: BeatPlanInput): string {
-  return input.user_name || '나';
-}
-
-function noopApply(scene: Scene): ApplySceneDeltaResult {
-  return {
-    state: scene,
-    discarded: false,
-    applied: [],
-    ignored: [],
-    archiveSnapshot: null,
-    approvalCandidates: {},
-    appliedEvents: [],
-  };
-}
-
 /** Steps 1-6 plus the Pass N / Pass F prompts. No model has run yet. */
 export function planBeat(input: BeatPlanInput): BeatPlan {
-  const catalog: PartyCatalog = { ...input.catalog, cast: input.cast };
-
-  // 1. The scene is settled first. Everything downstream reads `applied.state`,
-  //    never `input.scene` — that is the A-5 invariant in one line.
-  const applied = input.patch !== undefined
-    ? applySceneDelta(input.scene, input.patch, catalog, input.current_version)
-    : noopApply(input.scene);
-  const scene = applied.state;
-
-  // 2. Focus. Server only, no draw, no model.
-  const focus = resolveFocus({
-    user_text: input.user_text,
-    scene,
-    cast: input.cast,
-    catalog,
-    main_character_id: input.main_character_id,
-    story_room: input.story_room,
-    participant_ids: input.participant_ids,
-  });
+  // focused policy: extras via approveExtras, then leftover ambient.
+  const { catalog, applied, scene, focus } = planPartyCore(input);
 
   // 3-5. Candidates closed, then approved. Default: nobody.
   // Story rooms (ADR-F8e C1): open extras up to K among speaking participants.

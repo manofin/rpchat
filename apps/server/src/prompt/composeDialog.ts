@@ -20,11 +20,12 @@
  *
  * Pure: no DB, no fetch, no model.
  */
-import { applySceneDelta, type ApplySceneDeltaResult, type PartyCatalog } from './applySceneDelta.js';
+import { type ApplySceneDeltaResult, type PartyCatalog } from './applySceneDelta.js';
 import { ambientPicks, ambientSeed, type AmbientPick } from './ambient.js';
-import { resolveFocus, type FocusResult } from './resolveFocus.js';
+import { beatCast, planPartyCore, userNameOf } from './partyChannel.js';
+import { type FocusResult } from './resolveFocus.js';
 import { parseScript, renderPassS, type ParseScriptResult, type SpeakerSlot } from './dialogScript.js';
-import { assetPathFor, type BeatBlock, type BeatCastMember } from './renderBeat.js';
+import { assetPathFor, type BeatBlock } from './renderBeat.js';
 import { renderDialogHeader, renderInfoBlock, serializeDialogBeat } from './renderDialog.js';
 import { extractChoices } from './templates.js';
 import type { PassCard } from './passes.js';
@@ -65,32 +66,6 @@ export type DialogPlan = {
   pass_s: string;
   called_model: false;
 };
-
-function userNameOf(input: DialogPlanInput): string {
-  return input.user_name || '나';
-}
-
-function noopApply(scene: Scene): ApplySceneDeltaResult {
-  return {
-    state: scene,
-    discarded: false,
-    applied: [],
-    ignored: [],
-    archiveSnapshot: null,
-    approvalCandidates: {},
-    appliedEvents: [],
-  };
-}
-
-/** Cast rows as the renderers want them — name, lock state, outfit. */
-function beatCast(cast: CastMember[], scene: Scene): BeatCastMember[] {
-  return cast.map((m) => ({
-    id: m.id,
-    name: m.name,
-    locked: m.locked,
-    outfit: scene.roster?.[m.id]?.outfit,
-  }));
-}
 
 /**
  * The turn's speaker allow-list.
@@ -136,24 +111,8 @@ export function dialogSpeakers(input: {
 
 /** Steps 1-2-6 plus the Pass S prompt. No model has run yet. */
 export function planDialogBeat(input: DialogPlanInput): DialogPlan {
-  const catalog: PartyCatalog = { ...input.catalog, cast: input.cast };
-
-  // 1. Scene first. Everything below reads `applied.state`, never `input.scene`.
-  const applied = input.patch !== undefined
-    ? applySceneDelta(input.scene, input.patch, catalog, input.current_version)
-    : noopApply(input.scene);
-  const scene = applied.state;
-
-  // 2. Focus. Server only — same resolver as the beat path, no randomness, no model.
-  const focus = resolveFocus({
-    user_text: input.user_text,
-    scene,
-    cast: input.cast,
-    catalog,
-    main_character_id: input.main_character_id,
-    story_room: input.story_room,
-    participant_ids: input.participant_ids,
-  });
+  // ensemble policy: speakers first, leftover ambient, unresolved cleared at finish.
+  const { applied, scene, focus } = planPartyCore(input);
 
   // 3. The speaker allow-list, then ambient from whoever is left over.
   //

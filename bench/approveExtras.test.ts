@@ -265,15 +265,15 @@ t('the tau constant file exists but is not imported by product code', () => {
 
 // ── ordering: approval runs after apply and after focus (A-5) ───────────────
 t('A-5: approval consumes the POST-apply events, never a pre-apply guess', () => {
-  const s = code('apps/server/src/prompt/composeBeat.ts');
-  const apply = s.indexOf('applySceneDelta(');
-  const focus = s.indexOf('resolveFocus(');
-  const approve = s.indexOf('approveExtras(');
-  const assign = s.indexOf('assignSpeakers(');
-  assert.ok(apply < focus, 'focus after apply');
-  assert.ok(focus < approve, 'approval after focus');
-  assert.ok(approve < assign, 'assignment last');
-  assert.ok(s.includes('applied.appliedEvents'));
+  const core = code('apps/server/src/prompt/partyChannel.ts');
+  const focused = code('apps/server/src/prompt/composeBeat.ts');
+  const apply = core.indexOf('applySceneDelta(');
+  const focus = core.indexOf('resolveFocus(');
+  const approve = focused.indexOf('approveExtras(');
+  const assign = focused.indexOf('assignSpeakers(');
+  assert.ok(apply > 0 && focus > apply, 'focus after apply');
+  assert.ok(approve > 0 && assign > approve, 'assignment after approval');
+  assert.ok(focused.includes('applied.appliedEvents'));
 });
 
 t('end-to-end through composePartyTurn: flag flip opens exactly 세라', () => {

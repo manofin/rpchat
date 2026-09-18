@@ -119,19 +119,21 @@ t('A-5: everything downstream reads the POST-apply scene', () => {
   assert.ok(plan.header!.includes('복도'));
 });
 
-t('A-5 source order: apply → focus → approve → ambient → assign', () => {
-  const s = code('apps/server/src/prompt/composeBeat.ts');
-  const idx = (needle: string) => {
-    const at = s.indexOf(needle);
+t('A-5 source order: apply → focus in core; focused approve → ambient → assign', () => {
+  const core = code('apps/server/src/prompt/partyChannel.ts');
+  const focused = code('apps/server/src/prompt/composeBeat.ts');
+  const idx = (src: string, needle: string) => {
+    const at = src.indexOf(needle);
     assert.ok(at > 0, `${needle} missing`);
     return at;
   };
-  const apply = idx('applySceneDelta(');
-  const focus = idx('resolveFocus(');
-  const approve = idx('approveExtras(');
-  const ambient = idx('ambientPicks(');
-  const assign = idx('assignSpeakers(');
-  assert.ok(apply < focus && focus < approve && approve < ambient && ambient < assign);
+  const apply = idx(core, 'applySceneDelta(');
+  const focus = idx(core, 'resolveFocus(');
+  const approve = idx(focused, 'approveExtras(');
+  const ambient = idx(focused, 'ambientPicks(');
+  const assign = idx(focused, 'assignSpeakers(');
+  assert.ok(apply < focus, 'core: apply before focus');
+  assert.ok(approve < ambient && ambient < assign, 'focused: approve before ambient before assign');
 });
 
 t('안녕하세요 talks to the story opener even without party: tags on them', () => {
