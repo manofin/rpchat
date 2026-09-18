@@ -35,6 +35,7 @@ import {
   assetPathFor, renderHeader, renderUi, serializeBeat,
   type BeatBlock, type BeatLine, type BeatUi,
 } from './renderBeat.js';
+import { partyTurnFromBlocks, type PartyTurn } from './partyTurn.js';
 import { castFromCharacters, castFromParticipants, withConversationStarter, type PartyTagRow } from './tagsCatalog.js';
 import type { CastMember } from './cast.js';
 import type { Scene } from '../types.js';
@@ -349,6 +350,8 @@ export type FinishedBeat = {
   scene: Scene;
 };
 
+export type NormalizedFinishedBeat = FinishedBeat & { partyTurn: PartyTurn };
+
 function lineFor(
   id: string,
   name: string,
@@ -378,7 +381,7 @@ function lineFor(
  * turn of continuity; over-detecting costs control of the scene, which is worse —
  * so anything ambiguous is simply not recorded.
  */
-export function finishBeat(input: BeatPlanInput, plan: BeatPlan, outputs: BeatOutputs): FinishedBeat {
+export function finishBeat(input: BeatPlanInput, plan: BeatPlan, outputs: BeatOutputs): NormalizedFinishedBeat {
   const scene = plan.applied.state;
   const catalog = input.catalog;
   const split = splitFocusText(outputs.focus_text);
@@ -420,6 +423,7 @@ export function finishBeat(input: BeatPlanInput, plan: BeatPlan, outputs: BeatOu
         unresolved: detectUnresolved(focusId, split.line),
       },
     },
+    partyTurn: partyTurnFromBlocks('focused', blocks),
   };
 }
 

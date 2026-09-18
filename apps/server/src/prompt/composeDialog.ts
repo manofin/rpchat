@@ -28,6 +28,7 @@ import { parseScript, renderPassS, type ParseScriptResult, type SpeakerSlot } fr
 import { assetPathFor, type BeatBlock } from './renderBeat.js';
 import { renderDialogHeader, renderInfoBlock, serializeDialogBeat } from './renderDialog.js';
 import { extractChoices } from './templates.js';
+import { partyTurnFromBlocks, type PartyTurn } from './partyTurn.js';
 import type { PassCard } from './passes.js';
 import { canSpeak, type CastMember } from './cast.js';
 import type { Scene } from '../types.js';
@@ -177,6 +178,9 @@ export type FinishedDialog = {
   choices: string[] | null;
 };
 
+export type FinishedDialogBeat = FinishedDialog;
+export type NormalizedFinishedDialogBeat = FinishedDialogBeat & { partyTurn: PartyTurn };
+
 /**
  * Serialize the script and compute the scene to persist.
  *
@@ -192,7 +196,7 @@ export function finishDialogBeat(
   input: DialogPlanInput,
   plan: DialogPlan,
   scriptText: string,
-): FinishedDialog {
+): NormalizedFinishedDialogBeat {
   const scene = plan.applied.state;
   const { content, choices } = extractChoices(scriptText);
   const parsed = parseScript(content, plan.speakers);
@@ -233,5 +237,6 @@ export function finishDialogBeat(
         unresolved: [],
       },
     },
+    partyTurn: partyTurnFromBlocks('ensemble', blocks),
   };
 }
