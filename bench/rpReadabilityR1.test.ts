@@ -77,11 +77,7 @@ t('ChatPage applies [Name] : speech MUST format on completed beat line bubbles o
   assert.match(chat, /lineSpeech && !props\.streaming/);
   // 1:1 / no-block_kind still renders via renderContent without the MUST prefix path alone.
   assert.match(chat, /return renderContent\(shown\)/);
-  // hunter line path does not wrap / MUST-format (script row, not a bubble).
-  const hunter = /kind === 'line' && props\.sceneFormat === 'hunter'[\s\S]{0,500}/.exec(chat)?.[0] ?? '';
-  assert.ok(hunter, 'hunter line branch must exist');
-  assert.ok(!/wrapSpeechMarks/.test(hunter), 'hunter line must not wrapSpeechMarks');
-  assert.ok(!/beat-dialogue-speaker/.test(hunter), 'hunter line must not use MUST bubble prefix');
+  assert.equal(/kind === 'line' && props\.sceneFormat === 'hunter'/.test(chat), false);
   assert.equal(src('apps/web/src/pages/useChat.ts').includes('wrapSpeechMarks'), false);
 });
 

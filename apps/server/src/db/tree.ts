@@ -82,7 +82,7 @@ export function updateMessage(db: DB, id: string, patch: { content?: string; sta
  * regenerate-turn-boundary: which generation a message belongs to.
  *
  * A 1:1 turn is one assistant row, so "regenerate this message" and "regenerate
- * this turn" are the same sentence. A beat / dialog / hunter turn is five or six
+ * this turn" are the same sentence. A beat / dialog turn is five or six
  * rows chained under one another, and there the two sentences come apart: the
  * `parent_id` of the last row is the middle of its own turn. Regenerating from it
  * left the first four rows on the active path and appended a second header,

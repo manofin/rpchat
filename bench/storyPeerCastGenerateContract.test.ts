@@ -10,7 +10,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { planBeat } from '../apps/server/src/prompt/composeBeat.ts';
 import { planDialogBeat } from '../apps/server/src/prompt/composeDialog.ts';
-import { planHunterBeat } from '../apps/server/src/prompt/composeHunter.ts';
 import { resolveFocus } from '../apps/server/src/prompt/resolveFocus.ts';
 import type { CastMember } from '../apps/server/src/prompt/cast.ts';
 import { catalogFromStory } from '../apps/server/src/prompt/sceneCatalog.ts';
@@ -98,21 +97,6 @@ function planStoryDialog(user_text: string, extra: Record<string, unknown> = {})
   } as Parameters<typeof planDialogBeat>[0]);
 }
 
-function planStoryHunter(user_text: string, extra: Record<string, unknown> = {}) {
-  return planHunterBeat({
-    scene: PRESENT,
-    catalog: CAT,
-    current_version: 0,
-    user_text,
-    cast: CAST,
-    cards: CARDS,
-    main_character_id: 'hayeon',
-    story_room: true,
-    participant_ids: SNAPSHOT,
-    ...extra,
-  } as Parameters<typeof planHunterBeat>[0]);
-}
-
 t('ok 1 story room with no explicit mention resolves focus:null', () => {
   const r = storyFocus('안녕하세요');
   assert.equal(r.focus_id, null);
@@ -136,10 +120,6 @@ t('ok 3 focus:null does not inject host dialogue', () => {
   const dialog = planStoryDialog('안녕하세요');
   assert.equal(dialog.focus.focus_id, null);
   assert.equal(dialog.speakers.some((s) => s.id === 'hayeon'), false);
-
-  const hunter = planStoryHunter('안녕하세요');
-  assert.equal(hunter.focus.focus_id, null);
-  assert.equal(hunter.speakers.some((s) => s.id === 'hayeon'), false);
 });
 
 t('ok 4 focus:null does not inject another participant dialogue', () => {
@@ -150,9 +130,6 @@ t('ok 4 focus:null does not inject another participant dialogue', () => {
 
   const dialog = planStoryDialog('안녕하세요');
   assert.deepEqual(dialog.speakers, []);
-
-  const hunter = planStoryHunter('안녕하세요');
-  assert.deepEqual(hunter.speakers, []);
 });
 
 t('ok 5 explicit participant mention permits that participant focus', () => {
@@ -164,10 +141,6 @@ t('ok 5 explicit participant mention permits that participant focus', () => {
   const dialog = planStoryDialog('나리');
   assert.equal(dialog.focus.focus_id, 'nari');
   assert.equal(dialog.speakers[0]?.id, 'nari');
-
-  const hunter = planStoryHunter('나리');
-  assert.equal(hunter.focus.focus_id, 'nari');
-  assert.equal(hunter.speakers[0]?.id, 'nari');
 });
 
 t('ok 6 participant outside snapshot is not promoted', () => {
@@ -179,8 +152,6 @@ t('ok 6 participant outside snapshot is not promoted', () => {
   assert.equal(planStoryBeat('한소연', extra).pass_f, null);
   assert.equal(planStoryDialog('한소연', extra).focus.focus_id, null);
   assert.deepEqual(planStoryDialog('한소연', extra).speakers, []);
-  assert.equal(planStoryHunter('한소연', extra).focus.focus_id, null);
-  assert.deepEqual(planStoryHunter('한소연', extra).speakers, []);
 });
 
 t('ok 7 conversation_partner fallback is absent in story rooms', () => {
@@ -188,7 +159,6 @@ t('ok 7 conversation_partner fallback is absent in story rooms', () => {
   assert.notEqual(r.reason, 'conversation_partner');
   assert.equal(planStoryBeat('안녕하세요').focus.reason, 'none');
   assert.equal(planStoryDialog('안녕하세요').focus.reason, 'none');
-  assert.equal(planStoryHunter('안녕하세요').focus.reason, 'none');
 });
 
 t('ok 8 one-to-one conversation retains its existing fallback', () => {
@@ -234,7 +204,6 @@ t('ok 9 no scoring, randomness, or extra router call is introduced', () => {
   for (const rel of [
     'apps/server/src/prompt/composeBeat.ts',
     'apps/server/src/prompt/composeDialog.ts',
-    'apps/server/src/prompt/composeHunter.ts',
     'apps/server/src/prompt/resolveFocus.ts',
     'apps/server/src/routes/chat.ts',
   ]) {

@@ -54,8 +54,8 @@ export function parseInjectInstruction(
 
 /**
  * Party IC-pass attach: insert `instruction` immediately after the `## 규칙`
- * header (before existing rule bullets). One format-agnostic hook — beat N/F/E,
- * dialog S, and hunter H all reach this via attachInjectToIcPass; do not
+ * header (before existing rule bullets). One format-agnostic hook — beat N/F/E
+ * and dialog S both reach this via attachInjectToIcPass; do not
  * copy-paste a second attach path.
  *
  * - null / empty → return prompt unchanged (byte-stable omit)

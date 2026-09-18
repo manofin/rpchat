@@ -41,7 +41,6 @@ import {
   type BeatPlanInput,
 } from '../apps/server/src/prompt/composeBeat.js';
 import { planDialogBeat, type DialogPlanInput } from '../apps/server/src/prompt/composeDialog.js';
-import { planHunterBeat, type HunterPlanInput } from '../apps/server/src/prompt/composeHunter.js';
 import { catalogFromStory } from '../apps/server/src/prompt/sceneCatalog.js';
 import { THOUGHT_MARKER } from '../apps/server/src/prompt/passes.js';
 import type { CastMember } from '../apps/server/src/prompt/cast.js';
@@ -299,8 +298,8 @@ async function main() {
     }
   });
 
-  // ── dialog S / hunter H ─────────────────────────────────────────────────
-  await t('dialog Pass S / hunter Pass H: inject in rules; omit absent', () => {
+  // ── dialog S ────────────────────────────────────────────────────────────
+  await t('dialog Pass S: inject in rules; omit absent', () => {
     const dIn: DialogPlanInput = {
       conversation_id: 'd1',
       scene: { ...CLASSROOM, format: 'dialog' },
@@ -316,22 +315,6 @@ async function main() {
     assert.ok(dPlan.pass_s.includes('## 규칙'));
     assert.ok(!rulesSectionHas(prependInjectToRules(dPlan.pass_s, null), MARKER));
     assert.ok(rulesSectionHas(prependInjectToRules(dPlan.pass_s, INJECT_FULL), INJECT_FULL));
-
-    const hIn: HunterPlanInput = {
-      conversation_id: 'h1',
-      scene: { ...CLASSROOM, format: 'hunter' },
-      catalog: CAT,
-      current_version: 0,
-      user_text: '강다은, 보고.',
-      user_name: '황지명',
-      cast: CAST,
-      cards: CARDS,
-      main_character_id: 'hayeon',
-    };
-    const hPlan = planHunterBeat(hIn);
-    assert.ok(hPlan.pass_h.includes('## 규칙'));
-    assert.ok(!rulesSectionHas(prependInjectToRules(hPlan.pass_h, null), MARKER));
-    assert.ok(rulesSectionHas(prependInjectToRules(hPlan.pass_h, INJECT_FULL), INJECT_FULL));
   });
 
   // ── plan.ui / focus / roster omit≡inject ────────────────────────────────
@@ -429,22 +412,6 @@ async function main() {
     assert.equal(s1.droppedRecent, 0);
     assert.ok(s1.prompt.includes(longInject));
     assert.equal(s1.prompt, dPlan.pass_s.replace('## 규칙\n', `## 규칙\n${longInject}\n`));
-
-    const hPlan = planHunterBeat({
-      conversation_id: 'h2',
-      scene: { ...CLASSROOM, format: 'hunter' },
-      catalog: CAT,
-      current_version: 0,
-      user_text: '보고',
-      user_name: '황지명',
-      cast: CAST,
-      cards: CARDS,
-      main_character_id: 'hayeon',
-    });
-    const h1 = attachInjectToIcPass(hPlan.pass_h, longInject, { promptTokenBudget: huge });
-    assert.equal(h1.droppedRecent, 0);
-    assert.ok(h1.prompt.includes(longInject));
-    assert.equal(h1.prompt, hPlan.pass_h.replace('## 규칙\n', `## 규칙\n${longInject}\n`));
   });
 
   await t('long instruction × Pass N with recent → tight budget shrinks recent, inject full each pass', () => {
@@ -503,7 +470,7 @@ async function main() {
     assert.ok(chatSrc.includes('attachInjectToIcPass(passFRaw') || chatSrc.includes('attachInjectToIcPass(passF'));
     assert.ok(chatSrc.includes('attachInjectToIcPass(e.prompt'));
     assert.ok(chatSrc.includes('attachInjectToIcPass(plan.pass_s'));
-    assert.ok(chatSrc.includes('attachInjectToIcPass(plan.pass_h'));
+    assert.equal(chatSrc.includes('attachInjectToIcPass(plan.pass_h'), false);
     assert.ok(chatSrc.includes('promptTokenBudget'));
     assert.ok(chatSrc.includes('config.model.contextTokens'));
     // Bare prepend only lives inside injectContext (wrapper); chat must not call it at send sites
@@ -515,10 +482,8 @@ async function main() {
     for (const rel of [
       'apps/server/src/prompt/passes.ts',
       'apps/server/src/prompt/dialogScript.ts',
-      'apps/server/src/prompt/hunterScript.ts',
       'apps/server/src/prompt/composeBeat.ts',
       'apps/server/src/prompt/composeDialog.ts',
-      'apps/server/src/prompt/composeHunter.ts',
       'apps/server/src/prompt/beatChoices.ts',
     ]) {
       const body = src(rel);

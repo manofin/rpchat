@@ -117,7 +117,7 @@ export interface Story {
   cover: string | null;
   /** story-editor-tabs A12 (0017). Creation-time fallback only. */
   default_profile_name: string | null;
-  default_format: 'beat' | 'dialog' | 'hunter' | null;
+  default_format: 'beat' | 'dialog' | null;
   /** story-editor-tabs A7 (D2=a, 0018). Empty array = no custom stats. */
   stats_json: Array<{ id: string; label: string; min: number; max: number; default: number }>;
   setting: string;
@@ -216,7 +216,7 @@ export interface Scene {
   conflict?: string;
   mood?: string;
   /** Per-conversation output shape. Absent means the ordinary bubble / beat path. */
-  format?: 'beat' | 'dialog' | 'hunter';
+  format?: 'beat' | 'dialog';
   location?: string;
   day_index?: number;
   weekday?: string;

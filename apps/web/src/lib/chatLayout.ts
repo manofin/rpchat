@@ -12,7 +12,7 @@ export function isInfoBlockKind(kind: string | undefined): boolean {
 }
 
 export function shouldReorderTurn(format: string | undefined): boolean {
-  return format === 'hunter' || format === 'dialog';
+  return format === 'dialog';
 }
 
 /**
@@ -91,7 +91,7 @@ export function groupChatTurns(messages: Message[]): ChatTurn[] {
 }
 
 /**
- * Mobile hunter/dialog display only: body blocks, then INFO/panel.
+ * Mobile dialog display only: body blocks, then INFO/panel.
  * Persist order is unchanged — this is a view permutation.
  */
 export function visualAssistantOrder(assistants: Message[], reorder: boolean): Message[] {

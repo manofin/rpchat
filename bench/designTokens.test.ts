@@ -18,7 +18,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildHubItems, summarizeConversationDetail, WEB_APP_VERSION } from '../apps/web/src/lib/conversationSettings.ts';
 import { visualAssistantOrder } from '../apps/web/src/lib/chatLayout.ts';
-import { serializeHunterBeat } from '../apps/server/src/prompt/renderHunter.ts';
 import type { Character, Conversation, ConversationDetail, Message, Persona } from '../apps/web/src/types.ts';
 
 let passed = 0;
@@ -152,12 +151,12 @@ t('violet is only shipped in the form that passes: raw violet is never a line', 
 
 t('narration, lines and the INFO sheets carry no role color at all', () => {
   // The turn's reading matter stays neutral; colour marks state, not prose.
-  for (const sel of ['.beat-narration', '.beat-line-hunter', '.beat-info', '.beat-panel']) {
+  for (const sel of ['.beat-narration', '.beat-info']) {
     const rule = new RegExp(`\\${sel} \\{[^}]*\\}`).exec(cssCode)?.[0] ?? '';
     assert.ok(rule, `${sel} rule must exist`);
     assert.ok(!/--role-/.test(rule), `${sel} must not use a role color`);
   }
-  assert.match(cssCode, /\.beat-panel \{[^}]*background: var\(--panel-2\)/, 'INFO panel is a neutral step, not a tint');
+  assert.match(cssCode, /\.beat-info \{[^}]*background: var\(--panel-2\)/, 'INFO sheet is a neutral step, not a tint');
 });
 
 t('one turn shows at most two role colors, and never one per choice', () => {
@@ -219,20 +218,7 @@ t('the settings hub item set is byte-identical to the pre-slice contract', () =>
   assert.ok(!/buildHubItems\s*\(/.test(tools.split('const SECTION_TITLE')[0]), 'the catalog is still read, not rebuilt');
 });
 
-t('hunter/dialog/beat block order and content are untouched by the restyle', () => {
-  // Server serialization: the panel is still last, and nothing was renamed.
-  const blocks = serializeHunterBeat({
-    panel: 'INFO\n\n⏳️-1',
-    script: [
-      { kind: 'narration', text: '비가 그쳤다' },
-      { kind: 'line', character_id: 'kde', name: '강다은', text: '"물러서라."' },
-      { kind: 'system', text: '가호 및 스킬 생성 완료' },
-    ],
-  });
-  assert.deepEqual(blocks.map((b) => b.kind), ['narration', 'line', 'system', 'panel']);
-  assert.equal(blocks[0].text, '『비가 그쳤다』');
-  assert.deepEqual(blocks.map((b) => b.seq), [0, 1, 2, 3]);
-
+t('dialog/beat block order and content are untouched by the restyle', () => {
   // Client permutation: still a view-only move of INFO/panel to the end, with the
   // same set of messages going in and coming out.
   const msg = (id: string, kind?: string): Message =>

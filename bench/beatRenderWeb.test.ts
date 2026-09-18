@@ -45,7 +45,7 @@ t('a message with no block_kind falls through to the existing bubble', () => {
   assert.match(s, guard, 'the beat branch must be gated on block_kind being present');
   // the ordinary path is still there, below the guard
   const at = s.search(guard);
-  assert.ok(s.slice(at).includes('renderContent(m.content)'), 'bubble rendering survives');
+  assert.ok(s.slice(at).includes('renderContent(shown)'), 'bubble rendering survives');
   assert.ok(s.slice(at).includes('className={`msg '), 'the msg wrapper survives');
 });
 

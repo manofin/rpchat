@@ -4,7 +4,7 @@ import { back, navigate, useRoute } from '../lib/router';
 import { NAV_TABS } from '../lib/navTabs';
 import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, StoryEnding, Summary } from '../types';
 import {
-  Avatar, BeatHeader, BeatHunterLine, BeatHunterPanel, BeatInfoSheet, BeatNarration, BeatSystem, BeatUiPanel, parseBeatUi,
+  Avatar, BeatHeader, BeatInfoSheet, BeatNarration, BeatUiPanel, parseBeatUi,
   renderContent, SpeakerHeader,
 } from '../components/view';
 import { OverlayDrawer } from '../components/OverlayDrawer';
@@ -541,7 +541,7 @@ function MessageView(props: {
   m: Message;
   charName: string;
   userName: string;
-  sceneFormat?: 'beat' | 'dialog' | 'hunter';
+  sceneFormat?: 'beat' | 'dialog';
   streaming: boolean;
   isLastAssistant: boolean;
   generating: boolean;
@@ -640,9 +640,7 @@ function MessageView(props: {
     let body: ReactNode = null;
     if (kind === 'header') body = <BeatHeader text={m.content} />;
     else if (kind === 'info') body = <BeatInfoSheet text={m.content} />;
-    else if (kind === 'panel') body = <BeatHunterPanel text={m.content} />;
-    else if (kind === 'system') body = <BeatSystem text={m.content} />;
-    else if (kind === 'narration') body = <BeatNarration text={m.content} variant={props.sceneFormat === 'hunter' ? 'hunter' : undefined} streaming={props.streaming} />;
+    else if (kind === 'narration') body = <BeatNarration text={m.content} streaming={props.streaming} />;
     // 속마음 말풍선 제거: Pass F 는 `속마음:` 분리·저장을 그대로 하고(행은 남는다),
     // 화면에만 그리지 않는다. 나중에 별도 명령으로 이 행들을 모아 보여줄 여지를 남긴다.
     else if (kind === 'thought') body = null;
@@ -665,21 +663,8 @@ function MessageView(props: {
     );
   }
 
-  // hunter-format: a `line` is a `💬 이름│대사` script row, not a chat bubble.
-  // Gated on scene.format so beat/dialog keep SpeakerHeader + bubble.
-  if (!isUser && kind === 'line' && props.sceneFormat === 'hunter') {
-    return (
-      <>
-        <BeatHunterLine name={m.meta.speaker_name ?? props.charName} text={m.content} focused={Boolean(props.focusId && m.meta.speaker_character_id === props.focusId)} />
-        {!props.hideChoices && !props.streaming && !props.generating && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0 && (
-          <ChoiceChips choices={m.meta.choices} onChoice={props.onChoice} onEdit={props.onEditChoice} disabled={props.generating} />
-        )}
-      </>
-    );
-  }
-
   const showActions = !props.streaming && !props.generating;
-  // R1: 파티/dialog `line`만 화면에 「」를 입힌다. 저장 원문·1:1·스트리밍 중·hunter 스크립트는 그대로.
+  // R1: 파티/dialog `line`만 화면에 「」를 입힌다. 저장 원문·1:1·스트리밍 중은 그대로.
   const lineSpeech = !isUser && kind === 'line';
   const lineFocus = Boolean(lineSpeech && props.focusId && m.meta.speaker_character_id === props.focusId);
   return (

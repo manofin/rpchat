@@ -281,7 +281,7 @@ async function main() {
       chatSrc.includes('buildPrompt(db, convNow, history, config.model.contextTokens, ctx.resolvedModel(), undefined, { inject })'),
       '1:1 path must pass { inject } into buildPrompt',
     );
-    for (const fn of ['generateBeat', 'generateDialog', 'generateHunter'] as const) {
+    for (const fn of ['generateBeat', 'generateDialog'] as const) {
       const re = new RegExp(`async function ${fn}\\([\\s\\S]*?\\)\\s*\\{`);
       const m = chatSrc.match(re);
       assert.ok(m, `${fn} signature missing`);

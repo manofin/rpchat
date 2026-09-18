@@ -179,7 +179,7 @@ async function main() {
     assert.deepEqual(ids(body), ['e2']);
   });
 
-  for (const format of ['beat', 'dialog', 'hunter', 'chat']) {
+  for (const format of ['beat', 'dialog', 'chat']) {
     const row = db.prepare('SELECT scene_json AS s FROM conversations WHERE id = ?').get(roomId) as { s: string };
     setScene(roomId, { ...JSON.parse(row.s), format });
     const body = (await sugg(roomId)).json as { suggestions: Array<{ ending_id: string }> };

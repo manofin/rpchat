@@ -265,7 +265,7 @@ async function main() {
   for (const [id, order] of [[hayeon.id, 0], [nari.id, 1], [sera.id, 2]] as const) {
     await api('POST', `/api/stories/${story}/characters`, { characterId: id, sortOrder: order });
   }
-  const newConv = async (fmt?: 'dialog' | 'hunter') => {
+  const newConv = async (fmt?: 'dialog') => {
     const res = await api('POST', '/api/conversations', { characterId: hayeon.id, storyId: story, mode: 'story' });
     const id = (res.json as { id: string }).id;
     if (fmt) await api('PATCH', `/api/conversations/${id}`, { scene: { format: fmt } });
@@ -279,7 +279,7 @@ async function main() {
 
   // ── success: three paths ───────────────────────────────────────────────────
 
-  for (const fmt of [undefined, 'dialog', 'hunter'] as const) {
+  for (const fmt of [undefined, 'dialog'] as const) {
     const label = fmt ?? 'beat';
     await t(`${label}: a successful turn commits the scene once, and only at the end`, async () => {
       advance = 10;

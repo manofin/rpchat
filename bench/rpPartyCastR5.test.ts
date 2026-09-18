@@ -68,11 +68,8 @@ t('CSS: lock is dashed not faded; focus is ink, not a per-speaker role color', (
   assert.match(css, /\.cast-status\s*\{/);
   assert.match(css, /\.speaker-header\s*\{[^}]*display:\s*flex/);
   const info = /\.beat-info\s*\{[^}]*\}/.exec(css)?.[0] ?? '';
-  const panel = /\.beat-panel\s*\{[^}]*\}/.exec(css)?.[0] ?? '';
   assert.ok(info.includes('border-left'));
-  assert.ok(panel.includes('border-left'));
   assert.ok(!/--role-/.test(info));
-  assert.ok(!/--role-/.test(panel));
 });
 
 t('1:1 bubbles and renderScene stay off this slice', () => {

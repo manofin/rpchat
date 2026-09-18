@@ -285,7 +285,7 @@ const storySchema = z.object({
   // echoes the current value on every save. Creation-time fallback only (see
   // routes/conversations.ts); never read by buildPrompt/composeBeat.
   default_profile_name: z.string().max(60).nullable().optional(),
-  default_format: z.enum(['beat', 'dialog', 'hunter']).nullable().optional(),
+  default_format: z.enum(['beat', 'dialog']).nullable().optional(),
   // story-editor-tabs A7 (D2=a): omit=preserve on PUT (same as scene_catalog).
   // POST with the key absent stores []. Display-only; applySceneDelta untouched.
   stats_json: z.array(

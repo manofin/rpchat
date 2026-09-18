@@ -336,7 +336,7 @@ async function main() {
   for (const [id, order] of [[hayeon.id, 0], [nari.id, 1], [sera.id, 2]] as const) {
     await api('POST', `/api/stories/${story}/characters`, { characterId: id, sortOrder: order });
   }
-  const newConv = async (fmt?: 'dialog' | 'hunter') => {
+  const newConv = async (fmt?: 'dialog') => {
     const res = await api('POST', '/api/conversations', { characterId: hayeon.id, storyId: story, mode: 'story' });
     const id = (res.json as { id: string }).id;
     if (fmt) await api('PATCH', `/api/conversations/${id}`, { scene: { format: fmt } });
@@ -499,7 +499,7 @@ async function main() {
 
   // ── dialog + hunter ────────────────────────────────────────────────────────
 
-  for (const fmt of ['dialog', 'hunter'] as const) {
+  for (const fmt of ['dialog'] as const) {
     await t(`${fmt} stamps a snapshot and regenerate does not accumulate`, async () => {
       const conv = await newConv(fmt);
       await twoTurns(conv);

@@ -4,7 +4,7 @@
  * - Eligibility only. This module never writes `ended_at` (V1/V3).
  * - LLM 0회: `narrative_hint` is NOT evaluated here (slice 3 owns it).
  * - Turn = active-path (`getPath`) `role='user'` messages, OOC excluded.
- *   `scene.turn_no` is never read (§4.1) — dialog/hunter render counter,
+ *   `scene.turn_no` is never read (§4.1) — dialog render counter,
  *   absent on beat rooms.
  * - Undefined stat = unmet (never 0 — 0 would accidentally pass `lte`).
  * - Pure function of (snapshot, scene, path, head): same

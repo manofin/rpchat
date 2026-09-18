@@ -37,7 +37,7 @@ export const CANARY_TITLE = /CANARY/i;
 
 export type ClockObserveKind = 'unparsed' | 'missing' | 'zero' | 'positive' | 'invalid';
 export type ClockParseStatus = 'ok' | 'null' | 'fail';
-export type ClockObservePath = 'beat' | 'dialog' | 'hunter';
+export type ClockObservePath = 'beat' | 'dialog';
 export type ClockObserveOutcome = 'success' | 'fail' | 'interrupt';
 export type ClockInvalidReason = 'type' | 'range' | null;
 

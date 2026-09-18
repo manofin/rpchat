@@ -64,7 +64,7 @@ export interface StoryRow {
    * conversations are unaffected.
    */
   default_profile_name: string | null;
-  default_format: 'beat' | 'dialog' | 'hunter' | null;
+  default_format: 'beat' | 'dialog' | null;
   /** story-editor-tabs A7 (D2=a, 0018). JSON array of {id,label,min,max,default}. */
   stats_json: string;
 }
@@ -142,10 +142,10 @@ export interface Scene {
    * opts in. The switch is scene state, so it is per-conversation and never a
    * global flag.
    *
-   * hunter-format — the Huntt.txt-class shape: `『』` 서술 + `💬 이름│"대사"` +
-   * 턴 끝의 INFO 패널. Same opt-in rule, same byte-stability guarantee.
+   * (hunter-clean-removal: 'hunter' 포맷/렌더는 제거됨. 잔존 'hunter' 입력은
+   * 로드 시 beat로 폴백한다 — chat.ts dispatch, conversations.ts default_format.)
    */
-  format?: 'beat' | 'dialog' | 'hunter';
+  format?: 'beat' | 'dialog';
   /** The `[T-n]` counter. Server-incremented, one per committed dialog beat. */
   turn_no?: number;
   /** `[이틀 뒤·오전 11시 35분]` — a written phrase, not a clock the server can do math on. */
@@ -168,12 +168,11 @@ export interface Scene {
     extra?: Array<{ label: string; value: string }>;
   };
   /**
-   * hunter-format — the identity half of the INFO panel. Server/user-owned: none
-   * of this is in applySceneDelta's APPLY_KEYS, so the model can never promote
-   * itself a grade, a patron or a skill. The panel's written half (표정·감정·
-   * 속마음·일정·상황) is not stored here at all — it is produced per turn by
-   * `hunterScript.parseHunterState` and lives only in the rendered panel block,
-   * which keeps `scene_json` free of per-turn churn.
+   * quest/grade R4 저장소 (SHARED — hunter-clean-removal에서 보존). quest/grade는
+   * applySceneDelta의 `quest_set`/`quest_clear`/`grade_up`(APPLY_KEYS)로 쓰이고
+   * 세 포맷 공통 sceneDeltaPrompt가 제공한다. 나머지 신원 필드(date/patron/skills
+   * 등)는 과거 hunter 패널 전용이었고 이제 렌더되지 않으나, 공유 저장소와 한 구조라
+   * 이번 슬라이스에서 트림하지 않는다(1-A(i)).
    *
    * 💼/💰 deliberately have no field here: they are `user_sheet.inventory` and
    * `user_sheet.money`, so the existing `inventory_add`/`money_delta` deltas keep

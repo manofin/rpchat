@@ -30,8 +30,8 @@ function msg(partial: Partial<Message> & Pick<Message, 'id' | 'role'>): Message 
   };
 }
 
-t('shouldReorderTurn is hunter/dialog only', () => {
-  assert.equal(shouldReorderTurn('hunter'), true);
+t('shouldReorderTurn is dialog only', () => {
+  assert.equal(shouldReorderTurn('hunter'), false);
   assert.equal(shouldReorderTurn('dialog'), true);
   assert.equal(shouldReorderTurn('beat'), false);
   assert.equal(shouldReorderTurn(undefined), false);
@@ -67,7 +67,7 @@ t('visualAssistantOrder on mobile dialog paints body then INFO, persist last sti
   assert.equal(visualAssistantOrder(assistants, false).map((m) => m.id).join(','), 'info,n1,l1');
 });
 
-t('hunter persist-last panel still hosts choices after body-then-panel paint', () => {
+t('persist-last panel still hosts choices after body-then-panel paint', () => {
   const assistants = [
     msg({ id: 'n', role: 'assistant', meta: { block_kind: 'narration' } }),
     msg({ id: 'line', role: 'assistant', meta: { block_kind: 'line' } }),

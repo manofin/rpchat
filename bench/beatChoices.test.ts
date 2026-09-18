@@ -79,13 +79,13 @@ await t('renderPassC carries the beat-short <choices> contract, addressed to the
   assert.equal(prompt.includes('{{user}}'), false);
 });
 
-await t('1:1 / dialog / hunter keep the long STORY_CHOICES_INSTRUCTION; beat does not import it', () => {
+await t('1:1 / dialog keep the long STORY_CHOICES_INSTRUCTION; beat does not import it', () => {
   const templates = src('apps/server/src/prompt/templates.ts');
   assert.ok(templates.includes('1인칭 대사를 3문장 이상 붙인다'));
   const beat = src('apps/server/src/prompt/beatChoices.ts');
   assert.ok(beat.includes('export const BEAT_CHOICES_INSTRUCTION'));
   assert.equal(/import \{[^}]*STORY_CHOICES_INSTRUCTION/.test(beat), false);
-  for (const f of ['builder.ts', 'dialogScript.ts', 'hunterScript.ts']) {
+  for (const f of ['builder.ts', 'dialogScript.ts']) {
     const body = src(`apps/server/src/prompt/${f}`);
     assert.ok(body.includes('STORY_CHOICES_INSTRUCTION'), f);
     assert.equal(body.includes('BEAT_CHOICES_INSTRUCTION'), false, f);
@@ -409,7 +409,7 @@ async function main() {
 // ── 3. the fences: what this slice must not have moved ──────────────────────
 
 async function fenceTests() {
-await t('dialog and hunter keep their own choices path — Pass C is beat-only', () => {
+await t('dialog keeps its own choices path — Pass C is beat-only', () => {
   const chat = src('apps/server/src/routes/chat.ts');
   const beatAt = chat.indexOf('async function generateBeat');
   const dialogAt = chat.indexOf('async function generateDialog');
@@ -418,13 +418,11 @@ await t('dialog and hunter keep their own choices path — Pass C is beat-only',
   const afterBeat = chat.slice(dialogAt);
   assert.ok(beat.includes('passCWith('), 'beat generates its own choices');
   assert.ok(beat.includes('parseChoicesPass('));
-  assert.equal(afterBeat.includes('passCWith('), false, 'dialog/hunter must not gain a second choices call');
+  assert.equal(afterBeat.includes('passCWith('), false, 'dialog must not gain a second choices call');
   assert.equal(afterBeat.includes('parseChoicesPass('), false);
-  // dialog and hunter still parse choices out of their own single script call
+  // dialog still parses choices out of its own single script call
   assert.ok(src('apps/server/src/prompt/composeDialog.ts').includes('extractChoices('));
-  assert.ok(src('apps/server/src/prompt/composeHunter.ts').includes('extractChoices('));
   assert.equal(src('apps/server/src/prompt/composeDialog.ts').includes('renderPassC'), false);
-  assert.equal(src('apps/server/src/prompt/composeHunter.ts').includes('renderPassC'), false);
   // Pass C is the one pass that touches 1:1 choices text at all, so it lives
   // outside passes.ts — which stays the import-free string builder
   // passPrompts.test.ts fences. (That bench owns the rest of the fence; this
@@ -463,11 +461,12 @@ await t('a stop during Pass C costs the chips, not the finished beat', () => {
 await t('an absent scene.format is still beat, and still the path Pass C runs in', () => {
   const types = src('apps/server/src/types.ts');
   assert.ok(types.includes("Absent means `'beat'`"));
-  assert.ok(types.includes("format?: 'beat' | 'dialog' | 'hunter';"));
+  assert.ok(types.includes("format?: 'beat' | 'dialog';"));
   const chat = src('apps/server/src/routes/chat.ts');
-  const router = chat.slice(chat.indexOf('const fmt ='), chat.indexOf('async function generateBeat'));
+  const router = chat.slice(chat.indexOf('const rawFmt ='), chat.indexOf('async function generateBeat'));
   assert.ok(/if \(fmt === 'dialog'\)/.test(router));
-  assert.ok(/if \(fmt === 'hunter'\)/.test(router));
+  assert.ok(/rawFmt === 'hunter' \? 'beat'/.test(router), 'legacy hunter format falls back to beat');
+  assert.equal(/if \(fmt === 'hunter'\)/.test(router), false);
   // no `fmt === 'beat'` guard: beat is the fallthrough, which is what makes absent mean beat
   assert.equal(/fmt === 'beat'/.test(router), false);
   assert.ok(/return generateBeat\(/.test(router));
@@ -475,11 +474,13 @@ await t('an absent scene.format is still beat, and still the path Pass C runs in
 
 await t('the web renders these chips with no change: flat path, last assistant, non-line block', () => {
   // beat is not reordered, so every message goes through the plain map and keeps
-  // its own chips — the turn-host path is dialog/hunter only.
+  // its own chips — the turn-host path is dialog only.
   assert.equal(shouldReorderTurn('beat'), false);
   assert.equal(shouldReorderTurn(undefined), false);
   const page = src('apps/web/src/pages/ChatPage.tsx');
-  const branch = page.slice(page.indexOf("const kind = m.meta.block_kind;"), page.indexOf("if (!isUser && kind === 'line' && props.sceneFormat === 'hunter')"));
+  const kindAt = page.indexOf("const kind = m.meta.block_kind;");
+  const chipsAt = page.indexOf('<ChoiceChips', kindAt);
+  const branch = page.slice(kindAt, chipsAt + '<ChoiceChips'.length);
   assert.ok(branch.includes("kind !== 'line'"), 'the ui block goes through this branch');
   assert.ok(branch.includes('props.isLastAssistant && m.meta.choices'), 'and it already renders chips');
   assert.ok(branch.includes('<ChoiceChips'));

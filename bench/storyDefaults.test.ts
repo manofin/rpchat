@@ -123,12 +123,12 @@ async function main() {
   await t('explicit profileName/scene.format in the request always wins over story defaults', async () => {
     const res = await api('POST', '/api/conversations', {
       characterId: host.id, storyId: storyWithDefaults.id, mode: 'story',
-      profileName: 'rp-balanced', scene: { format: 'hunter' },
+      profileName: 'rp-balanced', scene: { format: 'beat' },
     });
     assert.equal(res.status, 201, res.text);
     const conv = res.json as { profile_name: string; scene: { format?: string } };
     assert.equal(conv.profile_name, 'rp-balanced');
-    assert.equal(conv.scene.format, 'hunter');
+    assert.equal(conv.scene.format, 'beat');
   });
 
   await t('story with no defaults set behaves exactly as before this slice', async () => {

@@ -14,9 +14,10 @@ import type { PartyCatalog } from './applySceneDelta.js';
 import type { Scene } from '../types.js';
 
 /**
- * `info` is the dialog-format sheet (`renderDialog.ts`); `panel`/`system` are the
- * hunter-format ones (`renderHunter.ts`). The beat path never emits any of them,
- * and neither of the other two emits `header`/`ui`. They live in one union so a
+ * `info` is the dialog-format sheet (`renderDialog.ts`). `panel`/`system` are
+ * legacy hunter-format kinds — the hunter format was removed (hunter-clean-removal),
+ * so nothing emits them now; the union members stay inert. The beat path emits
+ * `header`/`ui`; they live in one union so a
  * stored block only ever has to name its kind.
  */
 export type BeatBlockKind =

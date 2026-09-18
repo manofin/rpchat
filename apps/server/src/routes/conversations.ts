@@ -66,7 +66,7 @@ const sceneSchema = z.object({
   // strips unknown keys, so an unlisted field is silently erased the first time
   // the client PATCHes a scene back — the failure `f9-catalog-write` closed on
   // the stories side.
-  format: z.enum(['beat', 'dialog', 'hunter']).optional(),
+  format: z.enum(['beat', 'dialog']).optional(),
   turn_no: z.number().int().min(0).max(100000).optional(),
   time_phrase: z.string().max(120).optional(),
   info: z.object({
@@ -292,7 +292,8 @@ export function conversationRoutes(ctx: Ctx) {
       if (storyId && story?.default_format && d.scene?.format === undefined) {
         const sceneObj = parseJson<Scene>(sceneJson, {});
         if (sceneObj.format === undefined) {
-          sceneObj.format = story.default_format;
+          // hunter-clean-removal: 잔존 default_format='hunter'는 beat로 폴백.
+          sceneObj.format = (story.default_format as string) === 'hunter' ? 'beat' : story.default_format;
           sceneJson = JSON.stringify(sceneObj);
         }
       }

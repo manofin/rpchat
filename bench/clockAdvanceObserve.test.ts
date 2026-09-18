@@ -139,15 +139,14 @@ await t('applySceneDelta still moves the clock when the key is passed (observe i
   assert.equal(held.observe.value, 10);
 });
 
-await t('chat.ts holds the clock on all three multi-row paths and records clock_observe', () => {
+await t('chat.ts holds the clock on both multi-row paths and records clock_observe', () => {
   const s = code('apps/server/src/routes/chat.ts');
-  assert.equal((s.match(/holdClockProposal\(patch, userText, clockParse\)/g) ?? []).length, 3);
+  assert.equal((s.match(/holdClockProposal\(patch, userText, clockParse\)/g) ?? []).length, 2);
   const beat = s.slice(s.indexOf('async function generateBeat'));
   const dialog = s.slice(s.indexOf('async function generateDialog'));
-  const hunter = s.slice(s.indexOf('async function generateHunter'));
   assert.ok(beat.includes("sealClockObserve(clockCore, 'beat'"));
   assert.ok(dialog.includes("sealClockObserve(clockCore, 'dialog'"));
-  assert.ok(hunter.includes("sealClockObserve(clockCore, 'hunter'"));
+  assert.equal(s.includes("sealClockObserve(clockCore, 'hunter'"), false);
   assert.equal(s.includes('CLOCK_OBSERVE_FRAMING = '), false, 'framing is not redefined in chat.ts');
 });
 

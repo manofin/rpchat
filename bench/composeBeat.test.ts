@@ -472,13 +472,14 @@ t('1:1 prompt text and builder are untouched by this slice', () => {
 t('the 1:1 generate path kept its stream/choices contract', () => {
   const chat = code('apps/server/src/routes/chat.ts');
   const beatAt = chat.indexOf('async function generateBeat');
+  const dialogAt = chat.indexOf('async function generateDialog');
   const oneToOne = chat.slice(0, beatAt);
   assert.ok(oneToOne.includes('extractChoices('));
   assert.ok(oneToOne.includes('dumpGenerationPrompt('));
   assert.ok(oneToOne.includes('updateCalibration('));
 
   // The beat path still does none of the 1:1 turn's bookkeeping.
-  const beat = chat.slice(beatAt);
+  const beat = chat.slice(beatAt, dialogAt > beatAt ? dialogAt : undefined);
   assert.equal(beat.includes('dumpGenerationPrompt('), false);
   assert.equal(beat.includes('updateCalibration('), false);
 
@@ -493,7 +494,7 @@ t('the 1:1 generate path kept its stream/choices contract', () => {
   assert.equal(beat.includes('extractChoices('), false, 'not on the streamed focus text');
   assert.ok(beat.includes('parseChoicesPass('), 'through the dedicated pass instead');
   assert.ok(beat.includes('passCWith('));
-  const fAt = beat.indexOf('const passF = passFWith(');
+  const fAt = beat.indexOf('passFWith(');
   const cAt = beat.indexOf('passCWith(');
   assert.ok(fAt > 0 && cAt > fAt, 'Pass C is built after Pass F, not inside it');
 });

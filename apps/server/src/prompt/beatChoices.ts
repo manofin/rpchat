@@ -22,8 +22,8 @@
  * tag, same parser, same three drafts, same rule that they differ in attitude.
  * What shrank is the prose each draft is asked for: 별표 묘사 한 조각 + 한 문장,
  * instead of 1문장 이상 + 3문장 이상. That is a real product change and it is
- * beat-only; `STORY_CHOICES_INSTRUCTION` itself is untouched and 1:1, dialog and
- * hunter keep the long form (`builder.ts`, `dialogScript.ts`, `hunterScript.ts`).
+ * beat-only; `STORY_CHOICES_INSTRUCTION` itself is untouched and 1:1 and dialog
+ * keep the long form (`builder.ts`, `dialogScript.ts`).
  *
  * Pure: no DB, no fetch, no model.
  */

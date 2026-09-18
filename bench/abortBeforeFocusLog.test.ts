@@ -59,10 +59,10 @@ function sseTypes(body: string): string[] {
 }
 
 async function main() {
-await t('chat.ts checks abort on both catch branches of all three multi-row paths', () => {
+await t('chat.ts checks abort on both catch branches of both multi-row paths', () => {
   const s = code('apps/server/src/routes/chat.ts');
-  assert.equal((s.match(/wasAborted\(controller, err\)/g) ?? []).length, 3);
-  assert.equal((s.match(/else if \(aborted\)/g) ?? []).length, 3);
+  assert.equal((s.match(/wasAborted\(controller, err\)/g) ?? []).length, 2);
+  assert.equal((s.match(/else if \(aborted\)/g) ?? []).length, 2);
   const beat = s.slice(s.indexOf('async function generateBeat'), s.indexOf('async function generateDialog'));
   assert.ok(beat.includes('else if (aborted)'));
   assert.ok(beat.includes("ctx.log.error({ err, generationId }, '비트 생성 실패')"));

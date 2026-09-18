@@ -16,7 +16,7 @@
  *   anything else → `conversations.scene_json`, unchanged behaviour
  *
  * `after_delta` is the scene the turn *committed* — validated delta plus the
- * server-owned keys `finishBeat` / `finishDialogBeat` / `finishHunterBeat` write
+ * server-owned keys `finishBeat` / `finishDialogBeat` write
  * (`last_beat`, `turn_no`). Those keys are not known when the first block is
  * inserted, so the route stamps the start row after a successful finish (one
  * extra UPDATE). An interrupted turn has no snapshot and falls back, which is

@@ -23,11 +23,10 @@ const COVER_ACCEPT = 'image/jpeg,image/png,image/webp';
 /** story-editor-tabs A12: user-facing profiles only, same filter as ConversationOutputPage's rpOutputProfiles. */
 const rpProfiles = (profiles: ModelProfile[]) => profiles.filter((p) => p.name.startsWith('rp-'));
 
-const FORMAT_OPTIONS: Array<{ value: '' | 'beat' | 'dialog' | 'hunter'; label: string }> = [
+const FORMAT_OPTIONS: Array<{ value: '' | 'beat' | 'dialog'; label: string }> = [
   { value: '', label: '기본값 없음' },
   { value: 'beat', label: '비트 (기본)' },
   { value: 'dialog', label: '대화형' },
-  { value: 'hunter', label: '헌터' },
 ];
 
 type Cast = { name: string; note: string };
@@ -36,7 +35,7 @@ type Draft = {
   tagline: string;
   cover: string | null;
   default_profile_name: string;
-  default_format: '' | 'beat' | 'dialog' | 'hunter';
+  default_format: '' | 'beat' | 'dialog';
   setting: string;
   minor_cast: Cast[];
   places: SceneCatalogPlace[];

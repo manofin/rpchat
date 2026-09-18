@@ -66,7 +66,7 @@ async function main() {
       if (prompt.includes('장면 진행 판정기')) return ok('{"base_version":0}');
       if (prompt.includes('입력 초안만 쓴다')) return ok('<choices>["가","나","다"]</choices>');
       if (prompt.includes('너는 장면 서술자다')) { gen += 1; return ok(`서술${gen}.`); }
-      // dialog Pass S / hunter Pass H write a whole turn in one call.
+      // dialog Pass S writes a whole turn in one call.
       if (prompt.includes('|')) return ok('INFO\n상태: 평온\n---\n나리 | "대사입니다."');
       return ok('"교칙이야."');
     },
@@ -149,7 +149,7 @@ async function main() {
   for (const [id, order] of [[hayeon.id, 0], [nari.id, 1], [sera.id, 2]] as const) {
     await api('POST', `/api/stories/${story}/characters`, { characterId: id, sortOrder: order });
   }
-  const newConv = async (fmt?: 'dialog' | 'hunter') => {
+  const newConv = async (fmt?: 'dialog') => {
     const res = await api('POST', '/api/conversations', { characterId: hayeon.id, storyId: story, mode: 'story' });
     const id = (res.json as { id: string }).id;
     if (fmt) await api('PATCH', `/api/conversations/${id}`, { scene: { format: fmt } });
@@ -254,7 +254,7 @@ async function main() {
 
   // ── dialog and hunter take the same path ───────────────────────────────────
 
-  for (const fmt of ['dialog', 'hunter'] as const) {
+  for (const fmt of ['dialog'] as const) {
     await t(`${fmt} turns regenerate as turns too`, async () => {
       const conv = await newConv(fmt);
       await send(conv, '첫 턴');
