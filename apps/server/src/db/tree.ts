@@ -17,6 +17,31 @@ export function messageOut(db: DB, m: MessageRow): MessageOut {
   return { ...rest, meta: parseJson<MessageMeta>(meta_json, {}), bookmarked: !!bookmarked, siblings: { index: Math.max(0, ids.indexOf(m.id)), count: ids.length, ids } };
 }
 
+const PREVIEW_HOP_CAP = 12;
+
+/**
+ * Conversation-list snippet: walk `parent_id` from head until a readable row.
+ * Readable = missing/null block_kind (1:1) | narration | line.
+ * Skip ui/info/thought/system/panel. Header stops (do not leak the previous turn).
+ * Hop cap / missing / cycle / header → ''.
+ */
+export function readablePreview(db: DB, headMessageId: string | null | undefined): string {
+  if (!headMessageId) return '';
+  const seen = new Set<string>();
+  let cur: string | null = headMessageId;
+  for (let hops = 0; hops < PREVIEW_HOP_CAP; hops++) {
+    if (!cur || seen.has(cur)) return '';
+    seen.add(cur);
+    const m: MessageRow | undefined = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', cur);
+    if (!m) return '';
+    const kind = parseJson<MessageMeta>(m.meta_json, {}).block_kind;
+    if (kind === 'header') return '';
+    if (kind == null || kind === 'narration' || kind === 'line') return (m.content ?? '').slice(0, 120);
+    cur = m.parent_id;
+  }
+  return '';
+}
+
 /** head 에서 루트까지 거슬러 올라간 활성 경로 (시간순) */
 export function getPath(db: DB, conv: ConversationRow): MessageRow[] {
   const out: MessageRow[] = [];

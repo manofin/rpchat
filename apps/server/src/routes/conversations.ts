@@ -4,7 +4,7 @@ import type { Ctx } from '../ctx.js';
 import { PROMPT_VERSION, config } from '../config.js';
 import { many, nowIso, one, parseJson, run, uid } from '../db/index.js';
 import { interruptOrphanStreaming } from '../db/generation.js';
-import { deepestLeaf, getPath, insertMessage, messageOut, setHead, updateMessage } from '../db/tree.js';
+import { deepestLeaf, getPath, insertMessage, messageOut, readablePreview, setHead, updateMessage } from '../db/tree.js';
 import { buildPrompt, resolvePersona } from '../prompt/builder.js';
 import { substitute } from '../prompt/templates.js';
 import { catalogFromStory } from '../prompt/sceneCatalog.js';
@@ -157,21 +157,21 @@ export function conversationRoutes(ctx: Ctx) {
     app.get<{ Querystring: { characterId?: string; limit?: string } }>('/api/conversations', async (req) => {
       const limit = Math.min(200, Math.max(1, Number(req.query.limit ?? 50) || 50));
       const rows = req.query.characterId
-        ? many<ConversationRow & { character_name: string; preview: string | null }>(
+        ? many<ConversationRow & { character_name: string }>(
             db,
-            `SELECT v.*, c.name AS character_name, (SELECT content FROM messages m WHERE m.id = v.head_message_id) AS preview
+            `SELECT v.*, c.name AS character_name
              FROM conversations v JOIN characters c ON c.id = v.character_id
              WHERE v.archived = 0 AND v.character_id = ? ORDER BY v.last_message_at DESC NULLS LAST, v.created_at DESC LIMIT ?`,
             req.query.characterId, limit,
           )
-        : many<ConversationRow & { character_name: string; preview: string | null }>(
+        : many<ConversationRow & { character_name: string }>(
             db,
-            `SELECT v.*, c.name AS character_name, (SELECT content FROM messages m WHERE m.id = v.head_message_id) AS preview
+            `SELECT v.*, c.name AS character_name
              FROM conversations v JOIN characters c ON c.id = v.character_id
              WHERE v.archived = 0 ORDER BY v.last_message_at DESC NULLS LAST, v.created_at DESC LIMIT ?`,
             limit,
           );
-      return rows.map((r) => ({ ...conversationOut(r), character_name: r.character_name, preview: (r.preview ?? '').slice(0, 120) }));
+      return rows.map((r) => ({ ...conversationOut(r), character_name: r.character_name, preview: readablePreview(db, r.head_message_id) }));
     });
 
     app.post('/api/conversations', async (req, reply) => {
