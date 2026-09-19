@@ -142,7 +142,11 @@ const PASS_S_MAX_TOKENS = 900;
 
 /** User abort, including the window before a focus/script row exists. */
 function wasAborted(controller: AbortController, err: unknown): boolean {
-  return controller.signal.aborted || (err as { name?: string } | undefined)?.name === 'AbortError';
+  if (controller.signal.aborted) return true;
+  const e = err as { name?: string; message?: string } | undefined;
+  // undici: TypeError "fetch failed" (model down / ECONNREFUSED). Not a user abort.
+  if (e?.name === 'TypeError' && /fetch failed/i.test(e.message ?? '')) return false;
+  return e?.name === 'AbortError';
 }
 
 function sealClockObserve(
@@ -255,11 +259,19 @@ export function chatRoutes(ctx: Ctx) {
     const convId = user.conversation_id;
     const restoreHead = user.parent_id;
     db.transaction(() => {
-      const conv = one<{ head_message_id: string | null }>(db, 'SELECT head_message_id FROM conversations WHERE id = ?', convId);
-      run(db, 'DELETE FROM messages WHERE id = ?', user.id);
-      const head = conv?.head_message_id ?? null;
-      if (!head || head === user.id || !one(db, 'SELECT 1 FROM messages WHERE id = ?', head)) {
-        setHead(db, convId, restoreHead);
+      // Unhook head first so CASCADE/child deletes cannot trip a head FK.
+      setHead(db, convId, restoreHead);
+      const ids: string[] = [];
+      const q = [user.id];
+      while (q.length) {
+        const id = q.pop()!;
+        ids.push(id);
+        for (const k of many<{ id: string }>(db, 'SELECT id FROM messages WHERE parent_id = ?', id)) {
+          q.push(k.id);
+        }
+      }
+      for (let i = ids.length - 1; i >= 0; i--) {
+        run(db, 'DELETE FROM messages WHERE id = ?', ids[i]);
       }
     })();
   }
@@ -410,8 +422,8 @@ export function chatRoutes(ctx: Ctx) {
         ctx.log.error({ err, generationId }, '생성 실패');
         updateMessage(db, assistant.id, { content: sanitizeAssistantContent(buffer).trim(), status: 'error', meta: { error: msg } });
         logRow('error', { finish: 'error' });
-        sse.send({ type: 'error', message: msg, messageId: assistant.id });
         retractUnconfirmedSend(userMessage);
+        sse.send({ type: 'error', message: msg, messageId: assistant.id });
       }
     } finally {
       ctx.queue.unregister(generationId);
@@ -829,8 +841,8 @@ export function chatRoutes(ctx: Ctx) {
           sse.send({ type: 'done', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', focusRow.id)!), usage: null, ttftMs: null, totalMs: Date.now() - tBeat });
         } else {
           ctx.log.error({ err, generationId }, '비트 생성 실패');
-          sse.send({ type: 'error', message: msg, messageId: focusRow.id });
           retractUnconfirmedSend(userMessage);
+          sse.send({ type: 'error', message: msg, messageId: focusRow.id });
         }
       } else if (aborted) {
         // abort-before-focus-log-classification: a stop before Pass F has a row
@@ -845,8 +857,8 @@ export function chatRoutes(ctx: Ctx) {
         }
       } else {
         ctx.log.error({ err, generationId }, '비트 생성 실패');
-        sse.send({ type: 'error', message: msg });
         retractUnconfirmedSend(userMessage);
+        sse.send({ type: 'error', message: msg });
       }
       logClockObserve(
         conv.id, focusRow?.id ?? emitted[emitted.length - 1]?.id ?? userMessage?.id,
@@ -1144,8 +1156,8 @@ export function chatRoutes(ctx: Ctx) {
           sse.send({ type: 'done', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', scriptRow.id)!), usage: null, ttftMs: null, totalMs: Date.now() - tBeat });
         } else {
           ctx.log.error({ err, generationId }, '대본 생성 실패');
-          sse.send({ type: 'error', message: msg, messageId: scriptRow.id });
           retractUnconfirmedSend(userMessage);
+          sse.send({ type: 'error', message: msg, messageId: scriptRow.id });
         }
       } else if (aborted) {
         const closing = emitted[emitted.length - 1];
@@ -1158,8 +1170,8 @@ export function chatRoutes(ctx: Ctx) {
         }
       } else {
         ctx.log.error({ err, generationId }, '대본 생성 실패');
-        sse.send({ type: 'error', message: msg });
         retractUnconfirmedSend(userMessage);
+        sse.send({ type: 'error', message: msg });
       }
       logClockObserve(
         conv.id, scriptRow?.id ?? emitted[emitted.length - 1]?.id ?? userMessage?.id,
@@ -1193,7 +1205,12 @@ export function chatRoutes(ctx: Ctx) {
       }
       if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
       const user = insertMessage(db, conv.id, conv.head_message_id, 'user', content, 'complete', {});
-      return generate(req, reply, conv, user.id, user, undefined, inj.ctx);
+      try {
+        return await generate(req, reply, conv, user.id, user, undefined, inj.ctx);
+      } catch (err) {
+        retractUnconfirmedSend(user);
+        throw err;
+      }
     });
 
     const regenSchema = z.object({ messageId: z.string().min(1) });
@@ -1252,7 +1269,12 @@ export function chatRoutes(ctx: Ctx) {
       if (!m || m.role !== 'user') return reply.code(404).send({ error: 'user message not found' });
       if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
       const user = insertMessage(db, conv.id, m.parent_id, 'user', content, 'complete', {});
-      return generate(req, reply, conv, user.id, user, undefined, inj.ctx);
+      try {
+        return await generate(req, reply, conv, user.id, user, undefined, inj.ctx);
+      } catch (err) {
+        retractUnconfirmedSend(user);
+        throw err;
+      }
     });
 
     app.post<{ Params: { id: string } }>('/api/generations/:id/abort', async (req, reply) => {

@@ -55,10 +55,11 @@ async function main() {
     const chat = code('apps/server/src/routes/chat.ts');
     const post = chat.slice(chat.indexOf("app.post<{ Params: { id: string } }>('/api/conversations/:id/messages'"));
     const insertAt = post.indexOf("insertMessage(db, conv.id, conv.head_message_id, 'user'");
-    const generateAt = post.indexOf('return generate(');
+    const generateAt = post.indexOf('return await generate(');
     assert.ok(insertAt >= 0 && generateAt > insertAt, 'user INSERT still precedes generate');
+    assert.ok(post.includes('retractUnconfirmedSend(user)'));
     assert.ok(chat.includes('function retractUnconfirmedSend'));
-    assert.equal((chat.match(/retractUnconfirmedSend\(/g) ?? []).length, 11);
+    assert.equal((chat.match(/retractUnconfirmedSend\(/g) ?? []).length, 13);
     assert.equal(code('apps/web/src/pages/ChatPage.tsx').includes('if (ok === false)'), true);
     assert.equal(code('apps/web/src/pages/useChat.ts').includes("e.type === 'error'"), true);
     const migs = fs.readdirSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'apps/server/migrations'));
@@ -71,13 +72,20 @@ async function main() {
     `INSERT INTO model_profiles (name, model, temperature, top_p, max_tokens, stop_json, system_mode, notes) VALUES (?,?,?,?,?,?,?,?)`,
   ).run('rp-balanced', null, 0.8, 0.95, 400, '[]', 'system', null);
 
-  let failNext = false;
+  let resolvedName = 'test-model';
+  let failNext: false | 'model-error' | 'fetch-failed' = false;
   const streamChunks = ['「앉아.', '」'];
   const model = {
     stream: async (_p: GenParams, onToken: (delta: string) => void): Promise<GenResult> => {
-      if (failNext) {
+      if (failNext === 'model-error') {
         failNext = false;
         throw new ModelError('fixture model fail');
+      }
+      if (failNext === 'fetch-failed') {
+        failNext = false;
+        const err = new TypeError('fetch failed');
+        (err as Error & { cause?: Error }).cause = new Error('connect ECONNREFUSED');
+        throw err;
       }
       for (const c of streamChunks) {
         onToken(c);
@@ -94,7 +102,7 @@ async function main() {
     model: model as unknown as Ctx['model'],
     queue: new GenerationQueue(1),
     log: { error() {}, info() {}, warn() {}, debug() {} } as unknown as Ctx['log'],
-    resolvedModel: () => 'test-model',
+    resolvedModel: () => resolvedName,
     setResolvedModel: () => {},
     health: async () => ({ ok: true, checkedAt: 't', latencyMs: 0, models: ['test-model'] }),
   } as Ctx;
@@ -190,7 +198,7 @@ async function main() {
   const greeting2 = conv2.head_message_id;
 
   await t('fail: no complete user residue; head restored to greeting', async () => {
-    failNext = true;
+    failNext = 'model-error';
     const res = await fetch(`${origin}/api/conversations/${conv2.id}/messages`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -206,6 +214,62 @@ async function main() {
     assert.equal(rows.some((m) => m.status === 'complete' && m.role === 'user'), false);
     const head = db.prepare('SELECT head_message_id FROM conversations WHERE id = ?').get(conv2.id) as { head_message_id: string | null };
     assert.equal(head.head_message_id, greeting2);
+  });
+
+  await t('model-fetch-failed: TypeError fetch failed retracts user; no complete residue', async () => {
+    const conv3Res = await api('POST', '/api/conversations', {
+      characterId: char.id,
+      personaId: persona.id,
+      mode: 'chat',
+      title: 'fetch-failed방',
+    });
+    assert.equal(conv3Res.status, 201, conv3Res.text);
+    const conv3 = conv3Res.json as { id: string; head_message_id: string | null };
+    const greeting3 = conv3.head_message_id;
+    failNext = 'fetch-failed';
+    const res = await fetch(`${origin}/api/conversations/${conv3.id}/messages`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ content: userLine }),
+    });
+    assert.equal(res.status, 200, `expected SSE 200, got ${res.status}`);
+    const raw = await res.text();
+    const events = parseSse(raw);
+    assert.ok(events.some((e) => e.type === 'error'), raw.slice(0, 400));
+    assert.equal(events.some((e) => e.type === 'done' && (e as { message?: Msg }).message?.status === 'complete'), false);
+    const rows = db.prepare('SELECT role, content, status FROM messages WHERE conversation_id = ?').all(conv3.id) as Msg[];
+    const users = rows.filter((m) => m.role === 'user');
+    assert.equal(users.length, 0, JSON.stringify(rows));
+    const head = db.prepare('SELECT head_message_id FROM conversations WHERE id = ?').get(conv3.id) as { head_message_id: string | null };
+    assert.equal(head.head_message_id, greeting3);
+  });
+
+  await t('setup-fail: empty resolvedModel 503 retracts user; composer path stays ApiError', async () => {
+    const conv4Res = await api('POST', '/api/conversations', {
+      characterId: char.id,
+      personaId: persona.id,
+      mode: 'chat',
+      title: 'setup-fail방',
+    });
+    assert.equal(conv4Res.status, 201, conv4Res.text);
+    const conv4 = conv4Res.json as { id: string; head_message_id: string | null };
+    const greeting4 = conv4.head_message_id;
+    resolvedName = '';
+    const res = await fetch(`${origin}/api/conversations/${conv4.id}/messages`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ content: userLine }),
+    });
+    const raw = await res.text();
+    assert.equal(res.status, 503, raw.slice(0, 400));
+    resolvedName = 'test-model';
+    const rows = db.prepare('SELECT role, content, status FROM messages WHERE conversation_id = ?').all(conv4.id) as Msg[];
+    assert.equal(rows.filter((m) => m.role === 'user').length, 0, JSON.stringify(rows));
+    const head = db.prepare('SELECT head_message_id FROM conversations WHERE id = ?').get(conv4.id) as { head_message_id: string | null };
+    assert.equal(head.head_message_id, greeting4);
+    const useChat = code('apps/web/src/pages/useChat.ts');
+    assert.equal(useChat.includes('e instanceof ApiError ? false : true'), true);
+    assert.equal(code('apps/web/src/pages/ChatPage.tsx').includes('if (ok === false)'), true);
   });
 
   await t('retry: one user INSERT, no duplicate, success path', async () => {
