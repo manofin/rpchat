@@ -4,6 +4,7 @@ import { navigate } from '../lib/router';
 import type { Conversation } from '../types';
 import { relTime } from '../components/view';
 import { Spinner } from '../components/ui';
+import { conversationTitleLabel } from '../lib/conversationTitleLabel';
 
 export function ChatListRail({
   characterId,
@@ -51,7 +52,7 @@ export function ChatListRail({
             onPick?.();
           }}
         >
-          <span className="t">{c.title || '대화'}</span>
+          <span className="t">{conversationTitleLabel(c)}</span>
           <span className="p">
             {[c.character_name, c.story_name_snapshot].filter(Boolean).join(' · ') || ''}
             {(c.character_name || c.story_name_snapshot) && (c.preview || c.last_message_at) ? ' · ' : ''}
