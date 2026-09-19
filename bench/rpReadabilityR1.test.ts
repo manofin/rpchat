@@ -81,11 +81,12 @@ t('ChatPage applies [Name] : speech MUST format on completed beat line bubbles o
   assert.equal(src('apps/web/src/pages/useChat.ts').includes('wrapSpeechMarks'), false);
 });
 
-t('BeatNarration parses mixed turns and DialogueLine exists for clear speakers', () => {
-  assert.match(view, /parseTurnBlocks/);
+t('BeatNarration is raw text; DialogueLine exists for clear speakers', () => {
+  assert.equal(view.includes('parseTurnBlocks'), false, '결정3: BeatNarration must not re-parse');
+  assert.match(view, /export function BeatNarration/);
   assert.match(view, /export function DialogueLine/);
   assert.match(view, /beat-dialogue-speaker/);
-  assert.match(chat, /streaming=\{props\.streaming\}/);
+  assert.match(chat, /streaming=\{props.streaming\}/);
 });
 
 t('beat-line bubble keeps high-contrast speech surface', () => {

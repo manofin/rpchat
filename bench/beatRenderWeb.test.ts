@@ -57,13 +57,13 @@ t("a 'line' block keeps the bubble — it is speech, not chrome", () => {
 // ── 2. each block kind has a renderer ───────────────────────────────────────
 t('view.tsx exports a renderer for every rendered non-line block kind', () => {
   const s = view();
-  for (const fn of ['BeatHeader', 'BeatNarration', 'BeatUiPanel', 'parseBeatUi']) {
+  for (const fn of ['BeatHeader', 'BeatNarration', 'BeatUiPanel', 'parseBeatUi', 'PartyBlockView']) {
     assert.ok(s.includes(`export function ${fn}`), fn);
   }
   const page = chatPage();
-  for (const fn of ['BeatHeader', 'BeatNarration', 'BeatUiPanel', 'parseBeatUi']) {
-    assert.ok(page.includes(fn), `${fn} must be wired into ChatPage`);
-  }
+  assert.match(page, /PartyBlockView/, 'non-line chrome goes through PartyBlockView');
+  assert.match(page, /parseBeatUi/, 'roster path still parses ui payloads');
+  assert.match(page, /BeatUiPanel/, 'roster path still uses BeatUiPanel');
 });
 
 t("'thought' is stored but never drawn — the 속마음 bubble is gone, not the row", () => {
@@ -96,8 +96,7 @@ t('BeatUiPanel prints gear, inventory and traits from the user_sheet', () => {
 t('a damaged ui payload renders nothing rather than throwing', () => {
   const s = view();
   assert.match(s, /export function parseBeatUi[\s\S]{0,400}catch \{\s*return null;/);
-  const page = code('apps/web/src/pages/ChatPage.tsx');
-  assert.match(page, /ui \? <BeatUiPanel ui=\{/, 'a null parse must render nothing');
+  assert.match(s, /ui \? <BeatUiPanel ui=\{/, 'a null parse must render nothing');
 });
 
 // ── 3. the image is a server path, never model output ───────────────────────

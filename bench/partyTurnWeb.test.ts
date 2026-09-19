@@ -78,6 +78,9 @@ t('ChatPage wires partyBlockFromMessage + PartyBlockView; view exports PartyBloc
   assert.match(viewSrc, /export function PartyBlockView/);
   assert.match(viewSrc, /kind === 'thought'/);
   assert.match(viewSrc, /BeatNarration text=\{block\.text\}/);
+  assert.equal(viewSrc.includes('parseTurnBlocks'), false);
+  assert.equal(/BeatHeader|BeatInfoSheet|BeatNarration/.test(chatPage), false);
+  assert.equal(chatPage.includes("kind === 'header' || kind === 'info' || kind === 'narration'"), false);
 });
 
 t('client mapper is S1 partyTurnFromBlocks twin on BeatBlock rows', () => {
