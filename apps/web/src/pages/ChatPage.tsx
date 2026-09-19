@@ -4,7 +4,7 @@ import { back, navigate, useRoute } from '../lib/router';
 import { NAV_TABS } from '../lib/navTabs';
 import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, StoryEnding, Summary } from '../types';
 import {
-  Avatar, BeatHeader, BeatInfoSheet, BeatNarration, BeatUiPanel, parseBeatUi,
+  Avatar, BeatHeader, BeatInfoSheet, BeatNarration, BeatUiPanel, PartyBlockView, parseBeatUi,
   renderContent, SpeakerHeader,
 } from '../components/view';
 import { OverlayDrawer } from '../components/OverlayDrawer';
@@ -13,6 +13,7 @@ import { visibleChoices } from '../lib/choices';
 import { sanitizeBubbleContent } from '../lib/sanitizeBubble';
 import { groupChatTurns, isEmptyUserMessage, shouldReorderTurn, turnChoicesHost, visibleChatMessages, visualAssistantOrder } from '../lib/chatLayout';
 import { wrapSpeechMarks } from '../lib/speechMarks';
+import { partyBlockFromMessage } from '../lib/partyTurn';
 import { expandLeadingShortcut, readShortcuts, resolveShortcutSubmit } from '../lib/shortcutMacro';
 import { useDesktopLayout } from '../lib/useDesktopLayout';
 import {
@@ -636,15 +637,15 @@ function MessageView(props: {
   // `block_kind` — every 1:1 message, and everything written before the beat
   // engine — falls through to the ordinary bubble below, untouched.
   const kind = m.meta.block_kind;
+  const block = partyBlockFromMessage(m);
   if (!isUser && kind && kind !== 'line') {
     let body: ReactNode = null;
-    if (kind === 'header') body = <BeatHeader text={m.content} />;
-    else if (kind === 'info') body = <BeatInfoSheet text={m.content} />;
-    else if (kind === 'narration') body = <BeatNarration text={m.content} streaming={props.streaming} />;
     // 속마음 말풍선 제거: Pass F 는 `속마음:` 분리·저장을 그대로 하고(행은 남는다),
     // 화면에만 그리지 않는다. 나중에 별도 명령으로 이 행들을 모아 보여줄 여지를 남긴다.
-    else if (kind === 'thought') body = null;
-    else {
+    if (kind === 'thought') body = null;
+    else if (kind === 'header' || kind === 'info' || kind === 'narration') {
+      body = <PartyBlockView block={block} streaming={props.streaming} focusId={props.isLastAssistant ? props.focusId : null} />;
+    } else {
       const ui = parseBeatUi(m.content);
       body = ui ? <BeatUiPanel ui={{ ...ui, focus_id: ui.focus_id ?? (props.isLastAssistant ? props.focusId : null) ?? null }} /> : null;
     }
@@ -686,12 +687,15 @@ function MessageView(props: {
         {(() => {
           // leak-choices-ui: strip leaked choices/BeatUi JSON from ordinary bubbles only.
           // Real `block_kind:'ui'` never reaches this branch.
-          const shown = props.streaming ? m.content : sanitizeBubbleContent(m.content);
-          if (!shown) return props.streaming ? '' : <span className="muted">…</span>;
+          if (props.streaming) return renderContent(m.content);
+          const shown = sanitizeBubbleContent(m.content);
+          if (!shown) return <span className="muted">…</span>;
           // R1 MUST: completed party/dialog lines render as [Name] : "speech".
           // Streaming stays raw in the same bubble to avoid style flicker.
           if (lineSpeech && !props.streaming) {
-            const speaker = m.meta.speaker_name ?? (m.meta.speaker_character_id ? props.charName : null);
+            const speaker = (block?.kind === 'dialogue' ? block.speakerName : null)
+              || m.meta.speaker_name
+              || (m.meta.speaker_character_id ? props.charName : null);
             const spoken = wrapSpeechMarks(shown);
             return (
               <>

@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import type { PartyBlock } from '../lib/partyTurn';
 import { wrapSpeechMarks } from '../lib/speechMarks';
 import { parseTurnBlocks } from '../lib/turnBlocks';
 
@@ -226,6 +227,32 @@ export function softHue(name: string): number {
   const s = name || '?';
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return h % 360;
+}
+
+/** B-2 S2 common party renderer. Thought is hidden; BeatNarration still re-parses (결정3 deferred). */
+export function PartyBlockView({
+  block,
+  streaming,
+  focusId,
+}: {
+  block: PartyBlock | null;
+  streaming?: boolean;
+  focusId?: string | null;
+}): ReactNode {
+  if (!block) return null;
+  if (block.kind === 'header') return <BeatHeader text={block.text} />;
+  if (block.kind === 'info') return <BeatInfoSheet text={block.text} />;
+  if (block.kind === 'narration') return <BeatNarration text={block.text} streaming={streaming} />;
+  if (block.kind === 'thought') return null;
+  if (block.kind === 'dialogue') return null;
+  const raw =
+    block.kind === 'ui'
+      ? typeof block.payload === 'string'
+        ? block.payload
+        : JSON.stringify(block.payload)
+      : block.text;
+  const ui = parseBeatUi(raw);
+  return ui ? <BeatUiPanel ui={{ ...ui, focus_id: ui.focus_id ?? focusId ?? null }} /> : null;
 }
 
 /**
