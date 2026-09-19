@@ -7,6 +7,7 @@ import { CharacterEditor } from '../components/CharacterEditor';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { characterHeroEmpty, resolveConversationCount, resolveLastChatAt } from '../lib/characterChatStats';
 import { publicTags } from '../lib/publicTags';
+import { conversationTitleLabel } from '../lib/conversationTitleLabel';
 
 export function CharacterPage({ id }: { id: string }) {
   const ui = useUi();
@@ -135,7 +136,7 @@ function ConversationRow({ conv, onChanged }: { conv: Conversation; onChanged: (
   return (
     <div className="list-item" onClick={() => navigate(`/chat/${conv.id}`)}>
       <div className="body">
-        <div className="t">{conv.favorite ? '★ ' : ''}{conv.title || '대화'}</div>
+        <div className="t">{conv.favorite ? '★ ' : ''}{conversationTitleLabel(conv)}</div>
         <div className="p">{conv.preview || '메시지 없음'}</div>
         <div className="p muted">{relTime(conv.last_message_at || conv.created_at)}</div>
       </div>
