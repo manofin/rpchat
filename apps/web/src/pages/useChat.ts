@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { abortGeneration, get, patch, post, put, del, streamPost } from '../lib/api';
+import { abortGeneration, ApiError, get, patch, post, put, del, streamPost } from '../lib/api';
 import type { ConversationDetail, Message, SseBudget, SseEvent } from '../types';
 
 export interface ChatState {
@@ -114,14 +114,26 @@ export function useChat(conversationId: string) {
     abortRef.current = ctrl;
     patchState({ error: null, generating: true });
     genIdRef.current = null;
+    let failed = false;
     try {
-      await streamPost(path, body, applyEvent, ctrl.signal);
+      await streamPost(path, body, (e) => {
+        if (e.type === 'error') failed = true;
+        applyEvent(e);
+      }, ctrl.signal);
+      if (failed) {
+        await reload();
+        return false;
+      }
+      return true;
     } catch (e) {
       if (!ctrl.signal.aborted) {
         // 네트워크 단절: 서버는 계속 생성 중일 수 있으므로 상태를 재동기화
         patchState({ error: (e as Error).message, generating: false, streamingId: null });
         setTimeout(() => reload(), 400);
+        // HTTP 4xx/5xx after the send insert: server retracted. Network drop: do not restore composer.
+        return e instanceof ApiError ? false : true;
       }
+      return true;
     } finally {
       if (abortRef.current === ctrl) abortRef.current = null;
     }
