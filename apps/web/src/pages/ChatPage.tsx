@@ -182,7 +182,11 @@ export function ChatPage({ id }: { id: string }) {
     setDraft('');
     requestAnimationFrame(grow);
     stickyRef.current = true;
-    await chat.send(text, inject ? { inject_instruction: inject } : undefined);
+    const ok = await chat.send(text, inject ? { inject_instruction: inject } : undefined);
+    if (ok === false) {
+      setDraft(text);
+      requestAnimationFrame(grow);
+    }
   }
 
   if (chat.loading) return <div className="screen"><div className="topbar"><button className="btn ghost icon" onClick={() => back('/')}>‹</button></div><Spinner /></div>;
@@ -208,7 +212,12 @@ export function ChatPage({ id }: { id: string }) {
     setDraft('');
     requestAnimationFrame(grow);
     stickyRef.current = true;
-    void chat.send(text);
+    void chat.send(text).then((ok) => {
+      if (ok === false) {
+        setDraft(text);
+        requestAnimationFrame(grow);
+      }
+    });
   };
   /** Pencil → fill composer only; user edits then sends. */
   const onEditChoice = (c: string) => {

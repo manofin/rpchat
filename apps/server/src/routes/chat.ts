@@ -245,6 +245,26 @@ export function chatRoutes(ctx: Ctx) {
   }
 
   /**
+   * POST /messages (and branch) insert the user as complete *before* generate so
+   * getPath still sees the turn. On model/setup failure (not abort) retract that
+   * row — CASCADE children, restore head — so a retry is not a second complete user.
+   * Regen passes no userMessage and is left alone.
+   */
+  function retractUnconfirmedSend(user: MessageRow | undefined): void {
+    if (!user || user.role !== 'user') return;
+    const convId = user.conversation_id;
+    const restoreHead = user.parent_id;
+    db.transaction(() => {
+      const conv = one<{ head_message_id: string | null }>(db, 'SELECT head_message_id FROM conversations WHERE id = ?', convId);
+      run(db, 'DELETE FROM messages WHERE id = ?', user.id);
+      const head = conv?.head_message_id ?? null;
+      if (!head || head === user.id || !one(db, 'SELECT 1 FROM messages WHERE id = ?', head)) {
+        setHead(db, convId, restoreHead);
+      }
+    })();
+  }
+
+  /**
    * 공통 생성 경로. parentId 를 head 로 두고 그 아래에 assistant 메시지를 만들어 스트리밍한다.
    * 클라이언트가 끊겨도 생성은 계속되어 DB 에 저장된다(모바일 백그라운드 대응). 중단은 abort 엔드포인트로만.
    */
@@ -266,7 +286,10 @@ export function chatRoutes(ctx: Ctx) {
   ) {
     inject = inject ?? { instruction: null };
     interruptOrphanStreaming(db, { keepMessageIds: ctx.queue.activeList.map((g) => g.messageId) });
-    if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
+    if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) {
+      retractUnconfirmedSend(userMessage);
+      return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
+    }
 
     setHead(db, conv.id, parentId);
     let convNow = loadConversation(ctx, conv.id)!;
@@ -299,9 +322,13 @@ export function chatRoutes(ctx: Ctx) {
     try {
       built = buildPrompt(db, convNow, history, config.model.contextTokens, ctx.resolvedModel(), undefined, { inject });
     } catch (err) {
+      retractUnconfirmedSend(userMessage);
       return reply.code(500).send({ error: `프롬프트 조립 실패: ${(err as Error).message}` });
     }
-    if (!built.model) return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
+    if (!built.model) {
+      retractUnconfirmedSend(userMessage);
+      return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
+    }
 
     const assistant = insertMessage(db, conv.id, parentId, 'assistant', '', 'streaming', {
       generation_id: generationId, profile: built.profile.name, prompt_version: PROMPT_VERSION, ooc: built.isOoc || undefined,
@@ -384,6 +411,7 @@ export function chatRoutes(ctx: Ctx) {
         updateMessage(db, assistant.id, { content: sanitizeAssistantContent(buffer).trim(), status: 'error', meta: { error: msg } });
         logRow('error', { finish: 'error' });
         sse.send({ type: 'error', message: msg, messageId: assistant.id });
+        retractUnconfirmedSend(userMessage);
       }
     } finally {
       ctx.queue.unregister(generationId);
@@ -426,7 +454,10 @@ export function chatRoutes(ctx: Ctx) {
     const icPromptBudget = (completionMax: number) =>
       Math.max(512, config.model.contextTokens - completionMax - 64);
     const model = ctx.resolvedModel();
-    if (!model) return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
+    if (!model) {
+      retractUnconfirmedSend(userMessage);
+      return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
+    }
 
     // scene-branch-snapshot: plan against the branch this generation is on, not
     // against the conversation row. On a regenerate the conversation row already
@@ -799,6 +830,7 @@ export function chatRoutes(ctx: Ctx) {
         } else {
           ctx.log.error({ err, generationId }, '비트 생성 실패');
           sse.send({ type: 'error', message: msg, messageId: focusRow.id });
+          retractUnconfirmedSend(userMessage);
         }
       } else if (aborted) {
         // abort-before-focus-log-classification: a stop before Pass F has a row
@@ -814,6 +846,7 @@ export function chatRoutes(ctx: Ctx) {
       } else {
         ctx.log.error({ err, generationId }, '비트 생성 실패');
         sse.send({ type: 'error', message: msg });
+        retractUnconfirmedSend(userMessage);
       }
       logClockObserve(
         conv.id, focusRow?.id ?? emitted[emitted.length - 1]?.id ?? userMessage?.id,
@@ -859,7 +892,10 @@ export function chatRoutes(ctx: Ctx) {
     const icPromptBudget = (completionMax: number) =>
       Math.max(512, config.model.contextTokens - completionMax - 64);
     const model = ctx.resolvedModel();
-    if (!model) return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
+    if (!model) {
+      retractUnconfirmedSend(userMessage);
+      return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
+    }
 
     // scene-branch-snapshot: plan against the branch this generation is on, not
     // against the conversation row. On a regenerate the conversation row already
@@ -1109,6 +1145,7 @@ export function chatRoutes(ctx: Ctx) {
         } else {
           ctx.log.error({ err, generationId }, '대본 생성 실패');
           sse.send({ type: 'error', message: msg, messageId: scriptRow.id });
+          retractUnconfirmedSend(userMessage);
         }
       } else if (aborted) {
         const closing = emitted[emitted.length - 1];
@@ -1122,6 +1159,7 @@ export function chatRoutes(ctx: Ctx) {
       } else {
         ctx.log.error({ err, generationId }, '대본 생성 실패');
         sse.send({ type: 'error', message: msg });
+        retractUnconfirmedSend(userMessage);
       }
       logClockObserve(
         conv.id, scriptRow?.id ?? emitted[emitted.length - 1]?.id ?? userMessage?.id,
