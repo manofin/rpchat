@@ -4,7 +4,7 @@ import { back, navigate, useRoute } from '../lib/router';
 import { NAV_TABS } from '../lib/navTabs';
 import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, StoryEnding, Summary } from '../types';
 import {
-  Avatar, BeatHeader, BeatInfoSheet, BeatNarration, BeatUiPanel, PartyBlockView, parseBeatUi,
+  Avatar, BeatUiPanel, PartyBlockView, parseBeatUi,
   renderContent, SpeakerHeader,
 } from '../components/view';
 import { OverlayDrawer } from '../components/OverlayDrawer';
@@ -643,11 +643,8 @@ function MessageView(props: {
     // 속마음 말풍선 제거: Pass F 는 `속마음:` 분리·저장을 그대로 하고(행은 남는다),
     // 화면에만 그리지 않는다. 나중에 별도 명령으로 이 행들을 모아 보여줄 여지를 남긴다.
     if (kind === 'thought') body = null;
-    else if (kind === 'header' || kind === 'info' || kind === 'narration') {
+    else {
       body = <PartyBlockView block={block} streaming={props.streaming} focusId={props.isLastAssistant ? props.focusId : null} />;
-    } else {
-      const ui = parseBeatUi(m.content);
-      body = ui ? <BeatUiPanel ui={{ ...ui, focus_id: ui.focus_id ?? (props.isLastAssistant ? props.focusId : null) ?? null }} /> : null;
     }
     // dialog-format: choices ride on whichever block a turn actually ends on
     // (narration or a speaker's line), not just the `line` kind — see chat.ts

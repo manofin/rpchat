@@ -1,7 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { PartyBlock } from '../lib/partyTurn';
 import { wrapSpeechMarks } from '../lib/speechMarks';
-import { parseTurnBlocks } from '../lib/turnBlocks';
 
 export function Avatar({ name, avatar, size }: { name: string; avatar?: string | null; size?: 'sm' | 'lg' }) {
   const cls = `avatar${size ? ` ${size}` : ''}`;
@@ -34,25 +33,10 @@ export function BeatHeader({ text }: { text: string }) {
   return <div className="beat-header">{text}</div>;
 }
 
-export function BeatNarration({ text, streaming }: { text: string; streaming?: boolean }) {
-  const blocks = parseTurnBlocks(text, { streaming });
-  const onlyNarration = blocks.length === 1 && blocks[0].kind === 'narration';
-  if (onlyNarration) {
-    return (
-      <div className="beat-narration">
-        {blocks[0].text}
-      </div>
-    );
-  }
+export function BeatNarration({ text }: { text: string; streaming?: boolean }) {
   return (
-    <div className="beat-turn-blocks">
-      {blocks.map((b, i) =>
-        b.kind === 'narration' ? (
-          <div key={i} className="beat-narration">{b.text}</div>
-        ) : (
-          <DialogueLine key={i} speaker={b.speaker} speech={b.text} streaming={streaming} />
-        ),
-      )}
+    <div className="beat-narration">
+      {text}
     </div>
   );
 }
@@ -229,7 +213,7 @@ export function softHue(name: string): number {
   return h % 360;
 }
 
-/** B-2 S2 common party renderer. Thought is hidden; BeatNarration still re-parses (결정3 deferred). */
+/** B-2 S4 common party renderer. Thought is hidden; BeatNarration does not re-parse. */
 export function PartyBlockView({
   block,
   streaming,
