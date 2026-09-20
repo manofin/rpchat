@@ -66,30 +66,13 @@ function stripLeakTail(text: string): string {
   return stripLeadingOocFuel(stripTrailingChoicesDebris(stripTrailingBeatUiJson(text)));
 }
 
-function findTerminalChoices(text: string): RegExpExecArray | null {
-  const re = /<choices>\s*(\[[\s\S]*?\])\s*<\/choices>/gi;
-  let last: RegExpExecArray | null = null;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) {
-    const after = text.slice(m.index + m[0].length);
-    if (/^\s*$/.test(after)) {
-      last = m;
-      continue;
-    }
-    const stripped = stripLeakTail(after);
-    if (stripped.replace(/\s+/g, '') === '') last = m;
-  }
-  return last;
+/** Paired `<choices>…</choices>` anywhere. Trailing junk after the close is kept. */
+function stripPairedChoices(text: string): string {
+  return text.replace(/<choices>[\s\S]*?<\/choices>/gi, '');
 }
 
-/** Display-only sanitize for ordinary assistant bubbles. */
+/** Display-only sanitize for ordinary / party text surfaces. */
 export function sanitizeBubbleContent(content: string): string {
   if (!content) return content;
-  const m = findTerminalChoices(content);
-  let out = content;
-  if (m && m.index != null) {
-    out = content.slice(0, m.index) + content.slice(m.index + m[0].length);
-  }
-  out = stripLeakTail(out);
-  return out.replace(/\s+$/, '');
+  return stripLeakTail(stripPairedChoices(content)).replace(/\s+$/, '');
 }

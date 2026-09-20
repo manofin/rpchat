@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { PartyBlock } from '../lib/partyTurn';
+import { sanitizeBubbleContent } from '../lib/sanitizeBubble';
 import { wrapSpeechMarks } from '../lib/speechMarks';
 
 export function Avatar({ name, avatar, size }: { name: string; avatar?: string | null; size?: 'sm' | 'lg' }) {
@@ -30,13 +31,14 @@ export function SpeakerHeader({ name, avatar, focused }: { name: string; avatar?
  * whole reason S1 shipped before any of this.
  */
 export function BeatHeader({ text }: { text: string }) {
-  return <div className="beat-header">{text}</div>;
+  return <div className="beat-header">{sanitizeBubbleContent(text)}</div>;
 }
 
-export function BeatNarration({ text }: { text: string; streaming?: boolean }) {
+export function BeatNarration({ text, streaming }: { text: string; streaming?: boolean }) {
+  const shown = streaming ? text : sanitizeBubbleContent(text);
   return (
     <div className="beat-narration">
-      {text}
+      {shown}
     </div>
   );
 }
@@ -81,7 +83,7 @@ export function DialogueLine({
  * breaks and stop the rows from being read as prose — it parses nothing.
  */
 export function BeatInfoSheet({ text }: { text: string }) {
-  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+  const lines = sanitizeBubbleContent(text).split('\n').map((l) => l.trim()).filter(Boolean);
   return (
     <div className="beat-info">
       {lines.map((line, i) => {
