@@ -143,13 +143,16 @@ function main() {
     assert.equal(stripLeakTail('본문\n</choices>\n' + JSON.stringify(FIXTURE_UI)), '본문');
   });
 
-  t('client sanitizeBubbleContent: same fixture cleaned; mid-body left alone', () => {
+  t('client sanitizeBubbleContent: same fixture cleaned; paired mid-body stripped, surrounding kept', () => {
     const cleaned = sanitizeBubbleContent(FIXTURE_CONTENT);
     assert.match(cleaned, /빗소리/);
     assert.doesNotMatch(cleaned, /<choices>/i);
     assert.doesNotMatch(cleaned, /location_badge/);
     const mid = '그는 <choices>["가"]</choices> 라고 했고 끝.';
-    assert.equal(sanitizeBubbleContent(mid), mid);
+    const cleanedMid = sanitizeBubbleContent(mid);
+    assert.doesNotMatch(cleanedMid, /<\s*\/?choices>/i);
+    assert.match(cleanedMid, /그는/);
+    assert.match(cleanedMid, /라고 했고 끝/);
   });
 
   t('client: MessageView uses sanitize; ui block_kind path untouched', () => {
