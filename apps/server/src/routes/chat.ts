@@ -251,13 +251,17 @@ export function chatRoutes(ctx: Ctx) {
   /**
    * POST /messages (and branch) insert the user as complete *before* generate so
    * getPath still sees the turn. On model/setup failure (not abort) retract that
-   * row — CASCADE children, restore head — so a retry is not a second complete user.
+   * row — CASCADE children, restore the request-time active head — so a retry is
+   * not a second complete user.
+   *
+   * `restoreHead` is conv.head_message_id at request time, not the new user
+   * parent. On /messages those coincide; on /branch from an older user they do
+   * not (restoring parent_id would hide the live leaf without deleting it).
    * Regen passes no userMessage and is left alone.
    */
-  function retractUnconfirmedSend(user: MessageRow | undefined): void {
+  function retractUnconfirmedSend(user: MessageRow | undefined, restoreHead: string | null): void {
     if (!user || user.role !== 'user') return;
     const convId = user.conversation_id;
-    const restoreHead = user.parent_id;
     db.transaction(() => {
       // Unhook head first so CASCADE/child deletes cannot trip a head FK.
       setHead(db, convId, restoreHead);
@@ -299,7 +303,7 @@ export function chatRoutes(ctx: Ctx) {
     inject = inject ?? { instruction: null };
     interruptOrphanStreaming(db, { keepMessageIds: ctx.queue.activeList.map((g) => g.messageId) });
     if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) {
-      retractUnconfirmedSend(userMessage);
+      retractUnconfirmedSend(userMessage, conv.head_message_id);
       return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
     }
 
@@ -334,11 +338,11 @@ export function chatRoutes(ctx: Ctx) {
     try {
       built = buildPrompt(db, convNow, history, config.model.contextTokens, ctx.resolvedModel(), undefined, { inject });
     } catch (err) {
-      retractUnconfirmedSend(userMessage);
+      retractUnconfirmedSend(userMessage, conv.head_message_id);
       return reply.code(500).send({ error: `프롬프트 조립 실패: ${(err as Error).message}` });
     }
     if (!built.model) {
-      retractUnconfirmedSend(userMessage);
+      retractUnconfirmedSend(userMessage, conv.head_message_id);
       return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
     }
 
@@ -422,7 +426,7 @@ export function chatRoutes(ctx: Ctx) {
         ctx.log.error({ err, generationId }, '생성 실패');
         updateMessage(db, assistant.id, { content: sanitizeAssistantContent(buffer).trim(), status: 'error', meta: { error: msg } });
         logRow('error', { finish: 'error' });
-        retractUnconfirmedSend(userMessage);
+        retractUnconfirmedSend(userMessage, conv.head_message_id);
         sse.send({ type: 'error', message: msg, messageId: assistant.id });
       }
     } finally {
@@ -467,7 +471,7 @@ export function chatRoutes(ctx: Ctx) {
       Math.max(512, config.model.contextTokens - completionMax - 64);
     const model = ctx.resolvedModel();
     if (!model) {
-      retractUnconfirmedSend(userMessage);
+      retractUnconfirmedSend(userMessage, conv.head_message_id);
       return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
     }
 
@@ -849,7 +853,7 @@ export function chatRoutes(ctx: Ctx) {
           sse.send({ type: 'done', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', focusRow.id)!), usage: null, ttftMs: null, totalMs: Date.now() - tBeat });
         } else {
           ctx.log.error({ err, generationId }, '비트 생성 실패');
-          retractUnconfirmedSend(userMessage);
+          retractUnconfirmedSend(userMessage, conv.head_message_id);
           sse.send({ type: 'error', message: msg, messageId: focusRow.id });
         }
       } else if (aborted) {
@@ -865,7 +869,7 @@ export function chatRoutes(ctx: Ctx) {
         }
       } else {
         ctx.log.error({ err, generationId }, '비트 생성 실패');
-        retractUnconfirmedSend(userMessage);
+        retractUnconfirmedSend(userMessage, conv.head_message_id);
         sse.send({ type: 'error', message: msg });
       }
       logClockObserve(
@@ -913,7 +917,7 @@ export function chatRoutes(ctx: Ctx) {
       Math.max(512, config.model.contextTokens - completionMax - 64);
     const model = ctx.resolvedModel();
     if (!model) {
-      retractUnconfirmedSend(userMessage);
+      retractUnconfirmedSend(userMessage, conv.head_message_id);
       return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
     }
 
@@ -1171,7 +1175,7 @@ export function chatRoutes(ctx: Ctx) {
           sse.send({ type: 'done', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', scriptRow.id)!), usage: null, ttftMs: null, totalMs: Date.now() - tBeat });
         } else {
           ctx.log.error({ err, generationId }, '대본 생성 실패');
-          retractUnconfirmedSend(userMessage);
+          retractUnconfirmedSend(userMessage, conv.head_message_id);
           sse.send({ type: 'error', message: msg, messageId: scriptRow.id });
         }
       } else if (aborted) {
@@ -1185,7 +1189,7 @@ export function chatRoutes(ctx: Ctx) {
         }
       } else {
         ctx.log.error({ err, generationId }, '대본 생성 실패');
-        retractUnconfirmedSend(userMessage);
+        retractUnconfirmedSend(userMessage, conv.head_message_id);
         sse.send({ type: 'error', message: msg });
       }
       logClockObserve(
@@ -1223,7 +1227,7 @@ export function chatRoutes(ctx: Ctx) {
       try {
         return await generate(req, reply, conv, user.id, user, undefined, inj.ctx);
       } catch (err) {
-        retractUnconfirmedSend(user);
+        retractUnconfirmedSend(user, conv.head_message_id);
         throw err;
       }
     });
@@ -1287,7 +1291,7 @@ export function chatRoutes(ctx: Ctx) {
       try {
         return await generate(req, reply, conv, user.id, user, undefined, inj.ctx);
       } catch (err) {
-        retractUnconfirmedSend(user);
+        retractUnconfirmedSend(user, conv.head_message_id);
         throw err;
       }
     });
