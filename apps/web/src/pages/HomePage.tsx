@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { get, post } from '../lib/api';
 import { isPublicTag, publicTags } from '../lib/publicTags';
 import { navigate, useLocation } from '../lib/router';
+import { stripDescSectionHeaders } from '../lib/stripDescSectionHeaders';
 import type { Character, Health, Story } from '../types';
 import { DiscCover, relTime } from '../components/view';
 import { CharacterEditor } from '../components/CharacterEditor';
@@ -186,19 +187,22 @@ export function HomePage() {
             </div>
           ) : (
             <div className="disc-grid">
-              {stories.map((s) => (
+              {stories.map((s) => {
+                const setting = stripDescSectionHeaders(s.setting);
+                return (
                 <button key={s.id} type="button" className="disc-card disc-card--cover" onClick={() => navigate(`/story/${s.id}`)}>
                   <DiscCover name={s.name} avatar={s.cover} kind="story" />
                   <div className="disc-card-body">
                     <div className="disc-card-tag">{s.tagline || ' '}</div>
-                    {s.setting ? <p className="disc-card-desc">{s.setting}</p> : null}
+                    {setting ? <p className="disc-card-desc">{setting}</p> : null}
                     <div className="disc-card-meta">
                       <span>{s.character_count ? `캐릭터 ${s.character_count}명` : '캐릭터 없음'}</span>
                       <span className="disc-card-cta">시작 →</span>
                     </div>
                   </div>
                 </button>
-              ))}
+                );
+              })}
             </div>
           )
         ) : chars === null ? (
@@ -233,12 +237,14 @@ export function HomePage() {
               </div>
             ) : (
               <div className="disc-grid">
-                {(filteredChars ?? []).map((c) => (
+                {(filteredChars ?? []).map((c) => {
+                  const desc = stripDescSectionHeaders(c.description);
+                  return (
                   <button key={c.id} type="button" className="disc-card disc-card--cover" onClick={() => navigate(`/character/${c.id}`)}>
                     <DiscCover name={c.name} avatar={c.avatar} kind="character" />
                     <div className="disc-card-body">
                       <div className="disc-card-tag">{c.tagline || ' '}</div>
-                      {c.description ? <p className="disc-card-desc">{c.description}</p> : null}
+                      {desc ? <p className="disc-card-desc">{desc}</p> : null}
                       {publicTags(c.tags).length > 0 && (
                         <div className="disc-card-tags">
                           {publicTags(c.tags).slice(0, 4).map((t) => <span key={t} className="tag">#{t}</span>)}
@@ -250,7 +256,8 @@ export function HomePage() {
                       </div>
                     </div>
                   </button>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
