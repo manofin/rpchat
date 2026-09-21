@@ -12,7 +12,7 @@ import { SceneStatusPanel } from '../components/sceneStatus';
 import { resolveSceneAction, type SceneActionIntent } from '../lib/sceneStatusCatalog';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { visibleChoices } from '../lib/choices';
-import { sanitizeBubbleContent } from '../lib/sanitizeBubble';
+import { hideIncompleteChoicesPrefix, sanitizeBubbleContent } from '../lib/sanitizeBubble';
 import { groupChatTurns, isEmptyUserMessage, shouldReorderTurn, turnChoicesHost, visibleChatMessages, visualAssistantOrder } from '../lib/chatLayout';
 import { wrapSpeechMarks } from '../lib/speechMarks';
 import { partyBlockFromMessage } from '../lib/partyTurn';
@@ -732,7 +732,8 @@ function MessageView(props: {
           // Display-only: same sanitize on streaming and complete. Persist is untouched.
           // Real `block_kind:'ui'` never reaches this branch.
           const shown = sanitizeBubbleContent(m.content);
-          if (!shown) return <span className="muted">…</span>;
+          const visible = props.streaming ? hideIncompleteChoicesPrefix(shown) : shown;
+          if (!visible) return <span className="muted">…</span>;
           // R1 MUST: completed party/dialog lines render as [Name] : "speech".
           // wrapSpeechMarks waits until complete to avoid style flicker.
           if (lineSpeech && !props.streaming) {
@@ -752,7 +753,7 @@ function MessageView(props: {
               </>
             );
           }
-          return renderContent(shown);
+          return renderContent(visible);
         })()}
         {props.streaming && <span className="cursor" />}
         {m.status === 'error' && <div className="small" style={{ color: 'var(--danger)', marginTop: 6 }}>{m.meta.error ?? '생성 실패'}</div>}
