@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { abortGeneration, ApiError, get, patch, post, put, del, streamPost } from '../lib/api';
+import { abortGeneration, ApiError, get, patch, post, put, del, sendOkForComposer, streamPost } from '../lib/api';
 import type { ConversationDetail, Message, SseBudget, SseEvent } from '../types';
 
 export interface ChatState {
@@ -126,14 +126,14 @@ export function useChat(conversationId: string) {
       }
       return true;
     } catch (e) {
-      if (!ctrl.signal.aborted) {
+      const aborted = ctrl.signal.aborted || (e instanceof ApiError && e.status === 499);
+      if (!aborted) {
         // 네트워크 단절: 서버는 계속 생성 중일 수 있으므로 상태를 재동기화
         patchState({ error: (e as Error).message, generating: false, streamingId: null });
-        setTimeout(() => reload(), 400);
-        // HTTP 4xx/5xx after the send insert: server retracted. Network drop: do not restore composer.
-        return e instanceof ApiError ? false : true;
       }
-      return true;
+      setTimeout(() => reload(), 400);
+      // 499 = 명시적 중단. 실패 전송으로 입력창을 되돌리지 않는다.
+      return sendOkForComposer(e, ctrl.signal.aborted);
     } finally {
       if (abortRef.current === ctrl) abortRef.current = null;
     }

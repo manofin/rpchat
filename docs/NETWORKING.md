@@ -39,15 +39,18 @@ tailscale serve status
 ```
 
 ### 신원 헤더 인증 (AUTH_MODE=tailscale)
-Serve 는 요청에 접속자의 tailnet 신원을 헤더로 붙여준다. 앱은 `Tailscale-User-Login` 을 읽어 `ALLOWED_LOGIN` 과 대조한다.
+Serve 는 요청에 접속자의 tailnet 신원을 헤더로 붙여준다. 앱은 **소켓 peer** 가 루프백이거나 `TAILSCALE_TRUSTED_PROXY_IPS` 에 적힌 정확한 IP 일 때만 `Tailscale-User-Login` 을 `ALLOWED_LOGIN` 과 대조한다. `X-Forwarded-*` / `X-Real-IP` 는 보지 않는다.
 
 ```
 AUTH_MODE=tailscale
 ALLOWED_LOGIN=you@example.com   # tailscale status 의 본인 로그인과 일치
+HOST=127.0.0.1                  # 기본. 비루프백이면 아래 목록 필수
+TAILSCALE_TRUSTED_PROXY_IPS=    # 기본 빈 값. 와일드카드·DNS·CIDR·전체 네트워크 불가
 ```
 
 - tailnet 은 단독 사용자이므로 사실상 본인만 접근 가능하지만, 이 대조로 한 번 더 못을 박는다.
-- 헤더는 Serve 가 신뢰 경계에서 주입하므로 위조가 어렵다. **앱은 `trustProxy=false`** 로, 클라이언트가 보낸 `X-Forwarded-*` 는 신뢰하지 않는다.
+- 헤더는 Serve 가 신뢰 경계에서 주입한다. **앱은 `trustProxy=false`**. 클라이언트가 보낸 전달 헤더로 peer 를 바꾸지 않는다.
+- 검증 중에 관측된 클라이언트를 목록에 자동 등록하지 않는다. Docker 예외는 운영자가 실제 프록시 peer IP 를 확인한 뒤 그 값만 넣는다.
 
 > 토큰 모드(`AUTH_MODE=token`)를 쓰려면 Serve(HTTPS) 뒤에서만 사용한다. 쿠키가 `Secure` 라서 평문 HTTP 에서는 로그인 세션이 유지되지 않는다.
 

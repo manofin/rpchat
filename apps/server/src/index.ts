@@ -4,6 +4,7 @@ import Fastify from 'fastify';
 import fastifyCookie from '@fastify/cookie';
 import fastifyStatic from '@fastify/static';
 import { PROMPT_VERSION, config, validateConfig } from './config.js';
+import { defaultSchemaCompatPath, schemaCompatProblems } from './db/schemaCompat.js';
 import { inspectSchema, openDb } from './db/index.js';
 import { interruptOrphanStreaming } from './db/generation.js';
 import { seed } from './db/seed.js';
@@ -25,6 +26,11 @@ async function main() {
   const problems = validateConfig();
   if (problems.length) {
     for (const p of problems) console.error(`[config] ${p}`);
+    process.exit(1);
+  }
+  const specProblems = schemaCompatProblems(config.migrationsDir, defaultSchemaCompatPath());
+  if (specProblems.length) {
+    for (const p of specProblems) console.error(`[schema-compat] ${p}`);
     process.exit(1);
   }
 

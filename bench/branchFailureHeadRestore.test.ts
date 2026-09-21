@@ -15,6 +15,7 @@ import { GenerationQueue } from '../apps/server/src/model/queue.ts';
 import { ModelError } from '../apps/server/src/model/adapter.ts';
 import { characterRoutes } from '../apps/server/src/routes/characters.ts';
 import { conversationRoutes } from '../apps/server/src/routes/conversations.ts';
+import { storyRoutes } from '../apps/server/src/routes/stories.ts';
 import { chatRoutes } from '../apps/server/src/routes/chat.ts';
 import type { Ctx } from '../apps/server/src/ctx.ts';
 import type { GenParams, GenResult } from '../apps/server/src/model/adapter.ts';
@@ -111,7 +112,17 @@ async function main() {
       }
       return okText(streamChunks.join(''));
     },
-    complete: async (p: GenParams) => model.stream(p, () => {}),
+    complete: async (p: GenParams): Promise<GenResult> => {
+      const prompt = String(p.messages?.[0]?.content ?? '');
+      if (prompt.includes('장면 진행 판정기')) {
+        return okText(JSON.stringify({ base_version: 0, advance_minutes: 10, weather: '맑음' }));
+      }
+      if (prompt.includes('입력 초안만 쓴다')) return okText('<choices>["가","나","다"]</choices>');
+      if (prompt.includes('너는 장면 서술자다') || prompt.includes('군중') || prompt.startsWith('당신은 카메라')) {
+        return okText('서술이 이어진다.');
+      }
+      return okText('"교칙이야."');
+    },
     listModels: async () => ['test-model'],
   };
 
@@ -127,6 +138,7 @@ async function main() {
 
   const app = Fastify({ logger: false });
   await app.register(characterRoutes(ctx));
+  await app.register(storyRoutes(ctx));
   await app.register(conversationRoutes(ctx));
   await app.register(chatRoutes(ctx));
   await app.listen({ host: '127.0.0.1', port: 0 });
@@ -224,6 +236,7 @@ async function main() {
 
   await t('U1-edit-fail: head returns to C; C row and getPath stay; branch user gone', async () => {
     failNext = 'model-error';
+    const sceneBefore = (db.prepare('SELECT scene_json FROM conversations WHERE id = ?').get(tree.convId) as { scene_json: string }).scene_json;
     const beforeCount = (db.prepare('SELECT COUNT(*) AS n FROM messages WHERE conversation_id = ?').get(tree.convId) as { n: number }).n;
     const res = await fetch(`${origin}/api/conversations/${tree.convId}/branch`, {
       method: 'POST',
@@ -237,6 +250,8 @@ async function main() {
     const head = db.prepare('SELECT head_message_id FROM conversations WHERE id = ?').get(tree.convId) as { head_message_id: string | null };
     assert.equal(head.head_message_id, tree.C, 'request-time head C, not A');
     assert.notEqual(head.head_message_id, tree.A);
+    const sceneAfter = (db.prepare('SELECT scene_json FROM conversations WHERE id = ?').get(tree.convId) as { scene_json: string }).scene_json;
+    assert.equal(sceneAfter, sceneBefore, '1:1 scene unchanged on branch fail');
 
     const rows = db.prepare(
       'SELECT id, role, content, parent_id, status FROM messages WHERE conversation_id = ?',
@@ -315,6 +330,85 @@ async function main() {
     const head = db.prepare('SELECT head_message_id FROM conversations WHERE id = ?').get(conv.id) as { head_message_id: string | null };
     assert.notEqual(head.head_message_id, conv.head_message_id);
   });
+
+  const nari = await api('POST', '/api/characters', { name: '나리P', personality: 'n', first_message: '', tags: ['party:duty=이야기', 'party:place=교실'] });
+  const sera = await api('POST', '/api/characters', { name: '세라P', personality: 's', first_message: '', tags: ['party:duty=교칙', 'party:place=교실'] });
+  const hayeon = await api('POST', '/api/characters', { name: '하연P', personality: 'h', first_message: '', tags: ['party:duty=수업', 'party:place=교실'] });
+  assert.equal(nari.status, 201, nari.text);
+  const nariId = (nari.json as { id: string }).id;
+  const seraId = (sera.json as { id: string }).id;
+  const hayeonId = (hayeon.json as { id: string }).id;
+  const storyRes = await api('POST', '/api/stories', {
+    name: '히어로 아카데미', tagline: 'S반', setting: '교실', minor_cast: [],
+    scene_catalog: { places: [{ id: '교실', default_focus: 'nari' }], weathers: ['맑음'], arcs: ['entry'] },
+  });
+  assert.equal(storyRes.status, 201, storyRes.text);
+  const story = (storyRes.json as { id: string }).id;
+  for (const [id, order] of [[hayeonId, 0], [nariId, 1], [seraId, 2]] as const) {
+    const link = await api('POST', `/api/stories/${story}/characters`, { characterId: id, sortOrder: order });
+    assert.equal(link.status, 201, link.text);
+  }
+
+  async function seedParty(format?: 'dialog'): Promise<{ convId: string; U1: string; head: string; path: string[]; scene: string; count: number }> {
+    const convRes = await api('POST', '/api/conversations', { characterId: hayeonId, storyId: story, mode: 'story' });
+    assert.equal(convRes.status, 201, convRes.text);
+    const convId = (convRes.json as { id: string }).id;
+    if (format === 'dialog') {
+      const patch = await api('PATCH', `/api/conversations/${convId}`, {
+        scene: { format: 'dialog', location: '교실', present_ids: [hayeonId, nariId, seraId] },
+      });
+      assert.equal(patch.status, 200, patch.text);
+    }
+    for (const content of ['나리P, U1', '나리P, U2']) {
+      const send = await fetch(`${origin}/api/conversations/${convId}/messages`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ content }),
+      });
+      assert.equal(send.status, 200, await send.text());
+    }
+    const detail = await api('GET', `/api/conversations/${convId}`);
+    const msgs = (detail.json as { messages: Msg[] }).messages;
+    const U1 = msgs.find((m) => m.role === 'user' && m.content === '나리P, U1');
+    assert.ok(U1, JSON.stringify(msgs));
+    const head = (db.prepare('SELECT head_message_id FROM conversations WHERE id = ?').get(convId) as { head_message_id: string }).head_message_id;
+    const scene = (db.prepare('SELECT scene_json FROM conversations WHERE id = ?').get(convId) as { scene_json: string }).scene_json;
+    const count = (db.prepare('SELECT COUNT(*) AS n FROM messages WHERE conversation_id = ?').get(convId) as { n: number }).n;
+    return { convId, U1: U1.id, head, path: msgs.map((m) => m.id), scene, count };
+  }
+
+  for (const format of [undefined, 'dialog'] as const) {
+    const label = format === 'dialog' ? 'dialog' : 'beat';
+    await t(`${label} U1-edit-fail: head, path, scene restored; branch user gone`, async () => {
+      const tree = await seedParty(format);
+      failNext = 'model-error';
+      const res = await fetch(`${origin}/api/conversations/${tree.convId}/branch`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ messageId: tree.U1, content: '나리P, U1-edit' }),
+      });
+      assert.equal(res.status, 200, `${label} expected SSE 200, got ${res.status}`);
+      const events = parseSse(await res.text());
+      assert.ok(events.some((e) => e.type === 'error'), `${label} ${JSON.stringify(events.map((e) => e.type))}`);
+
+      const head = db.prepare('SELECT head_message_id FROM conversations WHERE id = ?').get(tree.convId) as { head_message_id: string | null };
+      assert.equal(head.head_message_id, tree.head, `${label} request-time head, not U1 parent`);
+      const sceneAfter = (db.prepare('SELECT scene_json FROM conversations WHERE id = ?').get(tree.convId) as { scene_json: string }).scene_json;
+      assert.equal(sceneAfter, tree.scene, `${label} scene unchanged on branch fail`);
+      const parsed = JSON.parse(sceneAfter) as { format?: string };
+      if (format === 'dialog') assert.equal(parsed.format, 'dialog');
+      else assert.notEqual(parsed.format, 'dialog');
+
+      const rows = db.prepare(
+        'SELECT id, role, content FROM messages WHERE conversation_id = ?',
+      ).all(tree.convId) as Msg[];
+      assert.equal(rows.some((m) => m.content === '나리P, U1-edit'), false, JSON.stringify(rows));
+      assert.equal(rows.length, tree.count, `${label} failed branch retracted`);
+      const detail = await api('GET', `/api/conversations/${tree.convId}`);
+      const path = (detail.json as { messages: Msg[] }).messages.map((m) => m.id);
+      assert.deepEqual(path, tree.path);
+    });
+  }
 
   await app.close();
   db.close();

@@ -29,6 +29,9 @@ services:
       # 인증: Tailscale Serve 헤더 신원 확인 (권장)
       AUTH_MODE: "${AUTH_MODE:-tailscale}"
       ALLOWED_LOGIN: "${ALLOWED_LOGIN:-}"     # 본인 Tailscale 로그인(이메일). tailscale 모드 필수.
+      # 컨테이너 HOST=0.0.0.0 이면 필수. 루프백 포트 publish 와 함께, 실제 프록시 peer IP 만.
+      # 와일드카드·DNS·CIDR 금지. 관측 클라이언트를 자동으로 넣지 말 것.
+      TAILSCALE_TRUSTED_PROXY_IPS: "${TAILSCALE_TRUSTED_PROXY_IPS:-}"
       # 토큰 모드로 쓸 경우:
       APP_TOKEN: "${APP_TOKEN:-}"
       SESSION_SECRET: "${SESSION_SECRET:-}"

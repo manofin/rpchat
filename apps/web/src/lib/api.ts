@@ -7,6 +7,13 @@ export class ApiError extends Error {
   }
 }
 
+/** true → keep composer empty (success, user abort, network drop). false → restore (HTTP fail after retract). */
+export function sendOkForComposer(e: unknown, aborted: boolean): boolean {
+  if (aborted) return true;
+  if (e instanceof ApiError && e.status === 499) return true;
+  return e instanceof ApiError ? false : true;
+}
+
 export const UNAUTHORIZED_EVENT = 'rpchat:unauthorized';
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {

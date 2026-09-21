@@ -76,3 +76,33 @@ export function sanitizeBubbleContent(content: string): string {
   if (!content) return content;
   return stripLeakTail(stripPairedChoices(content)).replace(/\s+$/, '');
 }
+
+const CHOICES_TAGS = ['<choices>', '</choices>'] as const;
+
+/**
+ * Streaming-only: hide a proper prefix of a known `<choices>` tag at EOL.
+ * Once the suffix is no longer a prefix of those tags, the text is shown again.
+ * Does not strip arbitrary HTML and does not change completed-bubble sanitize.
+ */
+export function hideIncompleteChoicesPrefix(text: string): string {
+  if (!text) return text;
+  const lower = text.toLowerCase();
+  let hideLen = 0;
+  for (const tag of CHOICES_TAGS) {
+    const max = Math.min(lower.length, tag.length - 1);
+    for (let n = max; n >= 1; n--) {
+      if (tag.startsWith(lower.slice(lower.length - n))) {
+        if (n > hideLen) hideLen = n;
+        break;
+      }
+    }
+  }
+  if (hideLen === 0) return text;
+  return text.slice(0, text.length - hideLen).replace(/\s+$/, '');
+}
+
+/** Display contract: completed bubbles keep sanitize; streaming also hides tag prefixes. */
+export function displayBubbleContent(content: string, streaming = false): string {
+  const shown = sanitizeBubbleContent(content);
+  return streaming ? hideIncompleteChoicesPrefix(shown) : shown;
+}

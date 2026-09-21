@@ -91,6 +91,8 @@ deploy/restore.sh /home/hermes/rpchat/backups/rpchat-YYYYMMDD-HHMMSS.db.gz
 - 스키마 버전 SoT: `SELECT name FROM schema_migrations ORDER BY name`.
   `PRAGMA user_version` 은 쓰지 않으며 0 으로 남아 있다.
 - 이 트리가 요구하는 집합: `deploy/schema-compat.json` → `required_migrations`.
+  이 배열은 `apps/server/migrations/*.sql` 파일 집합과 같아야 한다(현재 22개).
+  일반 기동은 DB를 열기 전에 그 일치를 검사하고, 불일치면 SQL을 적용하지 않고 종료한다.
 - 태그 이력: 저장소 루트 `CHANGELOG.md`.
 - 코드 롤백: `git switch --detach <tag>` 후 해당 태그가 요구하는 스키마의 백업을
   `restore.sh` 로 복원. 스키마가 앞선 백업을 옛 태그에 올리면 `BIND_WARN extra_in_backup`.

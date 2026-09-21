@@ -1,5 +1,6 @@
 <!-- .github/PULL_REQUEST_TEMPLATE.md — rpchat
-     agents/VERIFICATION.md의 검증 루프를 폼으로. 에이전트가 채우고, 사람은 diff가 아니라 체크박스를 본다. -->
+     OPS.md + AGENTS.md 검증 루프를 폼으로. 에이전트가 채우고, 사람은 diff가 아니라 체크박스를 본다.
+     /verify를 구현된 자동화로 쓰지 말 것. 실행한 명령·결과·UI를 아래에 붙인다. -->
 
 ## 무엇이 바뀌나
 
@@ -20,6 +21,8 @@
 
 ## 범위 · LOCK
 
+- named lock: <!-- 이름. 이 레포 계약은 OPS.md §6 (named lock · BASE · LIVE_NO_TOUCH · 비범위) -->
+- BASE: <!-- 작업 기준 커밋 -->
 - [ ] 바뀐 모든 라인이 제목의 그 한 가지에 복무
 - [ ] 유저 노출 문자열에 코드네임 · TODO · 내 추론 없음
 - [ ] 원인 대신 workaround를 설명하는 주석 없음
@@ -31,4 +34,11 @@
 - [ ] **Hermes 배포** — 배포 · 인프라 변경
 - [ ] **돈/권한** — 결제 · 자격 · 크레덴셜
 - [ ] **LIVE DB 쓰기** — 라이브 데이터 기록
-- [ ] 위 어느 것도 아님 — green이면 auto-merge 안전
+- [ ] 해당 없음 (문서·web-only 등). green·Easton PASS는 머지 증거이지 실행·머지 승인이 아님
+- [ ] 서버·인증·migration 변경 — standing / auto-merge 대상 아님
+
+## 검증 역할
+
+- [ ] Hermes: 재현 명령·결과 첨부 (요약만으로 대체 금지)
+- [ ] Chloe: 독립 검증 (구현 코딩 아님)
+- [ ] Easton: 실제 UI PASS/FAIL 기록 (해당하면)
