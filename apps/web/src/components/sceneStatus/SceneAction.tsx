@@ -1,33 +1,41 @@
 import React from 'react';
-import type { SceneActionIntent, UiState } from '../../lib/sceneStatusCatalog';
+import type { SceneActionIntent, SceneActionItem, UiState } from '../../lib/sceneStatusCatalog';
 
 export function SceneAction({
-  label,
-  intent,
+  actions = [],
   uiState = 'default',
   onIntent,
 }: {
-  label?: string;
-  intent?: SceneActionIntent;
+  actions?: SceneActionItem[];
   uiState?: UiState;
   onIntent?: (intent: SceneActionIntent) => void;
 }) {
-  const disabled = uiState === 'disabled' || !intent;
+  if (!actions.length) return null;
   return (
-    <button
-      type="button"
-      className={`scene-action is-${uiState}`}
+    <div
+      className={`scene-action-row is-${uiState}`}
       data-catalog-type="SceneAction"
       data-ui-state={uiState}
-      data-intent={intent || ''}
-      disabled={disabled}
-      aria-disabled={disabled}
-      onClick={() => {
-        if (disabled || !intent) return;
-        onIntent?.(intent);
-      }}
     >
-      {label || '열기'}
-    </button>
+      {actions.map((a) => {
+        const disabled = uiState === 'disabled' || a.enabled === false || !a.intent;
+        return (
+          <button
+            key={a.id}
+            type="button"
+            className={`scene-action is-${uiState}`}
+            data-intent={a.intent}
+            disabled={disabled}
+            aria-disabled={disabled}
+            onClick={() => {
+              if (disabled || !a.intent) return;
+              onIntent?.(a.intent);
+            }}
+          >
+            {a.label || '열기'}
+          </button>
+        );
+      })}
+    </div>
   );
 }

@@ -10,7 +10,7 @@ export function CastRow({
   uiState?: UiState;
 }) {
   if (!members.length) {
-    return <EmptyHint message="등장 인물이 없습니다." uiState="empty" />;
+    return <EmptyHint title="등장 인물이 없습니다." uiState="empty" />;
   }
   return (
     <div
@@ -22,8 +22,8 @@ export function CastRow({
       {members.map((m) => (
         <span
           key={m.id}
-          className={`scene-cast-chip${m.presence === 'speaking' ? ' is-speaking' : ''}${m.presence === 'away' ? ' is-away' : ''}`}
-          data-presence={m.presence || 'present'}
+          className={`scene-cast-chip${m.active ? ' is-active' : ''}`}
+          data-active={m.active ? 'true' : 'false'}
         >
           {m.name}
         </span>

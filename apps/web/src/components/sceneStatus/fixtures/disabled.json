@@ -8,7 +8,12 @@
     },
     "actState": {
       "type": "SceneAction",
-      "props": { "label": "장면 상태", "intent": "open_scene_state", "uiState": "disabled" },
+      "props": {
+        "actions": [
+          { "id": "state", "label": "장면 상태", "intent": "open_scene_state" }
+        ],
+        "uiState": "disabled"
+      },
       "children": []
     }
   }

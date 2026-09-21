@@ -62,7 +62,7 @@ t('unknown type is skipped with a warning; extra props stripped; enum falls back
         children: ['ghost', 'loc'],
       },
       ghost: { type: 'NotACatalogType', props: {}, children: [] },
-      loc: { type: 'LocationPill', props: { place: '부두', traversable: true, extra: 1 }, children: [] },
+      loc: { type: 'LocationPill', props: { name: '부두', traversable: true, extra: 1 }, children: [] },
     },
   }, (m) => warnings.push(m));
   assert.ok(spec);
@@ -73,6 +73,8 @@ t('unknown type is skipped with a warning; extra props stripped; enum falls back
   assert.equal(spec!.elements.scene.props.gold, undefined);
   assert.deepEqual(spec!.elements.scene.children, ['loc']);
   assert.equal(spec!.elements.loc.props.extra, undefined);
+  assert.equal(spec!.elements.loc.props.place, undefined);
+  assert.equal(spec!.elements.loc.props.name, '부두');
   assert.equal(spec!.elements.loc.props.traversable, true);
 });
 
@@ -99,6 +101,11 @@ t('desktop rail and mobile fold placement in ChatPage + CSS', () => {
   assert.match(css, /\.scene-status-panel/);
   assert.match(css, /border-left:\s*3px solid var\(--kami-ink\)/);
   assert.match(css, /max-height:\s*35vh/);
+  assert.match(css, /\.scene-status\[data-progress=/);
+  assert.match(css, /\.scene-status-summary[\s\S]*-webkit-line-clamp:\s*2/);
+  assert.match(css, /\.scene-location-pill \{/);
+  assert.match(css, /\.scene-action \{[\s\S]*min-height:\s*44px/);
+  assert.match(css, /\.scene-action:focus-visible \{[\s\S]*--role-coral/);
   assert.doesNotMatch(css.replace(/\.beat-ui-panel[\s\S]*?}/, ''), /\.scene-status-panel[\s\S]*--role-gold/);
   const panelBlock = css.slice(css.indexOf('.scene-status-panel'));
   assert.ok(!panelBlock.includes('--role-gold'));
@@ -116,21 +123,24 @@ t('CastRow does not duplicate BeatUi roster when hasBeatRoster', () => {
   });
   const cast = Object.values(spec.elements).find((el) => el.type === 'CastRow');
   assert.ok(cast);
-  const members = cast!.props.members as Array<{ id: string; presence?: string }>;
+  const members = cast!.props.members as Array<{ id: string; active?: boolean }>;
   assert.equal(members.length, 1);
-  assert.equal(members[0].presence, 'speaking');
+  assert.equal(members[0].active, true);
 });
 
 t('BeatUi / PartyBlockView / ChoiceChips files are untouched vs BASE', () => {
   const { execSync } = require('node:child_process') as typeof import('node:child_process');
+  const benchSrc = src('bench/sceneStatusPanelCatalog.test.ts');
+  assert.match(benchSrc, /git diff origin\/master\.\.\.HEAD --/);
+  assert.doesNotMatch(benchSrc, /git diff origin\/master --/);
   const out = execSync(
-    'git diff origin/master -- apps/web/src/components/view.tsx apps/server apps/web/src/pages/ChatPage.tsx',
+    'git diff origin/master...HEAD -- apps/web/src/components/view.tsx apps/server apps/web/src/pages/ChatPage.tsx',
     { cwd: appRoot, encoding: 'utf8' },
   );
   assert.doesNotMatch(out, /function ChoiceChips/);
   assert.doesNotMatch(out, /export function BeatUiPanel/);
   assert.doesNotMatch(out, /export function PartyBlockView/);
-  const viewDiff = execSync('git diff origin/master -- apps/web/src/components/view.tsx apps/server', {
+  const viewDiff = execSync('git diff origin/master...HEAD -- apps/web/src/components/view.tsx apps/server', {
     cwd: appRoot,
     encoding: 'utf8',
   });

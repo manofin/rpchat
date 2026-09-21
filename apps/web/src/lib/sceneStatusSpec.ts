@@ -2,6 +2,7 @@ import type { Scene } from '../types';
 import {
   parseSceneStatusSpec,
   type CastMember,
+  type SceneActionItem,
   type SceneProgress,
   type SceneStatusSpec,
   type UiState,
@@ -46,11 +47,14 @@ function castMembers(input: SceneStatusSpecInput): CastMember[] {
   const name = (input.characterName || '').trim();
   if (!name) return [];
   const id = input.focusId?.trim() || 'speaker';
-  if (input.hasBeatRoster) {
-    return [{ id, name, presence: 'speaking' }];
-  }
-  return [{ id, name, presence: 'present' }];
+  return [{ id, name, active: input.hasBeatRoster }];
 }
+
+const DEFAULT_ACTIONS: SceneActionItem[] = [
+  { id: 'info', label: '장면 정보', intent: 'open_scene_info' },
+  { id: 'state', label: '장면 상태', intent: 'open_scene_state' },
+  { id: 'ctx', label: '컨텍스트', intent: 'open_context' },
+];
 
 /** Build a catalog spec from existing conv.scene. No writes. */
 export function buildSceneStatusSpec(input: SceneStatusSpecInput): SceneStatusSpec {
@@ -74,14 +78,21 @@ export function buildSceneStatusSpec(input: SceneStatusSpecInput): SceneStatusSp
   if (uiState === 'error') {
     elements.retry = {
       type: 'SceneAction',
-      props: { label: '다시 시도', intent: 'retry', uiState: 'default' },
+      props: {
+        actions: [{ id: 'retry', label: '다시 시도', intent: 'retry' }],
+        uiState: 'default',
+      },
       children: [],
     };
     children.push('retry');
   } else if (uiState === 'empty') {
     elements.hint = {
       type: 'EmptyHint',
-      props: { message: '장면 정보가 없습니다.', uiState: 'empty' },
+      props: {
+        title: '장면 정보가 없습니다.',
+        body: '비트 상태나 장소 정보가 아직 없습니다.',
+        uiState: 'empty',
+      },
       children: [],
     };
     children.push('hint');
@@ -97,34 +108,24 @@ export function buildSceneStatusSpec(input: SceneStatusSpecInput): SceneStatusSp
     if (place) {
       elements.loc = {
         type: 'LocationPill',
-        props: { place, uiState: 'default' },
+        props: { name: place, uiState: 'default' },
         children: [],
       };
       children.push('loc');
     } else {
       elements.locHint = {
         type: 'EmptyHint',
-        props: { message: '위치가 없습니다.', uiState: 'empty' },
+        props: { title: '위치가 없습니다.', uiState: 'empty' },
         children: [],
       };
       children.push('locHint');
     }
-    elements.info = {
+    elements.actions = {
       type: 'SceneAction',
-      props: { label: '장면 정보', intent: 'open_scene_info', uiState: 'default' },
+      props: { actions: DEFAULT_ACTIONS, uiState: 'default' },
       children: [],
     };
-    elements.state = {
-      type: 'SceneAction',
-      props: { label: '장면 상태', intent: 'open_scene_state', uiState: 'default' },
-      children: [],
-    };
-    elements.ctx = {
-      type: 'SceneAction',
-      props: { label: '컨텍스트', intent: 'open_context', uiState: 'default' },
-      children: [],
-    };
-    children.push('info', 'state', 'ctx');
+    children.push('actions');
   }
 
   elements.root.children = children;

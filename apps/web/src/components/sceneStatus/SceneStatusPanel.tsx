@@ -40,7 +40,7 @@ export function SceneStatusPanel({
   const uiState = String(spec.elements[spec.root]?.props.uiState || 'default');
   const title = String(spec.elements[spec.root]?.props.title || '장면');
   const placeEl = Object.values(spec.elements).find((el) => el.type === 'LocationPill');
-  const place = typeof placeEl?.props.place === 'string' ? placeEl.props.place : '';
+  const place = typeof placeEl?.props.name === 'string' ? placeEl.props.name : '';
   const [open, setOpen] = useState(false);
   const collapsed = placement === 'mobile' && !open;
 

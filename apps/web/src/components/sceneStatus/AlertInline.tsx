@@ -1,25 +1,28 @@
 import React from 'react';
-import type { AlertSeverity, UiState } from '../../lib/sceneStatusCatalog';
+import type { AlertTone, UiState } from '../../lib/sceneStatusCatalog';
 
 export function AlertInline({
   message,
-  severity = 'info',
+  tone = 'info',
+  actionLabel,
   uiState = 'error',
 }: {
   message?: string;
-  severity?: AlertSeverity;
+  tone?: AlertTone;
+  actionLabel?: string;
   uiState?: UiState;
 }) {
-  const banner = severity === 'error' ? 'banner err' : 'banner';
+  const banner = tone === 'error' ? 'banner err' : tone === 'warn' ? 'banner warn' : 'banner';
   return (
     <div
       className={`${banner} scene-alert-inline is-${uiState}`}
       data-catalog-type="AlertInline"
       data-ui-state={uiState}
-      data-severity={severity}
+      data-tone={tone}
       role="status"
     >
-      {message || '오류가 발생했습니다.'}
+      <span>{message || '오류가 발생했습니다.'}</span>
+      {actionLabel ? <span className="scene-alert-action">{actionLabel}</span> : null}
     </div>
   );
 }

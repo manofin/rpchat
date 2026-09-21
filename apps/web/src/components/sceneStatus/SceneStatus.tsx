@@ -36,9 +36,15 @@ export function SceneStatus({
         <span className="scene-status-progress">{PROGRESS_LABEL[progress]}</span>
       </div>
       {summary ? <p className="scene-status-summary">{summary}</p> : null}
-      {uiState === 'loading' ? <EmptyHint message="장면을 불러오는 중…" uiState="loading" /> : null}
-      {uiState === 'empty' ? <EmptyHint message="장면 정보가 없습니다." uiState="empty" /> : null}
-      {uiState === 'error' ? <AlertInline message="장면을 불러오지 못했습니다." severity="error" uiState="error" /> : null}
+      {uiState === 'loading' ? <EmptyHint title="장면을 불러오는 중…" uiState="loading" /> : null}
+      {uiState === 'empty' ? (
+        <EmptyHint
+          title="장면 정보가 없습니다."
+          body="비트 상태나 장소 정보가 아직 없습니다."
+          uiState="empty"
+        />
+      ) : null}
+      {uiState === 'error' ? <AlertInline message="장면을 불러오지 못했습니다." tone="error" uiState="error" /> : null}
       {uiState === 'refreshing' ? <div className="scene-status-refresh" aria-hidden="true" /> : null}
       {hideCatalogChildren ? null : <div className="scene-status-body">{children}</div>}
     </div>

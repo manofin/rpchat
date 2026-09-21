@@ -3,16 +3,16 @@ import type { UiState } from '../../lib/sceneStatusCatalog';
 import { EmptyHint } from './EmptyHint';
 
 export function LocationPill({
-  place,
+  name,
   traversable,
   uiState = 'default',
 }: {
-  place?: string;
+  name?: string;
   traversable?: boolean | null;
   uiState?: UiState;
 }) {
-  const text = (place || '').trim();
-  if (!text) return <EmptyHint message="위치가 없습니다." uiState="empty" />;
+  const text = (name || '').trim();
+  if (!text) return <EmptyHint title="위치가 없습니다." uiState="empty" />;
   return (
     <span
       className={`scene-location-pill is-${uiState}`}

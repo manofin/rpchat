@@ -13,7 +13,7 @@
     },
     "loc": {
       "type": "LocationPill",
-      "props": { "place": "제3부두", "traversable": true, "uiState": "refreshing" },
+      "props": { "name": "제3부두", "traversable": true, "uiState": "refreshing" },
       "children": []
     }
   }

@@ -12,16 +12,20 @@ export type SceneActionIntent = (typeof SCENE_ACTION_INTENTS)[number];
 export const CATALOG_TYPES = ['SceneStatus', 'CastRow', 'LocationPill', 'SceneAction', 'EmptyHint', 'AlertInline'] as const;
 export type CatalogType = (typeof CATALOG_TYPES)[number];
 
-export const ALERT_SEVERITIES = ['info', 'warning', 'error'] as const;
-export type AlertSeverity = (typeof ALERT_SEVERITIES)[number];
-
-export const CAST_PRESENCE = ['present', 'away', 'speaking'] as const;
-export type CastPresence = (typeof CAST_PRESENCE)[number];
+export const ALERT_TONES = ['error', 'warn', 'info'] as const;
+export type AlertTone = (typeof ALERT_TONES)[number];
 
 export type CastMember = {
   id: string;
   name: string;
-  presence?: CastPresence;
+  active?: boolean;
+};
+
+export type SceneActionItem = {
+  id: string;
+  label: string;
+  intent: SceneActionIntent;
+  enabled?: boolean;
 };
 
 export type SpecElement = {
@@ -38,18 +42,17 @@ export type SceneStatusSpec = {
 export const ALLOWED_PROPS: Record<CatalogType, readonly string[]> = {
   SceneStatus: ['title', 'progress', 'summary', 'uiState'],
   CastRow: ['members', 'uiState'],
-  LocationPill: ['place', 'traversable', 'uiState'],
-  SceneAction: ['label', 'intent', 'uiState'],
-  EmptyHint: ['message', 'uiState'],
-  AlertInline: ['message', 'severity', 'uiState'],
+  LocationPill: ['name', 'traversable', 'uiState'],
+  SceneAction: ['actions', 'uiState'],
+  EmptyHint: ['title', 'body', 'uiState'],
+  AlertInline: ['tone', 'message', 'actionLabel', 'uiState'],
 };
 
 const ENUM_FALLBACK: Record<string, { values: readonly string[]; fallback: string }> = {
   uiState: { values: UI_STATES, fallback: 'default' },
   progress: { values: SCENE_PROGRESS, fallback: 'idle' },
   intent: { values: SCENE_ACTION_INTENTS, fallback: 'open_scene_state' },
-  severity: { values: ALERT_SEVERITIES, fallback: 'info' },
-  presence: { values: CAST_PRESENCE, fallback: 'present' },
+  tone: { values: ALERT_TONES, fallback: 'info' },
 };
 
 export type SceneActionDispatch =
@@ -88,8 +91,27 @@ function normalizeMembers(raw: unknown): CastMember[] {
     if (!item || typeof item !== 'object') continue;
     const rec = item as Record<string, unknown>;
     if (typeof rec.id !== 'string' || typeof rec.name !== 'string') continue;
-    const presence = inList(CAST_PRESENCE, rec.presence) ? (rec.presence as CastPresence) : 'present';
-    out.push({ id: rec.id, name: rec.name, presence });
+    out.push({ id: rec.id, name: rec.name, active: rec.active === true });
+  }
+  return out;
+}
+
+function normalizeActions(raw: unknown): SceneActionItem[] {
+  if (!Array.isArray(raw)) return [];
+  const out: SceneActionItem[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const rec = item as Record<string, unknown>;
+    if (typeof rec.id !== 'string' || typeof rec.label !== 'string') continue;
+    const intent = inList(SCENE_ACTION_INTENTS, rec.intent)
+      ? (rec.intent as SceneActionIntent)
+      : 'open_scene_state';
+    out.push({
+      id: rec.id,
+      label: rec.label,
+      intent,
+      enabled: rec.enabled === false ? false : true,
+    });
   }
   return out;
 }
@@ -100,8 +122,12 @@ function stripProps(type: CatalogType, raw: Record<string, unknown>): Record<str
   for (const [k, v] of Object.entries(raw)) {
     if (!allowed.has(k)) continue;
     if (k === 'members') props[k] = normalizeMembers(v);
-    else if (k === 'traversable') props[k] = v === true;
-    else if (k === 'title' || k === 'summary' || k === 'place' || k === 'label' || k === 'message') {
+    else if (k === 'actions') props[k] = normalizeActions(v);
+    else if (k === 'traversable') {
+      if (v === true) props[k] = true;
+      else if (v === false) props[k] = false;
+      else props[k] = null;
+    } else if (k === 'title' || k === 'summary' || k === 'name' || k === 'label' || k === 'message' || k === 'body' || k === 'actionLabel') {
       props[k] = typeof v === 'string' ? v : '';
     } else props[k] = normalizeEnum(k, v);
   }

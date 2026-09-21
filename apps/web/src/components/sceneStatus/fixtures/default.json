@@ -15,7 +15,7 @@
       "type": "CastRow",
       "props": {
         "members": [
-          { "id": "kai", "name": "카이", "presence": "speaking" }
+          { "id": "kai", "name": "카이", "active": true }
         ],
         "uiState": "default"
       },
@@ -23,12 +23,17 @@
     },
     "loc": {
       "type": "LocationPill",
-      "props": { "place": "제3부두", "traversable": true, "uiState": "default" },
+      "props": { "name": "제3부두", "traversable": true, "uiState": "default" },
       "children": []
     },
     "actState": {
       "type": "SceneAction",
-      "props": { "label": "장면 상태", "intent": "open_scene_state", "uiState": "default" },
+      "props": {
+        "actions": [
+          { "id": "state", "label": "장면 상태", "intent": "open_scene_state" }
+        ],
+        "uiState": "default"
+      },
       "children": []
     }
   }

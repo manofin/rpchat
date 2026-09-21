@@ -8,7 +8,12 @@
     },
     "retry": {
       "type": "SceneAction",
-      "props": { "label": "다시 시도", "intent": "retry", "uiState": "default" },
+      "props": {
+        "actions": [
+          { "id": "retry", "label": "다시 시도", "intent": "retry" }
+        ],
+        "uiState": "default"
+      },
       "children": []
     }
   }

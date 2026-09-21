@@ -1775,14 +1775,10 @@ textarea { resize: none; }
   font-size: 12px;
   white-space: nowrap;
 }
-.scene-cast-chip.is-speaking {
+.scene-cast-chip.is-active {
   border-color: var(--kami-ink);
   color: var(--kami-text-strong);
   font-weight: 650;
-}
-.scene-cast-chip.is-away {
-  color: var(--kami-text-faint);
-  border-style: dashed;
 }
 .scene-location-pill {
   display: inline-flex;
@@ -1796,6 +1792,11 @@ textarea { resize: none; }
 .scene-location-pill[data-traversable="false"] {
   border: 1px dashed var(--kami-line);
   color: var(--kami-text-faint);
+}
+.scene-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 .scene-action {
   appearance: none;
@@ -1815,12 +1816,22 @@ textarea { resize: none; }
   pointer-events: none;
 }
 .scene-action:focus-visible {
-  outline: 2px solid var(--kami-ink);
+  outline: 2px solid var(--role-coral);
   outline-offset: 2px;
 }
 .scene-empty-hint {
   flex: 1 1 100%;
-  padding: 10px 8px;
+  padding: 12px 16px;
+  border: 1px dashed var(--kami-line);
+  text-align: center;
+}
+.scene-empty-hint .empty-state-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+.scene-empty-hint .empty-state-sub {
+  font-size: 12px;
+  color: var(--kami-text-faint);
 }
 .scene-status-toggle {
   display: flex;
