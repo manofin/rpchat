@@ -67,7 +67,7 @@ function stripLeakTail(text: string): string {
 }
 
 /** Paired `<choices>…</choices>` anywhere. Trailing junk after the close is kept. */
-function stripPairedChoices(text: string): string {
+export function stripPairedChoices(text: string): string {
   return text.replace(/<choices>[\s\S]*?<\/choices>/gi, '');
 }
 

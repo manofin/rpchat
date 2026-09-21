@@ -1,4 +1,5 @@
 import { type DB, many, nowIso, one, parseJson, run, uid } from './index.js';
+import { sanitizeDisplayContent } from '../prompt/templates.js';
 import type { ConversationRow, MessageMeta, MessageRow, MessageStatus } from '../types.js';
 
 export interface MessageOut extends Omit<MessageRow, 'meta_json' | 'bookmarked'> {
@@ -36,7 +37,9 @@ export function readablePreview(db: DB, headMessageId: string | null | undefined
     if (!m) return '';
     const kind = parseJson<MessageMeta>(m.meta_json, {}).block_kind;
     if (kind === 'header') return '';
-    if (kind == null || kind === 'narration' || kind === 'line') return (m.content ?? '').slice(0, 120);
+    if (kind == null || kind === 'narration' || kind === 'line') {
+      return sanitizeDisplayContent(m.content ?? '').slice(0, 120);
+    }
     cur = m.parent_id;
   }
   return '';
