@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { config } from './config.js';
 import { type DB, nowIso, one, run, uid } from './db/index.js';
+import { isTrustedIngressPeer, parseTrustedProxyIps } from './tailscalePeer.js';
 
 export const SESSION_COOKIE = 'rp_session';
 
@@ -23,7 +24,11 @@ export function authState(req: FastifyRequest, db: DB): AuthState {
   if (mode === 'none') return { mode, authenticated: true, login: 'local' };
   if (mode === 'tailscale') {
     const login = req.headers['tailscale-user-login'];
-    const ok = typeof login === 'string' && login.toLowerCase() === config.auth.allowedLogin.toLowerCase();
+    const loginOk =
+      typeof login === 'string' && login.toLowerCase() === config.auth.allowedLogin.toLowerCase();
+    const trusted = parseTrustedProxyIps(config.auth.trustedProxyIpsRaw).ips;
+    const peerOk = isTrustedIngressPeer(req.socket?.remoteAddress, trusted);
+    const ok = loginOk && peerOk;
     return { mode, authenticated: ok, login: typeof login === 'string' ? login : undefined };
   }
   const raw = req.cookies?.[SESSION_COOKIE];

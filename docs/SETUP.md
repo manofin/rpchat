@@ -25,6 +25,10 @@ docker compose logs -f rpchat   # "기동 설정" 로그와 model.ok 확인
 ```
 컨테이너는 `127.0.0.1:8787` 에만 노출된다. 이어서 Ubuntu 에서 `tailscale serve --bg https / http://127.0.0.1:8787` 로 게시한다(§NETWORKING).
 
+Docker 로 `AUTH_MODE=tailscale` 을 쓸 때 필수:
+1. 호스트 포트는 루프백 publish (`127.0.0.1:8787:8787`). `0.0.0.0` 이나 공인 IP 에 올리지 않는다.
+2. 컨테이너 `HOST=0.0.0.0` 이면 `TAILSCALE_TRUSTED_PROXY_IPS` 에 **실제 프록시 peer IP** 를 확인해서 넣는다. 와일드카드·DNS 이름·CIDR·전체 네트워크는 거절되며, 접속이 관측됐다고 자동 등록하지 않는다.
+
 부팅 자동 기동은 systemd 로:
 ```bash
 sudo cp deploy/rpchat.service /etc/systemd/system/
@@ -82,4 +86,5 @@ npm run dev --workspace @rpchat/web
 | `CONTEXT_TOKENS` | 프롬프트 예산 산정 기준 컨텍스트 크기 |
 | `AUTH_MODE` | `tailscale` / `token` / `none` |
 | `ALLOWED_LOGIN` | tailscale 모드에서 허용할 본인 로그인 |
+| `TAILSCALE_TRUSTED_PROXY_IPS` | 비루프백 HOST 일 때 허용할 프록시 peer IP(쉼표, 정확 일치). 기본 빈 값 |
 | `DATA_DIR` | SQLite/미디어 저장 경로 |
