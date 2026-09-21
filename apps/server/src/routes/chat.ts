@@ -32,7 +32,7 @@ import type { CharacterRow } from '../types.js';
 import { buildPrompt } from '../prompt/builder.js';
 import { parseInjectInstruction, attachInjectToIcPass, type InjectContext } from '../prompt/injectContext.js';
 import { dumpGenerationPrompt } from '../prompt/dump.js';
-import { extractChoices, sanitizeAssistantContent } from '../prompt/templates.js';
+import { extractChoices, sanitizeAssistantContent, sanitizeNarration } from '../prompt/templates.js';
 import { estimateTokens, getCalibration, updateCalibration } from '../prompt/tokens.js';
 import type { ConversationRow, MessageRow, Scene } from '../types.js';
 import { loadConversation } from './conversations.js';
@@ -636,7 +636,7 @@ export function chatRoutes(ctx: Ctx) {
           temperature: 0.8, top_p: 0.95, max_tokens: PASS_N_MAX_TOKENS, stop: [],
           signal: nDeadline.signal,
         }), controller.signal);
-        narration = out.text.trim();
+        narration = sanitizeNarration(out.text.trim());
       } catch (err) {
         if (controller.signal.aborted) throw err;
         req.log.warn({ err, conversationId: conv.id }, 'pass N failed; beat continues without narration');

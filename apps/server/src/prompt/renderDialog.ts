@@ -23,6 +23,7 @@
  */
 import type { BeatBlock, BeatCastMember, BeatLine } from './renderBeat.js';
 import type { Scene } from '../types.js';
+import { sanitizeNarration } from './templates.js';
 
 /** The row value used when a field is empty. Matches the transcript. */
 export const EMPTY_FIELD = '—';
@@ -212,7 +213,7 @@ export function serializeDialogBeat(input: DialogBeatInput): BeatBlock[] {
 
   for (const item of input.script) {
     if (item.kind === 'narration') {
-      push('narration', item.text, null, NO_META);
+      push('narration', sanitizeNarration(item.text), null, NO_META);
     } else {
       push('line', item.text, { id: item.character_id, name: item.name }, meta(item.character_id));
     }

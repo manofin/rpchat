@@ -273,6 +273,12 @@ export function sanitizeDisplayContent(text: string): string {
   return sanitizeAssistantContent(stripPairedChoices(text));
 }
 
+/** Narration is sanitized before persistence; ordinary 1:1 choice extraction stays separate. */
+export function sanitizeNarration(text: string): string {
+  if (!text) return text;
+  return sanitizeAssistantContent(stripPairedChoices(text));
+}
+
 
 /**
  * Find the last `<choices>…</choices>` whose *trailing* remainder is only
