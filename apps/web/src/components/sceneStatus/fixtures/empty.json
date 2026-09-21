@@ -1,0 +1,19 @@
+{
+  "root": "scene",
+  "elements": {
+    "scene": {
+      "type": "SceneStatus",
+      "props": { "title": "장면", "progress": "idle", "uiState": "empty" },
+      "children": ["hint"]
+    },
+    "hint": {
+      "type": "EmptyHint",
+      "props": {
+        "title": "장면 정보가 없습니다.",
+        "body": "비트 상태나 장소 정보가 아직 없습니다.",
+        "uiState": "empty"
+      },
+      "children": []
+    }
+  }
+}

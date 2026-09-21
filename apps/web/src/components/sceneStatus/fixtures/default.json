@@ -1,0 +1,40 @@
+{
+  "root": "scene",
+  "elements": {
+    "scene": {
+      "type": "SceneStatus",
+      "props": {
+        "title": "항구 창고",
+        "progress": "active",
+        "summary": "밀수 화물을 확인한다",
+        "uiState": "default"
+      },
+      "children": ["cast", "loc", "actState"]
+    },
+    "cast": {
+      "type": "CastRow",
+      "props": {
+        "members": [
+          { "id": "kai", "name": "카이", "active": true }
+        ],
+        "uiState": "default"
+      },
+      "children": []
+    },
+    "loc": {
+      "type": "LocationPill",
+      "props": { "name": "제3부두", "traversable": true, "uiState": "default" },
+      "children": []
+    },
+    "actState": {
+      "type": "SceneAction",
+      "props": {
+        "actions": [
+          { "id": "state", "label": "장면 상태", "intent": "open_scene_state" }
+        ],
+        "uiState": "default"
+      },
+      "children": []
+    }
+  }
+}

@@ -8,6 +8,8 @@ import {
   renderContent, SpeakerHeader,
 } from '../components/view';
 import { OverlayDrawer } from '../components/OverlayDrawer';
+import { SceneStatusPanel } from '../components/sceneStatus';
+import { resolveSceneAction, type SceneActionIntent } from '../lib/sceneStatusCatalog';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { visibleChoices } from '../lib/choices';
 import { sanitizeBubbleContent } from '../lib/sanitizeBubble';
@@ -197,6 +199,15 @@ export function ChatPage({ id }: { id: string }) {
   const persona = chat.detail!.persona;
   const lastAssistant = [...chat.messages].reverse().find((m) => m.role === 'assistant');
   const lastMsg = chat.messages[chat.messages.length - 1];
+  const lastUiMsg = [...chat.messages].reverse().find((m) => m.meta.block_kind === 'ui');
+  const lastUi = lastUiMsg ? parseBeatUi(lastUiMsg.content) : null;
+  const hasBeatRoster = Boolean(lastUi?.roster?.length);
+  const onSceneIntent = (intent: SceneActionIntent) => {
+    const d = resolveSceneAction(intent, id);
+    if (d.kind === 'navigate') navigate(d.href);
+    else if (d.kind === 'open_context') { setDrawerTab('budget'); setDrawer(true); }
+    else if (d.kind === 'retry') void chat.reload();
+  };
   // empty-turn: 표시용 목록. 요약 워터마크·배너·스크롤은 서버 경로 그대로 chat.messages 를 쓴다.
   const shownMessages = visibleChatMessages(chat.messages);
 
@@ -331,9 +342,22 @@ export function ChatPage({ id }: { id: string }) {
         >{desktop ? '⚙' : '⋯'}</button>
       </div>
 
+      {!desktop ? (
+        <SceneStatusPanel
+          conversationId={id}
+          scene={conv.scene}
+          characterName={char.name}
+          hasBeatRoster={hasBeatRoster}
+          focusId={lastUi?.focus_id ?? conv.scene.last_beat?.focus_id ?? null}
+          generating={chat.generating}
+          loadError={chat.error}
+          conversationEnded={ended}
+          placement="mobile"
+          onIntent={onSceneIntent}
+        />
+      ) : null}
+
       {(() => {
-        const lastUiMsg = [...chat.messages].reverse().find((m) => m.meta.block_kind === 'ui');
-        const lastUi = lastUiMsg ? parseBeatUi(lastUiMsg.content) : null;
         if (!lastUi?.roster?.length) return null;
         const live = { ...lastUi, focus_id: lastUi.focus_id ?? conv.scene.last_beat?.focus_id ?? null };
         return (
@@ -503,6 +527,20 @@ export function ChatPage({ id }: { id: string }) {
               onClick={() => setToolsOpen(false)}
             >✕</button>
           </div>
+        ) : null}
+        {desktop ? (
+          <SceneStatusPanel
+            conversationId={id}
+            scene={conv.scene}
+            characterName={char.name}
+            hasBeatRoster={hasBeatRoster}
+            focusId={lastUi?.focus_id ?? conv.scene.last_beat?.focus_id ?? null}
+            generating={chat.generating}
+            loadError={chat.error}
+            conversationEnded={ended}
+            placement="desktop"
+            onIntent={onSceneIntent}
+          />
         ) : null}
         <ConversationTools
           conversationId={id}

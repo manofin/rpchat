@@ -1697,3 +1697,186 @@ textarea { resize: none; }
 .chats-list .list-item .p.muted {
   opacity: 0.85;
 }
+
+/* Scene Status Panel catalog — kami tokens, not BeatUi gold */
+.scene-status-panel {
+  flex: 0 0 auto;
+  margin: 8px;
+  padding: 8px 10px;
+  background: var(--panel-1);
+  border: 1px solid var(--kami-line-soft);
+  border-left: 3px solid var(--kami-ink);
+  border-radius: 10px;
+}
+.scene-status-panel.is-disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+.scene-status-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.scene-status-title {
+  font-size: 13px;
+  color: var(--kami-text-strong);
+}
+.scene-status-progress {
+  font-size: 11px;
+  color: var(--kami-text-muted);
+}
+.scene-status[data-progress="active"] .scene-status-progress {
+  color: var(--role-coral-text);
+}
+.scene-status[data-progress="paused"] .scene-status-progress {
+  color: var(--warn);
+}
+.scene-status[data-progress="ended"] .scene-status-progress {
+  color: var(--kami-text-muted);
+}
+.scene-status[data-progress="idle"] .scene-status-progress {
+  color: var(--kami-text-faint);
+}
+.scene-status-summary {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--kami-text-muted);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.scene-status-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+}
+.scene-status-refresh {
+  height: 2px;
+  margin: 6px 0 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--kami-ink) 35%, var(--kami-line-soft));
+  opacity: 0.7;
+}
+.scene-cast-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.scene-cast-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--kami-line);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.scene-cast-chip.is-active {
+  border-color: var(--kami-ink);
+  color: var(--kami-text-strong);
+  font-weight: 650;
+}
+.scene-location-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  font-size: 12px;
+  color: var(--kami-text);
+}
+.scene-location-pill[data-traversable="false"] {
+  border: 1px dashed var(--kami-line);
+  color: var(--kami-text-faint);
+}
+.scene-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.scene-action {
+  appearance: none;
+  border: 1px solid var(--kami-line);
+  background: var(--panel-2);
+  color: var(--kami-text-strong);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.scene-action:disabled,
+.scene-action.is-disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+.scene-action:focus-visible {
+  outline: 2px solid var(--role-coral);
+  outline-offset: 2px;
+}
+.scene-empty-hint {
+  flex: 1 1 100%;
+  padding: 12px 16px;
+  border: 1px dashed var(--kami-line);
+  text-align: center;
+}
+.scene-empty-hint .empty-state-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+.scene-empty-hint .empty-state-sub {
+  font-size: 12px;
+  color: var(--kami-text-faint);
+}
+.scene-status-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.scene-status-toggle-title {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--kami-text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.scene-status-toggle-place {
+  font-size: 12px;
+  color: var(--kami-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.scene-status-panel.is-mobile {
+  margin: 4px 8px;
+  z-index: 2;
+}
+.scene-status-panel.is-mobile.is-collapsed {
+  padding: 4px 10px;
+}
+.scene-status-panel.is-mobile.is-expanded {
+  max-height: 35vh;
+  overflow-y: auto;
+}
+.scene-status-panel.is-desktop {
+  margin: 8px;
+}
+@media (min-width: 768px) {
+  .scene-status-panel.is-desktop {
+    width: auto;
+  }
+}
