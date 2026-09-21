@@ -19,6 +19,7 @@ import { THOUGHT_MARKER } from '../apps/server/src/prompt/passes.ts';
 import type { Ctx } from '../apps/server/src/ctx.ts';
 import type { Scene } from '../apps/server/src/types.ts';
 import type { GenParams, GenResult } from '../apps/server/src/model/adapter.ts';
+import { ApiError, sendOkForComposer } from '../apps/web/src/lib/api.ts';
 
 let passed = 0;
 async function t(name: string, fn: () => Promise<void> | void) {
@@ -78,6 +79,7 @@ async function main() {
     const stop = web.slice(web.indexOf('const stop = useCallback'), web.indexOf('const selectSibling'));
     assert.ok(stop.includes('activeGeneration'));
     assert.ok(stop.includes('abortGeneration(gid)'));
+    assert.ok(web.includes('sendOkForComposer'));
   });
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-party-gen-life-'));
@@ -255,6 +257,41 @@ async function main() {
 
     const dialogAbort = await newConv('dialog');
     await t('dialog abort during scene-delta stops and unregisters', () => abortDuringDelta(dialogAbort, 'dialog'));
+
+    async function planAssemblyBoom(conv: string, label: string) {
+      const orig = db.prepare.bind(db);
+      db.prepare = ((sql: string) => {
+        if (typeof sql === 'string' && sql.includes('SELECT * FROM characters WHERE id IN')) {
+          throw new Error(`${label} plan assembly boom`);
+        }
+        return orig(sql);
+      }) as typeof db.prepare;
+      let res: { status: number; text: string };
+      try {
+        res = await api('POST', `/api/conversations/${conv}/messages`, { content: `${label} plan boom` });
+      } finally {
+        db.prepare = orig as typeof db.prepare;
+      }
+      assert.equal(res.status, 500, `${label} plan boom status ${res.status} ${res.text}`);
+      const afterActive = await api('GET', '/api/generations/active');
+      assert.equal((afterActive.json as { active: unknown[]; queued: number }).active.length, 0, `${label} active after plan boom`);
+      assert.equal((afterActive.json as { queued: number }).queued, 0, `${label} queued after plan boom`);
+      const retry = await api('POST', `/api/conversations/${conv}/messages`, { content: `${label} retry` });
+      assert.equal(retry.status, 200, `${label} retry after plan boom: ${retry.text}`);
+    }
+
+    const beatPlan = await newConv();
+    await t('beat plan-assembly exception unregisters and next send works', () => planAssemblyBoom(beatPlan, 'beat'));
+
+    const dialogPlan = await newConv('dialog');
+    await t('dialog plan-assembly exception unregisters and next send works', () => planAssemblyBoom(dialogPlan, 'dialog'));
+
+    await t('explicit abort 499 does not restore composer; HTTP fail does', () => {
+      assert.equal(sendOkForComposer(new ApiError(499, '생성이 중단되었습니다'), false), true);
+      assert.equal(sendOkForComposer(new ApiError(503, '모델 없음'), false), false);
+      assert.equal(sendOkForComposer(new Error('network drop'), false), true);
+      assert.equal(sendOkForComposer(new ApiError(500, 'x'), true), true);
+    });
 
     await t('1:1 path still completes', async () => {
       const convRes = await api('POST', '/api/conversations', { characterId: hayeon.id, mode: 'chat' });

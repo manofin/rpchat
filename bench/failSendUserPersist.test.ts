@@ -270,7 +270,8 @@ async function main() {
     const head = db.prepare('SELECT head_message_id FROM conversations WHERE id = ?').get(conv4.id) as { head_message_id: string | null };
     assert.equal(head.head_message_id, greeting4);
     const useChat = code('apps/web/src/pages/useChat.ts');
-    assert.equal(useChat.includes('e instanceof ApiError ? false : true'), true);
+    assert.equal(useChat.includes('sendOkForComposer'), true);
+    assert.equal(code('apps/web/src/lib/api.ts').includes('e instanceof ApiError ? false : true'), true);
     assert.equal(code('apps/web/src/pages/ChatPage.tsx').includes('if (ok === false)'), true);
   });
 
