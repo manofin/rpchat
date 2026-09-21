@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isLoopbackHost, parseTrustedProxyIps } from './tailscalePeer.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url)); // apps/server/src 또는 apps/server/dist
 
@@ -37,6 +38,8 @@ export const config = {
     appToken: env('APP_TOKEN', ''),
     sessionSecret: env('SESSION_SECRET', ''),
     sessionTtlHours: num('SESSION_TTL_HOURS', 12),
+    // Exact peer IPs only. Empty default. No wildcards, DNS, or CIDR.
+    trustedProxyIpsRaw: env('TAILSCALE_TRUSTED_PROXY_IPS', ''),
   },
   // apps/server 기준 상대 경로 → 절대 경로
   webDist: path.resolve(here, '..', env('WEB_DIST', '../web/dist')),
@@ -55,6 +58,13 @@ export function validateConfig(): string[] {
   }
   if (a.mode === 'none' && config.host !== '127.0.0.1' && config.host !== 'localhost')
     problems.push('AUTH_MODE=none 은 HOST=127.0.0.1 에서만 허용');
+  if (a.mode === 'tailscale') {
+    const parsed = parseTrustedProxyIps(a.trustedProxyIpsRaw);
+    problems.push(...parsed.errors);
+    if (!isLoopbackHost(config.host) && parsed.ips.length === 0) {
+      problems.push('AUTH_MODE=tailscale 비루프백 HOST 에는 TAILSCALE_TRUSTED_PROXY_IPS 에 실제 프록시 peer IP 가 필요');
+    }
+  }
   if (!/^https?:\/\//.test(config.model.baseUrl)) problems.push('MODEL_BASE_URL 은 http(s):// 로 시작해야 함');
   if (config.model.contextTokens < 2048) problems.push('CONTEXT_TOKENS 가 너무 작음 (<2048)');
   return problems;
