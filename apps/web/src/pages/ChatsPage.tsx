@@ -5,7 +5,7 @@ import type { Conversation } from '../types';
 import { TopNav } from '../components/TopNav';
 import { Spinner, useUi } from '../components/ui';
 import { relTime } from '../components/view';
-import { conversationTitleLabel } from '../lib/conversationTitleLabel';
+import { conversationMetaLabel, conversationTitleLabel, conversationTitleMatchesMeta } from '../lib/conversationTitleLabel';
 
 /** Global rooms list — resume any conversation without remembering the character path. */
 export function ChatsPage() {
@@ -52,9 +52,9 @@ export function ChatsPage() {
               >
                 <div className="body">
                   <div className="t">{c.favorite ? '★ ' : ''}{conversationTitleLabel(c)}</div>
-                  <div className="p">
-                    {[c.character_name, c.story_name_snapshot || null].filter(Boolean).join(' · ')}
-                  </div>
+                  {!conversationTitleMatchesMeta(c) && (
+                    <div className="p">{conversationMetaLabel(c)}</div>
+                  )}
                   <div className="p muted">
                     {relTime(c.last_message_at || c.created_at)}
                     {c.preview ? ` · ${c.preview}` : ''}
