@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import crypto from 'node:crypto';
 import {
   applyMigrations,
   appliedMigrationNames,
@@ -31,6 +32,17 @@ const MIG = path.join(root, 'apps/server/migrations');
 
 function tmp(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'eml-'));
+}
+
+function diskState(dir: string): unknown {
+  return fs.readdirSync(dir).sort().map((name) => {
+    const file = path.join(dir, name);
+    const stat = fs.statSync(file);
+    return {
+      name, size: stat.size, mtime: stat.mtimeMs,
+      hash: stat.isFile() ? crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex') : null,
+    };
+  });
 }
 
 function cli(args: string[]) {
@@ -110,13 +122,20 @@ async function main() {
     fs.writeFileSync(path.join(one, '0001_init.sql'), fs.readFileSync(path.join(MIG, '0001_init.sql')));
     const db = openMigratedDb(dir, one);
     db.close();
-    const before = fs.statSync(dbPath(dir)).mtimeMs;
+    const before = diskState(dir);
     const ins = inspectSchema(dir, MIG);
     assert.ok(ins.missing.includes('0002_search.sql'));
     const c = cli(['check', '--data-dir', dir]);
     assert.equal(c.status, 1);
     assert.match(c.stdout, /missing=/);
-    assert.equal(fs.statSync(dbPath(dir)).mtimeMs, before);
+    const boot = spawnSync(process.execPath, ['--import', 'tsx', 'apps/server/src/index.ts'], {
+      cwd: root, encoding: 'utf8', timeout: 15000,
+      env: { ...process.env, AUTH_MODE: 'none', HOST: '127.0.0.1', PORT: '0', DATA_DIR: dir,
+        RPCHAT_PROMPT_DUMP: '0', RPCHAT_REQUEST_DUMP: '0' },
+    });
+    assert.equal(boot.status, 1, boot.stderr + boot.stdout);
+    assert.match(boot.stderr, /\[schema\].*missing/);
+    assert.deepEqual(diskState(dir), before, 'check must not create WAL/SHM or modify any file');
     fs.rmSync(dir, { recursive: true });
     fs.rmSync(one, { recursive: true });
   });
@@ -139,6 +158,53 @@ async function main() {
     assert.deepEqual(appliedMigrationNames(db2).sort(), names.sort());
     db2.close();
     fs.rmSync(dir, { recursive: true });
+  });
+
+  await t('settled WAL-mode DB check succeeds without sidecars', () => {
+    const dir = tmp();
+    openMigratedDb(dir, MIG).close();
+    const before = diskState(dir);
+    const c = cli(['check', '--data-dir', dir]);
+    assert.equal(c.status, 0, c.stderr + c.stdout);
+    assert.deepEqual(diskState(dir), before);
+    fs.rmSync(dir, { recursive: true });
+  });
+
+  await t('uncheckpointed WAL rejects check and migrate without changing files', () => {
+    const dir = tmp();
+    const db = openMigratedDb(dir, MIG);
+    try {
+      assert.ok(fs.statSync(`${dbPath(dir)}-wal`).size > 0);
+      const before = diskState(dir);
+      assert.match(inspectSchema(dir, MIG).readError ?? '', /WAL/);
+      for (const command of ['check', 'migrate']) {
+        const r = cli([command, '--data-dir', dir]);
+        assert.equal(r.status, 1, r.stdout + r.stderr);
+        assert.match(r.stdout + r.stderr, /WAL/);
+        assert.deepEqual(diskState(dir), before);
+      }
+    } finally {
+      db.close();
+      fs.rmSync(dir, { recursive: true });
+    }
+  });
+
+  await t('corrupt DB and recovery journal fail without disk changes', () => {
+    for (const kind of ['corrupt', 'journal']) {
+      const dir = tmp();
+      if (kind === 'corrupt') fs.writeFileSync(dbPath(dir), 'invalid fixture');
+      else {
+        openMigratedDb(dir, MIG).close();
+        fs.writeFileSync(`${dbPath(dir)}-journal`, 'pending recovery fixture');
+      }
+      const before = diskState(dir);
+      for (const command of ['check', 'migrate']) {
+        const r = cli([command, '--data-dir', dir]);
+        assert.equal(r.status, 1, r.stdout + r.stderr);
+        assert.deepEqual(diskState(dir), before);
+      }
+      fs.rmSync(dir, { recursive: true });
+    }
   });
 
   await t('SQL failure stops; no auto restore; prior files stay applied', () => {
