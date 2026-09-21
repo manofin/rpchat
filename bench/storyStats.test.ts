@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Fastify from 'fastify';
-import { openDb } from '../apps/server/src/db/index.ts';
+import { openMigratedDb } from '../apps/server/src/db/index.ts';
 import { GenerationQueue } from '../apps/server/src/model/queue.ts';
 import { characterRoutes } from '../apps/server/src/routes/characters.ts';
 import { conversationRoutes } from '../apps/server/src/routes/conversations.ts';
@@ -29,7 +29,7 @@ const SAN = { id: 'san', label: 'SAN', min: 0, max: 100, default: 50 };
 
 async function main() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-story-stats-'));
-  const db = openDb(tmp, path.resolve('apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
   db.prepare('INSERT INTO model_profiles (name) VALUES (?)').run('rp-creative');
 
   const ctx = {

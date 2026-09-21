@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Fastify from 'fastify';
-import { openDb } from '../apps/server/src/db/index.js';
+import { openMigratedDb } from '../apps/server/src/db/index.js';
 import { conversationRoutes } from '../apps/server/src/routes/conversations.js';
 import { renderScene } from '../apps/server/src/prompt/templates.ts';
 import type { Ctx } from '../apps/server/src/ctx.js';
@@ -22,7 +22,7 @@ async function t(name: string, fn: () => Promise<void> | void) {
   console.log(`ok ${passed} ${name}`);
 }
 
-function cols(db: ReturnType<typeof openDb>, table: string) {
+function cols(db: ReturnType<typeof openMigratedDb>, table: string) {
   return db.prepare(`PRAGMA table_info(${table})`).all() as Array<{
     name: string;
     notnull: number;
@@ -197,7 +197,7 @@ async function main() {
   });
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-scene-state-schema-'));
-  const db = openDb(tmp, path.resolve('apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
 
   await t('openDb records 0010; conversations columns unchanged by 0010 (31 incl. 0013 snapshot + 0014 opening + 0020 endings)', () => {
     const names = (

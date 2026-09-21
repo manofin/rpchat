@@ -11,7 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
 import { characterRoutes } from '../apps/server/src/routes/characters.ts';
-import { openDb, one, run, uid, nowIso, setSetting } from '../apps/server/src/db/index.ts';
+import { openMigratedDb, one, run, uid, nowIso, setSetting } from '../apps/server/src/db/index.ts';
 import { buildPrompt } from '../apps/server/src/prompt/builder.ts';
 import { PROMPT_VERSION } from '../apps/server/src/config.ts';
 import type { ConversationRow, MessageRow } from '../apps/server/src/types.ts';
@@ -141,7 +141,7 @@ const tests = [
 
 async function runHttpAndPrompt(): Promise<void> {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-c3-pg-'));
-  const db = openDb(tmp, MIG_DIR);
+  const db = openMigratedDb(tmp, MIG_DIR);
   const log = Object.assign(() => {}, { info() {}, warn() {}, error() {} });
   const app = Fastify({ logger: false });
   await app.register(characterRoutes({ db, dataDir: tmp, log }));

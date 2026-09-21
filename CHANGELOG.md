@@ -23,6 +23,8 @@
 - `restore.sh` / `OPERATIONS.md` 를 docker 전제에서 host/systemd 토폴로지로 재작성 (`13e694f`).
 
 ### Changed
+- 일반 기동은 읽기 전용 스키마 검사만 한다. missing/extra/DB 없음이면 SQL을 적용하지 않고 종료.
+  적용은 `db:check` / `db:migrate` (`--data-dir` 절대경로, 라이브 기본값 없음).
 - P4 sketchBench 하니스 감사 수정 (측정 무결성, Mac PATH/DELETE, stub smoke). 제품 경로 아님.
 
 ## [0.0.19] - 2026-08-23

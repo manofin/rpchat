@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Fastify from 'fastify';
-import { openDb } from '../apps/server/src/db/index.ts';
+import { openMigratedDb } from '../apps/server/src/db/index.ts';
 import { characterRoutes } from '../apps/server/src/routes/characters.ts';
 import { config } from '../apps/server/src/config.ts';
 import type { Ctx } from '../apps/server/src/ctx.ts';
@@ -48,14 +48,14 @@ function webpOfSize(size: number): Buffer {
   return buf;
 }
 
-function insertChar(db: ReturnType<typeof openDb>, id: string) {
+function insertChar(db: ReturnType<typeof openMigratedDb>, id: string) {
   db.prepare(
     `INSERT INTO characters (id, name, tagline, description, personality, speech_style, scenario, first_message, example_dialogue, taboos, tags_json, created_at, updated_at)
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
   ).run(id, id, '', '', '', '', '', '', '', '', '[]', 't0', 't0');
 }
 
-function fakeCtx(db: ReturnType<typeof openDb>): Ctx {
+function fakeCtx(db: ReturnType<typeof openMigratedDb>): Ctx {
   return {
     db,
     model: {
@@ -104,7 +104,7 @@ async function main() {
   const orig = config.dataDir;
   config.dataDir = tmp;
   try {
-    const db = openDb(tmp, path.resolve('apps/server/migrations'));
+    const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
     const assetRoot = path.join(tmp, 'media', 'assets');
     insertChar(db, 'c-hard');
 

@@ -5,7 +5,7 @@ import fastifyCookie from '@fastify/cookie';
 import fastifyStatic from '@fastify/static';
 import { PROMPT_VERSION, config, validateConfig } from './config.js';
 import { defaultSchemaCompatPath, schemaCompatProblems } from './db/schemaCompat.js';
-import { openDb } from './db/index.js';
+import { inspectSchema, openDb } from './db/index.js';
 import { interruptOrphanStreaming } from './db/generation.js';
 import { seed } from './db/seed.js';
 import { ModelClient } from './model/adapter.js';
@@ -34,13 +34,19 @@ async function main() {
     process.exit(1);
   }
 
+  const inspection = inspectSchema(config.dataDir, config.migrationsDir);
+  if (inspection.problems.length) {
+    for (const p of inspection.problems) console.error(`[schema] ${p}`);
+    process.exit(1);
+  }
+
   const app = Fastify({
     logger: { level: config.logLevel },
     bodyLimit: 1_000_000,
     trustProxy: false, // Tailscale Serve 는 localhost 에서 접속하지만, X-Forwarded-* 를 신뢰할 이유가 없음
   });
 
-  const db = openDb(config.dataDir, config.migrationsDir);
+  const db = openDb(config.dataDir);
   const orphaned = interruptOrphanStreaming(db);
   if (orphaned) app.log.warn({ orphaned }, '고아 streaming 메시지를 interrupted 로 접음');
   seed(db, config.contentDir, (m) => app.log.info(m));

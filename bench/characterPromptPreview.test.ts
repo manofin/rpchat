@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Fastify from 'fastify';
-import { openDb } from '../apps/server/src/db/index.js';
+import { openMigratedDb } from '../apps/server/src/db/index.js';
 import {
   CHARACTER_PROMPT_PREVIEW_EXCERPT_MAX,
   characterRoutes,
@@ -38,11 +38,11 @@ function virtualConvAstText(file: string): string {
   return hits[0].text;
 }
 
-function count(db: ReturnType<typeof openDb>, table: string): number {
+function count(db: ReturnType<typeof openMigratedDb>, table: string): number {
   return (db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as { n: number }).n;
 }
 
-function fakeCtx(db: ReturnType<typeof openDb>): Ctx {
+function fakeCtx(db: ReturnType<typeof openMigratedDb>): Ctx {
   const model = new Proxy({} as Ctx['model'], {
     get() {
       throw new Error('C7 preview must not touch ctx.model');
@@ -61,7 +61,7 @@ function fakeCtx(db: ReturnType<typeof openDb>): Ctx {
 
 async function main() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-char-prompt-preview-'));
-  const db = openDb(tmp, path.resolve('apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
 
   db.prepare(
     `INSERT INTO characters (id, name, tagline, description, personality, speech_style, scenario, first_message, example_dialogue, taboos, play_guide, tags_json, archived, created_at, updated_at)

@@ -17,7 +17,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Fastify from 'fastify';
-import { openDb } from '../apps/server/src/db/index.ts';
+import { openMigratedDb } from '../apps/server/src/db/index.ts';
 import { storyRoutes } from '../apps/server/src/routes/stories.ts';
 import { catalogFromStory, parseSceneCatalog } from '../apps/server/src/prompt/sceneCatalog.ts';
 import type { Ctx } from '../apps/server/src/ctx.ts';
@@ -67,7 +67,7 @@ const LIVE_CATALOG_JSON =
 
 async function main() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-catalog-write-'));
-  const db = openDb(tmp, path.resolve('apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
 
   const ctx = {
     db,

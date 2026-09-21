@@ -13,7 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
-import { openDb, parseJson } from '../apps/server/src/db/index.ts';
+import { openMigratedDb, parseJson } from '../apps/server/src/db/index.ts';
 import { GenerationQueue } from '../apps/server/src/model/queue.ts';
 import { characterRoutes } from '../apps/server/src/routes/characters.ts';
 import { conversationRoutes } from '../apps/server/src/routes/conversations.ts';
@@ -71,7 +71,7 @@ await t('chat.ts checks abort on both catch branches of both multi-row paths', (
 
 await t('abort during Pass N is not logged as a generation failure and does not send error', async () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-abort-focus-'));
-  const db = openDb(tmp, path.resolve('apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
   db.prepare(
     `INSERT INTO model_profiles (name, model, temperature, top_p, max_tokens, stop_json, system_mode, notes) VALUES (?,?,?,?,?,?,?,?)`,
   ).run('rp-balanced', null, 0.8, 0.95, 400, '[]', 'system', null);
