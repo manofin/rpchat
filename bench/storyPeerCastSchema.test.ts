@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Fastify from 'fastify';
-import { openDb } from '../apps/server/src/db/index.ts';
+import { openMigratedDb } from '../apps/server/src/db/index.ts';
 import { GenerationQueue } from '../apps/server/src/model/queue.ts';
 import { characterRoutes } from '../apps/server/src/routes/characters.ts';
 import { conversationRoutes } from '../apps/server/src/routes/conversations.ts';
@@ -25,7 +25,7 @@ async function t(name: string, fn: () => Promise<void> | void) {
 
 async function main() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-peer-cast-schema-'));
-  const db = openDb(tmp, path.resolve('apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
 
   const ctx = {
     db,

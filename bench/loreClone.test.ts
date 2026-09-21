@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Fastify from 'fastify';
-import { openDb } from '../apps/server/src/db/index.js';
+import { openMigratedDb } from '../apps/server/src/db/index.js';
 import { characterRoutes } from '../apps/server/src/routes/characters.js';
 import type { Ctx } from '../apps/server/src/ctx.js';
 
@@ -21,13 +21,13 @@ async function t(name: string, fn: () => Promise<void> | void) {
 
 const JSON_HEAD = { 'content-type': 'application/json' };
 
-function count(db: ReturnType<typeof openDb>, table: string): number {
+function count(db: ReturnType<typeof openMigratedDb>, table: string): number {
   return (db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as { n: number }).n;
 }
 
 async function main() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-lore-clone-'));
-  const db = openDb(tmp, path.resolve('apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
   db.exec(`
     INSERT INTO characters (id, name, tagline, description, personality, speech_style, scenario, first_message, example_dialogue, taboos, tags_json, created_at, updated_at)
     VALUES ('c1','메인A','','설명','성격','말투','','','','','[]','t0','t0');

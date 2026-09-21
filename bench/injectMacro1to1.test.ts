@@ -16,7 +16,7 @@ import path from 'node:path';
 import Database from 'better-sqlite3';
 import Fastify from 'fastify';
 import type { DB } from '../apps/server/src/db/index.js';
-import { openDb } from '../apps/server/src/db/index.js';
+import { openMigratedDb } from '../apps/server/src/db/index.js';
 import { GenerationQueue } from '../apps/server/src/model/queue.js';
 import { buildPrompt } from '../apps/server/src/prompt/builder.js';
 import {
@@ -291,7 +291,7 @@ async function main() {
 
   // --- Fastify: no-persist + 1:1 attach + party consumed (light) ---
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-inject-macro-1to1-'));
-  const liveDb = openDb(tmp, path.resolve('apps/server/migrations'));
+  const liveDb = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
   liveDb
     .prepare(
       `INSERT INTO model_profiles (name, model, temperature, top_p, max_tokens, stop_json, system_mode, notes) VALUES (?,?,?,?,?,?,?,?)`,

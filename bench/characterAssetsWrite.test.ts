@@ -10,7 +10,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
-import { openDb } from '../apps/server/src/db/index.js';
+import { openMigratedDb } from '../apps/server/src/db/index.js';
 import { characterRoutes } from '../apps/server/src/routes/characters.js';
 import { mediaRoutes } from '../apps/server/src/routes/media.js';
 import { config } from '../apps/server/src/config.js';
@@ -61,14 +61,14 @@ function fakePng(): Buffer {
   return Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
 }
 
-function insertChar(db: ReturnType<typeof openDb>, id: string, name = id) {
+function insertChar(db: ReturnType<typeof openMigratedDb>, id: string, name = id) {
   db.prepare(
     `INSERT INTO characters (id, name, tagline, description, personality, speech_style, scenario, first_message, example_dialogue, taboos, tags_json, created_at, updated_at)
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
   ).run(id, name, '', '', '', '', '', '', '', '', '[]', 't0', 't0');
 }
 
-function fakeCtx(db: ReturnType<typeof openDb>): Ctx {
+function fakeCtx(db: ReturnType<typeof openMigratedDb>): Ctx {
   return {
     db,
     model: {
@@ -86,14 +86,14 @@ function fakeCtx(db: ReturnType<typeof openDb>): Ctx {
 
 async function withApp(fn: (args: {
   app: ReturnType<typeof Fastify>;
-  db: ReturnType<typeof openDb>;
+  db: ReturnType<typeof openMigratedDb>;
   tmp: string;
   assetRoot: string;
 }) => Promise<void>) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'c8-assets-'));
   const orig = config.dataDir;
   config.dataDir = tmp;
-  const db = openDb(tmp, path.resolve(root, 'apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve(root, 'apps/server/migrations'));
   const assetRoot = path.join(tmp, 'media', 'assets');
   const app = Fastify({ logger: false });
   await app.register(characterRoutes(fakeCtx(db)));

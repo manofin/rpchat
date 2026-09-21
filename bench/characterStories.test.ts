@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
-import { openDb } from '../apps/server/src/db/index.js';
+import { openMigratedDb } from '../apps/server/src/db/index.js';
 import { characterRoutes } from '../apps/server/src/routes/characters.js';
 import { storyRoutes } from '../apps/server/src/routes/stories.js';
 import type { Ctx } from '../apps/server/src/ctx.js';
@@ -46,7 +46,7 @@ function gitShow(file: string): string {
   return execFileSync('git', ['show', `HEAD:${file}`], { encoding: 'utf8', cwd: path.join(dir, '..') });
 }
 
-function insertChar(db: ReturnType<typeof openDb>, id: string, name = id) {
+function insertChar(db: ReturnType<typeof openMigratedDb>, id: string, name = id) {
   db.prepare(
     `INSERT INTO characters (id, name, tagline, description, personality, speech_style, scenario, first_message, example_dialogue, taboos, tags_json, created_at, updated_at)
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
@@ -54,7 +54,7 @@ function insertChar(db: ReturnType<typeof openDb>, id: string, name = id) {
 }
 
 function insertStory(
-  db: ReturnType<typeof openDb>,
+  db: ReturnType<typeof openMigratedDb>,
   id: string,
   name: string,
   archived: number,
@@ -67,7 +67,7 @@ function insertStory(
   ).run(id, name, tagline, '', '[]', archived, createdAt, updatedAt);
 }
 
-function mapRow(db: ReturnType<typeof openDb>, storyId: string, characterId: string, sortOrder = 0) {
+function mapRow(db: ReturnType<typeof openMigratedDb>, storyId: string, characterId: string, sortOrder = 0) {
   db.prepare(`INSERT INTO story_characters (story_id, character_id, role, sort_order) VALUES (?,?,?,?)`).run(
     storyId,
     characterId,
@@ -76,7 +76,7 @@ function mapRow(db: ReturnType<typeof openDb>, storyId: string, characterId: str
   );
 }
 
-function fakeCtx(db: ReturnType<typeof openDb>): Ctx {
+function fakeCtx(db: ReturnType<typeof openMigratedDb>): Ctx {
   return {
     db,
     model: {
@@ -92,7 +92,7 @@ function fakeCtx(db: ReturnType<typeof openDb>): Ctx {
   } as Ctx;
 }
 
-async function buildApp(db: ReturnType<typeof openDb>) {
+async function buildApp(db: ReturnType<typeof openMigratedDb>) {
   const ctx = fakeCtx(db);
   const app = Fastify({ logger: false });
   await app.register(characterRoutes(ctx));
@@ -216,7 +216,7 @@ function bindSave(editorSrc: string, ctx: {
 
 async function main() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-c4-stories-'));
-  const db = openDb(tmp, path.resolve('apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
   const app = await buildApp(db);
 
   insertChar(db, 'c1', '서리');

@@ -20,7 +20,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
-import { openDb } from '../apps/server/src/db/index.js';
+import { openMigratedDb } from '../apps/server/src/db/index.js';
 import { GenerationQueue } from '../apps/server/src/model/queue.js';
 import { characterRoutes } from '../apps/server/src/routes/characters.js';
 import { conversationRoutes } from '../apps/server/src/routes/conversations.js';
@@ -504,7 +504,7 @@ async function main() {
 
   // ── light Fastify: content ≠ instruction persist ────────────────────────
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-inject-macro-party-'));
-  const liveDb = openDb(tmp, path.resolve('apps/server/migrations'));
+  const liveDb = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
   liveDb
     .prepare(
       `INSERT INTO model_profiles (name, model, temperature, top_p, max_tokens, stop_json, system_mode, notes) VALUES (?,?,?,?,?,?,?,?)`,

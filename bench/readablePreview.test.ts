@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Fastify from 'fastify';
-import { openDb } from '../apps/server/src/db/index.js';
+import { openMigratedDb } from '../apps/server/src/db/index.js';
 import { insertMessage, readablePreview, setHead } from '../apps/server/src/db/tree.js';
 import { conversationRoutes } from '../apps/server/src/routes/conversations.js';
 import type { Ctx } from '../apps/server/src/ctx.js';
@@ -32,7 +32,7 @@ const PREV_TURN = '이전 턴 서술 — 목록에 나오면 안 된다.';
 
 async function main() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-readable-preview-'));
-  const db = openDb(tmp, path.resolve('apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
 
   db.exec(`
     INSERT INTO characters (id, name, tagline, description, personality, speech_style, scenario, first_message, example_dialogue, taboos, tags_json, created_at, updated_at)

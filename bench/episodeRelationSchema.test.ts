@@ -18,7 +18,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { openDb } from '../apps/server/src/db/index.ts';
+import { openMigratedDb } from '../apps/server/src/db/index.ts';
 
 const MIG = '0022_summaries_relation_scope.sql';
 
@@ -41,7 +41,7 @@ function t(name: string, fn: () => void) {
   console.log(`ok ${passed} ${name}`);
 }
 
-function tableInfo(db: ReturnType<typeof openDb>, table: string) {
+function tableInfo(db: ReturnType<typeof openMigratedDb>, table: string) {
   return db.prepare(`PRAGMA table_info(${table})`).all() as Array<{
     name: string;
     notnull: number;
@@ -49,15 +49,15 @@ function tableInfo(db: ReturnType<typeof openDb>, table: string) {
   }>;
 }
 
-function indexList(db: ReturnType<typeof openDb>, table: string) {
+function indexList(db: ReturnType<typeof openMigratedDb>, table: string) {
   return db.prepare(`PRAGMA index_list(${table})`).all() as Array<{ name: string }>;
 }
 
-function indexInfo(db: ReturnType<typeof openDb>, name: string) {
+function indexInfo(db: ReturnType<typeof openMigratedDb>, name: string) {
   return db.prepare(`PRAGMA index_info(${name})`).all() as Array<{ name: string; seqno: number }>;
 }
 
-function explain(db: ReturnType<typeof openDb>, sql: string, ...binds: unknown[]) {
+function explain(db: ReturnType<typeof openMigratedDb>, sql: string, ...binds: unknown[]) {
   const rows = db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...binds) as Array<{ detail: string }>;
   return rows.map((r) => r.detail);
 }
@@ -110,7 +110,7 @@ function main() {
   });
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-episode-relation-schema-'));
-  const db = openDb(tmp, path.resolve('apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
 
   t(`${MIG} applied via schema_migrations`, () => {
     const names = (

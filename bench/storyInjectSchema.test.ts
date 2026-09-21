@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import Fastify from 'fastify';
-import { openDb } from '../apps/server/src/db/index.js';
+import { openMigratedDb } from '../apps/server/src/db/index.js';
 import { conversationRoutes } from '../apps/server/src/routes/conversations.js';
 import type { Ctx } from '../apps/server/src/ctx.js';
 import type { ConversationRow } from '../apps/server/src/types.js';
@@ -30,7 +30,7 @@ async function t(name: string, fn: () => Promise<void> | void) {
   console.log(`ok ${passed} ${name}`);
 }
 
-function cols(db: ReturnType<typeof openDb>, table: string) {
+function cols(db: ReturnType<typeof openMigratedDb>, table: string) {
   return db.prepare(`PRAGMA table_info(${table})`).all() as Array<{
     name: string;
     notnull: number;
@@ -149,7 +149,7 @@ async function main() {
   });
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-story-inject-schema-'));
-  const db = openDb(tmp, path.resolve('apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
 
   await t('openDb records 0009; conversations has base 21 + 5 story cols + later-slice cols', () => {
     const names = (db.prepare('SELECT name FROM schema_migrations ORDER BY name').all() as Array<{ name: string }>).map(

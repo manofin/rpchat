@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
-import { openDb } from '../apps/server/src/db/index.ts';
+import { openMigratedDb } from '../apps/server/src/db/index.ts';
 import { conversationRoutes } from '../apps/server/src/routes/conversations.ts';
 import { characterRoutes } from '../apps/server/src/routes/characters.ts';
 import { storyRoutes } from '../apps/server/src/routes/stories.ts';
@@ -175,7 +175,7 @@ async function runUnit() {
 async function main() {
   await runUnit();
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-peer-cast-start-ui-'));
-  const db = openDb(tmp, path.resolve('apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
   const ctx = {
     db,
     model: {} as unknown as Ctx['model'],

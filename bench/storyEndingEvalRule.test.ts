@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Fastify from 'fastify';
-import { openDb } from '../apps/server/src/db/index.ts';
+import { openMigratedDb } from '../apps/server/src/db/index.ts';
 import { setHead, insertMessage } from '../apps/server/src/db/tree.ts';
 import { GenerationQueue } from '../apps/server/src/model/queue.ts';
 import { characterRoutes } from '../apps/server/src/routes/characters.ts';
@@ -72,7 +72,7 @@ async function main() {
   });
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-ending-eval-rule-'));
-  const db = openDb(tmp, path.resolve('apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
   const ctx = {
     db,
     model: {} as unknown as Ctx['model'],

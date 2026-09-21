@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { openDb } from '../apps/server/src/db/index.ts';
+import { openMigratedDb } from '../apps/server/src/db/index.ts';
 import {
   episodeRelationInjectParts,
   loadApprovedEpisodeCandidates,
@@ -25,7 +25,7 @@ function t(name: string, fn: () => void) {
   console.log(`ok ${passed} ${name}`);
 }
 
-function explain(db: ReturnType<typeof openDb>, sql: string, ...binds: unknown[]) {
+function explain(db: ReturnType<typeof openMigratedDb>, sql: string, ...binds: unknown[]) {
   const rows = db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...binds) as Array<{ detail: string }>;
   return rows.map((r) => r.detail);
 }
@@ -44,7 +44,7 @@ function assertNoFullScan(details: string[], label: string) {
   }
 }
 
-function seedBase(db: ReturnType<typeof openDb>) {
+function seedBase(db: ReturnType<typeof openMigratedDb>) {
   const t0 = '2026-01-01T00:00:00.000Z';
   db.exec(`
     INSERT INTO characters (id, name, tagline, description, personality, speech_style, scenario, first_message, example_dialogue, taboos, tags_json, created_at, updated_at)
@@ -71,7 +71,7 @@ function seedBase(db: ReturnType<typeof openDb>) {
 }
 
 function insertEpisode(
-  db: ReturnType<typeof openDb>,
+  db: ReturnType<typeof openMigratedDb>,
   opts: {
     id: string;
     conversation_id: string;
@@ -143,7 +143,7 @@ function main() {
   });
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-episode-relation-build-'));
-  const db = openDb(tmp, path.resolve('apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
   const t0 = seedBase(db);
 
   insertEpisode(db, {

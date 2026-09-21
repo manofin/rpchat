@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Fastify from 'fastify';
-import { openDb } from '../apps/server/src/db/index.ts';
+import { openMigratedDb } from '../apps/server/src/db/index.ts';
 import { memoryRoutes } from '../apps/server/src/routes/memory.ts';
 import { conversationRoutes } from '../apps/server/src/routes/conversations.ts';
 import { characterRoutes } from '../apps/server/src/routes/characters.ts';
@@ -53,7 +53,7 @@ async function main() {
   });
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-memory-dup-warn-'));
-  const db = openDb(tmp, path.resolve('apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
   db.prepare(
     `INSERT INTO model_profiles (name, model, temperature, top_p, max_tokens, stop_json, system_mode, notes)
      VALUES (?,?,?,?,?,?,?,?)`,

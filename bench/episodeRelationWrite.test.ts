@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Fastify from 'fastify';
-import { openDb } from '../apps/server/src/db/index.ts';
+import { openMigratedDb } from '../apps/server/src/db/index.ts';
 import { GenerationQueue } from '../apps/server/src/model/queue.ts';
 import type { GenParams, GenResult } from '../apps/server/src/model/adapter.ts';
 import { characterRoutes } from '../apps/server/src/routes/characters.ts';
@@ -74,7 +74,7 @@ async function main() {
   });
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-episode-relation-write-'));
-  const db = openDb(tmp, path.resolve('apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
   db.prepare(
     `INSERT INTO model_profiles (name, model, temperature, top_p, max_tokens, stop_json, system_mode, notes)
      VALUES (?,?,?,?,?,?,?,?)`,

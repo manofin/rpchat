@@ -21,7 +21,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Fastify from 'fastify';
-import { openDb, parseJson } from '../apps/server/src/db/index.js';
+import { openMigratedDb, parseJson } from '../apps/server/src/db/index.js';
 import {
   SCENE_SNAPSHOT_VERSION,
   buildSceneSnapshot,
@@ -80,7 +80,7 @@ async function main() {
   // ── resolveSceneBase against a hand-built tree ─────────────────────────────
 
   const unitTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-scene-base-'));
-  const unitDb = openDb(unitTmp, path.resolve('apps/server/migrations'));
+  const unitDb = openMigratedDb(unitTmp, path.resolve('apps/server/migrations'));
   const now = '2026-09-06T12:00:00.000Z';
   unitDb.exec(`
     INSERT INTO characters (id, name, tagline, description, personality, speech_style, scenario, first_message, example_dialogue, taboos, tags_json, created_at, updated_at)
@@ -116,7 +116,7 @@ async function main() {
   // ── HTTP: beat / dialog / hunter / 1:1 ─────────────────────────────────────
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-scene-snap-'));
-  const db = openDb(tmp, path.resolve('apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
   db.prepare(
     `INSERT INTO model_profiles (name, model, temperature, top_p, max_tokens, stop_json, system_mode, notes) VALUES (?,?,?,?,?,?,?,?)`,
   ).run('rp-balanced', null, 0.8, 0.95, 400, '[]', 'system', null);
