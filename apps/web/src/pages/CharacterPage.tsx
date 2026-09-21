@@ -8,6 +8,7 @@ import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { characterHeroEmpty, resolveConversationCount, resolveLastChatAt } from '../lib/characterChatStats';
 import { publicTags } from '../lib/publicTags';
 import { conversationTitleLabel } from '../lib/conversationTitleLabel';
+import { stripDescSectionHeaders } from '../lib/stripDescSectionHeaders';
 
 export function CharacterPage({ id }: { id: string }) {
   const ui = useUi();
@@ -42,6 +43,7 @@ export function CharacterPage({ id }: { id: string }) {
   const resume = convs.find((v) => !v.archived) ?? null;
   const convCount = resolveConversationCount(char.conversation_count, convs.length);
   const lastChat = resolveLastChatAt(char.last_chat_at, convs);
+  const heroDesc = stripDescSectionHeaders(char.description);
 
   return (
     <div className="screen">
@@ -83,7 +85,7 @@ export function CharacterPage({ id }: { id: string }) {
                 </div>
               </div>
             </div>
-            {char.description && <p className="char-hero-desc">{char.description}</p>}
+            {heroDesc ? <p className="char-hero-desc">{heroDesc}</p> : null}
             <div className="char-hero-actions">
               <button className="btn primary block disc-start-cta" onClick={() => setStarter(true)}>
                 💬 대화하기
