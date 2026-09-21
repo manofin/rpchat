@@ -3,7 +3,12 @@ import { z } from 'zod';
 import type { Ctx } from '../ctx.js';
 import { PROMPT_VERSION, config } from '../config.js';
 import { many, nowIso, one, parseJson, run, uid } from '../db/index.js';
-import { interruptOrphanStreaming } from '../db/generation.js';
+import {
+  DELETE_BLOCKED_BY_GENERATION,
+  descendantMessageIds,
+  generationBlocksDelete,
+  interruptOrphanStreaming,
+} from '../db/generation.js';
 import { deepestLeaf, getPath, insertMessage, messageOut, readablePreview, setHead, updateMessage } from '../db/tree.js';
 import { buildPrompt, resolvePersona } from '../prompt/builder.js';
 import { substitute } from '../prompt/templates.js';
@@ -425,8 +430,16 @@ export function conversationRoutes(ctx: Ctx) {
     });
 
     app.delete<{ Params: { id: string } }>('/api/conversations/:id', async (req, reply) => {
-      const r = run(db, 'DELETE FROM conversations WHERE id = ?', req.params.id);
-      if (r.changes === 0) return reply.code(404).send({ error: 'not found' });
+      const exists = one(db, 'SELECT id FROM conversations WHERE id = ?', req.params.id);
+      if (!exists) return reply.code(404).send({ error: 'not found' });
+      if (generationBlocksDelete({
+        gens: ctx.queue.activeList,
+        conversationId: req.params.id,
+        scope: 'conversation',
+      })) {
+        return reply.code(409).send({ error: DELETE_BLOCKED_BY_GENERATION });
+      }
+      run(db, 'DELETE FROM conversations WHERE id = ?', req.params.id);
       return { ok: true };
     });
 
@@ -522,8 +535,16 @@ export function conversationRoutes(ctx: Ctx) {
     app.delete<{ Params: { id: string } }>('/api/messages/:id', async (req, reply) => {
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', req.params.id);
       if (!m) return reply.code(404).send({ error: 'not found' });
-      if (m.status === 'streaming') return reply.code(409).send({ error: '생성 중인 메시지는 삭제 불가' });
+      if (m.status === 'streaming') return reply.code(409).send({ error: DELETE_BLOCKED_BY_GENERATION });
       const conv = loadConversation(ctx, m.conversation_id)!;
+      const deletedIds = new Set(descendantMessageIds(db, m.id));
+      if (generationBlocksDelete({
+        gens: ctx.queue.activeList,
+        conversationId: conv.id,
+        scope: { deletedIds, headMessageId: conv.head_message_id },
+      })) {
+        return reply.code(409).send({ error: DELETE_BLOCKED_BY_GENERATION });
+      }
       db.transaction(() => {
         run(db, 'DELETE FROM messages WHERE id = ?', m.id); // 자식은 CASCADE
         if (conv.head_message_id === m.id || !one(db, 'SELECT 1 FROM messages WHERE id = ?', conv.head_message_id)) {
