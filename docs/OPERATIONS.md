@@ -97,6 +97,25 @@ deploy/restore.sh /home/hermes/rpchat/backups/rpchat-YYYYMMDD-HHMMSS.db.gz
 - 스키마 변경 커밋은 `schema-compat.json` 의 `required_migrations` 와 CHANGELOG 를
   같은 커밋에서 갱신한다.
 
+### 스키마 적용(명시적 CLI)
+일반 기동은 DB를 읽기 전용으로 먼저 검사한다. DB 없음, migration 기록 없음,
+파일 대비 missing/extra 이면 쓰기 연결·seed·고아 정리 전에 종료한다. 새 빈 DB도
+기동이 만들지 않는다.
+
+적용은 서버 workspace 명령만 한다. `--data-dir` 는 절대경로 필수. 라이브 경로
+기본값 없음. 서비스가 돌고 있으면 중지한 뒤 별도 단계에서 실행한다.
+
+```bash
+npm run db:check --workspace apps/server -- --data-dir /abs/path/to/data
+npm run db:migrate --workspace apps/server -- --data-dir /abs/path/to/data
+```
+
+`db:check` 는 읽기만 하고 차이가 있으면 non-zero. `db:migrate` 는 기존 DB를
+바꾸기 전 SQLite backup API 로 `rpchat-pre-migrate-*.db` 를 남기고
+`integrity_check` 가 ok 일 때만 적용한다. 백업 실패면 적용하지 않는다. 파일별
+transaction. 실패 시 즉시 종료하고 적용 완료 목록·실패 파일·백업 위치를 출력한다.
+자동 downgrade·자동 복원은 없다. extra(이 트리보다 새 DB)도 거절한다.
+
 2차(오프호스트) 백업 사본: Mac Studio(macstudio-llm)가 `deploy/restore.sh`와
 같은 tailnet SSH 신뢰로 hermes를 **pull**한다(반대 방향은 hermes에 Mac용 키가 없음).
 - 스크립트: Mac `/Users/llm/rpchat-backups-sync.sh` (`rsync -a rpchat:.../backups/ /Users/llm/rpchat-backups-mirror/`)

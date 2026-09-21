@@ -51,7 +51,8 @@ journalctl -u rpchat-node -f
 ```
 
 ## 3. 첫 기동 시 동작
-- SQLite 스키마가 자동 마이그레이션된다(`apps/server/migrations`).
+- 일반 기동은 스키마를 적용하지 않는다. 새 데이터 디렉터리면 먼저 명시적으로:
+  `npm run db:migrate --workspace apps/server -- --data-dir /abs/path/to/data`
 - 기본 모델 프로필 4종(`rp-balanced`, `rp-creative`, `summary`, `memory-extract`)이 시드된다.
 - DB 가 비어 있으면 `content/characters/*.json`, `content/personas/*.json` 의 샘플이 적재된다(서리·카이·여행자). 원치 않으면 해당 파일을 지우고 기동한다.
 
