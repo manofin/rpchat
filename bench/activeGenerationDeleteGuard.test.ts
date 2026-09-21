@@ -261,6 +261,66 @@ async function main() {
       assert.equal(got.status, 404);
     });
 
+    await t('1:1 streaming: unrelated sibling branch DELETE is 200', async () => {
+      const convRes = await api('POST', '/api/conversations', { characterId: char.id, mode: 'chat' });
+      assert.equal(convRes.status, 201, convRes.text);
+      const cid = (convRes.json as { id: string }).id;
+      const send1 = await fetch(`${origin}/api/conversations/${cid}/messages`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ content: 'U1' }),
+      });
+      assert.equal(send1.status, 200, await send1.text());
+      const after1 = await api('GET', `/api/conversations/${cid}`);
+      const msgs1 = (after1.json as { messages: Msg[] }).messages;
+      const u1 = msgs1.find((m) => m.role === 'user');
+      const a1 = msgs1.find((m) => m.role === 'assistant');
+      assert.ok(u1 && a1, 'U1 + assistant on main path');
+
+      const branch = await fetch(`${origin}/api/conversations/${cid}/branch`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ messageId: u1.id, content: 'U1-sib' }),
+      });
+      assert.equal(branch.status, 200, await branch.text());
+      const sibUser = db.prepare(
+        `SELECT id FROM messages WHERE conversation_id = ? AND role = 'user' AND content = 'U1-sib'`,
+      ).get(cid) as { id: string } | undefined;
+      assert.ok(sibUser);
+
+      const sel = await api('POST', `/api/messages/${a1.id}/select`);
+      assert.equal(sel.status, 200, sel.text);
+
+      holdStream = true;
+      streamHeld = false;
+      const live = fetch(`${origin}/api/conversations/${cid}/messages`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ content: 'U2' }),
+      });
+      await waitUntil(() => streamHeld, 'sibling-case stream is held');
+      const beforeLive = countMsgs(cid);
+      const del = await api('DELETE', `/api/messages/${sibUser.id}`);
+      assert.equal(del.status, 200, del.text);
+      assert.equal(
+        (db.prepare(`SELECT COUNT(*) AS n FROM messages WHERE id = ?`).get(sibUser.id) as { n: number }).n,
+        0,
+      );
+      assert.ok(countMsgs(cid) < beforeLive, 'sibling subtree removed');
+      const liveStill = db.prepare(
+        `SELECT COUNT(*) AS n FROM messages WHERE conversation_id = ? AND content = 'U2'`,
+      ).get(cid) as { n: number };
+      assert.equal(liveStill.n, 1);
+
+      const active = await api('GET', '/api/generations/active');
+      const gid = (active.json as { active: Array<{ id: string }> }).active[0]?.id;
+      holdStream = false;
+      if (gid) await api('POST', `/api/generations/${gid}/abort`);
+      else streamRelease?.();
+      const liveRes = await live;
+      assert.ok(liveRes.status === 499 || liveRes.status === 200, `abort/finish status ${liveRes.status}`);
+    });
+
     const nari = await api('POST', '/api/characters', { name: '나리P', personality: 'n', first_message: '', tags: ['party:duty=이야기', 'party:place=교실'] });
     const sera = await api('POST', '/api/characters', { name: '세라P', personality: 's', first_message: '', tags: ['party:duty=교칙', 'party:place=교실'] });
     const hayeon = await api('POST', '/api/characters', { name: '하연P', personality: 'h', first_message: '', tags: ['party:duty=수업', 'party:place=교실'] });
@@ -339,6 +399,12 @@ async function main() {
 
     await t('dialog empty messageId: parent user DELETE is 409', async () => {
       const del = await api('DELETE', `/api/messages/${dialogUser!.id}`);
+      assert.equal(del.status, 409, del.text);
+      assert.deepEqual(del.json, { error: DELETE_BLOCKED_BY_GENERATION });
+    });
+
+    await t('dialog empty messageId: conversation DELETE is 409', async () => {
+      const del = await api('DELETE', `/api/conversations/${dialogId}`);
       assert.equal(del.status, 409, del.text);
       assert.deepEqual(del.json, { error: DELETE_BLOCKED_BY_GENERATION });
     });
