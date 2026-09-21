@@ -42,6 +42,7 @@ VOLUME ["/data"]
 USER node
 
 ENV PORT=8787 HOST=0.0.0.0 DATA_DIR=/data WEB_DIST=../web/dist
+# HOST=0.0.0.0 은 컨테이너 내부 바인딩. AUTH_MODE=tailscale 이면 TAILSCALE_TRUSTED_PROXY_IPS 에 실제 프록시 peer 가 있어야 기동한다.
 EXPOSE 8787
 
 # 헬스체크 (모델 오프라인이어도 앱 자체는 200 을 반환하도록 db 상태만 확인)
