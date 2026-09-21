@@ -262,6 +262,17 @@ export function sanitizeAssistantContent(text: string): string {
   return stripLeadingOocFuel(stripLeakTail(text)).replace(/\s+$/, '');
 }
 
+/** Paired `<choices>…</choices>` anywhere. Trailing junk after the close is kept. */
+export function stripPairedChoices(text: string): string {
+  return text.replace(/<choices>[\s\S]*?<\/choices>/gi, '');
+}
+
+/** Display-only. Same contract as client sanitizeBubbleContent — not persist. */
+export function sanitizeDisplayContent(text: string): string {
+  if (!text) return text;
+  return sanitizeAssistantContent(stripPairedChoices(text));
+}
+
 
 /**
  * Find the last `<choices>…</choices>` whose *trailing* remainder is only

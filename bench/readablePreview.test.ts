@@ -43,7 +43,8 @@ async function main() {
       ('conv-party','c1','파티','story','rp-balanced','{}','pv','${now}','${now}'),
       ('conv-dialog','c1','다이얼로그','story','rp-balanced','{}','pv','${now}','${now}'),
       ('conv-header','c1','헤더만','story','rp-balanced','{}','pv','${now}','${now}'),
-      ('conv-cap','c1','캡','story','rp-balanced','{}','pv','${now}','${now}');
+      ('conv-cap','c1','캡','story','rp-balanced','{}','pv','${now}','${now}'),
+      ('conv-leak','c1','유출','chat','rp-balanced','{}','pv','${now}','${now}');
   `);
 
   function push(
@@ -90,6 +91,31 @@ async function main() {
 
   await t('1:1 preview equals head content slice(0, 120)', () => {
     assert.equal(readablePreview(db, a11.id), oneToOneBody.slice(0, 120));
+  });
+
+  const leakHead =
+    '<choices>["*편지를 집어들며* 이건 누구에게 온 거죠?"]</choices>\n빗소리가 처마를 스쳤다. ★주입확인★';
+  const uLeak = push('conv-leak', null, '유저', {}, 'user');
+  const aLeak = push('conv-leak', uLeak.id, leakHead, {});
+  setHead(db, 'conv-leak', aLeak.id);
+
+  await t('1:1 leaked choices: sanitize then slice; no raw tag/BeatUi JSON', () => {
+    const preview = readablePreview(db, aLeak.id);
+    assert.doesNotMatch(preview, /<\s*\/?choices>/i);
+    assert.match(preview, /빗소리/);
+    assert.match(preview, /★주입확인★/);
+    assert.equal(preview.includes('location_badge'), false);
+    assert.equal(preview.startsWith('<choices>'), false);
+    assert.ok(preview.length <= 120);
+  });
+
+  const longLeak = `<choices>["가"]</choices>${'가'.repeat(200)}`;
+  const uLong = push('conv-leak', aLeak.id, '다음', {}, 'user');
+  const aLong = push('conv-leak', uLong.id, longLeak, {});
+  await t('length cap applies after sanitize', () => {
+    const preview = readablePreview(db, aLong.id);
+    assert.equal(preview, '가'.repeat(120));
+    assert.doesNotMatch(preview, /<\s*\/?choices>/i);
   });
 
   await t('1:1 JSON null block_kind still returns content', () => {
@@ -155,6 +181,8 @@ async function main() {
     assert.equal(byId['conv-party'], LINE);
     assert.equal(byId['conv-dialog'], '「마지막 대사다.」');
     assert.equal(byId['conv-header'], '');
+    assert.doesNotMatch(byId['conv-leak'] ?? '', /<\s*\/?choices>/i);
+    assert.equal((byId['conv-leak'] ?? '').includes('location_badge'), false);
     for (const id of ['conv-party', 'conv-dialog', 'conv-header'] as const) {
       const p = byId[id] ?? '';
       assert.equal(p.includes('{'), false, id);

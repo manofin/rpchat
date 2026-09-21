@@ -691,13 +691,12 @@ function MessageView(props: {
         onTouchCancel={onTouchCancel}
       >
         {(() => {
-          // leak-choices-ui: strip leaked choices/BeatUi JSON from ordinary bubbles only.
+          // Display-only: same sanitize on streaming and complete. Persist is untouched.
           // Real `block_kind:'ui'` never reaches this branch.
-          if (props.streaming) return renderContent(m.content);
           const shown = sanitizeBubbleContent(m.content);
           if (!shown) return <span className="muted">…</span>;
           // R1 MUST: completed party/dialog lines render as [Name] : "speech".
-          // Streaming stays raw in the same bubble to avoid style flicker.
+          // wrapSpeechMarks waits until complete to avoid style flicker.
           if (lineSpeech && !props.streaming) {
             const speaker = (block?.kind === 'dialogue' ? block.speakerName : null)
               || m.meta.speaker_name

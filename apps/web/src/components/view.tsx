@@ -35,10 +35,10 @@ export function BeatHeader({ text }: { text: string }) {
 }
 
 export function BeatNarration({ text, streaming }: { text: string; streaming?: boolean }) {
-  const shown = streaming ? text : sanitizeBubbleContent(text);
+  const shown = sanitizeBubbleContent(text);
   return (
     <div className="beat-narration">
-      {shown}
+      {shown || (streaming ? <span className="muted">…</span> : null)}
     </div>
   );
 }
@@ -58,7 +58,8 @@ export function DialogueLine({
   focused?: boolean;
   streaming?: boolean;
 }) {
-  const spoken = streaming ? speech : wrapSpeechMarks(speech);
+  const cleaned = sanitizeBubbleContent(speech);
+  const spoken = streaming ? cleaned : wrapSpeechMarks(cleaned);
   return (
     <div className={`beat-dialogue${focused ? ' is-focus' : ''}`}>
       <div className="bubble beat-dialogue-bubble">

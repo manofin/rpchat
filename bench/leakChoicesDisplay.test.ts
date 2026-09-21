@@ -1,10 +1,10 @@
 /** npx tsx bench/leakChoicesDisplay.test.ts
  * leak-choices-display — paired <choices> strip even with trailing junk.
- * Display-only. LIVE_NO_TOUCH. apps/server diff 0.
+ * Display-only. LIVE_NO_TOUCH. Persist path unchanged.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { sanitizeBubbleContent } from '../apps/web/src/lib/sanitizeBubble.ts';
+import { sanitizeBubbleContent, stripPairedChoices } from '../apps/web/src/lib/sanitizeBubble.ts';
 import { visibleChoices } from '../apps/web/src/lib/choices.ts';
 
 let passed = 0;
@@ -68,10 +68,32 @@ function main() {
     assert.match(infoFn, /sanitizeBubbleContent/);
   });
 
-  t('saved-message render strip — not stream-only', () => {
+  t('saved-message and streaming render both sanitize', () => {
     const page = fs.readFileSync('apps/web/src/pages/ChatPage.tsx', 'utf8');
-    assert.match(page, /if \(props\.streaming\) return renderContent\(m\.content\)/);
+    assert.doesNotMatch(page, /if \(props\.streaming\) return renderContent\(m\.content\)/);
     assert.match(page, /const shown = sanitizeBubbleContent\(m\.content\)/);
+  });
+
+  t('streaming partial unmatched <choices> stripped; prose kept', () => {
+    const cleaned = sanitizeBubbleContent('빗소리가 처마를 스쳤다.<choices>["편지');
+    assert.match(cleaned, /빗소리/);
+    assert.doesNotMatch(cleaned, /<\s*\/?choices>/i);
+    assert.doesNotMatch(cleaned, /편지/);
+  });
+
+  t('stripPairedChoices reused; ★주입확인★ kept after paired strip', () => {
+    const stripped = stripPairedChoices(FINLEY_RAW);
+    assert.doesNotMatch(stripped, /<\s*\/?choices>/i);
+    assert.match(stripped, /★주입확인★/);
+    assert.match(sanitizeBubbleContent(FINLEY_RAW), /★주입확인★/);
+  });
+
+  t('BeatNarration sanitizes while streaming', () => {
+    const view = fs.readFileSync('apps/web/src/components/view.tsx', 'utf8');
+    const narr = view.slice(view.indexOf('export function BeatNarration'));
+    const narrFn = narr.slice(0, narr.indexOf('export function DialogueLine'));
+    assert.match(narrFn, /sanitizeBubbleContent/);
+    assert.doesNotMatch(narrFn, /streaming \? text/);
   });
 
   t('정상 choices → meta/칩 visibleChoices 회귀', () => {
