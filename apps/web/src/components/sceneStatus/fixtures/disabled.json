@@ -1,0 +1,15 @@
+{
+  "root": "scene",
+  "elements": {
+    "scene": {
+      "type": "SceneStatus",
+      "props": { "title": "항구 창고", "progress": "paused", "uiState": "disabled" },
+      "children": ["actState"]
+    },
+    "actState": {
+      "type": "SceneAction",
+      "props": { "label": "장면 상태", "intent": "open_scene_state", "uiState": "disabled" },
+      "children": []
+    }
+  }
+}

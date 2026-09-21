@@ -1,0 +1,10 @@
+{
+  "root": "scene",
+  "elements": {
+    "scene": {
+      "type": "SceneStatus",
+      "props": { "title": "장면", "progress": "idle", "uiState": "loading" },
+      "children": []
+    }
+  }
+}

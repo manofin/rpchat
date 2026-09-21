@@ -1,0 +1,15 @@
+{
+  "root": "scene",
+  "elements": {
+    "scene": {
+      "type": "SceneStatus",
+      "props": { "title": "장면", "progress": "idle", "uiState": "empty" },
+      "children": ["hint"]
+    },
+    "hint": {
+      "type": "EmptyHint",
+      "props": { "message": "장면 정보가 없습니다.", "uiState": "empty" },
+      "children": []
+    }
+  }
+}

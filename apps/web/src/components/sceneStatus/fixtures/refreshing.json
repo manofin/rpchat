@@ -1,0 +1,20 @@
+{
+  "root": "scene",
+  "elements": {
+    "scene": {
+      "type": "SceneStatus",
+      "props": {
+        "title": "항구 창고",
+        "progress": "active",
+        "summary": "밀수 화물을 확인한다",
+        "uiState": "refreshing"
+      },
+      "children": ["loc"]
+    },
+    "loc": {
+      "type": "LocationPill",
+      "props": { "place": "제3부두", "traversable": true, "uiState": "refreshing" },
+      "children": []
+    }
+  }
+}
