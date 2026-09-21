@@ -3,6 +3,7 @@
  */
 import assert from 'node:assert/strict';
 import { sanitizeNarration } from '../apps/server/src/prompt/templates.ts';
+import { serializeDialogBeat } from '../apps/server/src/prompt/renderDialog.ts';
 import { sanitizeBubbleContent } from '../apps/web/src/lib/sanitizeBubble.ts';
 
 let passed = 0;
@@ -52,6 +53,26 @@ function main() {
       const s = sanitizeNarration(x);
       assert.equal(sanitizeBubbleContent(s), s);
     }
+  });
+
+  t('choices 뒤 실제 본문과 꼬리는 보존', () => {
+    assert.equal(sanitizeNarration('앞<choices>["a"]</choices>뒤 ★주입확인★'), '앞뒤 ★주입확인★');
+  });
+
+  t('dialog 직렬화는 narration만 정제하고 빈 블록은 저장하지 않음', () => {
+    const line = '대사 <choices>["literal"]</choices>';
+    const blocks = serializeDialogBeat({
+      header: null, info: null,
+      script: [
+        { kind: 'narration', text: '본문\n<choices>["a"]</choices>' },
+        { kind: 'narration', text: '<choices>["a"]</choices>' },
+        { kind: 'line', character_id: 'fixture', name: '화자', text: line },
+      ],
+    });
+    assert.deepEqual(blocks.map(({ kind, text, seq }) => ({ kind, text, seq })), [
+      { kind: 'narration', text: '본문', seq: 0 },
+      { kind: 'line', text: line, seq: 1 },
+    ]);
   });
 
   console.log(`\n${passed} passed`);

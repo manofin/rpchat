@@ -54,6 +54,7 @@ async function main() {
   ).run('rp-balanced', null, 0.8, 0.95, 400, '[]', 'system', null);
 
   const streamChunks = ['"', '……짝꿍?', '"\n', `${THOUGHT_MARKER} `, '왜 안 피하지.'];
+  let narrationOutput = '황지명이 나리 옆자리에 앉았다. 뒤에서 루나가 킥킥 웃었다.';
   const model = {
     complete: async (p: GenParams): Promise<GenResult> => {
       const prompt = String(p.messages?.[0]?.content ?? '');
@@ -62,7 +63,7 @@ async function main() {
       }
       if (prompt.includes('서술') || prompt.includes('군중') || prompt.startsWith('당신은 카메라')) {
         return {
-          text: '황지명이 나리 옆자리에 앉았다. 뒤에서 루나가 킥킥 웃었다.',
+          text: narrationOutput,
           finishReason: 'stop', usage: null, ttftMs: 1, totalMs: 2,
         };
       }
@@ -247,6 +248,25 @@ async function main() {
     assert.ok(ui.roster.some((r: { name: string; chip: string }) => r.name === '나리'));
     const hanChip = ui.roster.find((r: { name: string }) => r.name === '한소연');
     assert.ok(hanChip.locked || hanChip.chip === '🔒');
+  });
+
+  await t('Pass N removes internal tags before DB persistence, preserving trailing prose', async () => {
+    const previous = narrationOutput;
+    narrationOutput = '(OOC: 설정 확인)\n\n본문<choices>["a"]</choices> ★주입확인★\n{"location_badge":"x","roster":[]}';
+    try {
+      const start = await api('POST', '/api/conversations', {
+        characterId: hayeon.id, storyId: story.id, mode: 'story',
+      });
+      assert.equal(start.status, 201, start.text);
+      const id = (start.json as { id: string }).id;
+      const send = await api('POST', `/api/conversations/${id}/messages`, { content: '나리, 네 이야기 말인데.' });
+      assert.equal(send.status, 200, send.text);
+      // Read stored rows directly: display sanitization must not hide a persistence regression.
+      const rows = db.prepare("SELECT content FROM messages WHERE conversation_id = ? AND json_extract(meta_json, '$.block_kind') = 'narration'").all(id);
+      assert.deepEqual(rows, [{ content: '본문 ★주입확인★' }]);
+    } finally {
+      narrationOutput = previous;
+    }
   });
 
   await t('unnamed greeting persist: Pass N only (F8e C-focus-β), no invented host line, no 1:1 first_message', async () => {
