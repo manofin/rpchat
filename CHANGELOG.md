@@ -9,6 +9,8 @@
 ## [Unreleased]
 
 ### Added
+- `schema-compat.json` `required_migrations` 를 디스크 migration 파일 22개와 일치시킴
+  (기존 명세 12개에서 누락 10개 정정). 부트는 파일 집합과 명세가 다르면 DB를 열기 전에 종료한다.
 - 백업 매니페스트: `backup-host.py` 가 `.db.gz` 옆에 `rpchat-<stamp>.manifest.json` 을 남긴다
   (`app_version` = `git describe`, `schema_migrations`, `required_migrations`).
 - `restore.sh --check <gz>`: 무결성 + 스키마 바인딩만 출력. 라이브 중지/덮어쓰기 없음.

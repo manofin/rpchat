@@ -1,6 +1,6 @@
 {
   "format": "rpchat-schema-compat-v1",
-  "note": "schema_version is the ordered set of schema_migrations.name. PRAGMA user_version is unused (stays 0). app_version SoT is git describe --tags, not package.json 0.1.0.",
+  "note": "schema_version is the ordered set of schema_migrations.name. PRAGMA user_version is unused (stays 0). app_version SoT is git describe --tags, not package.json 0.1.0. required_migrations must equal apps/server/migrations/*.sql.",
   "required_migrations": [
     "0001_init.sql",
     "0002_search.sql",
@@ -12,7 +12,17 @@
     "0008_stories.sql",
     "0009_conversation_story.sql",
     "0010_scene_state.sql",
+    "0011_scene_catalog.sql",
     "0012_scene_beat.sql",
-    "0014_story_opening.sql"
+    "0013_story_participant_snapshot.sql",
+    "0014_story_opening.sql",
+    "0015_story_cover.sql",
+    "0016_lorebook_story_scope.sql",
+    "0017_story_defaults.sql",
+    "0018_story_stats.sql",
+    "0019_story_openings_extra.sql",
+    "0020_story_endings.sql",
+    "0021_character_play_guide.sql",
+    "0022_summaries_relation_scope.sql"
   ]
 }
