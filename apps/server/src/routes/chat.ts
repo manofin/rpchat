@@ -498,6 +498,7 @@ export function chatRoutes(ctx: Ctx) {
     // and abort both read this registry; a later register left the wait uncancelable.
     const controller = new AbortController();
     ctx.queue.register({ id: generationId, conversationId: conv.id, messageId: '', startedAt: nowIso(), controller });
+    try {
 
     // Turn Pipeline step 2-4: propose → validate → apply. One short call; any
     // failure leaves the scene untouched and the beat continues.
@@ -522,7 +523,6 @@ export function chatRoutes(ctx: Ctx) {
       clockParse = patch === null ? 'null' : 'ok';
     } catch (err) {
       if (controller.signal.aborted) {
-        ctx.queue.unregister(generationId);
         return reply.code(499).send({ error: '생성이 중단되었습니다' });
       }
       clockParse = 'fail';
@@ -878,8 +878,20 @@ export function chatRoutes(ctx: Ctx) {
         sealClockObserve(clockCore, 'beat', scene, convNow, regenTurnStartId, aborted ? 'interrupt' : 'fail', plan.applied.discarded),
       );
     } finally {
-      ctx.queue.unregister(generationId);
       sse.close();
+    }
+    } catch (err) {
+      if (controller.signal.aborted) {
+        if (!reply.raw.headersSent) return reply.code(499).send({ error: '생성이 중단되었습니다' });
+        return;
+      }
+      if (!reply.raw.headersSent) {
+        ctx.log.error({ err, generationId }, '비트 생성 실패');
+        return reply.code(500).send({ error: (err as Error).message });
+      }
+      throw err;
+    } finally {
+      ctx.queue.unregister(generationId);
     }
   }
 
@@ -940,6 +952,7 @@ export function chatRoutes(ctx: Ctx) {
     // Same contract as generateBeat: lock before the first await (scene-delta).
     const controller = new AbortController();
     ctx.queue.register({ id: generationId, conversationId: conv.id, messageId: '', startedAt: nowIso(), controller });
+    try {
 
     // Scene delta — identical contract to the beat path, including the allow-list.
     let patch: Record<string, unknown> | null = null;
@@ -963,7 +976,6 @@ export function chatRoutes(ctx: Ctx) {
       clockParse = patch === null ? 'null' : 'ok';
     } catch (err) {
       if (controller.signal.aborted) {
-        ctx.queue.unregister(generationId);
         return reply.code(499).send({ error: '생성이 중단되었습니다' });
       }
       clockParse = 'fail';
@@ -1198,8 +1210,20 @@ export function chatRoutes(ctx: Ctx) {
         sealClockObserve(clockCore, 'dialog', scene, convNow, regenTurnStartId, aborted ? 'interrupt' : 'fail', plan.applied.discarded),
       );
     } finally {
-      ctx.queue.unregister(generationId);
       sse.close();
+    }
+    } catch (err) {
+      if (controller.signal.aborted) {
+        if (!reply.raw.headersSent) return reply.code(499).send({ error: '생성이 중단되었습니다' });
+        return;
+      }
+      if (!reply.raw.headersSent) {
+        ctx.log.error({ err, generationId }, '대본 생성 실패');
+        return reply.code(500).send({ error: (err as Error).message });
+      }
+      throw err;
+    } finally {
+      ctx.queue.unregister(generationId);
     }
   }
   return async function plugin(app: FastifyInstance) {
