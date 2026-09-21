@@ -490,6 +490,11 @@ export function chatRoutes(ctx: Ctx) {
     const baseVersion = currentSceneVersion(scene);
     const userText = userTextFrom(db, parentId, userMessage);
 
+    // Lock the conversation before the first await (scene-delta). /messages 409
+    // and abort both read this registry; a later register left the wait uncancelable.
+    const controller = new AbortController();
+    ctx.queue.register({ id: generationId, conversationId: conv.id, messageId: '', startedAt: nowIso(), controller });
+
     // Turn Pipeline step 2-4: propose → validate → apply. One short call; any
     // failure leaves the scene untouched and the beat continues.
     let patch: Record<string, unknown> | null = null;
@@ -505,11 +510,17 @@ export function chatRoutes(ctx: Ctx) {
           top_p: 0.9,
           max_tokens: SCENE_DELTA_MAX_TOKENS,
           stop: [],
+          signal: controller.signal,
         }),
+        controller.signal,
       );
       patch = parseSceneDelta(proposal.text);
       clockParse = patch === null ? 'null' : 'ok';
     } catch (err) {
+      if (controller.signal.aborted) {
+        ctx.queue.unregister(generationId);
+        return reply.code(499).send({ error: '생성이 중단되었습니다' });
+      }
       clockParse = 'fail';
       req.log.warn({ err, conversationId: conv.id }, 'scene delta proposal failed; scene unchanged');
     }
@@ -574,7 +585,6 @@ export function chatRoutes(ctx: Ctx) {
 
     const profileName = convNow.profile_name;
     const sse = openSse(reply);
-    const controller = new AbortController();
 
     let head = parentId;
     const emitted: MessageRow[] = [];
@@ -595,8 +605,6 @@ export function chatRoutes(ctx: Ctx) {
     };
     const send = (row: MessageRow) =>
       sse.send({ type: 'aux', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', row.id)!) });
-
-    ctx.queue.register({ id: generationId, conversationId: conv.id, messageId: '', startedAt: nowIso(), controller });
 
     let focusRow: MessageRow | null = null;
     let focusSeq = 0;
@@ -925,6 +933,10 @@ export function chatRoutes(ctx: Ctx) {
     const baseVersion = currentSceneVersion(scene);
     const userText = userTextFrom(db, parentId, userMessage);
 
+    // Same contract as generateBeat: lock before the first await (scene-delta).
+    const controller = new AbortController();
+    ctx.queue.register({ id: generationId, conversationId: conv.id, messageId: '', startedAt: nowIso(), controller });
+
     // Scene delta — identical contract to the beat path, including the allow-list.
     let patch: Record<string, unknown> | null = null;
     let clockParse: ClockParseStatus = 'null';
@@ -939,11 +951,17 @@ export function chatRoutes(ctx: Ctx) {
           top_p: 0.9,
           max_tokens: SCENE_DELTA_MAX_TOKENS,
           stop: [],
+          signal: controller.signal,
         }),
+        controller.signal,
       );
       patch = parseSceneDelta(proposal.text);
       clockParse = patch === null ? 'null' : 'ok';
     } catch (err) {
+      if (controller.signal.aborted) {
+        ctx.queue.unregister(generationId);
+        return reply.code(499).send({ error: '생성이 중단되었습니다' });
+      }
       clockParse = 'fail';
       req.log.warn({ err, conversationId: conv.id }, 'scene delta proposal failed; scene unchanged');
     }
@@ -995,7 +1013,6 @@ export function chatRoutes(ctx: Ctx) {
 
     const profileName = convNow.profile_name;
     const sse = openSse(reply);
-    const controller = new AbortController();
 
     let head = parentId;
     const emitted: MessageRow[] = [];
@@ -1015,8 +1032,6 @@ export function chatRoutes(ctx: Ctx) {
     };
     const send = (row: MessageRow) =>
       sse.send({ type: 'aux', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', row.id)!) });
-
-    ctx.queue.register({ id: generationId, conversationId: conv.id, messageId: '', startedAt: nowIso(), controller });
 
     let scriptRow: MessageRow | null = null;
     let scriptSeq = 0;

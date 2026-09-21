@@ -578,8 +578,7 @@ async function main() {
     const orig = model.complete;
     model.complete = async (p: GenParams) => {
       const prompt = String(p.messages?.[0]?.content ?? '');
-      // register() happens after the delta call, so holding there never 409s.
-      // Pass N is the first complete() after the generation is on activeList.
+      // Hold Pass N (register is before scene-delta; any post-register complete 409s).
       if (prompt.includes('너는 장면 서술자다') || prompt.includes('군중') || prompt.startsWith('당신은 카메라')) {
         holding = true;
         await held;

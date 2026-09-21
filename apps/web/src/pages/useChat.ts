@@ -150,7 +150,14 @@ export function useChat(conversationId: string) {
   const branchEdit = useCallback((messageId: string, content: string) => runStream(`/api/conversations/${conversationId}/branch`, { messageId, content }), [runStream, conversationId]);
 
   const stop = useCallback(async () => {
-    const gid = genIdRef.current;
+    let gid = genIdRef.current;
+    // start SSE is after scene-delta; stop before that still has to reach the server job.
+    if (!gid) {
+      try {
+        const d = await get<ConversationDetail>(`/api/conversations/${conversationId}`);
+        gid = d.activeGeneration?.id ?? null;
+      } catch { /* POST 중단은 아래에서 시도 */ }
+    }
     if (gid) {
       try {
         await abortGeneration(gid);
@@ -159,7 +166,7 @@ export function useChat(conversationId: string) {
     abortRef.current?.abort();
     // done(interrupted) 이벤트가 오지 않는 경우 대비해 잠시 후 재동기화
     setTimeout(() => reload(), 500);
-  }, [reload]);
+  }, [reload, conversationId]);
 
   const selectSibling = useCallback(async (messageId: string) => {
     const r = await post<{ messages: Message[] }>(`/api/messages/${messageId}/select`, {});
