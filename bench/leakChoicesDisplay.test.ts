@@ -4,7 +4,12 @@
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { sanitizeBubbleContent, stripPairedChoices } from '../apps/web/src/lib/sanitizeBubble.ts';
+import {
+  displayBubbleContent,
+  hideIncompleteChoicesPrefix,
+  sanitizeBubbleContent,
+  stripPairedChoices,
+} from '../apps/web/src/lib/sanitizeBubble.ts';
 import { visibleChoices } from '../apps/web/src/lib/choices.ts';
 
 let passed = 0;
@@ -108,10 +113,60 @@ function main() {
     assert.equal(fs.readFileSync('apps/web/src/lib/choices.ts', 'utf8').includes('sanitizeBubbleContent'), false);
   });
 
+  t('streaming: every proper prefix of <choices> and </choices> is hidden', () => {
+    const prose = '빗소리가 처마를 스쳤다.';
+    for (const tag of ['<choices>', '</choices>', '<CHOICES>', '</Choices>']) {
+      for (let n = 1; n < tag.length; n++) {
+        const prefix = tag.slice(0, n);
+        const shown = displayBubbleContent(prose + prefix, true);
+        assert.equal(shown, prose, JSON.stringify({ tag, n, prefix, shown }));
+        assert.equal(shown.includes('<'), false, prefix);
+        assert.doesNotMatch(shown, /choices/i);
+      }
+    }
+  });
+
+  t('streaming: suffix that is not a choices prefix is shown again', () => {
+    assert.equal(displayBubbleContent('본문<cat', true), '본문<cat');
+    assert.equal(displayBubbleContent('본문< x', true), '본문< x');
+    assert.equal(displayBubbleContent('3 < 5', true), '3 < 5');
+    assert.equal(displayBubbleContent('본문<div>', true), '본문<div>');
+  });
+
+  t('completed bubble keeps trailing <; hide is streaming-only', () => {
+    assert.equal(sanitizeBubbleContent('본문<'), '본문<');
+    assert.equal(displayBubbleContent('본문<', false), '본문<');
+    assert.equal(displayBubbleContent('본문<', true), '본문');
+    assert.equal(hideIncompleteChoicesPrefix('본문<cho'), '본문');
+  });
+
+  t('streaming hide does not strip arbitrary HTML or ★강조★', () => {
+    assert.equal(displayBubbleContent('이건 ★중요★ 단서다.', true), '이건 ★중요★ 단서다.');
+    assert.equal(displayBubbleContent('메모 <div>ok</div>', true), '메모 <div>ok</div>');
+  });
+
+  t('choices chips / status panel stay off this helper', () => {
+    assert.equal(fs.readFileSync('apps/web/src/lib/choices.ts', 'utf8').includes('hideIncompleteChoicesPrefix'), false);
+    assert.equal(fs.readFileSync('apps/web/src/components/sceneStatus/SceneStatusPanel.tsx', 'utf8').includes('hideIncompleteChoicesPrefix'), false);
+  });
+
+  t('1:1 and party streaming surfaces call hideIncompleteChoicesPrefix', () => {
+    const page = fs.readFileSync('apps/web/src/pages/ChatPage.tsx', 'utf8');
+    assert.match(page, /hideIncompleteChoicesPrefix\(shown\)/);
+    const view = fs.readFileSync('apps/web/src/components/view.tsx', 'utf8');
+    const narr = view.slice(view.indexOf('export function BeatNarration'));
+    const narrFn = narr.slice(0, narr.indexOf('export function DialogueLine'));
+    assert.match(narrFn, /hideIncompleteChoicesPrefix/);
+    const dlg = view.slice(view.indexOf('export function DialogueLine'));
+    const dlgFn = dlg.slice(0, dlg.indexOf('export function BeatInfoSheet'));
+    assert.match(dlgFn, /hideIncompleteChoicesPrefix/);
+  });
+
   t('this bench stays display-only (web sanitize + visibleChoices)', () => {
     const self = fs.readFileSync('bench/leakChoicesDisplay.test.ts', 'utf8');
     assert.match(self, /sanitizeBubbleContent/);
     assert.match(self, /visibleChoices/);
+    assert.match(self, /hideIncompleteChoicesPrefix/);
     assert.doesNotMatch(self, /from ['\"][^'\"]*prompt\/templates/);
   });
 

@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { PartyBlock } from '../lib/partyTurn';
-import { sanitizeBubbleContent } from '../lib/sanitizeBubble';
+import { hideIncompleteChoicesPrefix, sanitizeBubbleContent } from '../lib/sanitizeBubble';
 import { wrapSpeechMarks } from '../lib/speechMarks';
 
 export function Avatar({ name, avatar, size }: { name: string; avatar?: string | null; size?: 'sm' | 'lg' }) {
@@ -36,9 +36,10 @@ export function BeatHeader({ text }: { text: string }) {
 
 export function BeatNarration({ text, streaming }: { text: string; streaming?: boolean }) {
   const shown = sanitizeBubbleContent(text);
+  const visible = streaming ? hideIncompleteChoicesPrefix(shown) : shown;
   return (
     <div className="beat-narration">
-      {shown || (streaming ? <span className="muted">…</span> : null)}
+      {visible || (streaming ? <span className="muted">…</span> : null)}
     </div>
   );
 }
@@ -59,7 +60,8 @@ export function DialogueLine({
   streaming?: boolean;
 }) {
   const cleaned = sanitizeBubbleContent(speech);
-  const spoken = streaming ? cleaned : wrapSpeechMarks(cleaned);
+  const visible = streaming ? hideIncompleteChoicesPrefix(cleaned) : cleaned;
+  const spoken = streaming ? visible : wrapSpeechMarks(cleaned);
   return (
     <div className={`beat-dialogue${focused ? ' is-focus' : ''}`}>
       <div className="bubble beat-dialogue-bubble">
