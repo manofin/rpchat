@@ -7,6 +7,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import ts from 'typescript';
+import { resolveSceneAction } from '../apps/web/src/lib/sceneStatusCatalog.ts';
 
 const require2 = createRequire(import.meta.url);
 try {
@@ -55,9 +57,78 @@ t('CI-03b mobile tools hub links to the same inspector drawer', () => {
 t('CI-03 no second inspector surface was added', () => {
   assert.equal((chatSrc.match(/<ChatDrawer/g) ?? []).length, 1, 'exactly one drawer');
   assert.equal((chatSrc.match(/BottomSheet/g) ?? []).length, 11, 'no new BottomSheet in ChatPage beyond the A11 ending sheet');
-  assert.equal((chatSrc.match(/setDrawer\(true\)/g) ?? []).length, 4, 'header + 요약하기 + 설정→기억 + tools hub (mobile)');
   assert.equal((chatSrc.match(/prompt-preview/g) ?? []).length, 0, 'ChatPage itself does not fetch prompt-preview; BudgetTab still does');
   assert.equal(chatSrc.includes('inject-preview'), false, 'story pre-start preview is a different surface');
+});
+
+function verifyOpeners(text: string) {
+  const source = ts.createSourceFile('ChatPage.tsx', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const elements: Array<ts.JsxOpeningElement | ts.JsxSelfClosingElement> = [];
+  const variables: ts.VariableDeclaration[] = [];
+  function visit(node: ts.Node) {
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) elements.push(node);
+    if (ts.isVariableDeclaration(node)) variables.push(node);
+    ts.forEachChild(node, visit);
+  }
+  visit(source);
+  function attribute(element: typeof elements[number], name: string) {
+    return element.attributes.properties.find((p): p is ts.JsxAttribute => ts.isJsxAttribute(p) && p.name.getText(source) === name)?.initializer;
+  }
+  function callback(tag: string, prop: string, marker?: string, label?: string) {
+    const matches = elements.filter((e) => e.tagName.getText(source) === tag &&
+      (!marker || attribute(e, 'data-test')?.getText(source) === JSON.stringify(marker)) &&
+      (!label || (ts.isJsxElement(e.parent) && e.parent.children.filter(ts.isJsxText).map((n) => n.text).join('').trim() === label)));
+    assert.equal(matches.length, 1, `one ${tag} ${marker ?? ''}`);
+    const init = attribute(matches[0], prop);
+    assert.ok(init && ts.isJsxExpression(init) && init.expression, `${tag}.${prop} handler`);
+    return init.expression.getText(source);
+  }
+  const calls: unknown[][] = [];
+  const deps = {
+    desktop: false, id: 'fixture-room', resolveSceneAction,
+    setDrawerTab: (tab: unknown) => calls.push(['tab', tab]),
+    setDrawer: (open: boolean) => calls.push(['drawer', open]),
+    setToolsOpen: (open: boolean) => calls.push(['tools', open]),
+    setSettings: (open: boolean) => calls.push(['settings', open]),
+    navigate: (href: string) => calls.push(['navigate', href]),
+    chat: { reload: () => calls.push(['reload']) },
+  };
+  function compile(expression: string, overrides = {}) {
+    const args = { ...deps, ...overrides };
+    const code = ts.transpileModule(`const handler = ${expression};`, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+    }).outputText;
+    return new Function(...Object.keys(args), `${code}\nreturn handler;`)(...Object.values(args));
+  }
+  compile(callback('button', 'onClick', 'context-inspector'))();
+  assert.deepEqual(calls.splice(0), [['tab', 'budget'], ['drawer', true]]);
+  const mobile = callback('ConversationTools', 'onOpenContextInspector');
+  compile(mobile)();
+  assert.deepEqual(calls.splice(0), [['tab', 'budget'], ['drawer', true], ['tools', false]]);
+  assert.equal(compile(mobile, { desktop: true }), undefined, 'desktop uses the header entry');
+  compile(callback('ConversationSettings', 'onOpenMemory'))();
+  assert.deepEqual(calls.splice(0), [['settings', false], ['tab', undefined], ['drawer', true]]);
+  compile(callback('button', 'onClick', undefined, '요약하기'))();
+  assert.deepEqual(calls.splice(0), [['tab', 'summary'], ['drawer', true]]);
+  const scene = variables.filter((v) => v.name.getText(source) === 'onSceneIntent');
+  assert.equal(scene.length, 1);
+  assert.ok(scene[0].initializer);
+  const dispatch = compile(scene[0].initializer.getText(source));
+  dispatch('open_context');
+  assert.deepEqual(calls.splice(0), [['tab', 'budget'], ['drawer', true]]);
+  dispatch('open_scene_state');
+  dispatch('retry');
+  assert.deepEqual(calls.splice(0), [['navigate', '/chat/fixture-room/settings/state'], ['reload']]);
+}
+
+t('CI-03c header, mobile tools, settings, summary and scene intents open their intended drawer tab', () => {
+  verifyOpeners(chatSrc);
+});
+
+t('CI-03d wrong tab and closed drawer counterexamples fail the opener contract', () => {
+  assert.throws(() => verifyOpeners(chatSrc.replaceAll("setDrawerTab('budget')", "setDrawerTab('summary')")), assert.AssertionError);
+  assert.throws(() => verifyOpeners(chatSrc.replaceAll("setDrawerTab('summary')", "setDrawerTab('budget')")), assert.AssertionError);
+  assert.throws(() => verifyOpeners(chatSrc.replaceAll('setDrawer(true)', 'setDrawer(false)')), assert.AssertionError);
 });
 
 t('CI-04 the drawer budget tab remains the inspector, untouched', () => {

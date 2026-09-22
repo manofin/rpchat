@@ -17,22 +17,13 @@ import { characterRoutes } from '../apps/server/src/routes/characters.ts';
 import { conversationRoutes } from '../apps/server/src/routes/conversations.ts';
 import { storyRoutes, parseEndings } from '../apps/server/src/routes/stories.ts';
 import type { Ctx } from '../apps/server/src/ctx.ts';
+import { callsNamed, rawConditionsPassThroughs, readSourceAst } from './helpers/sourceAst.ts';
 
 let passed = 0;
 async function t(name: string, fn: () => Promise<void> | void) {
   await fn();
   passed++;
   console.log(`ok ${passed} ${name}`);
-}
-
-/** ast-grep 구조 매칭 히트 수 (무매칭 exit 1 → 0). */
-function sgHits(pattern: string, file: string): number {
-  try {
-    const out = execSync(`ast-grep -p '${pattern}' --lang tsx ${file}`, { encoding: 'utf8' });
-    return out.split('\n').filter((l) => l.trim().length > 0).length;
-  } catch {
-    return 0;
-  }
 }
 
 const FULL = {
@@ -83,9 +74,12 @@ async function main() {
   assert.equal(created.status, 201, created.text);
   const story = created.json as { id: string };
 
-  await t('0021 does not exist — conditions rides inside endings_json', () => {
-    const files = fs.readdirSync('apps/server/migrations').filter((f) => f.startsWith('0021'));
-    assert.deepEqual(files, [], 'ADR-F8h §4: this slice adds no migration');
+  await t('conditions rides inside endings_json without separate condition columns or tables', () => {
+    const columns = db.prepare('PRAGMA table_info(stories)').all() as Array<{ name: string }>;
+    assert.ok(columns.some((column) => column.name === 'endings_json'));
+    assert.deepEqual(columns.filter((column) => /condition/i.test(column.name)), []);
+    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as Array<{ name: string }>;
+    assert.deepEqual(tables.filter((table) => /condition/i.test(table.name)), []);
   });
 
   await t('PUT stores conditions and GET round-trips every sub-key', async () => {
@@ -218,9 +212,9 @@ async function main() {
   await t('StoryEditor round-trips conditions instead of erasing them on save', () => {
     // 조건 저작 UI 슬라이스 이후 계약: pass-through가 아니라 buildConditions
     // 정제 경유 (빈 조건은 키 생략, `{}` 송신 금지). AST 기반 — 주석 오탐 없음.
-    const hits = sgHits('buildConditions($C)', 'apps/web/src/components/StoryEditor.tsx');
-    assert.ok(hits >= 1, 'save path sanitizes via buildConditions');
-    assert.equal(sgHits('conditions: e.conditions', 'apps/web/src/components/StoryEditor.tsx'), 0, 'raw pass-through gone');
+    const editor = readSourceAst('apps/web/src/components/StoryEditor.tsx');
+    assert.ok(callsNamed(editor, 'buildConditions', 1).length >= 1, 'save path sanitizes via buildConditions');
+    assert.equal(rawConditionsPassThroughs(editor).length, 0, 'raw pass-through gone');
   });
 
   await app.close();

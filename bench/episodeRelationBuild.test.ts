@@ -292,7 +292,11 @@ function main() {
   });
 
   // Write observation note for later ADR evidence
-  const notePath = path.resolve('bench/episodeRelationBuild.observation.md');
+  const artifactDir = process.env.RPCHAT_BENCH_ARTIFACT_DIR
+    ? path.resolve(process.env.RPCHAT_BENCH_ARTIFACT_DIR)
+    : fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-episode-relation-evidence-'));
+  fs.mkdirSync(artifactDir, { recursive: true });
+  const notePath = path.join(artifactDir, 'episodeRelationBuild.observation.md');
   fs.writeFileSync(
     notePath,
     [

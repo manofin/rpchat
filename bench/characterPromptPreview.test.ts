@@ -3,11 +3,11 @@
  * No live DB, no model, no deploy. Helper/bench PASS is not a product PASS.
  */
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Fastify from 'fastify';
+import ts from 'typescript';
 import { openMigratedDb } from '../apps/server/src/db/index.js';
 import {
   CHARACTER_PROMPT_PREVIEW_EXCERPT_MAX,
@@ -15,6 +15,7 @@ import {
 } from '../apps/server/src/routes/characters.js';
 import { PROMPT_VERSION } from '../apps/server/src/config.js';
 import type { Ctx } from '../apps/server/src/ctx.js';
+import { astNodes, parseSourceAst } from './helpers/sourceAst.ts';
 
 const CHAR_ROUTE = path.resolve('apps/server/src/routes/characters.ts');
 const PLAY_GUIDE_MARKER = 'C7PLAYGUIDE_UNIQUE_MARKER_9f3a';
@@ -26,16 +27,22 @@ async function t(name: string, fn: () => Promise<void> | void) {
   console.log(`ok ${passed} ${name}`);
 }
 
-function virtualConvAstText(file: string): string {
-  const r = spawnSync(
-    '/home/hermes/.local/bin/ast-grep',
-    ['run', '-p', 'const virtualConv: ConversationRow = $X', '--lang', 'ts', '--json=compact', file],
-    { encoding: 'utf8' },
-  );
-  assert.equal(r.status, 0, r.stderr || r.stdout);
-  const hits = JSON.parse(r.stdout) as Array<{ text: string }>;
+function assertVirtualChatMode(source: string) {
+  const ast = parseSourceAst(source, 'characters.ts');
+  const hits = astNodes(ast, ts.isVariableDeclaration).filter((node) => ts.isIdentifier(node.name)
+    && node.name.text === 'virtualConv' && node.type && ts.isTypeReferenceNode(node.type)
+    && node.type.typeName.getText(ast) === 'ConversationRow');
   assert.equal(hits.length, 1, `expected 1 virtualConv, got ${hits.length}`);
-  return hits[0].text;
+  const value = hits[0].initializer;
+  assert.ok(value && ts.isObjectLiteralExpression(value), 'virtualConv must have an object initializer');
+  const modes = value.properties.filter((property) => property.name
+    && ((ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)) && property.name.text === 'mode'));
+  assert.equal(modes.length, 1, 'virtualConv must have exactly one mode property');
+  assert.ok(ts.isPropertyAssignment(modes[0]) && ts.isStringLiteral(modes[0].initializer), 'mode must be a literal');
+  assert.equal(modes[0].initializer.text, 'chat', 'virtualConv mode must be chat');
+  assert.equal(value.properties.slice(value.properties.indexOf(modes[0]) + 1).some((property) =>
+    ts.isSpreadAssignment(property) || (property.name && ts.isComputedPropertyName(property.name))), false,
+  'later spread/computed properties must not override the mode');
 }
 
 function count(db: ReturnType<typeof openMigratedDb>, table: string): number {
@@ -182,10 +189,19 @@ async function main() {
     db.prepare(`UPDATE characters SET description = ? WHERE id = 'c-live'`).run('설명본문');
   });
 
-  await t("virtual conv mode is the literal 'chat' (ast-grep match of virtualConv)", () => {
-    const text = virtualConvAstText(CHAR_ROUTE);
-    assert.equal(text.includes("mode: 'chat'"), true, text.slice(0, 200));
-    assert.equal(text.includes("mode: 'story'"), false, text.slice(0, 200));
+  await t("virtual conv mode is the literal 'chat' (TypeScript AST)", () => {
+    assertVirtualChatMode(fs.readFileSync(CHAR_ROUTE, 'utf8'));
+  });
+
+  await t('mode AST guard rejects story, dynamic, duplicate and nested-only mode values', () => {
+    assertVirtualChatMode("const virtualConv: ConversationRow = { mode: 'chat' };");
+    for (const body of [
+      "mode: 'story' /* mode: 'chat' */", "mode: selectedMode, note: \"mode: 'chat'\"",
+      "mode: 'chat', mode: 'story'", "nested: { mode: 'chat' }", "mode: 'chat', ...overrides",
+    ]) {
+      assert.throws(() => assertVirtualChatMode(`const virtualConv: ConversationRow = { ${body} };`));
+    }
+    assert.throws(() => assertVirtualChatMode("const virtualConv: ConversationRow = { mode: 'chat' }; const virtualConv: ConversationRow = { mode: 'chat' };"));
   });
 
   console.log(`passed ${passed}`);

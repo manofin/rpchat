@@ -5,6 +5,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import Database from 'better-sqlite3';
+import { migrateSummaryRelationFixture } from './helpers/summaryRelationFixture.ts';
 import type { DB } from '../apps/server/src/db/index.js';
 import { getPath } from '../apps/server/src/db/tree.ts';
 import { buildPrompt } from '../apps/server/src/prompt/builder.ts';
@@ -141,6 +142,7 @@ function seed(n: number, opts?: { long?: boolean }): DB {
     CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT);
     INSERT INTO settings VALUES ('token_calibration','1.0');
   `);
+  migrateSummaryRelationFixture(db);
   db.prepare(`INSERT INTO personas VALUES (?,?,?,?,?,?,?,?,?)`).run('p1', '유저', '호칭1', '외형1', '페르소나성격', '관계1', 1, '0001', '0001');
   const ins = db.prepare(`INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?)`);
   const body = opts?.long ? '가나다라마바사아자차카타파하'.repeat(30) : '짧은대사';
@@ -164,7 +166,7 @@ function insertSummary(db: DB, row: {
   content?: string;
   conversation_id?: string;
 }): void {
-  db.prepare(`INSERT INTO summaries VALUES (?,?,?,?,?,?,?,?,?)`).run(
+  db.prepare(`INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier, rolled_up_into) VALUES (?,?,?,?,?,?,?,?,?)`).run(
     row.id ?? `s-${row.until ?? 'none'}`,
     row.conversation_id ?? CONV,
     row.content ?? SUMMARY_BODY,

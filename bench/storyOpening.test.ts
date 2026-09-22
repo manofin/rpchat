@@ -8,6 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import Fastify from 'fastify';
 import Database from 'better-sqlite3';
+import { migrateSummaryRelationFixture } from './helpers/summaryRelationFixture.ts';
 import { openMigratedDb } from '../apps/server/src/db/index.ts';
 import { GenerationQueue } from '../apps/server/src/model/queue.ts';
 import { characterRoutes } from '../apps/server/src/routes/characters.ts';
@@ -282,6 +283,7 @@ await t('3-A: opening.scenario replaces card scenario; no concat; no-story uncha
     CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT);
     INSERT INTO settings VALUES ('token_calibration','1.0');
   `);
+  migrateSummaryRelationFixture(mem);
   mem.prepare(`INSERT INTO personas VALUES (?,?,?,?,?,?,?,?,?)`).run('p1', '유저', '', '', '', '', 1, 't', 't');
 
   const base = {

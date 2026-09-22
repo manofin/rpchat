@@ -3,7 +3,11 @@
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import * as React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import ts from 'typescript';
 import { showBottomTabBar } from '../apps/web/src/lib/navTabs.ts';
+import { conversationMetaLabel, conversationTitleLabel, conversationTitleMatchesMeta } from '../apps/web/src/lib/conversationTitleLabel.ts';
 
 let passed = 0;
 function t(name: string, fn: () => void) {
@@ -55,7 +59,45 @@ function main() {
 
   t('ChatsPage: GET /api/conversations + story_name_snapshot label', () => {
     assert.ok(chats.includes("get<Conversation[]>('/api/conversations')"));
-    assert.ok(chats.includes('story_name_snapshot'));
+    const source = ts.createSourceFile('ChatsPage.tsx', chats, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const functions = source.statements.filter((n): n is ts.FunctionDeclaration => ts.isFunctionDeclaration(n) && n.name?.text === 'ChatsPage');
+    assert.equal(functions.length, 1);
+    const compiled = ts.transpileModule(functions[0].getText(source), {
+      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React },
+    }).outputText;
+    const rows = [
+      { id: 'story-room', title: '', character_name: '동료', story_name_snapshot: '모험', preview: '저장된 대화', created_at: 't' },
+      { id: 'solo-room', title: '내 제목', character_name: '사서', story_name_snapshot: null, created_at: 't' },
+    ];
+    const navigations: string[] = [];
+    const deps = { React, exports: {}, useState: () => [rows, () => {}], useEffect: () => {},
+      useUi: () => ({ toast: () => assert.fail('unexpected toast') }), TopNav: () => null,
+      Spinner: () => null, relTime: () => '방금', navigate: (href: string) => navigations.push(href),
+      conversationMetaLabel, conversationTitleLabel, conversationTitleMatchesMeta };
+    const render = new Function(...Object.keys(deps), `${compiled}\nreturn ChatsPage;`)(...Object.values(deps));
+    const tree = render();
+    const html = renderToStaticMarkup(tree);
+    assert.match(html, /동료 · 모험/);
+    assert.equal((html.match(/동료 · 모험/g) ?? []).length, 1, 'fallback title is not duplicated as metadata');
+    assert.match(html, /내 제목/);
+    assert.match(html, /사서/);
+    assert.match(html, /저장된 대화/);
+    const cards: React.ReactElement<any>[] = [];
+    function visit(node: React.ReactNode) {
+      React.Children.forEach(node, (child) => {
+        if (!React.isValidElement<any>(child)) return;
+        if (child.props.role === 'button') cards.push(child);
+        visit(child.props.children);
+      });
+    }
+    visit(tree);
+    assert.equal(cards.length, 2);
+    cards[0].props.onClick();
+    let prevented = false;
+    cards[1].props.onKeyDown({ key: 'Enter', preventDefault: () => { prevented = true; } });
+    cards[1].props.onKeyDown({ key: 'Escape', preventDefault: () => assert.fail('unrelated key captured') });
+    assert.equal(prevented, true);
+    assert.deepEqual(navigations, ['/chat/story-room', '/chat/solo-room']);
   });
 
   t('ChatListRail: optional characterId for global list', () => {
