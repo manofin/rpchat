@@ -7,6 +7,7 @@ import type { Character, Health, Story } from '../types';
 import { DiscCover, relTime } from '../components/view';
 import { CharacterEditor } from '../components/CharacterEditor';
 import { StoryEditor } from '../components/StoryEditor';
+import { StoryCover } from '../components/StoryCover';
 import { Spinner, useUi } from '../components/ui';
 import { TopNav } from '../components/TopNav';
 
@@ -186,23 +187,8 @@ export function HomePage() {
               <button className="btn primary" onClick={() => setStoryEditor(true)}>새 스토리 만들기</button>
             </div>
           ) : (
-            <div className="disc-grid">
-              {stories.map((s) => {
-                const setting = stripDescSectionHeaders(s.setting);
-                return (
-                <button key={s.id} type="button" className="disc-card disc-card--cover" onClick={() => navigate(`/story/${s.id}`)}>
-                  <DiscCover name={s.name} avatar={s.cover} kind="story" />
-                  <div className="disc-card-body">
-                    <div className="disc-card-tag">{s.tagline || ' '}</div>
-                    {setting ? <p className="disc-card-desc">{setting}</p> : null}
-                    <div className="disc-card-meta">
-                      <span>{s.character_count ? `캐릭터 ${s.character_count}명` : '캐릭터 없음'}</span>
-                      <span className="disc-card-cta">시작 →</span>
-                    </div>
-                  </div>
-                </button>
-                );
-              })}
+            <div className="disc-grid story-grid">
+              {stories.map((s) => <StoryCard key={s.id} story={s} />)}
             </div>
           )
         ) : chars === null ? (
@@ -277,6 +263,14 @@ export function HomePage() {
       />
     </div>
   );
+}
+
+export function StoryCard({ story }: { story: Story }) {
+  return <button type="button" className="story-card" onClick={() => navigate(`/story/${story.id}`)}>
+    <StoryCover name={story.name} cover={story.cover} />
+    <span className="story-card-name">{story.name}</span>
+    {story.tagline.trim() && <span className="story-card-tagline">{story.tagline}</span>}
+  </button>;
 }
 
 function fileToBase64(file: File): Promise<string> {

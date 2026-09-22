@@ -1,0 +1,29 @@
+
+> rpchat@0.1.0 build
+> npm run build --workspace apps/web && npm run build --workspace apps/server
+
+
+> @rpchat/web@0.1.0 build
+> tsc -p tsconfig.json --noEmit && vite build
+
+vite v6.4.3 building for production...
+transforming...
+✓ 111 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/manifest.webmanifest                          0.41 kB
+dist/index.html                                    0.87 kB │ gzip:   0.41 kB
+dist/assets/index-Bz-Y32HE.css                    51.94 kB │ gzip:  10.13 kB
+dist/assets/workbox-window.prod.es5-BBnX5xw4.js    5.75 kB │ gzip:   2.36 kB
+dist/assets/index-C1VpAMOa.js                    423.79 kB │ gzip: 124.17 kB
+✓ built in 559ms
+
+PWA v1.3.0
+mode      generateSW
+precache  11 entries (1551.47 KiB)
+files generated
+  dist/sw.js
+  dist/workbox-9c191d2f.js
+
+> @rpchat/server@0.1.0 build
+> tsc -p tsconfig.json

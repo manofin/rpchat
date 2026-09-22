@@ -9,6 +9,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { execSync } from 'node:child_process';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { StoryCard } from '../apps/web/src/pages/HomePage.tsx';
+import { storyFixture } from './helpers/storyUiHarness.ts';
 
 const require2 = createRequire(import.meta.url);
 let helper: typeof import('../apps/web/src/lib/stripDescSectionHeaders.ts');
@@ -125,15 +129,16 @@ t('does not mutate input string identity for keep-path', () => {
   assert.equal(got, input);
 });
 
-t('HomePage disc-card-desc uses helper for character and story', () => {
+t('HomePage character description strips headers; compact story card omits the world excerpt', () => {
   const text = src('apps/web/src/pages/HomePage.tsx');
   assert.match(text, /from ['\"]\.\.\/lib\/stripDescSectionHeaders['\"]/);
   assert.match(text, /stripDescSectionHeaders\(/);
   assert.match(text, /disc-card-desc/);
   const charBlock = text.slice(text.indexOf('filteredChars'));
   assert.match(charBlock, /stripDescSectionHeaders\(c\.description\)/);
-  const storyBlock = text.slice(0, text.indexOf('chars === null'));
-  assert.match(storyBlock, /stripDescSectionHeaders\(s\.setting\)/);
+  const html = renderToStaticMarkup(React.createElement(StoryCard, { story: storyFixture({ setting: `${WEAPON_HEADER}\n${YUKI_LINE}`, tagline: '짧은 소개' }) }));
+  assert.match(html, /짧은 소개/);
+  assert.doesNotMatch(html, /WEAPON|관리국 보안팀장|disc-card-desc/);
 });
 
 t('CharacterPage hero desc uses helper', () => {

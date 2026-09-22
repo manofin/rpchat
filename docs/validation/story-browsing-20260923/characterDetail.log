@@ -1,0 +1,16 @@
+ok 1 linked stories are deduplicated, encoded, filtered and preserve successful results on partial failure
+ok 2 empty relationships are distinct from a failed lookup and cause no extra requests
+ok 3 detail renders supplied authoring fields and per-story worlds without a conversation list
+ok 4 empty detail does not invent worlds, scenarios or first messages; story failure has actionable retry
+ok 5 appearing-story card opens that story without starting a character conversation
+ok 6 character entry fetches only detail and stories; Start opens chooser, new form and back are mutually exclusive
+ok 7 conversation sheet offsets cannot affect the character editor on the same detail page
+ok 8 character and linked-story responses cannot mutate an unmounted detail; failures allow retry
+ok 9 chooser loads conversations only when mounted, retries failed reads, and ignores late reads
+ok 10 new conversation waits for personas, chooses the default, and can retry persona lookup failure
+ok 11 new conversation preserves character-only create payload and latches duplicate clicks before rerender
+ok 12 failed creation reports an error, keeps the form, releases its latch and permits retry
+ok 13 persona loading and lookup errors prevent creation even if the submit callback is invoked
+ok 14 late creation success or failure cannot navigate, toast, or mutate the form after unmount
+ok 15 conversation rows preserve title fallback, preview, navigation, favorite and cancellable deletion
+passed 15

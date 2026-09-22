@@ -180,11 +180,12 @@ const EMPTY_CATALOG_REST: Omit<SceneCatalog, 'places'> = {
 };
 
 export function StoryEditor({
-  open, story, hosted = [], onClose, onSaved,
+  open, story, hosted = [], initialTab = 'profile', onClose, onSaved,
 }: {
   open: boolean;
   story: Story | null;
   hosted?: Array<{ character_id: string; name: string }>;
+  initialTab?: 'profile' | 'opening';
   onClose: () => void;
   onSaved: (s: Story) => void;
 }) {
@@ -198,10 +199,7 @@ export function StoryEditor({
   const [uploading, setUploading] = useState(false);
   const [lore, setLore] = useState<LoreEntry[]>([]);
   const [profiles, setProfiles] = useState<ModelProfile[]>([]);
-  // 참여 캐릭터 추가 (시작 설정 탭, 첫 장면 등장 위): StoryPage.tsx 참여 캐릭터 섹션과
-  // 같은 add-only 패턴. roster는 hosted prop을 열릴 때 seed하고 추가 시 로컬로 갱신 —
-  // 두 present_ids 체크박스 목록(기본 오프닝 + 각 추가 시작 설정)이 모두 이걸 참조하므로
-  // 한 곳에서 추가하면 즉시 전부에 반영된다.
+  // Both opening lists share the saved cast; mapping edits are persisted immediately.
   const [roster, setRoster] = useState<Array<{ character_id: string; name: string }>>([]);
   const [chars, setChars] = useState<Character[]>([]);
   const [addPickId, setAddPickId] = useState('');
@@ -210,7 +208,7 @@ export function StoryEditor({
 
   useEffect(() => {
     if (!open) return;
-    setTab('profile');
+    setTab(initialTab);
     setRoster(hosted);
     setAddPickId('');
     get<ModelProfile[]>('/api/profiles').then(setProfiles).catch(() => setProfiles([]));
@@ -230,8 +228,16 @@ export function StoryEditor({
         stats: (story.stats_json ?? []).map((s) => ({ ...s })),
       });
       setCatalogRest(rest);
-      setOpening(openingFieldsFrom(story.opening));
-      setExtras((story.openings_extra ?? []).map(extraToDraft));
+      // Mapping removal is immediate even when the rest of an edit is cancelled.
+      // Drop stale references when reopening so an invisible removed cast member
+      // cannot prevent the next save; unrelated opening fields remain intact.
+      const hostedIds = new Set(hosted.map((c) => c.character_id));
+      const openingDraft = openingFieldsFrom(story.opening);
+      setOpening({ ...openingDraft, present_ids: openingDraft.present_ids.filter((id) => hostedIds.has(id)) });
+      setExtras((story.openings_extra ?? []).map((extra) => {
+        const draft = extraToDraft(extra);
+        return { ...draft, present_ids: draft.present_ids.filter((id) => hostedIds.has(id)) };
+      }));
       setEndings((story.endings ?? []).map(endingToDraft));
     } else {
       setD(EMPTY);
@@ -241,7 +247,7 @@ export function StoryEditor({
       setCatalogRest(EMPTY_CATALOG_REST);
       setLore([]);
     }
-  }, [open, story]);
+  }, [open, story, initialTab]);
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((p) => ({ ...p, [k]: v }));
 
@@ -271,9 +277,7 @@ export function StoryEditor({
     }
   }
 
-  // StoryPage.tsx의 removeMain과 동일 계약: story_characters 매핑만 삭제, 캐릭터
-  // 자체는 남는다. 로컬 roster에서 빠지면 present_ids도 같이 정리해야 한다 —
-  // 안 그러면 저장 시 서버가 validateOpeningPut에서 "foreign present_id" 400을 낸다.
+  // Remove stale opening references along with the mapping so a later save stays valid.
   async function removeRosterMember(characterId: string) {
     if (!story) return;
     if (!(await ui.confirm('이 캐릭터를 스토리에서 뺄까요? 캐릭터 자체는 남습니다.', { okLabel: '빼기' }))) return;
@@ -466,6 +470,7 @@ export function StoryEditor({
 
       {tab === 'opening' && (
         <>
+          <div className="story-editor-guide">새 대화는 등록된 참여 캐릭터 전체로 시작합니다. 아래에서 명단을 변경할 수 있으며, 기존 대화에는 영향을 주지 않습니다.</div>
           <div className="section-title">오프닝</div>
           <div className="small muted" style={{ marginBottom: 8 }}>
             비워 두면 지금과 같이 시작합니다. 시작 버튼은 막지 않습니다.
@@ -495,6 +500,7 @@ export function StoryEditor({
           <div className="field"><label>이 비트 목표</label><input value={opening.beat_goal} onChange={(e) => setOpening((p) => ({ ...p, beat_goal: e.target.value }))} maxLength={500} /></div>
           <div className="field">
             <label>참여 캐릭터 추가</label>
+            <div className="hint">캐릭터 추가·빼기는 즉시 반영됩니다. 한 대화에는 최대 12명이 참여할 수 있습니다.</div>
             {story ? (
               rosterAvailable.length > 0 ? (
                 <>

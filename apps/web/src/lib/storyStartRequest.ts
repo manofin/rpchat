@@ -5,9 +5,20 @@
  * characterId is the display/legacy slot, not a focus privilege.
  * openingId: omit or blank = default stories.opening_json; extra id is sent as-is.
  */
-import type { StoryStartRequest } from '../types';
+import type { Character, Story, StoryStartRequest } from '../types';
 
 export type { StoryStartRequest };
+
+/** Saved cast order remains authoritative; archived/unavailable cards cannot start new rooms. */
+export function activeStoryCast(story: Story, characters: Character[]) {
+  const available = new Set(characters.filter((c) => !c.archived).map((c) => c.id));
+  const seen = new Set<string>();
+  return (story.characters ?? []).filter((c) => {
+    if (!available.has(c.character_id) || seen.has(c.character_id)) return false;
+    seen.add(c.character_id);
+    return true;
+  });
+}
 
 export function buildStoryStartRequest(input: {
   characterId: string;

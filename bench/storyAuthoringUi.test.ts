@@ -1,9 +1,14 @@
 /** npx tsx bench/storyAuthoringUi.test.ts
  * F8c story-authoring-ui — start sheet preview card + archived 409 copy.
- * Source inventory only. Helper/bench PASS is not a product PASS.
+ * Production JSX/effects/callbacks plus protected server-boundary inventory. UI playtest is separate.
  * No live HTTP / systemd / DB / commit / deploy / restart.
  */
 import assert from 'node:assert/strict';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { StartPreview } from '../apps/web/src/pages/StoryPage.tsx';
+import { ApiError } from '../apps/web/src/lib/api.ts';
+import { loadedStoryStart, storyFixture, previewFixture, character, one, named, button, deferred, tick } from './helpers/storyUiHarness.ts';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -17,8 +22,8 @@ try {
 }
 
 let passed = 0;
-function t(name: string, fn: () => void) {
-  fn();
+async function t(name: string, fn: () => unknown) {
+  await fn();
   passed++;
   console.log(`ok ${passed} ${name}`);
 }
@@ -33,69 +38,79 @@ const convSrc = fs.readFileSync(path.resolve('apps/server/src/routes/conversatio
 const builderSrc = fs.readFileSync(path.resolve('apps/server/src/prompt/builder.ts'), 'utf8');
 const configSrc = fs.readFileSync(path.resolve('apps/server/src/config.ts'), 'utf8');
 
-t('AU-01 start sheet fetches inject-preview for the selected character', () => {
-  assert.ok(pageSrc.includes('/inject-preview?characterId='), 'must call inject-preview');
-  assert.ok(pageSrc.includes('encodeURIComponent(startPick)'), 'characterId is the current pick');
+async function main() {
+
+await t('AU-01 start sheet fetches inject-preview for the first active saved character', async () => {
+  const h = await loadedStoryStart();
+  assert.ok(h.requests.some((url) => url.endsWith('/inject-preview?characterId=b')));
   assert.ok(typesSrc.includes('export interface StoryInjectPreview'));
-  assert.ok(typesSrc.includes('settingExcerpt'));
-  assert.ok(typesSrc.includes('settingTruncated'));
-  assert.ok(typesSrc.includes('estTokens'));
+  for (const field of ['settingExcerpt', 'settingTruncated', 'estTokens']) assert.ok(typesSrc.includes(field));
 });
 
-t('AU-02 preview card is confirmation UI, not a debugger', () => {
-  assert.ok(pageSrc.includes('대화에 적용될 스토리 설정'));
-  assert.ok(pageSrc.includes('전체 포함'));
-  assert.ok(pageSrc.includes('일부 잘림'));
-  assert.ok(pageSrc.includes('명 포함'));
-  assert.ok(pageSrc.includes('명 제외'));
-  assert.ok(pageSrc.includes('예상 사용량: 약'));
-  assert.ok(pageSrc.includes('대화를 시작하면 현재 설정이 이 대화에 동결됩니다.'));
-  assert.ok(pageSrc.includes('이후 스토리를 수정해도 이미 시작한 대화에는 반영되지 않습니다.'));
-  assert.equal(pageSrc.includes('storyRoom'), false);
-  assert.equal(pageSrc.includes('fixedEst'), false);
-  assert.equal(pageSrc.includes('budgets.fixed'), false);
-  assert.equal(pageSrc.includes('BudgetReport'), false);
-  assert.equal(pageSrc.includes('willFreeze'), false);
-  assert.equal(pageSrc.includes('STORY_SETTING_SHARE'), false);
+await t('AU-02 preview card is confirmation UI, not a debugger', () => {
+  for (const truncated of [false, true]) {
+    const html = renderToStaticMarkup(React.createElement(StartPreview, { kind: 'ok', preview: { settingExcerpt: '세계관 본문', settingTruncated: truncated, cast: [{ name: 'A', included: true }, { name: 'B', included: false }], estTokens: 321 }, onRetry() {} }));
+    for (const value of ['대화에 적용될 스토리 설정', truncated ? '일부 잘림' : '전체 포함', '1명 포함', '1명 제외', '예상 사용량: 약', '321', '대화를 시작하면 현재 설정이 이 대화에 동결됩니다.', '이후 스토리를 수정해도 이미 시작한 대화에는 반영되지 않습니다.']) assert.ok(html.includes(value), value);
+    assert.doesNotMatch(html, /storyRoom|fixedEst|budgets.fixed|BudgetReport|willFreeze|STORY_SETTING_SHARE/);
+  }
 });
 
-t('AU-03 stale preview cannot overwrite the current pick', () => {
-  assert.ok(pageSrc.includes('previewSeq'), 'generation counter');
-  assert.ok(pageSrc.includes('seq !== previewSeq.current'), 'ignore stale responses');
-  assert.ok(pageSrc.includes("setPreviewKind('loading')"), 'character change goes to loading first');
-  assert.ok(pageSrc.includes('cancelled'), 'effect cleanup cancels in-flight apply');
+await t('AU-03 stale preview cannot overwrite the current saved-cast preview', async () => {
+  const old = deferred<unknown>(), current = deferred<unknown>(); let requests = 0;
+  const h = await loadedStoryStart({ get: async (url) => {
+    if (url === '/api/characters') return [character('a'), character('b')];
+    if (url.includes('/inject-preview?')) return ++requests === 1 ? old.promise : current.promise;
+    return storyFixture();
+  } });
+  assert.equal(h.state.previewKind, 'loading');
+  h.state.previewRetry++; h.render(); h.runEffects();
+  current.resolve({ ...previewFixture, settingExcerpt: 'current' }); await tick();
+  old.resolve({ ...previewFixture, settingExcerpt: 'stale' }); await tick();
+  assert.equal(h.state.preview.settingExcerpt, 'current');
 });
 
-t('AU-04 start stays disabled until preview ok; failure has retry', () => {
-  assert.ok(pageSrc.includes("previewKind === 'ok'"));
-  assert.ok(pageSrc.includes('disabled={!startReady}'));
-  assert.ok(pageSrc.includes('다시 시도'));
-  assert.ok(pageSrc.includes("setPreviewKind('missing')"));
-  assert.ok(pageSrc.includes("setPreviewKind('error')"));
-  assert.ok(pageSrc.includes('미리보기를 불러올 수 없습니다.'));
-  assert.ok(pageSrc.includes('미리보기를 불러오지 못했습니다.'));
-  assert.ok(pageSrc.includes('role="alert"') || pageSrc.includes("role='alert'"));
-  assert.ok(pageSrc.includes('aria-live="polite"') || pageSrc.includes("aria-live='polite'"));
+await t('AU-04 start stays disabled until preview ok; failure has retry', async () => {
+  for (const error of [new Error('offline'), new ApiError(404, 'missing')]) {
+    let fail = true, posts = 0;
+    const h = await loadedStoryStart({ get: async (url) => {
+      if (url === '/api/characters') return [character('a'), character('b')];
+      if (url.includes('/inject-preview?')) { if (fail) throw error; return previewFixture; }
+      return storyFixture();
+    }, post: async () => { posts++; return { id: 'room' }; } });
+    const start = one(h.render(), button('시작')); assert.equal(start.props.disabled, true); start.props.onClick(); await tick(); assert.equal(posts, 0);
+    const preview = one(h.render(), named('StartPreview'));
+    const html = renderToStaticMarkup(React.createElement(StartPreview, preview.props));
+    assert.match(html, /role="alert"/); assert.match(html, /다시 시도/);
+    preview.props.onRetry(); fail = false;
+    for (let i = 0; i < 3; i++) { h.render(); h.runEffects(); await tick(); }
+    assert.equal(one(h.render(), button('시작')).props.disabled, false);
+  }
 });
 
-t('AU-05 preview 409 and conversation POST 409 share the archived copy', () => {
-  assert.ok(pageSrc.includes('보관된 스토리에서는 새 대화를 시작할 수 없습니다.'));
-  assert.ok(pageSrc.includes('스토리를 다시 활성화한 뒤 시도해 주세요.'));
+await t('AU-05 preview 409 and conversation POST 409 share the archived copy and refresh the parent', async () => {
+  for (const failedStep of ['preview', 'post']) {
+    let refreshes = 0;
+    const h = await loadedStoryStart({ get: async (url) => {
+      if (url === '/api/characters') return [character('a'), character('b')];
+      if (url.includes('/inject-preview?')) { if (failedStep === 'preview') throw new ApiError(409, 'archived'); return previewFixture; }
+      return storyFixture();
+    }, post: async () => { throw new ApiError(409, 'archived'); }, onArchived: () => refreshes++ });
+    if (failedStep === 'post') { one(h.render(), button('시작')).props.onClick(); await tick(); }
+    assert.equal(h.state.previewKind, 'archived'); assert.equal(refreshes, 1);
+    const html = renderToStaticMarkup(React.createElement(StartPreview, one(h.render(), named('StartPreview')).props));
+    assert.match(html, /보관된 스토리에서는 새 대화를 시작할 수 없습니다/);
+    assert.match(html, /스토리를 다시 활성화한 뒤 시도해 주세요/);
+    assert.equal(one(h.render(), button('시작')).props.disabled, true);
+  }
   assert.equal(pageSrc.split('보관된 스토리에서는 새 대화를 시작할 수 없습니다.').length - 1, 1, 'one shared constant');
-  assert.ok(pageSrc.includes('isArchivedError'));
-  assert.ok(pageSrc.includes('e.status !== 409') || pageSrc.includes('e.status === 409'));
-  assert.match(pageSrc, /isArchivedError\(e\)[\s\S]*isArchivedError\(e\)/);
-  assert.ok(pageSrc.includes("setPreviewKind('archived')"));
-  assert.ok(pageSrc.includes('load({ quiet: true })'));
 });
 
-t('AU-06 empty setting / empty cast do not assume rows exist', () => {
-  assert.ok(pageSrc.includes('설정이 없습니다.'));
-  assert.ok(pageSrc.includes('설정 이름: 없음'));
-  assert.ok(pageSrc.includes('preview.cast.length === 0') || pageSrc.includes('preview.cast.filter'));
+await t('AU-06 empty setting / empty cast do not assume rows exist', () => {
+  const html = renderToStaticMarkup(React.createElement(StartPreview, { kind: 'ok', preview: { ...previewFixture, settingExcerpt: '' }, onRetry() {} }));
+  assert.match(html, /설정이 없습니다/); assert.match(html, /설정 이름: 없음/);
 });
 
-t('AU-07 character-tab start, editor, and server contracts stay untouched', () => {
+await t('AU-07 character-tab start, editor, and server contracts stay untouched', () => {
   assert.equal(charPageSrc.includes('storyId'), false);
   assert.equal(charPageSrc.includes('inject-preview'), false);
   assert.equal(editorSrc.includes('inject-preview'), false);
@@ -109,9 +124,14 @@ t('AU-07 character-tab start, editor, and server contracts stay untouched', () =
   assert.equal(pageSrc.includes('lore'), false);
 });
 
-t('AU-08 single hosted character is preselected for preview', () => {
-  assert.ok(pageSrc.includes('hosted.length === 1 ? hosted[0].character_id'));
-  assert.ok(pageSrc.includes('hosted.map'));
+await t('AU-08 one saved active character starts without manual character selection', async () => {
+  const story = storyFixture(); story.characters = story.characters!.slice(1);
+  const h = await loadedStoryStart({ story });
+  assert.ok(h.requests.some((url) => url.endsWith('/inject-preview?characterId=a')));
+  assert.equal(one(h.render(), button('시작')).props.disabled, false);
 });
 
 console.log(`passed ${passed}`);
+
+}
+main().catch((error) => { console.error(error); process.exitCode = 1; });

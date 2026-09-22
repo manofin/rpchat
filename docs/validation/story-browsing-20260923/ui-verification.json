@@ -1,0 +1,55 @@
+{
+  "testedAt": "2026-09-22T22:43:49.141Z",
+  "environment": "Synthetic local DB and mock model; no live access",
+  "asset": "/assets/index-C1VpAMOa.js",
+  "layouts": [
+    {
+      "footerBottom": 611,
+      "height": 667,
+      "navTop": 611,
+      "navVisible": true,
+      "overflow": false,
+      "width": 360
+    },
+    {
+      "footerBottom": 744,
+      "height": 800,
+      "navTop": 744,
+      "navVisible": true,
+      "overflow": false,
+      "width": 720
+    },
+    {
+      "footerBottom": 900,
+      "height": 900,
+      "navTop": 0,
+      "navVisible": false,
+      "overflow": false,
+      "width": 1280
+    },
+    {
+      "footerBottom": 788,
+      "height": 844,
+      "navTop": 788,
+      "navVisible": true,
+      "overflow": false,
+      "width": 390
+    }
+  ],
+  "checks": [
+    "Portrait story cards with short title/tagline",
+    "Story detail shows world, cast, opening, places",
+    "Start opens story-scoped existing/new chooser",
+    "Existing story room resumes with greeting and place",
+    "Saved cast used for new conversation",
+    "Extra opening created correct participant/order/place snapshot (independent GET verified)",
+    "Cast removal + cancel + reopen/save succeeds",
+    "Empty cast routes to editor opening tab, add/save refreshes detail",
+    "390x844 conversation sheet bottom 788, nav starts 788",
+    "390x844 editor top143 bottom844; outside conversation wrapper"
+  ],
+  "limitations": [
+    "No real model generation",
+    "No physical Galaxy keyboard or installed PWA cache validation"
+  ]
+}

@@ -1,0 +1,17 @@
+ok 1 saved cast keeps server order, removes duplicates and excludes archived, missing and unrelated characters
+ok 2 story catalog card shows portrait cover, title and short tagline instead of world text and character metadata
+ok 3 detail shows world, cast and starting scene while hiding editing controls, history and ending spoilers
+ok 4 entry defers conversation reads; chooser, fresh new sheet and editor transitions are mutually exclusive
+ok 5 failed detail read offers retry; old detail and character reads cannot update an unmounted page
+ok 6 history is filtered to this story, paginates beyond fifty, deduplicates overlapping pages and resets after row changes
+ok 7 history errors and emptiness are distinct; archived stories still resume existing rooms and cannot create new ones
+ok 8 new start reloads saved cast, previews the first active member and sends full ordered peers without a character picker
+ok 9 default opening is omitted; selecting an extra sends its id without changing the saved cast
+ok 10 failed POST preserves opening and roster for retry, double click posts once, and unmounted responses cannot navigate
+ok 11 preview gate blocks loading, missing, failure and archived cases; retry recovers and 409 keeps creation closed
+ok 12 empty, over-limit and archived cast never POST and direct readers to participation settings
+ok 13 fresh roster load failure blocks start and retries; late preview cannot overwrite a newer preview or an unmounted form
+ok 14 preview renders user-facing truncation, cast, budget and freeze notices and exposes retry without technical fields
+ok 15 participation edits persist through the editor; cancelling and reopening prunes stale opening references before Save
+ok 16 conversation sheet offsets remain scoped away from both story and character editors
+passed 16
