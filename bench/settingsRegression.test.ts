@@ -6,6 +6,7 @@ import { execSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import ts from 'typescript';
+import type { Message, SseEvent } from '../apps/web/src/types.ts';
 import { ApiError, sendOkForComposer } from '../apps/web/src/lib/api.ts';
 import { WEB_APP_VERSION } from '../apps/web/src/lib/conversationSettings.ts';
 
@@ -66,7 +67,7 @@ await t('chat SSE FailSend recovery contract remains intact', async () => {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
   }).outputText;
 
-  type Event = { type: string; [key: string]: unknown };
+  type Event = SseEvent;
   async function scenario(events: Event[], error?: Error, abort = false) {
     const received: Event[] = [];
     const calls: string[] = [];
@@ -126,7 +127,18 @@ await t('chat SSE FailSend recovery contract remains intact', async () => {
     }
   }
 
-  const ordinary = [{ type: 'start' }, { type: 'delta', delta: 'text' }, { type: 'done' }];
+  const message: Message = {
+    id: 'fixture-message', conversation_id: 'fixture-conversation', parent_id: null,
+    role: 'assistant', content: 'fixture text', status: 'complete', meta: {},
+    bookmarked: false, created_at: '2026-09-22T00:00:00Z',
+  };
+  const ordinary: SseEvent[] = [
+    { type: 'start', generationId: 'fixture-generation', messageId: message.id },
+    { type: 'token', text: 'fixture ' },
+    { type: 'aux', message: { ...message, id: 'fixture-aux', meta: { block_kind: 'narration' } } },
+    { type: 'token', text: 'text' },
+    { type: 'done', message, usage: null, ttftMs: 1, totalMs: 2 },
+  ];
   assert.deepEqual(await scenario(ordinary), { value: true, calls: ['return'] }, 'successful stream');
   assert.deepEqual(await scenario([...ordinary, { type: 'error', message: 'failed' }]),
     { value: false, calls: ['reload', 'return'] }, 'SSE error retracts and restores composer after reload');
@@ -135,6 +147,7 @@ await t('chat SSE FailSend recovery contract remains intact', async () => {
     [new TypeError('network disconnected'), false, true],
     [new ApiError(499, 'explicit stop'), false, true],
     [new Error('aborted'), true, true],
+    [new ApiError(503, 'abort overrides HTTP failure'), true, true],
   ] as const) {
     const result = await scenario([], error, abort);
     assert.equal(result.value, expected, `${error.message}: composer recovery`);
