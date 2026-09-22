@@ -1,6 +1,6 @@
 # 벤치 복구 검증 — 2026-09-22
 
-최종 BASE `7a48f448cc4a6978a318c2fff5931f9cfdd09292`, 검증한 코드 커밋 `bebf62a5b5178e9b178dd38f7a8c8321a9a233a7`, Node v22.16.0. 최초 재현 기준은 `aad9268`이다. 작업 중 PR #41–43이 upstream에 병합되어 재배치한 뒤 전체 검증을 다시 실행했다. Tailscale fixture 수정은 #43에 이미 반영되어 이 PR의 중복 diff에서 빠졌다.
+최종 BASE `7a48f448cc4a6978a318c2fff5931f9cfdd09292`, 검증한 코드 커밋 `e18556f25963488b9b580f58d23dcd45e35e9dbc`, Node v22.16.0. 최초 재현 기준은 `aad9268`이다. 작업 중 PR #41–43이 upstream에 병합되어 재배치한 뒤 전체 검증을 다시 실행했다. Tailscale fixture 수정은 #43에 이미 반영되어 이 PR의 중복 diff에서 빠졌다.
 
 제품 소스·packages·migration을 변경하지 않고, 최신 제품 계약과 맞지 않던 fixture 및 과거 구현 형태에 묶인 검사를 복구했다. `settingsRegression.test.ts` 전체 파일은 BASE와 동일하고, 원본 서버 청결 fence 블록은 `2bfc555`와 바이트 동일하다.
 
@@ -26,6 +26,12 @@
 `builderDifferential`은 스키마 문제 뒤에 가려졌던 oracle 불일치도 수정했다. 상태 지침의 실제 토큰 비용과 fixture 장면 본문·정렬을 반영하고, 비동기 검사가 끝나기 전에 성공을 출력하던 문제를 제거했다. 상태 지침·recent guard·await 후 실패 반례를 검출했다.
 
 `explicitMigrationLifecycle`의 운영 DATA_DIR 문자열은 임시 센티널로 교체했다. 모든 CLI 호출 후 센티널 디렉터리가 비어 있음을 검사한다. `episodeRelationBuild`의 관찰 보고서는 추적 파일 대신 별도 artifact로 기록한다.
+
+## 병합 전 재검증
+
+`95c4da9` 독립 실행에서 `personaPatch`의 연속 PATCH가 같은 밀리초에 완료되어 타임스탬프 차이 단언이 실패했다. 제품의 Date 해상도에 기대던 테스트를 Node 기본 `mock.timers`로 결정론화했다. 각 요청 전에 Date만 1ms 진행하며 기존 차이 단언을 유지하고 현재 시각과 정확히 일치하는 단언 3개를 추가했다. 해당 벤치는 3회 연속 통과했다.
+
+수정 코드 `e18556f`에서 기본 전체 벤치를 다시 실행한 결과는 169 통과·0 실패·2095 성공 그룹이다. sandbox에서 임시 localhost listen이 EPERM으로 거절된 실행은 통과 증거에서 제외하고, loopback을 허용한 실행 결과를 기록했다. `95c4da9`의 독립 typecheck/build 통과 이후 변경은 빌드 대상 밖의 벤치 한 파일뿐이다. 별도 mutation 실행은 `bebf62a` 증거이며 관련 제품·벤치·실행기·의존성의 바이트 동일성을 확인했다.
 
 ## 최종 실행
 

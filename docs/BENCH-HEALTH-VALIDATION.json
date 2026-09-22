@@ -1,9 +1,9 @@
 {
   "base": "7a48f448cc4a6978a318c2fff5931f9cfdd09292",
-  "testedCodeCommit": "bebf62a5b5178e9b178dd38f7a8c8321a9a233a7",
+  "testedCodeCommit": "e18556f25963488b9b580f58d23dcd45e35e9dbc",
   "node": "v22.16.0",
-  "startedAt": "2026-09-22T08:21:54.113Z",
-  "finishedAt": "2026-09-22T08:22:28.910Z",
+  "startedAt": "2026-09-22T08:49:40.181Z",
+  "finishedAt": "2026-09-22T08:50:14.714Z",
   "command": "npm run test:benches -- --output-dir /tmp/rpchat-bench-evidence",
   "totals": {
     "discovered": 172,
@@ -419,9 +419,9 @@
     {
       "file": "bench/fixMobileClip.test.ts",
       "status": "passed",
+      "note": "Optional browser portion excluded (--no-browser).",
       "exitCode": 0,
-      "reportedChecks": 7,
-      "note": "Optional browser portion excluded (--no-browser)."
+      "reportedChecks": 7
     },
     {
       "file": "bench/focusResolve.test.ts",
@@ -808,9 +808,9 @@
     {
       "file": "bench/shortcutHub.test.ts",
       "status": "passed",
+      "note": "Optional browser portion excluded (--no-browser).",
       "exitCode": 0,
-      "reportedChecks": 8,
-      "note": "Optional browser portion excluded (--no-browser)."
+      "reportedChecks": 8
     },
     {
       "file": "bench/shortcutMacro.test.ts",
@@ -1057,7 +1057,9 @@
       "sha256Before": "525367069b6b521020ca79169d476eefb8183ccd8f8a9f073ab171e9b37e1e52",
       "sha256After": "525367069b6b521020ca79169d476eefb8183ccd8f8a9f073ab171e9b37e1e52",
       "restored": true
-    }
+    },
+    "evidenceCodeCommit": "bebf62a5b5178e9b178dd38f7a8c8321a9a233a7",
+    "continuity": "Mutation bench, target product source, runner, and dependencies unchanged through testedCodeCommit; evidence not rerun."
   },
   "buildChecks": [
     {
@@ -1080,5 +1082,13 @@
     "No product source or migration changes; no live model generation."
   ],
   "reproductionBase": "aad9268d1e256d77f1070f73bf9dda6eb064b08e",
-  "testedHead": "e9cf293828bbada822e00f421414fa71c5e12b9b"
+  "testedHead": "e18556f25963488b9b580f58d23dcd45e35e9dbc",
+  "buildChecksContinuity": "Typecheck/build independently passed at95c4da9; subsequent change is only bench/personaPatch.test.ts, outside application build/typecheck inputs.",
+  "premergeFollowup": {
+    "initialHead": "95c4da95a72e5d3aa7c968ee0c6df4eec63919a9",
+    "initialFailure": "personaPatch sequential requests completed within one real millisecond",
+    "fix": "Control Date with node:test mock.timers and tick before each PATCH; preserve timestamp inequality and assert exact controlled time.",
+    "targetedRepeatedPasses": 3,
+    "sandboxAttempt": "Loopback fixture listeners were denied with EPERM; the complete suite above was rerun with localhost access."
+  }
 }
