@@ -1,0 +1,1084 @@
+{
+  "base": "7a48f448cc4a6978a318c2fff5931f9cfdd09292",
+  "testedCodeCommit": "bebf62a5b5178e9b178dd38f7a8c8321a9a233a7",
+  "node": "v22.16.0",
+  "startedAt": "2026-09-22T08:21:54.113Z",
+  "finishedAt": "2026-09-22T08:22:28.910Z",
+  "command": "npm run test:benches -- --output-dir /tmp/rpchat-bench-evidence",
+  "totals": {
+    "discovered": 172,
+    "passed": 169,
+    "failed": 0,
+    "excluded": 3,
+    "notRun": 0,
+    "reportedChecks": 2095
+  },
+  "checkCountMeaning": "Number of emitted test/group success lines (ok N or ok - N), not individual assertion calls.",
+  "results": [
+    {
+      "file": "bench/abortBeforeFocusLog.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 2
+    },
+    {
+      "file": "bench/activeGenerationDeleteGuard.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/ambient.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 22
+    },
+    {
+      "file": "bench/approveExtras.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 26
+    },
+    {
+      "file": "bench/approveStoryExtras.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/assignSpeakers.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 21
+    },
+    {
+      "file": "bench/avatarCapOwner.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/avatarUpload.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/beatByteBaseline.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 14
+    },
+    {
+      "file": "bench/beatChoices.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 22
+    },
+    {
+      "file": "bench/beatMetrics.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 15
+    },
+    {
+      "file": "bench/beatRender.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 38
+    },
+    {
+      "file": "bench/beatRenderWeb.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 19
+    },
+    {
+      "file": "bench/branchFailureHeadRestore.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/budgetKind.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/builderBudget.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/builderDifferential.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 1
+    },
+    {
+      "file": "bench/cardImport.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 25
+    },
+    {
+      "file": "bench/characterAssetsWrite.test.ts",
+      "status": "excluded",
+      "reason": "Source mutation: select this name alone with --allow-source-mutation in a temporary isolated checkout."
+    },
+    {
+      "file": "bench/characterAvatarFlow.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 23
+    },
+    {
+      "file": "bench/characterChatWebGuards.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/characterDraft.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 5
+    },
+    {
+      "file": "bench/characterDraftStore.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 17
+    },
+    {
+      "file": "bench/characterEditorSheet.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/characterEditorTabs.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 14
+    },
+    {
+      "file": "bench/characterExamplesOrder.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 13
+    },
+    {
+      "file": "bench/characterExamplesParse.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 43
+    },
+    {
+      "file": "bench/characterPartyDefault.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/characterPlayGuide.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 15
+    },
+    {
+      "file": "bench/characterPromptPreview.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/characterPromptPreviewUi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/characterStories.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 23
+    },
+    {
+      "file": "bench/characterTokenInsert.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 22
+    },
+    {
+      "file": "bench/chatEventContract.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 21
+    },
+    {
+      "file": "bench/chatEventReconnect.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 3
+    },
+    {
+      "file": "bench/chatEventStream.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 15
+    },
+    {
+      "file": "bench/chatLayout.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 4
+    },
+    {
+      "file": "bench/chatShellWeb.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 14
+    },
+    {
+      "file": "bench/clockAdvanceObserve.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 18
+    },
+    {
+      "file": "bench/composeBeat.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 31
+    },
+    {
+      "file": "bench/composeDialog.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 29
+    },
+    {
+      "file": "bench/composerRecovery.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 13
+    },
+    {
+      "file": "bench/contextInspectorEntry.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/conversationGuidePage.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 3
+    },
+    {
+      "file": "bench/conversationMemoryPage.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 4
+    },
+    {
+      "file": "bench/conversationOutputPage.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 3
+    },
+    {
+      "file": "bench/conversationProfilePage.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 13
+    },
+    {
+      "file": "bench/conversationRowPersonaFields.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/conversationStylePage.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 4
+    },
+    {
+      "file": "bench/conversationTitleLabel.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/conversationUserNotePage.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/conversationUserNoteSaveLock.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/conversationUserNoteSaveLockLifecycle.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/coreRpLoop.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/designTokens.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/dialogBeatContract.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/dialogPersist.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 17
+    },
+    {
+      "file": "bench/dialogRender.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 22
+    },
+    {
+      "file": "bench/dialogScript.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 24
+    },
+    {
+      "file": "bench/discoveryWeb.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/eligibleExtras.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 20
+    },
+    {
+      "file": "bench/emptyUserTurn.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 19
+    },
+    {
+      "file": "bench/episodeRelationBuild.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 14
+    },
+    {
+      "file": "bench/episodeRelationSchema.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 11
+    },
+    {
+      "file": "bench/episodeRelationWrite.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/explicitMigrationLifecycle.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 16
+    },
+    {
+      "file": "bench/failSendUserPersist.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/fixMobileClip.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 7,
+      "note": "Optional browser portion excluded (--no-browser)."
+    },
+    {
+      "file": "bench/focusResolve.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 37
+    },
+    {
+      "file": "bench/generation-orphan.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 4
+    },
+    {
+      "file": "bench/hardeningAssets.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 5
+    },
+    {
+      "file": "bench/hideInternalTags.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/homeDescHeaderStrip.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/hudStateMatrix.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/injectMacro1to1.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/injectMacroApi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/injectMacroClient.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 14
+    },
+    {
+      "file": "bench/injectMacroParty.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 16
+    },
+    {
+      "file": "bench/leakChoicesDisplay.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 17
+    },
+    {
+      "file": "bench/leakChoicesUi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 13
+    },
+    {
+      "file": "bench/lightTheme.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/loreClone.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/loreMatch.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/memoryDupWarn.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/narrationContinuity.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/oocFuelStrip.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 10
+    },
+    {
+      "file": "bench/partyBeatFormat.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/partyBeatPersist.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 11
+    },
+    {
+      "file": "bench/partyBench.latency.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 10
+    },
+    {
+      "file": "bench/partyBench.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 11
+    },
+    {
+      "file": "bench/partyChannel.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 5
+    },
+    {
+      "file": "bench/partyGenerationLifecycle.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/partyRender.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/partyTurn.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 19
+    },
+    {
+      "file": "bench/partyTurnLiveRo.test.ts",
+      "status": "excluded",
+      "reason": "Separate private-copy validation: requires an approved RPCHAT_RO_DB and matching private fixture."
+    },
+    {
+      "file": "bench/partyTurnWeb.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/passPrompts.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 33
+    },
+    {
+      "file": "bench/personaPatch.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/personaPatchClear.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 2
+    },
+    {
+      "file": "bench/personaPatchValidation.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/personaResolve.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/presenceIdResolve.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 20
+    },
+    {
+      "file": "bench/presenceModel.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 19
+    },
+    {
+      "file": "bench/presencePrompt.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 14
+    },
+    {
+      "file": "bench/promptDump.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 4
+    },
+    {
+      "file": "bench/readablePreview.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 11
+    },
+    {
+      "file": "bench/regenerateTurnBoundary.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 15
+    },
+    {
+      "file": "bench/requestDump.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 4
+    },
+    {
+      "file": "bench/retiredFreeze.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/routerSettings.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/rpEngineR1.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 18
+    },
+    {
+      "file": "bench/rpMobilePwaR6.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 5
+    },
+    {
+      "file": "bench/rpPartyCastR5.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/rpReadabilityR1.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 13
+    },
+    {
+      "file": "bench/rpTurnChromeR2.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/sanitizeNarration.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/sceneBranchSnapshot.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 24
+    },
+    {
+      "file": "bench/sceneCatalog.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 16
+    },
+    {
+      "file": "bench/sceneCommitOnSuccess.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/sceneDeltaLive.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 20
+    },
+    {
+      "file": "bench/sceneProgression.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 29
+    },
+    {
+      "file": "bench/sceneProgressionR4.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 10
+    },
+    {
+      "file": "bench/sceneStateSchema.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 29
+    },
+    {
+      "file": "bench/sceneStateSheet.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/sceneStatusPanelCatalog.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/schemaCompatManifest.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 10
+    },
+    {
+      "file": "bench/settingsHub.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/settingsRegression.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/settingsSheetInventory.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 14
+    },
+    {
+      "file": "bench/settingsUi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/settingsViewport.test.ts",
+      "status": "excluded",
+      "reason": "Separate browser validation: requires a configured Chrome binary and viewport screenshots."
+    },
+    {
+      "file": "bench/shellRoomsNav.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/shortcutHub.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 8,
+      "note": "Optional browser portion excluded (--no-browser)."
+    },
+    {
+      "file": "bench/shortcutMacro.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 13
+    },
+    {
+      "file": "bench/storyArchivedGate.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/storyAuthoringUi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/storyCatalogWrite.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/storyDefaults.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/storyDetail.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/storyEndingConditions.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 16
+    },
+    {
+      "file": "bench/storyEndingConditionsUi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/storyEndingEvalLlm.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 16
+    },
+    {
+      "file": "bench/storyEndingEvalRule.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 19
+    },
+    {
+      "file": "bench/storyEndingSuggestionUi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/storyEndings.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/storyEndingsEditor.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 5
+    },
+    {
+      "file": "bench/storyEndingsRuntime.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/storyInjectBuild.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 14
+    },
+    {
+      "file": "bench/storyInjectPreview.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 11
+    },
+    {
+      "file": "bench/storyInjectSchema.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 22
+    },
+    {
+      "file": "bench/storyInjectUi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/storyOpening.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 13
+    },
+    {
+      "file": "bench/storyOpeningsEditor.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/storyOpeningsExtra.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 11
+    },
+    {
+      "file": "bench/storyOpeningsStartUi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/storyPeerCastFocus.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 19
+    },
+    {
+      "file": "bench/storyPeerCastGenerate.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 11
+    },
+    {
+      "file": "bench/storyPeerCastGenerateContract.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 10
+    },
+    {
+      "file": "bench/storyPeerCastSchema.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/storyPeerCastStartUi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 16
+    },
+    {
+      "file": "bench/storySchema.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 24
+    },
+    {
+      "file": "bench/storyStats.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 10
+    },
+    {
+      "file": "bench/storyTabs.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 5
+    },
+    {
+      "file": "bench/summarizeContract.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 3
+    },
+    {
+      "file": "bench/summaryBannerTrigger.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/summaryDiff.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 14
+    },
+    {
+      "file": "bench/summaryWatermarkCompaction.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 24
+    },
+    {
+      "file": "bench/tagsCatalog.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 29
+    },
+    {
+      "file": "bench/tailscaleIngress.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 22
+    },
+    {
+      "file": "bench/userContextBudget.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 11
+    },
+    {
+      "file": "bench/userNoteInject.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 4
+    },
+    {
+      "file": "bench/userNoteRequestRoundtrip.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "reportedChecks": 8
+    }
+  ],
+  "separateMutation": {
+    "file": "bench/characterAssetsWrite.test.ts",
+    "status": "passed",
+    "exitCode": 0,
+    "reportedChecks": 13,
+    "sourceMutation": {
+      "file": "apps/server/src/media/assets.ts",
+      "sha256Before": "525367069b6b521020ca79169d476eefb8183ccd8f8a9f073ab171e9b37e1e52",
+      "sha256After": "525367069b6b521020ca79169d476eefb8183ccd8f8a9f073ab171e9b37e1e52",
+      "restored": true
+    }
+  },
+  "buildChecks": [
+    {
+      "name": "typecheck",
+      "exit": 0
+    },
+    {
+      "name": "build",
+      "exit": 0
+    },
+    {
+      "name": "diff-check",
+      "exit": 0
+    }
+  ],
+  "limits": [
+    "settingsViewport and partyTurnLiveRo were not run.",
+    "fixMobileClip and shortcutHub optional browser geometry checks were not run.",
+    "Callback/SSR fixtures do not establish real-device UI correctness.",
+    "No product source or migration changes; no live model generation."
+  ],
+  "reproductionBase": "aad9268d1e256d77f1070f73bf9dda6eb064b08e",
+  "testedHead": "e9cf293828bbada822e00f421414fa71c5e12b9b"
+}
