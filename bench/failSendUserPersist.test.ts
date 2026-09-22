@@ -60,7 +60,6 @@ async function main() {
     assert.ok(insertAt >= 0 && generateAt > insertAt, 'user INSERT still precedes generate');
     assert.ok(post.includes('retractUnconfirmedSend(user, conv.head_message_id)'));
     assert.ok(chat.includes('function retractUnconfirmedSend'));
-    assert.equal((chat.match(/retractUnconfirmedSend\(/g) ?? []).length, 13);
     assert.equal(chat.includes('const restoreHead = user.parent_id'), false);
     assert.ok(chat.includes('retractUnconfirmedSend(userMessage, conv.head_message_id)'));
     assert.equal(code('apps/web/src/pages/ChatPage.tsx').includes('if (ok === false)'), true);

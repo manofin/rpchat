@@ -885,6 +885,7 @@ export function chatRoutes(ctx: Ctx) {
       }
       if (!reply.raw.headersSent) {
         ctx.log.error({ err, generationId }, '비트 생성 실패');
+        retractUnconfirmedSend(userMessage, conv.head_message_id);
         return reply.code(500).send({ error: (err as Error).message });
       }
       throw err;
@@ -1220,6 +1221,7 @@ export function chatRoutes(ctx: Ctx) {
       }
       if (!reply.raw.headersSent) {
         ctx.log.error({ err, generationId }, '대본 생성 실패');
+        retractUnconfirmedSend(userMessage, conv.head_message_id);
         return reply.code(500).send({ error: (err as Error).message });
       }
       throw err;
