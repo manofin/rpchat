@@ -159,23 +159,30 @@ export function loadConversation(ctx: Ctx, id: string): ConversationRow | undefi
 export function conversationRoutes(ctx: Ctx) {
   const { db } = ctx;
   return async function plugin(app: FastifyInstance) {
-    app.get<{ Querystring: { characterId?: string; limit?: string } }>('/api/conversations', async (req) => {
+    app.get<{ Querystring: { characterId?: string; storyId?: string; limit?: string; offset?: string } }>('/api/conversations', async (req) => {
       const limit = Math.min(200, Math.max(1, Number(req.query.limit ?? 50) || 50));
-      const rows = req.query.characterId
-        ? many<ConversationRow & { character_name: string }>(
-            db,
-            `SELECT v.*, c.name AS character_name
-             FROM conversations v JOIN characters c ON c.id = v.character_id
-             WHERE v.archived = 0 AND v.character_id = ? ORDER BY v.last_message_at DESC NULLS LAST, v.created_at DESC LIMIT ?`,
-            req.query.characterId, limit,
-          )
-        : many<ConversationRow & { character_name: string }>(
-            db,
-            `SELECT v.*, c.name AS character_name
-             FROM conversations v JOIN characters c ON c.id = v.character_id
-             WHERE v.archived = 0 ORDER BY v.last_message_at DESC NULLS LAST, v.created_at DESC LIMIT ?`,
-            limit,
-          );
+      const requestedOffset = Number(req.query.offset ?? 0);
+      const offset = Number.isSafeInteger(requestedOffset) && requestedOffset >= 0 ? requestedOffset : 0;
+      const filters = ['v.archived = 0'];
+      const values: Array<string | number> = [];
+      if (req.query.characterId) {
+        filters.push('v.character_id = ?');
+        values.push(req.query.characterId);
+      }
+      if (req.query.storyId) {
+        filters.push('v.story_id = ?');
+        values.push(req.query.storyId);
+      }
+      // A stable tie-breaker prevents equal timestamps from shifting between story pages.
+      const tieOrder = req.query.storyId ? ', v.id DESC' : '';
+      const rows = many<ConversationRow & { character_name: string }>(
+        db,
+        `SELECT v.*, c.name AS character_name
+         FROM conversations v JOIN characters c ON c.id = v.character_id
+         WHERE ${filters.join(' AND ')}
+         ORDER BY v.last_message_at DESC NULLS LAST, v.created_at DESC${tieOrder} LIMIT ? OFFSET ?`,
+        ...values, limit, offset,
+      );
       return rows.map((r) => ({ ...conversationOut(r), character_name: r.character_name, preview: readablePreview(db, r.head_message_id) }));
     });
 

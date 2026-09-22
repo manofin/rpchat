@@ -1,9 +1,10 @@
 /** npx tsx bench/storyInjectUi.test.ts
- * F8b story-inject-ui — StoryPage start-chat CTA. Source inventory only.
+ * F8b story-inject-ui — reader CTA, saved-cast create and archive behavior.
  * Helper/bench PASS is not a product PASS (helper-vs-live-contract).
  * No live HTTP / systemd / DB / commit / deploy / restart.
  */
 import assert from 'node:assert/strict';
+import { loadedStoryStart, storyHarness, storyFixture, nodes, one, named, button, tick } from './helpers/storyUiHarness.ts';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -17,8 +18,8 @@ try {
 }
 
 let passed = 0;
-function t(name: string, fn: () => void) {
-  fn();
+async function t(name: string, fn: () => unknown) {
+  await fn();
   passed++;
   console.log(`ok ${passed} ${name}`);
 }
@@ -31,31 +32,44 @@ const storiesSrc = fs.readFileSync(path.resolve('apps/server/src/routes/stories.
 const convSrc = fs.readFileSync(path.resolve('apps/server/src/routes/conversations.ts'), 'utf8');
 const charPageSrc = fs.readFileSync(path.join(ROOT, 'pages/CharacterPage.tsx'), 'utf8');
 
-t('UI-01 StoryPage CTA is 이 스토리로 대화 시작', () => {
-  assert.ok(pageSrc.includes('이 스토리로 대화 시작'), 'missing CTA copy');
+async function main() {
+
+await t('UI-01 StoryPage Start opens history selection before creation', () => {
+  const story = storyFixture();
+  const h = storyHarness('StoryDetailPage', { id: story.id }, {}, { story });
+  assert.equal(nodes(h.render()).filter(named('StoryConversationChooser')).length, 0);
+  one(h.render(), button('대화 시작')).props.onClick();
+  one(h.render(), named('StoryConversationChooser'));
+  assert.equal(nodes(h.render()).filter(named('NewStoryConversationSheet')).length, 0);
 });
 
-t('UI-02 CTA POSTs /api/conversations with storyId', () => {
-  assert.ok(pageSrc.includes('/api/conversations'), 'StoryPage must POST conversations');
-  assert.ok(pageSrc.includes('storyId'), 'payload must tag storyId');
-  assert.ok(pageSrc.includes('characterId'), 'payload must pick a hosted main');
-  assert.ok(pageSrc.includes('navigate(`/chat/${'), 'after create, open the chat');
+await t('UI-02 explicit new start POSTs storyId and ordered saved cast before opening chat', async () => {
+  const writes: unknown[] = [], routes: string[] = [];
+  const h = await loadedStoryStart({ post: async (url, body) => { writes.push({ url, body }); return { id: 'room' }; }, navigate: (url) => routes.push(url) });
+  one(h.render(), button('시작')).props.onClick(); await tick();
+  assert.deepEqual(writes, [{ url: '/api/conversations', body: { storyId: storyFixture().id, characterId: 'b', mode: 'story', participantIds: ['b', 'a'] } }]);
+  assert.deepEqual(routes, ['/chat/room']);
 });
 
-t('UI-03 hosted main is the only start pick', () => {
-  assert.ok(pageSrc.includes('hosted'), 'uses hosted mains');
-  assert.ok(pageSrc.includes('character_id'), 'pick from story.characters');
-  assert.ok(pageSrc.includes('hosted.length'), 'empty hosted cannot start');
+await t('UI-03 an empty saved cast cannot start and directs the user to story settings', async () => {
+  let edits = 0;
+  const h = await loadedStoryStart({ story: storyFixture({ characters: [] }), onEdit: () => edits++ });
+  assert.equal(nodes(h.render()).filter(button('시작')).length, 0);
+  one(h.render(), button('참여 캐릭터 설정')).props.onClick(); assert.equal(edits, 1);
 });
 
-t('UI-04 archived stories are not a start option', () => {
+await t('UI-04 archived stories resume existing conversations but cannot create new ones', async () => {
   assert.ok(storiesSrc.includes('WHERE s.archived = 0'), 'list API hides archived');
   assert.ok(homeSrc.includes('/api/stories'), 'home story tab uses list API');
-  assert.ok(pageSrc.includes('story.archived'), 'detail CTA gated on archived');
-  assert.equal(pageSrc.includes('이 스토리로 대화 시작') && !pageSrc.includes('story.archived'), false);
+  const story = storyFixture({ archived: true });
+  const chooser = storyHarness('StoryConversationChooser', { story, onClose() {}, onNew() {} });
+  assert.equal(one(chooser.render(), button('＋ 새 대화')).props.disabled, true);
+  const start = await loadedStoryStart({ story });
+  assert.equal(start.state.previewKind, 'archived');
+  assert.equal(one(start.render(), button('시작')).props.disabled, true);
 });
 
-t('UI-05 no reapply control on StoryPage', () => {
+await t('UI-05 no reapply control on StoryPage', () => {
   assert.equal(pageSrc.includes('재적용'), false);
   assert.equal(pageSrc.includes('story-reapply'), false);
   assert.equal(pageSrc.includes('story_applied_at'), false);
@@ -63,15 +77,18 @@ t('UI-05 no reapply control on StoryPage', () => {
   assert.equal(editorSrc.includes('/api/conversations'), false);
 });
 
-t('UI-06 worlds unused; character tab start stays story-less', () => {
+await t('UI-06 worlds unused; character tab start stays story-less', () => {
   assert.equal(pageSrc.includes('worlds'), false);
   assert.equal(pageSrc.includes('world_id'), false);
   assert.equal(homeSrc.includes('worlds'), false);
   assert.equal(charPageSrc.includes('storyId'), false);
 });
 
-t('UI-07 createSchema still accepts optional storyId (schema slice)', () => {
+await t('UI-07 createSchema still accepts optional storyId (schema slice)', () => {
   assert.match(convSrc, /const createSchema = z\.object\(\{[\s\S]*?storyId:/);
 });
 
 console.log(`passed ${passed}`);
+
+}
+main().catch((error) => { console.error(error); process.exitCode = 1; });

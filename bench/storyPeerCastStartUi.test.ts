@@ -3,6 +3,7 @@
  * ORDER_CONTRACT: preserve selection order; prepend characterId only if absent.
  */
 import assert from 'node:assert/strict';
+import { loadedStoryStart, nodes, one, button, deferred, tick } from './helpers/storyUiHarness.ts';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -120,26 +121,23 @@ async function runUnit() {
     assert.equal(charPage.includes('story_participant'), false);
   });
 
-  await t('ok9 failed create preserves the current selection', () => {
-    const page = src('apps/web/src/pages/StoryPage.tsx');
-    assert.ok(page.includes('ui.toast((e as Error).message'));
-    assert.equal(/setRosterIds\(\s*\[\s*\]\s*\)/.test(page), false);
-    const startChat = page.slice(page.indexOf('async function startChat'), page.indexOf('if (loading || !story)'));
-    assert.equal(startChat.includes('navigate(`/chat/${conv.id}`)'), true);
-    assert.ok(startChat.includes('catch'));
-    const catchBlock = startChat.slice(startChat.indexOf('catch'));
-    assert.equal(catchBlock.includes('navigate('), false, 'failed POST must not navigate');
-    assert.equal(catchBlock.includes('setStartPick'), false, 'failed POST must not reset start pick');
-    assert.equal(catchBlock.includes('setRosterIds'), false, 'failed POST must not reset roster');
+  await t('ok9 failed create preserves the saved roster and opening for retry', async () => {
+    let attempts = 0;
+    const bodies: unknown[] = [], routes: string[] = [], errors: string[] = [];
+    const h = await loadedStoryStart({ post: async (_url, body) => { bodies.push(body); if (++attempts === 1) throw new Error('offline'); return { id: 'room' }; }, navigate: (url) => routes.push(url), toast: (message) => errors.push(message) });
+    one(h.render(), (node) => node.type === 'select').props.onChange({ target: { value: 'rain' } });
+    one(h.render(), button('시작')).props.onClick(); await tick();
+    assert.deepEqual(routes, []); assert.deepEqual(errors, ['offline']); assert.equal(h.state.openingPick, 'rain');
+    one(h.render(), button('시작')).props.onClick(); await tick();
+    assert.deepEqual(bodies[0], bodies[1]); assert.deepEqual(routes, ['/chat/room']);
   });
 
-  await t('ok10 duplicate submit cannot start two rooms', () => {
-    const page = src('apps/web/src/pages/StoryPage.tsx');
-    assert.ok(page.includes('starting'));
-    assert.ok(page.includes('disabled={!startReady}'));
-    assert.ok(page.includes('!starting'));
-    const startChat = page.slice(page.indexOf('async function startChat'), page.indexOf('if (loading || !story)'));
-    assert.ok(/if\s*\(.*starting/.test(startChat), 'startChat must refuse a second in-flight submit');
+  await t('ok10 duplicate submit cannot start two rooms', async () => {
+    const response = deferred<unknown>(); let calls = 0;
+    const h = await loadedStoryStart({ post: async () => { calls++; return response.promise; } });
+    const start = one(h.render(), button('시작')); start.props.onClick(); start.props.onClick();
+    assert.equal(calls, 1); assert.equal(one(h.render(), button('생성 중…')).props.disabled, true);
+    response.resolve({ id: 'one-room' }); await tick();
   });
 
   await t('selection order is preserved when the host is already in the roster', () => {
@@ -151,12 +149,14 @@ async function runUnit() {
     assert.deepEqual(body.participantIds, [SERA, HAYEON, NARI]);
   });
 
-  await t('StoryPage start sheet is peer-cast checkboxes, not a single main pick', () => {
-    const page = src('apps/web/src/pages/StoryPage.tsx');
-    assert.ok(page.includes('rosterIds'));
-    assert.ok(page.includes('type="checkbox"') || page.includes("type='checkbox'"));
-    assert.ok(page.includes('aria-checked') || page.includes('aria-pressed'));
-    assert.equal(page.includes('<label>메인 캐릭터</label>'), false);
+  await t('StoryPage starts saved peer cast; participation controls belong in the editor', async () => {
+    const bodies: any[] = []; let edits = 0;
+    const h = await loadedStoryStart({ post: async (_url, body) => { bodies.push(body); return { id: 'room' }; }, onEdit: () => edits++ });
+    assert.equal(nodes(h.render()).filter((node) => node.type === 'input' && node.props.type === 'checkbox').length, 0);
+    assert.equal(nodes(h.render()).filter((node) => node.type === 'select' && node.props.id !== 'story-opening-pick').length, 0);
+    one(h.render(), button('스토리 수정에서 변경')).props.onClick(); assert.equal(edits, 1);
+    one(h.render(), button('시작')).props.onClick(); await tick();
+    assert.deepEqual(bodies[0].participantIds, ['b', 'a']); assert.equal(bodies[0].characterId, 'b');
   });
 
   await t('createSchema accepts participantIds (POST body, not a migration)', () => {

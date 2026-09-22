@@ -1,9 +1,10 @@
 /** npx tsx bench/storyOpeningsStartUi.test.ts
  * ADR-F8f Slice 3 (story-multi-opening-slice3-start-ui): start-sheet opening picker.
- * Source inventory + helper. Helper/bench PASS is not a product PASS.
+ * Production opening-picker callbacks + helper; UI playtest is separate.
  * No live HTTP / systemd / DB / commit / deploy / restart.
  */
 import assert from 'node:assert/strict';
+import { loadedStoryStart, storyFixture, nodes, one, button, tick } from './helpers/storyUiHarness.ts';
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -18,8 +19,8 @@ try {
 }
 
 let passed = 0;
-function t(name: string, fn: () => void) {
-  fn();
+async function t(name: string, fn: () => unknown) {
+  await fn();
   passed++;
   console.log(`ok ${passed} ${name}`);
 }
@@ -38,12 +39,12 @@ const STORY = 'story-parallel';
 async function main() {
 const { buildStoryStartRequest } = await import('../apps/web/src/lib/storyStartRequest.ts');
 
-t('types expose optional openingId on StoryStartRequest', () => {
+await t('types expose optional openingId on StoryStartRequest', () => {
   assert.ok(typesSrc.includes('export type StoryStartRequest') || typesSrc.includes('export interface StoryStartRequest'));
   assert.match(typesSrc, /StoryStartRequest[\s\S]*openingId\?:\s*string/);
 });
 
-t('F5: extras 0 / default pick omits openingId key; extra id is sent', () => {
+await t('F5: extras 0 / default pick omits openingId key; extra id is sent', () => {
   const omitted = buildStoryStartRequest({
     characterId: HAYEON,
     storyId: STORY,
@@ -67,7 +68,7 @@ t('F5: extras 0 / default pick omits openingId key; extra id is sent', () => {
   assert.equal(JSON.stringify(extra).includes('"openingId":"lib"'), true);
 });
 
-t('openingId does not change participantIds ORDER_CONTRACT', () => {
+await t('openingId does not change participantIds ORDER_CONTRACT', () => {
   const body = buildStoryStartRequest({
     characterId: HAYEON,
     storyId: STORY,
@@ -80,34 +81,34 @@ t('openingId does not change participantIds ORDER_CONTRACT', () => {
   assert.equal(body.openingId, 'lib');
 });
 
-t('StoryPage shows opening picker only when openings_extra length >= 1', () => {
-  assert.ok(pageSrc.includes('openings_extra'));
-  assert.ok(pageSrc.includes('openingPick'));
-  assert.match(pageSrc, /\(story\.openings_extra\s*\?\?\s*\[\]\)\.length/);
-  assert.ok(pageSrc.includes('시작 설정'));
-  assert.ok(pageSrc.includes('>기본<') || pageSrc.includes('>기본</option>'));
-  assert.ok(pageSrc.includes('e.label') || pageSrc.includes('.label}'));
-  const sheet = pageSrc.slice(pageSrc.indexOf('<BottomSheet'), pageSrc.indexOf('</BottomSheet>'));
-  assert.ok(sheet.includes('openingPick'));
-  assert.ok(sheet.includes('rosterIds'));
-  assert.equal(sheet.includes('present_ids'), false, 'opening picker is not the first-scene roster');
+await t('StoryPage shows opening picker only when openings_extra length >= 1', async () => {
+  const empty = await loadedStoryStart({ story: storyFixture({ openings_extra: [] }) });
+  assert.equal(nodes(empty.render()).filter((node) => node.type === 'select').length, 0);
+  const extras = await loadedStoryStart();
+  const picker = one(extras.render(), (node) => node.type === 'select');
+  assert.equal(picker.props.value, '');
+  assert.deepEqual(nodes(picker).filter((node) => node.type === 'option').map((node) => [node.props.value, node.props.children]), [['', '기본'], ['rain', '비 오는 밤']]);
+  assert.equal(nodes(extras.render()).filter((node) => node.type === 'input' && node.props.type === 'checkbox').length, 0, 'opening picker is not the first-scene roster');
 });
 
-t('startChat passes openingId through buildStoryStartRequest; default stays omit', () => {
-  const startChat = pageSrc.slice(pageSrc.indexOf('async function startChat'), pageSrc.indexOf('if (loading || !story)'));
-  assert.ok(startChat.includes('buildStoryStartRequest'));
-  assert.ok(startChat.includes('openingId'));
-  assert.ok(startChat.includes('openingPick'));
-  assert.ok(pageSrc.includes('setOpeningPick'));
+await t('startChat passes openingId through buildStoryStartRequest; default stays omit', async () => {
+  for (const opening of ['', 'rain']) {
+    const bodies: any[] = [];
+    const h = await loadedStoryStart({ post: async (_url, body) => { bodies.push(body); return { id: 'room' }; } });
+    one(h.render(), (node) => node.type === 'select').props.onChange({ target: { value: opening } });
+    one(h.render(), button('시작')).props.onClick(); await tick();
+    assert.deepEqual(bodies[0].participantIds, ['b', 'a']);
+    if (opening) assert.equal(bodies[0].openingId, opening); else assert.equal('openingId' in bodies[0], false);
+  }
 });
 
-t('1:1 CharacterPage stays free of openingId / story start helper', () => {
+await t('1:1 CharacterPage stays free of openingId / story start helper', () => {
   assert.equal(charPageSrc.includes('openingId'), false);
   assert.equal(charPageSrc.includes('buildStoryStartRequest'), false);
   assert.equal(charPageSrc.includes('openings_extra'), false);
 });
 
-t('generate-path and pipeline files stay untouched', () => {
+await t('generate-path and pipeline files stay untouched', () => {
   const changed = execSync(
     'git diff --name-only HEAD -- apps/server/src/prompt/storyOpening.ts apps/server/src/prompt/applySceneDelta.ts apps/server/src/prompt/composeBeat.ts apps/server/src/prompt/resolveFocus.ts apps/server/src/prompt/builder.ts apps/server/src/prompt/templates.ts apps/server/src/config.ts apps/server/src/routes/stories.ts',
     { cwd: path.resolve('.'), encoding: 'utf8' },
@@ -125,4 +126,4 @@ t('generate-path and pipeline files stay untouched', () => {
 console.log(`passed ${passed}`);
 }
 
-void main();
+main().catch((error) => { console.error(error); process.exitCode = 1; });

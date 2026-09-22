@@ -1,11 +1,12 @@
 /** npx tsx bench/storyDetail.test.ts
- * F8 story-detail — StoryPage + StoryEditor. Source inventory only.
+ * F8 story-detail — reader navigation + editor CRUD behavior and boundary inventory.
  * Helper/bench PASS is not a product PASS (helper-vs-live-contract).
  * No live HTTP / systemd / DB / inject / commit / deploy / restart.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { storyHarness, storyFixture, character, nodes, one, named, button, tick } from './helpers/storyUiHarness.ts';
 import { createRequire } from 'node:module';
 
 const require2 = createRequire(import.meta.url);
@@ -23,8 +24,8 @@ try {
 }
 
 let passed = 0;
-function t(name: string, fn: () => void) {
-  fn();
+async function t(name: string, fn: () => unknown) {
+  await fn();
   passed++;
   console.log(`ok ${passed} ${name}`);
 }
@@ -38,28 +39,49 @@ const typesSrc = fs.readFileSync(path.join(ROOT, 'types.ts'), 'utf8');
 const builderSrc = fs.readFileSync(path.resolve('apps/server/src/prompt/builder.ts'), 'utf8');
 const charSrc = fs.readFileSync(path.resolve('apps/server/src/routes/characters.ts'), 'utf8');
 
-t('DET-01 App routes /story/:id to StoryPage', () => {
+async function main() {
+
+await t('DET-01 App routes /story/:id to StoryPage', () => {
   assert.ok(appSrc.includes("match(path, '/story/:id')"));
   assert.ok(appSrc.includes('StoryPage'));
   assert.ok(appSrc.includes("from './pages/StoryPage'"));
 });
 
-t('DET-02 StoryPage loads GET /api/stories/:id; PUT; DELETE archive', () => {
-  assert.ok(pageSrc.includes('`/api/stories/${id}`') || pageSrc.includes('/api/stories/${id}'));
-  assert.ok(pageSrc.includes('put(') || pageSrc.includes('StoryEditor'));
-  assert.ok(pageSrc.includes('del(`/api/stories/${id}`)') || pageSrc.includes('del(`/api/stories/${id}`)'));
-  assert.ok(pageSrc.includes('보관') || pageSrc.includes('archive'));
+await t('DET-02 detail loads story, opens editor, and archives only after confirmation', async () => {
+  const calls: string[] = [], routes: string[] = [];
+  const story = storyFixture();
+  const h = storyHarness('StoryDetailPage', { id: story.id }, { api: {
+    get: async (url: string) => { calls.push(url); return url === '/api/characters' ? [] : story; },
+    del: async (url: string) => { calls.push(`DELETE ${url}`); },
+  }, router: { navigate: (url: string) => routes.push(url) } });
+  h.render(); h.runEffects(); await tick();
+  assert.ok(calls.includes(`/api/stories/${story.id}`));
+  one(h.render(), button('스토리 수정')).props.onClick();
+  assert.equal(one(h.render(), named('StoryEditor')).props.open, true);
+  one(h.render(), button('스토리 보관')).props.onClick(); await tick();
+  assert.ok(calls.includes(`DELETE /api/stories/${story.id}`));
+  assert.deepEqual(routes, ['/?tab=story']);
 });
 
-t('DET-03 StoryPage shows setting + minor_cast; hosts mains via mapping routes', () => {
-  assert.ok(pageSrc.includes('setting'));
-  assert.ok(pageSrc.includes('minor_cast'));
-  assert.ok(pageSrc.includes('`/api/stories/${id}/characters`') || pageSrc.includes('/api/stories/${id}/characters'));
-  assert.ok(pageSrc.includes('`/api/stories/${id}/characters/${') || pageSrc.includes('/api/stories/${id}/characters/${'));
-  assert.ok(pageSrc.includes("navigate(`/character/${"));
+await t('DET-03 cast mapping writes live in the editor; reader detail only navigates cast profiles', async () => {
+  const story = storyFixture(), routes: string[] = [], writes: unknown[] = [];
+  const reader = storyHarness('StoryDetailView', { story }, { router: { navigate: (url: string) => routes.push(url) } });
+  const cast = nodes(reader.render()).find((node) => node.props.className === 'story-cast-card')!;
+  cast.props.onClick(); assert.deepEqual(routes, ['/character/b']);
+  assert.equal(nodes(reader.render()).filter((node) => node.type === 'select' || node.type === 'input').length, 0);
+  const editor = storyHarness('StoryEditor', { open: true, story, hosted: story.characters, initialTab: 'opening', onClose() {}, onSaved() {} }, { api: {
+    get: async (url: string) => url === '/api/characters' ? [character('a'), character('b'), character('c')] : [],
+    post: async (url: string, body: unknown) => { writes.push({ url, body }); },
+    del: async (url: string) => { writes.push({ url }); },
+  } }, {}, 'components/StoryEditor.tsx');
+  editor.render(); editor.runEffects(); await tick();
+  editor.state.addPickId = 'c'; one(editor.render(), button('추가')).props.onClick(); await tick();
+  assert.deepEqual(writes[0], { url: `/api/stories/${story.id}/characters`, body: { characterId: 'c', role: 'main' } });
+  const remove = nodes(editor.render()).find((node) => node.type === 'button' && node.props['aria-label'] === '빼기')!;
+  remove.props.onClick(); await tick(); assert.deepEqual(writes[1], { url: `/api/stories/${story.id}/characters/b` });
 });
 
-t('DET-04 StoryEditor create/edit fields; no nested .sheet tabs; cover upload (A2)', () => {
+await t('DET-04 StoryEditor create/edit fields; no nested .sheet tabs; cover upload (A2)', () => {
   assert.ok(editorSrc.includes("post('/api/stories'") || editorSrc.includes('post<') && editorSrc.includes('/api/stories'));
   assert.ok(editorSrc.includes('put<') && editorSrc.includes('/api/stories/'));
   assert.ok(editorSrc.includes('name'));
@@ -73,7 +95,7 @@ t('DET-04 StoryEditor create/edit fields; no nested .sheet tabs; cover upload (A
   assert.ok(editorSrc.includes('/api/stories/${story.id}/cover'));
 });
 
-t('DET-05 HomePage story tab creates and opens detail', () => {
+await t('DET-05 HomePage story tab creates and opens detail', () => {
   assert.ok(homeSrc.includes('StoryEditor'));
   assert.ok(homeSrc.includes("navigate(`/story/${"));
   assert.ok(homeSrc.includes('첫 스토리를 만드세요'));
@@ -81,7 +103,7 @@ t('DET-05 HomePage story tab creates and opens detail', () => {
   assert.equal(homeSrc.includes('className="tabs"'), false);
 });
 
-t('DET-06 types include StoryCharacter; no worlds', () => {
+await t('DET-06 types include StoryCharacter; no worlds', () => {
   assert.ok(typesSrc.includes('export interface StoryCharacter'));
   assert.ok(typesSrc.includes('character_id'));
   assert.equal(pageSrc.includes('worlds'), false);
@@ -91,7 +113,7 @@ t('DET-06 types include StoryCharacter; no worlds', () => {
   assert.equal(homeSrc.includes('worlds'), false);
 });
 
-t('DET-07 UI has no inject; characters list unfiltered', () => {
+await t('DET-07 UI has no inject; characters list unfiltered', () => {
   assert.equal(/\bFROM\s+stories\b/i.test(builderSrc), false);
   assert.equal(builderSrc.includes('story_characters'), false);
   assert.equal(pageSrc.includes('buildPrompt'), false);
@@ -109,3 +131,6 @@ t('DET-07 UI has no inject; characters list unfiltered', () => {
 });
 
 console.log(`passed ${passed}`);
+
+}
+main().catch((error) => { console.error(error); process.exitCode = 1; });
