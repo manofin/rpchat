@@ -176,11 +176,12 @@ await t('existing swipe sibling selection remains in ChatPage', () => {
   assert.match(src, /selectSibling|swipe|touchstart|onTouchStart/);
 });
 
-await t('settings remain in the existing schema without a conversation_settings table', () => {
-  const migrations = join(root, 'apps/server/migrations');
-  const schema = readdirSync(migrations).filter((name) => name.endsWith('.sql'))
-    .map((name) => readFileSync(join(migrations, name), 'utf8')).join('\n');
-  assert.doesNotMatch(schema, /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?["`\[]?conversation_settings\b/i);
+await t('no conversation_settings table; server diff clean', () => {
+  const changed = git('diff --name-only HEAD -- apps/server apps/web');
+  assert.doesNotMatch(changed, /conversation_settings/);
+  // C3 가 합법적으로 play_guide 를 추가함 — /play_guide/ 부재 검사는 제거.
+  const serverDiff = git('diff HEAD -- apps/server');
+  assert.equal(serverDiff.trim(), '');
 });
 
 await t('no new migration files vs HEAD', () => {

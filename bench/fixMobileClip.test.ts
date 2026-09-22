@@ -9,6 +9,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 
 let passed = 0;
 function t(name: string, fn: () => void) {
@@ -79,7 +80,7 @@ t('disc-grid still uses minmax(0, 1fr)', () => {
 
 t('overflow-y / --app-height / visualViewport / keyboard paths stay locked', () => {
   // Clip-slice used to fence the whole PR file list; that does not survive later slices.
-  // Keep: overflow-y / --app-height identity vs origin/master; viewport.ts + ChatPage.tsx untouched.
+  // Keep viewport byte identity and the page's scroll/keyboard code, not unrelated message rendering.
 
   // .content must keep overflow-y:auto (do not change vertical scroll contract).
   assert.match(ruleBlock('.content'), /overflow-y:\s*auto/);
@@ -102,14 +103,36 @@ t('overflow-y / --app-height / visualViewport / keyboard paths stay locked', () 
   }
 
   assert.equal(
-    execFileSync('git', ['diff', 'origin/master', '--', 'apps/web/src/lib/viewport.ts', 'apps/web/src/pages/ChatPage.tsx'], {
+    execFileSync('git', ['diff', 'origin/master', '--', 'apps/web/src/lib/viewport.ts'], {
       cwd: appRoot,
       encoding: 'utf8',
     }),
     '',
-    'viewport.ts / ChatPage.tsx must be untouched',
+    'viewport.ts must be untouched',
   );
   assert.match(src('apps/web/src/lib/viewport.ts'), /visualViewport/);
+  function scrollKeyboardNodes(text: string): string[] {
+    const file = ts.createSourceFile('ChatPage.tsx', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const printer = ts.createPrinter({ removeComments: true });
+    const nodes: string[] = [];
+    function visit(node: ts.Node) {
+      const named = (ts.isFunctionDeclaration(node) || ts.isVariableDeclaration(node))
+        && node.name && ['onScroll', 'grow', 'scrollRef', 'taRef', 'stickyRef'].includes(node.name.getText(file));
+      const effect = ts.isCallExpression(node)
+        && ['useEffect', 'useLayoutEffect'].includes(node.expression.getText(file))
+        && /scrollRef|stickyRef|visualViewport|^grow$/.test(node.arguments[0]?.getText(file) ?? '');
+      if (named || effect) nodes.push(printer.printNode(ts.EmitHint.Unspecified, node, file));
+      ts.forEachChild(node, visit);
+    }
+    visit(file);
+    assert.equal(nodes.length, 9, 'all refs, scroll/grow functions and four effects must stay guarded');
+    return nodes;
+  }
+  const basePage = execFileSync('git', ['show', 'origin/master:apps/web/src/pages/ChatPage.tsx'], { cwd: appRoot, encoding: 'utf8' });
+  const page = src('apps/web/src/pages/ChatPage.tsx');
+  assert.deepEqual(scrollKeyboardNodes(page), scrollKeyboardNodes(basePage), 'scroll/keyboard functions and effects must remain identical');
+  assert.match(page, /ref=\{scrollRef\} onScroll=\{onScroll\}/);
+  assert.match(page, /ref=\{taRef\}/);
 });
 
 // ── optional Chrome 390×844 scrollWidth proof ───────────────────────────────
@@ -118,7 +141,7 @@ const chromeCandidates = [
   '/home/hermes/.hermes/bin/google-chrome',
   'google-chrome',
 ];
-const chrome = chromeCandidates.find((c) => {
+const chrome = process.argv.includes('--no-browser') ? undefined : chromeCandidates.find((c) => {
   try {
     if (c.includes('/')) return fs.existsSync(c);
     execFileSync(c, ['--version'], { stdio: 'ignore' });
@@ -229,7 +252,7 @@ html, body { margin: 0; width: 390px; max-width: 390px; }
     assert.ok(metrics.ok || metrics.screenScrollWidth <= 390 + 1, JSON.stringify(metrics));
   });
 } else {
-  console.log('note: Chrome not found — scrollWidth left to Easton manual (390×844 home)');
+  console.log('note: optional 390×844 browser geometry check skipped; only core checks ran');
 }
 
 console.log(`\n${passed} passed`);

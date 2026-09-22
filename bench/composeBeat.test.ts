@@ -428,18 +428,18 @@ t('chat.ts appends blocks in serialize order: monotonic chain, no insert, no reo
   assert.equal(/\.sort\(/.test(beat), false, 'no reordering of persisted blocks');
   assert.equal(/UPDATE messages SET parent_id/.test(beat), false);
 
-  // the emit order matches the §6 slot order the serializer produces
-  const order = ['header', 'narration', 'line', 'thought', 'line', 'ui'].map((k) => k);
-  void order;
+  // Private thought blocks may exist in the planner but are never persisted.
   const headerAt = beat.indexOf("addBlock('header'");
   const narrAt = beat.indexOf("addBlock('narration'");
   const focusAt = beat.indexOf('focusRow = insertMessage');
   const thoughtAt = beat.indexOf("addBlock('thought'");
+  const extraAt = beat.indexOf("send(addBlock('line'");
   const uiAt = beat.indexOf("addBlock('ui'");
   assert.ok(headerAt > 0 && narrAt > headerAt, 'narration after header');
   assert.ok(focusAt > narrAt, 'focus line after narration');
-  assert.ok(thoughtAt > focusAt, 'thought after the focus line');
-  assert.ok(uiAt > thoughtAt, 'ui last');
+  assert.equal(thoughtAt, -1, 'no persisted thought slot');
+  assert.ok(extraAt > focusAt, 'extra lines follow the focus line');
+  assert.ok(uiAt > extraAt, 'ui follows all public lines');
 });
 
 t('the client adds no ordering of its own', () => {
