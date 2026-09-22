@@ -223,7 +223,7 @@ test('conversation sheet offsets cannot affect the character editor on the same 
     const offset = rule.nodes.some((node) => node.type === 'decl' &&
       (node.prop === 'bottom' || node.prop === 'max-height') && node.value.includes('--bottom-nav-offset'));
     if (!offset) return;
-    offsetRules++;
+    if (rule.selectors.includes('.char-conversation-sheet .sheet')) offsetRules++;
     for (const selector of rule.selectors) assert.ok(['.char-conversation-sheet .sheet', '.story-conversation-sheet .sheet'].includes(selector),
       'bottom-navigation offsets must target dedicated conversation wrappers, never editors or full detail subtrees');
   });
