@@ -15,6 +15,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { mock } from 'node:test';
 import Fastify from 'fastify';
 import { openMigratedDb } from '../apps/server/src/db/index.js';
 import { conversationRoutes } from '../apps/server/src/routes/conversations.js';
@@ -28,6 +29,7 @@ async function t(name: string, fn: () => Promise<void> | void) {
 }
 
 async function main() {
+  mock.timers.enable({ apis: ['Date'], now: new Date('2026-01-01T00:00:00.000Z') });
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-persona-patch-'));
   const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
 
@@ -58,6 +60,8 @@ async function main() {
   await app.register(conversationRoutes(ctx));
 
   async function patchPersona(personaId: string | null | undefined) {
+    // app.inject can finish twice within one real millisecond; advance only Date, not HTTP timers.
+    mock.timers.tick(1);
     const payload = personaId === undefined ? { title: '제목' } : { personaId };
     return app.inject({
       method: 'PATCH',
@@ -88,6 +92,7 @@ async function main() {
     assert.equal(r.persona_personality_snapshot, '성격1');
     assert.equal(r.persona_relationship_snapshot, '관계1');
     assert.ok(r.persona_applied_at, 'applied_at set');
+    assert.equal(r.persona_applied_at, new Date().toISOString(), 'SELECT records the current application time');
     const body = res.json();
     assert.equal(body.persona_id, 'p1');
     assert.equal(body.persona_applied_at, r.persona_applied_at);
@@ -110,6 +115,7 @@ async function main() {
     assert.equal(r.persona_appearance_snapshot, '외형1-수정');
     assert.ok(r.persona_applied_at);
     assert.notEqual(r.persona_applied_at, appliedAfterSelect, 'applied_at must change on reapply');
+    assert.equal(r.persona_applied_at, new Date().toISOString(), 'REAPPLY records the advanced application time');
   });
 
   const appliedAfterReapply = row().persona_applied_at as string;
@@ -122,6 +128,7 @@ async function main() {
     assert.equal(r.persona_name_snapshot, '유저2');
     assert.equal(r.persona_appearance_snapshot, '외형2');
     assert.notEqual(r.persona_applied_at, appliedAfterReapply);
+    assert.equal(r.persona_applied_at, new Date().toISOString(), 'SELECT other records the advanced application time');
   });
 
   await t('CLEAR: PATCH personaId null nulls persona_id, snapshot, applied_at', async () => {
@@ -168,7 +175,7 @@ async function main() {
   console.log(`passed ${passed}`);
 }
 
-main().catch((err) => {
+main().finally(() => mock.timers.reset()).catch((err) => {
   console.error(err);
   process.exit(1);
 });
