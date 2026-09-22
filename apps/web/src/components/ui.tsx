@@ -75,7 +75,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={{ toast, confirm }}>
       {children}
-      <div style={{ position: 'fixed', left: 0, right: 0, bottom: 'calc(16px + var(--safe-bottom))', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', zIndex: 40, pointerEvents: 'none' }}>
+      <div className="toast-stack" style={{ position: 'fixed', left: 0, right: 0, bottom: 'calc(16px + var(--safe-bottom))', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', pointerEvents: 'none' }}>
         {toasts.map((t) => (
           <div key={t.id} className={`banner ${t.kind === 'err' ? 'err' : t.kind === 'warn' ? 'warn' : 'ok'}`} style={{ margin: 0, maxWidth: 360, boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>{t.msg}</div>
         ))}

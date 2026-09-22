@@ -5,7 +5,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import postcss from 'postcss';
 import ts from 'typescript';
-import { Modal, BottomSheet } from '../apps/web/src/components/ui.tsx';
+import { Modal, BottomSheet, UiProvider } from '../apps/web/src/components/ui.tsx';
 import { nodes, one, classIs, button } from './helpers/storyUiHarness.ts';
 
 const css = postcss.parse(fs.readFileSync('apps/web/src/app.css', 'utf8'));
@@ -59,3 +59,13 @@ const ordinary = renderToStaticMarkup(React.createElement(BottomSheet, { open: t
 assert.match(ordinary, /class="sheet-backdrop"/); assert.match(ordinary, /class="sheet"/); assert.doesNotMatch(ordinary, /editor-backdrop|editor-sheet/);
 assert.ok(layer('sheet-backdrop') < layer('sheet') && layer('sheet') < navZ, 'ordinary conversation-sheet layering is unchanged');
 console.log('ok 3 ordinary BottomSheet is not promoted into the editor layer');
+
+const providerHtml = renderToStaticMarkup(React.createElement(UiProvider, { children: null }));
+const toastMarkup = providerHtml.match(/<div class="toast-stack"[^>]*>/)?.[0];
+assert.ok(toastMarkup, 'UiProvider renders the styled toast container');
+assert.doesNotMatch(toastMarkup, /z-index:/, 'inline stacking must not override the toast layer');
+assert.match(toastMarkup, /position:fixed/); assert.match(toastMarkup, /pointer-events:none/);
+const toastZ = layer('toast-stack');
+assert.ok(editorZ < toastZ && toastZ < confirm.backdrop,
+  `required editor < toast < confirmation backdrop: ${[editorZ, toastZ, confirm.backdrop]}`);
+console.log('ok 4 actual UiProvider toast stays above editor errors and below confirmation without intercepting controls');
