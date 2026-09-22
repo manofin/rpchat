@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "environment": "Synthetic local DB; no live save",
+  "before": {
+    "cancelRect": {
+      "bottom": 834,
+      "height": 42.5,
+      "left": 256.09375,
+      "right": 312.046875,
+      "top": 791.5,
+      "width": 55.953125,
+      "x": 256.09375,
+      "y": 791.5
+    },
+    "hitText": "명령어",
+    "script": [
+      "/assets/index-C1VpAMOa.js"
+    ]
+  },
+  "after": {
+    "editorLayer": "45",
+    "script": [
+      "/assets/index-CR7lISK2.js"
+    ],
+    "toast": "이름은 필수",
+    "toastLayer": "48",
+    "buttons": [
+      {
+        "hitText": "취소",
+        "text": "취소"
+      },
+      {
+        "hitText": "저장",
+        "text": "저장"
+      }
+    ]
+  },
+  "checks": [
+    "Before Cancel center hits Shortcuts",
+    "After Cancel and Save centers hit their own buttons",
+    "Actual Cancel closes editor and remains on introduction",
+    "Required-name validation toast visibly overlays the open editor",
+    "Correcting the name and clicking Save shows saved toast and closes editor"
+  ],
+  "consoleWarningsAndErrors": 0
+}

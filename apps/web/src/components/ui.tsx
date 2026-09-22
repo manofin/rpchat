@@ -25,8 +25,8 @@ export function Modal({ open, title, onClose, children, footer, toolbar }: { ope
   if (!open) return null;
   return (
     <>
-      <div className="sheet-backdrop" onClick={onClose} />
-      <div className="sheet" style={{ maxHeight: 'calc(var(--app-height) * 0.94)' }} role="dialog" aria-modal="true">
+      <div className="sheet-backdrop editor-backdrop" onClick={onClose} />
+      <div className="sheet editor-sheet" style={{ maxHeight: 'calc(var(--app-height) * 0.94)' }} role="dialog" aria-modal="true">
         <div className="handle" onClick={onClose} />
         <div className="row" style={{ padding: '0 14px 8px' }}>
           <strong style={{ flex: 1 }}>{title}</strong>
@@ -75,7 +75,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={{ toast, confirm }}>
       {children}
-      <div style={{ position: 'fixed', left: 0, right: 0, bottom: 'calc(16px + var(--safe-bottom))', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', zIndex: 40, pointerEvents: 'none' }}>
+      <div className="toast-stack" style={{ position: 'fixed', left: 0, right: 0, bottom: 'calc(16px + var(--safe-bottom))', display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', pointerEvents: 'none' }}>
         {toasts.map((t) => (
           <div key={t.id} className={`banner ${t.kind === 'err' ? 'err' : t.kind === 'warn' ? 'warn' : 'ok'}`} style={{ margin: 0, maxWidth: 360, boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>{t.msg}</div>
         ))}

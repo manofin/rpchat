@@ -1,0 +1,942 @@
+{
+  "startedAt": "2026-09-22T23:14:27.486Z",
+  "gitHead": "405f11a3e00492030814ac35660635dcfefd3ec3",
+  "node": "v22.16.0",
+  "executable": "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+  "cwd": "/Users/llm/claude/rpchat",
+  "timeoutMs": 180000,
+  "invocation": [
+    "/Users/llm/claude/rpchat/scripts/test-benches.mjs",
+    "modalOverlay",
+    "storyBrowsing",
+    "characterDetail",
+    "--output-dir",
+    "/private/tmp/rpchat-editor-toast-overlay-20260923"
+  ],
+  "coverage": "Top-level tests only; explicit exclusions and optional browser omissions are listed per file.",
+  "checkCountMeaning": "Number of emitted test/group success lines (ok N or ok - N), not individual assertion calls.",
+  "results": [
+    {
+      "file": "bench/abortBeforeFocusLog.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/activeGenerationDeleteGuard.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/ambient.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/approveExtras.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/approveStoryExtras.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/assignSpeakers.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/avatarCapOwner.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/avatarUpload.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/beatByteBaseline.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/beatChoices.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/beatMetrics.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/beatRender.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/beatRenderWeb.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/branchFailureHeadRestore.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/budgetKind.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/builderBudget.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/builderDifferential.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/cardImport.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/characterAssetsWrite.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/characterAvatarFlow.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/characterChatWebGuards.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/characterDetail.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 399,
+      "log": "/private/tmp/rpchat-editor-toast-overlay-20260923/characterDetail.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/characterDetail.test.ts"
+      ],
+      "reportedChecks": 15
+    },
+    {
+      "file": "bench/characterDraft.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/characterDraftStore.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/characterEditorSheet.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/characterEditorTabs.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/characterExamplesOrder.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/characterExamplesParse.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/characterPartyDefault.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/characterPlayGuide.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/characterPromptPreview.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/characterPromptPreviewUi.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/characterStories.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/characterTokenInsert.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/chatEventContract.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/chatEventReconnect.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/chatEventStream.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/chatLayout.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/chatShellWeb.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/clockAdvanceObserve.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/composeBeat.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/composeDialog.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/composerRecovery.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/contextInspectorEntry.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/conversationGuidePage.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/conversationMemoryPage.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/conversationOutputPage.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/conversationProfilePage.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/conversationRowPersonaFields.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/conversationStylePage.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/conversationTitleLabel.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/conversationUserNotePage.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/conversationUserNoteSaveLock.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/conversationUserNoteSaveLockLifecycle.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/coreRpLoop.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/designTokens.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/dialogBeatContract.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/dialogPersist.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/dialogRender.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/dialogScript.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/discoveryWeb.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/eligibleExtras.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/emptyUserTurn.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/episodeRelationBuild.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/episodeRelationSchema.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/episodeRelationWrite.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/explicitMigrationLifecycle.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/failSendUserPersist.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/fixMobileClip.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation.",
+      "note": "Optional browser portion excluded (--no-browser)."
+    },
+    {
+      "file": "bench/focusResolve.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/generation-orphan.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/hardeningAssets.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/hideInternalTags.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/homeDescHeaderStrip.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/hudStateMatrix.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/injectMacro1to1.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/injectMacroApi.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/injectMacroClient.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/injectMacroParty.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/leakChoicesDisplay.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/leakChoicesUi.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/lightTheme.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/loreClone.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/loreMatch.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/memoryDupWarn.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/modalOverlay.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 272,
+      "log": "/private/tmp/rpchat-editor-toast-overlay-20260923/modalOverlay.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/modalOverlay.test.ts"
+      ],
+      "reportedChecks": 4
+    },
+    {
+      "file": "bench/narrationContinuity.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/oocFuelStrip.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/partyBeatFormat.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/partyBeatPersist.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/partyBench.latency.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/partyBench.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/partyChannel.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/partyGenerationLifecycle.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/partyRender.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/partyTurn.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/partyTurnLiveRo.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/partyTurnWeb.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/passPrompts.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/personaPatch.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/personaPatchClear.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/personaPatchValidation.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/personaResolve.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/presenceIdResolve.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/presenceModel.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/presencePrompt.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/promptDump.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/readablePreview.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/regenerateTurnBoundary.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/requestDump.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/retiredFreeze.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/routerSettings.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/rpEngineR1.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/rpMobilePwaR6.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/rpPartyCastR5.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/rpReadabilityR1.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/rpTurnChromeR2.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/sanitizeNarration.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/sceneBranchSnapshot.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/sceneCatalog.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/sceneCommitOnSuccess.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/sceneDeltaLive.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/sceneProgression.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/sceneProgressionR4.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/sceneStateSchema.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/sceneStateSheet.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/sceneStatusPanelCatalog.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/schemaCompatManifest.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/settingsHub.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/settingsRegression.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/settingsSheetInventory.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/settingsUi.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/settingsViewport.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/shellRoomsNav.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/shortcutHub.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation.",
+      "note": "Optional browser portion excluded (--no-browser)."
+    },
+    {
+      "file": "bench/shortcutMacro.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyArchivedGate.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyAuthoringUi.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyBrowsing.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 707,
+      "log": "/private/tmp/rpchat-editor-toast-overlay-20260923/storyBrowsing.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyBrowsing.test.ts"
+      ],
+      "reportedChecks": 16
+    },
+    {
+      "file": "bench/storyCatalogWrite.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyConversationList.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyDefaults.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyDetail.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyEndingConditions.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyEndingConditionsUi.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyEndingEvalLlm.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyEndingEvalRule.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyEndingSuggestionUi.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyEndings.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyEndingsEditor.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyEndingsRuntime.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyInjectBuild.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyInjectPreview.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyInjectSchema.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyInjectUi.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyOpening.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyOpeningsEditor.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyOpeningsExtra.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyOpeningsStartUi.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyPeerCastFocus.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyPeerCastGenerate.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyPeerCastGenerateContract.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyPeerCastSchema.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyPeerCastStartUi.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storySchema.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyStats.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/storyTabs.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/summarizeContract.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/summaryBannerTrigger.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/summaryDiff.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/summaryWatermarkCompaction.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/tagsCatalog.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/tailscaleIngress.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/userContextBudget.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/userNoteInject.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    },
+    {
+      "file": "bench/userNoteRequestRoundtrip.test.ts",
+      "status": "excluded",
+      "reason": "Not selected by this invocation."
+    }
+  ],
+  "totals": {
+    "discovered": 176,
+    "passed": 3,
+    "failed": 0,
+    "excluded": 173,
+    "notRun": 0,
+    "reportedChecks": 35
+  },
+  "finishedAt": "2026-09-22T23:14:28.876Z",
+  "interrupted": false
+}

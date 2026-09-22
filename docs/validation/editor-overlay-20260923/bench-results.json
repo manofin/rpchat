@@ -1,0 +1,2641 @@
+{
+  "startedAt": "2026-09-22T23:14:39.511Z",
+  "gitHead": "f6295d543794fd1f467b942f71bbd8bc2b199580",
+  "node": "v22.16.0",
+  "executable": "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+  "cwd": "/Users/llm/claude/rpchat",
+  "timeoutMs": 180000,
+  "invocation": [
+    "/Users/llm/claude/rpchat/scripts/test-benches.mjs",
+    "--output-dir",
+    "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite"
+  ],
+  "coverage": "Top-level tests only; explicit exclusions and optional browser omissions are listed per file.",
+  "checkCountMeaning": "Number of emitted test/group success lines (ok N or ok - N), not individual assertion calls.",
+  "results": [
+    {
+      "file": "bench/abortBeforeFocusLog.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 259,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/abortBeforeFocusLog.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/abortBeforeFocusLog.test.ts"
+      ],
+      "reportedChecks": 2
+    },
+    {
+      "file": "bench/activeGenerationDeleteGuard.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 317,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/activeGenerationDeleteGuard.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/activeGenerationDeleteGuard.test.ts"
+      ],
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/ambient.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 96,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/ambient.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/ambient.test.ts"
+      ],
+      "reportedChecks": 22
+    },
+    {
+      "file": "bench/approveExtras.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 100,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/approveExtras.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/approveExtras.test.ts"
+      ],
+      "reportedChecks": 26
+    },
+    {
+      "file": "bench/approveStoryExtras.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 87,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/approveStoryExtras.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/approveStoryExtras.test.ts"
+      ],
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/assignSpeakers.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 97,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/assignSpeakers.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/assignSpeakers.test.ts"
+      ],
+      "reportedChecks": 21
+    },
+    {
+      "file": "bench/avatarCapOwner.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 84,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/avatarCapOwner.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/avatarCapOwner.test.ts"
+      ],
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/avatarUpload.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 87,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/avatarUpload.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/avatarUpload.test.ts"
+      ],
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/beatByteBaseline.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 98,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/beatByteBaseline.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/beatByteBaseline.test.ts"
+      ],
+      "reportedChecks": 14
+    },
+    {
+      "file": "bench/beatChoices.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 491,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/beatChoices.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/beatChoices.test.ts"
+      ],
+      "reportedChecks": 22
+    },
+    {
+      "file": "bench/beatMetrics.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 100,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/beatMetrics.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/beatMetrics.test.ts"
+      ],
+      "reportedChecks": 15
+    },
+    {
+      "file": "bench/beatRender.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 94,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/beatRender.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/beatRender.test.ts"
+      ],
+      "reportedChecks": 38
+    },
+    {
+      "file": "bench/beatRenderWeb.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 114,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/beatRenderWeb.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/beatRenderWeb.test.ts"
+      ],
+      "reportedChecks": 19
+    },
+    {
+      "file": "bench/branchFailureHeadRestore.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 258,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/branchFailureHeadRestore.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/branchFailureHeadRestore.test.ts"
+      ],
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/budgetKind.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 97,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/budgetKind.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/budgetKind.test.ts"
+      ],
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/builderBudget.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 84,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/builderBudget.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/builderBudget.test.ts"
+      ],
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/builderDifferential.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 98,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/builderDifferential.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/builderDifferential.test.ts"
+      ],
+      "reportedChecks": 1
+    },
+    {
+      "file": "bench/cardImport.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 90,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/cardImport.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/cardImport.test.ts"
+      ],
+      "reportedChecks": 25
+    },
+    {
+      "file": "bench/characterAssetsWrite.test.ts",
+      "status": "excluded",
+      "reason": "Source mutation: select this name alone with --allow-source-mutation in a temporary isolated checkout."
+    },
+    {
+      "file": "bench/characterAvatarFlow.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 438,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/characterAvatarFlow.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/characterAvatarFlow.test.ts"
+      ],
+      "reportedChecks": 23
+    },
+    {
+      "file": "bench/characterChatWebGuards.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 363,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/characterChatWebGuards.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/characterChatWebGuards.test.ts"
+      ],
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/characterDetail.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 409,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/characterDetail.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/characterDetail.test.ts"
+      ],
+      "reportedChecks": 15
+    },
+    {
+      "file": "bench/characterDraft.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 85,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/characterDraft.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/characterDraft.test.ts"
+      ],
+      "reportedChecks": 5
+    },
+    {
+      "file": "bench/characterDraftStore.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 110,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/characterDraftStore.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/characterDraftStore.test.ts"
+      ],
+      "reportedChecks": 17
+    },
+    {
+      "file": "bench/characterEditorSheet.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 83,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/characterEditorSheet.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/characterEditorSheet.test.ts"
+      ],
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/characterEditorTabs.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 259,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/characterEditorTabs.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/characterEditorTabs.test.ts"
+      ],
+      "reportedChecks": 14
+    },
+    {
+      "file": "bench/characterExamplesOrder.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 140,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/characterExamplesOrder.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/characterExamplesOrder.test.ts"
+      ],
+      "reportedChecks": 13
+    },
+    {
+      "file": "bench/characterExamplesParse.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 436,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/characterExamplesParse.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/characterExamplesParse.test.ts"
+      ],
+      "reportedChecks": 43
+    },
+    {
+      "file": "bench/characterPartyDefault.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 109,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/characterPartyDefault.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/characterPartyDefault.test.ts"
+      ],
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/characterPlayGuide.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 315,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/characterPlayGuide.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/characterPlayGuide.test.ts"
+      ],
+      "reportedChecks": 15
+    },
+    {
+      "file": "bench/characterPromptPreview.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 343,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/characterPromptPreview.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/characterPromptPreview.test.ts"
+      ],
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/characterPromptPreviewUi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 103,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/characterPromptPreviewUi.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/characterPromptPreviewUi.test.ts"
+      ],
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/characterStories.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 224,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/characterStories.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/characterStories.test.ts"
+      ],
+      "reportedChecks": 23
+    },
+    {
+      "file": "bench/characterTokenInsert.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 424,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/characterTokenInsert.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/characterTokenInsert.test.ts"
+      ],
+      "reportedChecks": 22
+    },
+    {
+      "file": "bench/chatEventContract.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 3619,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/chatEventContract.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/chatEventContract.test.ts"
+      ],
+      "reportedChecks": 21
+    },
+    {
+      "file": "bench/chatEventReconnect.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 281,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/chatEventReconnect.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/chatEventReconnect.test.ts"
+      ],
+      "reportedChecks": 3
+    },
+    {
+      "file": "bench/chatEventStream.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 95,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/chatEventStream.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/chatEventStream.test.ts"
+      ],
+      "reportedChecks": 15
+    },
+    {
+      "file": "bench/chatLayout.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 86,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/chatLayout.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/chatLayout.test.ts"
+      ],
+      "reportedChecks": 4
+    },
+    {
+      "file": "bench/chatShellWeb.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 106,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/chatShellWeb.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/chatShellWeb.test.ts"
+      ],
+      "reportedChecks": 14
+    },
+    {
+      "file": "bench/clockAdvanceObserve.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 307,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/clockAdvanceObserve.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/clockAdvanceObserve.test.ts"
+      ],
+      "reportedChecks": 18
+    },
+    {
+      "file": "bench/composeBeat.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 102,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/composeBeat.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/composeBeat.test.ts"
+      ],
+      "reportedChecks": 31
+    },
+    {
+      "file": "bench/composeDialog.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 98,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/composeDialog.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/composeDialog.test.ts"
+      ],
+      "reportedChecks": 29
+    },
+    {
+      "file": "bench/composerRecovery.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 266,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/composerRecovery.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/composerRecovery.test.ts"
+      ],
+      "reportedChecks": 13
+    },
+    {
+      "file": "bench/contextInspectorEntry.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 322,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/contextInspectorEntry.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/contextInspectorEntry.test.ts"
+      ],
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/conversationGuidePage.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 106,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/conversationGuidePage.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/conversationGuidePage.test.ts"
+      ],
+      "reportedChecks": 3
+    },
+    {
+      "file": "bench/conversationMemoryPage.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 91,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/conversationMemoryPage.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/conversationMemoryPage.test.ts"
+      ],
+      "reportedChecks": 4
+    },
+    {
+      "file": "bench/conversationOutputPage.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 106,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/conversationOutputPage.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/conversationOutputPage.test.ts"
+      ],
+      "reportedChecks": 3
+    },
+    {
+      "file": "bench/conversationProfilePage.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 122,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/conversationProfilePage.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/conversationProfilePage.test.ts"
+      ],
+      "reportedChecks": 13
+    },
+    {
+      "file": "bench/conversationRowPersonaFields.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 82,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/conversationRowPersonaFields.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/conversationRowPersonaFields.test.ts"
+      ],
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/conversationStylePage.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 103,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/conversationStylePage.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/conversationStylePage.test.ts"
+      ],
+      "reportedChecks": 4
+    },
+    {
+      "file": "bench/conversationTitleLabel.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 142,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/conversationTitleLabel.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/conversationTitleLabel.test.ts"
+      ],
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/conversationUserNotePage.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 105,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/conversationUserNotePage.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/conversationUserNotePage.test.ts"
+      ],
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/conversationUserNoteSaveLock.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 411,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/conversationUserNoteSaveLock.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/conversationUserNoteSaveLock.test.ts"
+      ],
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/conversationUserNoteSaveLockLifecycle.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 2876,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/conversationUserNoteSaveLockLifecycle.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/conversationUserNoteSaveLockLifecycle.test.ts"
+      ],
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/coreRpLoop.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 232,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/coreRpLoop.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/coreRpLoop.test.ts"
+      ],
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/designTokens.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 90,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/designTokens.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/designTokens.test.ts"
+      ],
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/dialogBeatContract.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 96,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/dialogBeatContract.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/dialogBeatContract.test.ts"
+      ],
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/dialogPersist.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 253,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/dialogPersist.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/dialogPersist.test.ts"
+      ],
+      "reportedChecks": 17
+    },
+    {
+      "file": "bench/dialogRender.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 87,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/dialogRender.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/dialogRender.test.ts"
+      ],
+      "reportedChecks": 22
+    },
+    {
+      "file": "bench/dialogScript.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 88,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/dialogScript.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/dialogScript.test.ts"
+      ],
+      "reportedChecks": 24
+    },
+    {
+      "file": "bench/discoveryWeb.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 88,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/discoveryWeb.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/discoveryWeb.test.ts"
+      ],
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/eligibleExtras.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 86,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/eligibleExtras.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/eligibleExtras.test.ts"
+      ],
+      "reportedChecks": 20
+    },
+    {
+      "file": "bench/emptyUserTurn.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 242,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/emptyUserTurn.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/emptyUserTurn.test.ts"
+      ],
+      "reportedChecks": 19
+    },
+    {
+      "file": "bench/episodeRelationBuild.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 104,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/episodeRelationBuild.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/episodeRelationBuild.test.ts"
+      ],
+      "reportedChecks": 14
+    },
+    {
+      "file": "bench/episodeRelationSchema.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 99,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/episodeRelationSchema.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/episodeRelationSchema.test.ts"
+      ],
+      "reportedChecks": 11
+    },
+    {
+      "file": "bench/episodeRelationWrite.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 226,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/episodeRelationWrite.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/episodeRelationWrite.test.ts"
+      ],
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/explicitMigrationLifecycle.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 2006,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/explicitMigrationLifecycle.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/explicitMigrationLifecycle.test.ts"
+      ],
+      "reportedChecks": 16
+    },
+    {
+      "file": "bench/failSendUserPersist.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 236,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/failSendUserPersist.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/failSendUserPersist.test.ts"
+      ],
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/fixMobileClip.test.ts",
+      "status": "passed",
+      "note": "Optional browser portion excluded (--no-browser).",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 295,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/fixMobileClip.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/fixMobileClip.test.ts",
+        "--no-browser"
+      ],
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/focusResolve.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 94,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/focusResolve.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/focusResolve.test.ts"
+      ],
+      "reportedChecks": 37
+    },
+    {
+      "file": "bench/generation-orphan.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 99,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/generation-orphan.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/generation-orphan.test.ts"
+      ],
+      "reportedChecks": 4
+    },
+    {
+      "file": "bench/hardeningAssets.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 181,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/hardeningAssets.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/hardeningAssets.test.ts"
+      ],
+      "reportedChecks": 5
+    },
+    {
+      "file": "bench/hideInternalTags.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 84,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/hideInternalTags.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/hideInternalTags.test.ts"
+      ],
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/homeDescHeaderStrip.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 269,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/homeDescHeaderStrip.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/homeDescHeaderStrip.test.ts"
+      ],
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/hudStateMatrix.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 94,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/hudStateMatrix.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/hudStateMatrix.test.ts"
+      ],
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/injectMacro1to1.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 243,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/injectMacro1to1.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/injectMacro1to1.test.ts"
+      ],
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/injectMacroApi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 246,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/injectMacroApi.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/injectMacroApi.test.ts"
+      ],
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/injectMacroClient.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 87,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/injectMacroClient.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/injectMacroClient.test.ts"
+      ],
+      "reportedChecks": 14
+    },
+    {
+      "file": "bench/injectMacroParty.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 242,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/injectMacroParty.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/injectMacroParty.test.ts"
+      ],
+      "reportedChecks": 16
+    },
+    {
+      "file": "bench/leakChoicesDisplay.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 115,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/leakChoicesDisplay.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/leakChoicesDisplay.test.ts"
+      ],
+      "reportedChecks": 17
+    },
+    {
+      "file": "bench/leakChoicesUi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 124,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/leakChoicesUi.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/leakChoicesUi.test.ts"
+      ],
+      "reportedChecks": 13
+    },
+    {
+      "file": "bench/lightTheme.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 87,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/lightTheme.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/lightTheme.test.ts"
+      ],
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/loreClone.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 183,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/loreClone.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/loreClone.test.ts"
+      ],
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/loreMatch.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 92,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/loreMatch.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/loreMatch.test.ts"
+      ],
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/memoryDupWarn.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 193,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/memoryDupWarn.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/memoryDupWarn.test.ts"
+      ],
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/modalOverlay.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 274,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/modalOverlay.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/modalOverlay.test.ts"
+      ],
+      "reportedChecks": 4
+    },
+    {
+      "file": "bench/narrationContinuity.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 239,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/narrationContinuity.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/narrationContinuity.test.ts"
+      ],
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/oocFuelStrip.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 93,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/oocFuelStrip.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/oocFuelStrip.test.ts"
+      ],
+      "reportedChecks": 10
+    },
+    {
+      "file": "bench/partyBeatFormat.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 97,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/partyBeatFormat.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/partyBeatFormat.test.ts"
+      ],
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/partyBeatPersist.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 273,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/partyBeatPersist.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/partyBeatPersist.test.ts"
+      ],
+      "reportedChecks": 11
+    },
+    {
+      "file": "bench/partyBench.latency.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 89,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/partyBench.latency.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/partyBench.latency.test.ts"
+      ],
+      "reportedChecks": 10
+    },
+    {
+      "file": "bench/partyBench.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 94,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/partyBench.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/partyBench.test.ts"
+      ],
+      "reportedChecks": 11
+    },
+    {
+      "file": "bench/partyChannel.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 96,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/partyChannel.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/partyChannel.test.ts"
+      ],
+      "reportedChecks": 5
+    },
+    {
+      "file": "bench/partyGenerationLifecycle.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 342,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/partyGenerationLifecycle.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/partyGenerationLifecycle.test.ts"
+      ],
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/partyRender.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 102,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/partyRender.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/partyRender.test.ts"
+      ],
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/partyTurn.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 91,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/partyTurn.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/partyTurn.test.ts"
+      ],
+      "reportedChecks": 19
+    },
+    {
+      "file": "bench/partyTurnLiveRo.test.ts",
+      "status": "excluded",
+      "reason": "Separate private-copy validation: requires an approved RPCHAT_RO_DB and matching private fixture."
+    },
+    {
+      "file": "bench/partyTurnWeb.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 106,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/partyTurnWeb.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/partyTurnWeb.test.ts"
+      ],
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/passPrompts.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 88,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/passPrompts.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/passPrompts.test.ts"
+      ],
+      "reportedChecks": 33
+    },
+    {
+      "file": "bench/personaPatch.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 184,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/personaPatch.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/personaPatch.test.ts"
+      ],
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/personaPatchClear.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 181,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/personaPatchClear.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/personaPatchClear.test.ts"
+      ],
+      "reportedChecks": 2
+    },
+    {
+      "file": "bench/personaPatchValidation.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 184,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/personaPatchValidation.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/personaPatchValidation.test.ts"
+      ],
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/personaResolve.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 100,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/personaResolve.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/personaResolve.test.ts"
+      ],
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/presenceIdResolve.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 89,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/presenceIdResolve.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/presenceIdResolve.test.ts"
+      ],
+      "reportedChecks": 20
+    },
+    {
+      "file": "bench/presenceModel.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 87,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/presenceModel.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/presenceModel.test.ts"
+      ],
+      "reportedChecks": 19
+    },
+    {
+      "file": "bench/presencePrompt.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 96,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/presencePrompt.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/presencePrompt.test.ts"
+      ],
+      "reportedChecks": 14
+    },
+    {
+      "file": "bench/promptDump.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 86,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/promptDump.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/promptDump.test.ts"
+      ],
+      "reportedChecks": 4
+    },
+    {
+      "file": "bench/readablePreview.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 188,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/readablePreview.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/readablePreview.test.ts"
+      ],
+      "reportedChecks": 11
+    },
+    {
+      "file": "bench/regenerateTurnBoundary.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 344,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/regenerateTurnBoundary.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/regenerateTurnBoundary.test.ts"
+      ],
+      "reportedChecks": 15
+    },
+    {
+      "file": "bench/requestDump.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 88,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/requestDump.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/requestDump.test.ts"
+      ],
+      "reportedChecks": 4
+    },
+    {
+      "file": "bench/retiredFreeze.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 92,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/retiredFreeze.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/retiredFreeze.test.ts"
+      ],
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/routerSettings.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 88,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/routerSettings.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/routerSettings.test.ts"
+      ],
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/rpEngineR1.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 112,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/rpEngineR1.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/rpEngineR1.test.ts"
+      ],
+      "reportedChecks": 18
+    },
+    {
+      "file": "bench/rpMobilePwaR6.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 94,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/rpMobilePwaR6.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/rpMobilePwaR6.test.ts"
+      ],
+      "reportedChecks": 5
+    },
+    {
+      "file": "bench/rpPartyCastR5.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 304,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/rpPartyCastR5.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/rpPartyCastR5.test.ts"
+      ],
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/rpReadabilityR1.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 112,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/rpReadabilityR1.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/rpReadabilityR1.test.ts"
+      ],
+      "reportedChecks": 13
+    },
+    {
+      "file": "bench/rpTurnChromeR2.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 85,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/rpTurnChromeR2.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/rpTurnChromeR2.test.ts"
+      ],
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/sanitizeNarration.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 88,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/sanitizeNarration.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/sanitizeNarration.test.ts"
+      ],
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/sceneBranchSnapshot.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 347,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/sceneBranchSnapshot.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/sceneBranchSnapshot.test.ts"
+      ],
+      "reportedChecks": 24
+    },
+    {
+      "file": "bench/sceneCatalog.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 98,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/sceneCatalog.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/sceneCatalog.test.ts"
+      ],
+      "reportedChecks": 16
+    },
+    {
+      "file": "bench/sceneCommitOnSuccess.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 322,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/sceneCommitOnSuccess.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/sceneCommitOnSuccess.test.ts"
+      ],
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/sceneDeltaLive.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 89,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/sceneDeltaLive.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/sceneDeltaLive.test.ts"
+      ],
+      "reportedChecks": 20
+    },
+    {
+      "file": "bench/sceneProgression.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 88,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/sceneProgression.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/sceneProgression.test.ts"
+      ],
+      "reportedChecks": 29
+    },
+    {
+      "file": "bench/sceneProgressionR4.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 92,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/sceneProgressionR4.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/sceneProgressionR4.test.ts"
+      ],
+      "reportedChecks": 10
+    },
+    {
+      "file": "bench/sceneStateSchema.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 188,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/sceneStateSchema.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/sceneStateSchema.test.ts"
+      ],
+      "reportedChecks": 29
+    },
+    {
+      "file": "bench/sceneStateSheet.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 98,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/sceneStateSheet.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/sceneStateSheet.test.ts"
+      ],
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/sceneStatusPanelCatalog.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 112,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/sceneStatusPanelCatalog.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/sceneStatusPanelCatalog.test.ts"
+      ],
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/schemaCompatManifest.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 88,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/schemaCompatManifest.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/schemaCompatManifest.test.ts"
+      ],
+      "reportedChecks": 10
+    },
+    {
+      "file": "bench/settingsHub.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 86,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/settingsHub.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/settingsHub.test.ts"
+      ],
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/settingsRegression.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 299,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/settingsRegression.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/settingsRegression.test.ts"
+      ],
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/settingsSheetInventory.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 90,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/settingsSheetInventory.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/settingsSheetInventory.test.ts"
+      ],
+      "reportedChecks": 14
+    },
+    {
+      "file": "bench/settingsUi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 104,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/settingsUi.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/settingsUi.test.ts"
+      ],
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/settingsViewport.test.ts",
+      "status": "excluded",
+      "reason": "Separate browser validation: requires a configured Chrome binary and viewport screenshots."
+    },
+    {
+      "file": "bench/shellRoomsNav.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 271,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/shellRoomsNav.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/shellRoomsNav.test.ts"
+      ],
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/shortcutHub.test.ts",
+      "status": "passed",
+      "note": "Optional browser portion excluded (--no-browser).",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 96,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/shortcutHub.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/shortcutHub.test.ts",
+        "--no-browser"
+      ],
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/shortcutMacro.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 121,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/shortcutMacro.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/shortcutMacro.test.ts"
+      ],
+      "reportedChecks": 13
+    },
+    {
+      "file": "bench/storyArchivedGate.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 189,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyArchivedGate.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyArchivedGate.test.ts"
+      ],
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/storyAuthoringUi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 425,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyAuthoringUi.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyAuthoringUi.test.ts"
+      ],
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/storyBrowsing.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 715,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyBrowsing.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyBrowsing.test.ts"
+      ],
+      "reportedChecks": 16
+    },
+    {
+      "file": "bench/storyCatalogWrite.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 185,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyCatalogWrite.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyCatalogWrite.test.ts"
+      ],
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/storyConversationList.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 207,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyConversationList.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyConversationList.test.ts"
+      ],
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/storyDefaults.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 227,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyDefaults.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyDefaults.test.ts"
+      ],
+      "reportedChecks": 8
+    },
+    {
+      "file": "bench/storyDetail.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 377,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyDetail.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyDetail.test.ts"
+      ],
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/storyEndingConditions.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 393,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyEndingConditions.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyEndingConditions.test.ts"
+      ],
+      "reportedChecks": 16
+    },
+    {
+      "file": "bench/storyEndingConditionsUi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 279,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyEndingConditionsUi.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyEndingConditionsUi.test.ts"
+      ],
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/storyEndingEvalLlm.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 226,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyEndingEvalLlm.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyEndingEvalLlm.test.ts"
+      ],
+      "reportedChecks": 16
+    },
+    {
+      "file": "bench/storyEndingEvalRule.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 226,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyEndingEvalRule.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyEndingEvalRule.test.ts"
+      ],
+      "reportedChecks": 19
+    },
+    {
+      "file": "bench/storyEndingSuggestionUi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 111,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyEndingSuggestionUi.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyEndingSuggestionUi.test.ts"
+      ],
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/storyEndings.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 227,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyEndings.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyEndings.test.ts"
+      ],
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/storyEndingsEditor.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 112,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyEndingsEditor.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyEndingsEditor.test.ts"
+      ],
+      "reportedChecks": 5
+    },
+    {
+      "file": "bench/storyEndingsRuntime.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 235,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyEndingsRuntime.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyEndingsRuntime.test.ts"
+      ],
+      "reportedChecks": 9
+    },
+    {
+      "file": "bench/storyInjectBuild.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 101,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyInjectBuild.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyInjectBuild.test.ts"
+      ],
+      "reportedChecks": 14
+    },
+    {
+      "file": "bench/storyInjectPreview.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 202,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyInjectPreview.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyInjectPreview.test.ts"
+      ],
+      "reportedChecks": 11
+    },
+    {
+      "file": "bench/storyInjectSchema.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 196,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyInjectSchema.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyInjectSchema.test.ts"
+      ],
+      "reportedChecks": 22
+    },
+    {
+      "file": "bench/storyInjectUi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 388,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyInjectUi.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyInjectUi.test.ts"
+      ],
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/storyOpening.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 229,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyOpening.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyOpening.test.ts"
+      ],
+      "reportedChecks": 13
+    },
+    {
+      "file": "bench/storyOpeningsEditor.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 110,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyOpeningsEditor.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyOpeningsEditor.test.ts"
+      ],
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/storyOpeningsExtra.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 226,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyOpeningsExtra.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyOpeningsExtra.test.ts"
+      ],
+      "reportedChecks": 11
+    },
+    {
+      "file": "bench/storyOpeningsStartUi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 390,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyOpeningsStartUi.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyOpeningsStartUi.test.ts"
+      ],
+      "reportedChecks": 7
+    },
+    {
+      "file": "bench/storyPeerCastFocus.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 96,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyPeerCastFocus.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyPeerCastFocus.test.ts"
+      ],
+      "reportedChecks": 19
+    },
+    {
+      "file": "bench/storyPeerCastGenerate.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 95,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyPeerCastGenerate.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyPeerCastGenerate.test.ts"
+      ],
+      "reportedChecks": 11
+    },
+    {
+      "file": "bench/storyPeerCastGenerateContract.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 100,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyPeerCastGenerateContract.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyPeerCastGenerateContract.test.ts"
+      ],
+      "reportedChecks": 10
+    },
+    {
+      "file": "bench/storyPeerCastSchema.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 224,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyPeerCastSchema.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyPeerCastSchema.test.ts"
+      ],
+      "reportedChecks": 6
+    },
+    {
+      "file": "bench/storyPeerCastStartUi.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 496,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyPeerCastStartUi.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyPeerCastStartUi.test.ts"
+      ],
+      "reportedChecks": 16
+    },
+    {
+      "file": "bench/storySchema.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 186,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storySchema.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storySchema.test.ts"
+      ],
+      "reportedChecks": 24
+    },
+    {
+      "file": "bench/storyStats.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 232,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyStats.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyStats.test.ts"
+      ],
+      "reportedChecks": 10
+    },
+    {
+      "file": "bench/storyTabs.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 98,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/storyTabs.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/storyTabs.test.ts"
+      ],
+      "reportedChecks": 5
+    },
+    {
+      "file": "bench/summarizeContract.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 84,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/summarizeContract.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/summarizeContract.test.ts"
+      ],
+      "reportedChecks": 3
+    },
+    {
+      "file": "bench/summaryBannerTrigger.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 86,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/summaryBannerTrigger.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/summaryBannerTrigger.test.ts"
+      ],
+      "reportedChecks": 12
+    },
+    {
+      "file": "bench/summaryDiff.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 85,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/summaryDiff.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/summaryDiff.test.ts"
+      ],
+      "reportedChecks": 14
+    },
+    {
+      "file": "bench/summaryWatermarkCompaction.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 123,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/summaryWatermarkCompaction.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/summaryWatermarkCompaction.test.ts"
+      ],
+      "reportedChecks": 24
+    },
+    {
+      "file": "bench/tagsCatalog.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 105,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/tagsCatalog.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/tagsCatalog.test.ts"
+      ],
+      "reportedChecks": 29
+    },
+    {
+      "file": "bench/tailscaleIngress.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 209,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/tailscaleIngress.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/tailscaleIngress.test.ts"
+      ],
+      "reportedChecks": 22
+    },
+    {
+      "file": "bench/userContextBudget.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 85,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/userContextBudget.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/userContextBudget.test.ts"
+      ],
+      "reportedChecks": 11
+    },
+    {
+      "file": "bench/userNoteInject.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 99,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/userNoteInject.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/userNoteInject.test.ts"
+      ],
+      "reportedChecks": 4
+    },
+    {
+      "file": "bench/userNoteRequestRoundtrip.test.ts",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 187,
+      "log": "/Users/llm/claude/rpchat-story-detail-20260923/deploy-overlay/verified-suite/userNoteRequestRoundtrip.log",
+      "command": [
+        "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
+        "--import",
+        "tsx",
+        "bench/userNoteRequestRoundtrip.test.ts"
+      ],
+      "reportedChecks": 8
+    }
+  ],
+  "totals": {
+    "discovered": 176,
+    "passed": 173,
+    "failed": 0,
+    "excluded": 3,
+    "notRun": 0,
+    "reportedChecks": 2138
+  },
+  "finishedAt": "2026-09-22T23:15:17.977Z",
+  "interrupted": false
+}
