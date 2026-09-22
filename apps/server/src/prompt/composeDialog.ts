@@ -25,6 +25,7 @@ import { ambientPicks, ambientSeed, type AmbientPick } from './ambient.js';
 import { beatCast, planPartyCore, userNameOf } from './partyChannel.js';
 import { type FocusResult } from './resolveFocus.js';
 import { parseScript, renderPassS, type ParseScriptResult, type SpeakerSlot } from './dialogScript.js';
+import { sanitizeGeneratedContent } from '../contracts/chatEventAdapter.js';
 import { assetPathFor, type BeatBlock } from './renderBeat.js';
 import { renderDialogHeader, renderInfoBlock, serializeDialogBeat } from './renderDialog.js';
 import { extractChoices } from './templates.js';
@@ -199,7 +200,7 @@ export function finishDialogBeat(
 ): NormalizedFinishedDialogBeat {
   const scene = plan.applied.state;
   const { content, choices } = extractChoices(scriptText);
-  const parsed = parseScript(content, plan.speakers);
+  const parsed = parseScript(sanitizeGeneratedContent(content), plan.speakers);
 
   const blocks = serializeDialogBeat({
     header: plan.header,

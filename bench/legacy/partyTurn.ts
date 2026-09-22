@@ -1,3 +1,4 @@
+// Historical client behavior retained for migration parity tests; never imported by the app.
 /**
  * B-2 S2 — client PartyBlock mapper.
  * Twin of apps/server/src/prompt/partyTurn.ts partyTurnFromBlocks, per message row.

@@ -12,7 +12,7 @@ import {
   extractChoices,
 } from '../apps/server/src/prompt/templates.ts';
 import { isOocMessage } from '../apps/server/src/prompt/builder.ts';
-import { sanitizeBubbleContent } from '../apps/web/src/lib/sanitizeBubble.ts';
+import { sanitizeBubbleContent } from './legacy/sanitizeBubble.ts';
 
 let passed = 0;
 function t(name: string, fn: () => void) {
@@ -79,10 +79,10 @@ function main() {
     assert.equal(stripLeadingOocFuel(raw), raw);
   });
 
-  t('(C) wired: chat persist uses sanitizeAssistantContent; client sanitizeBubble chains OOC', () => {
+  t('(C) chat persist uses sanitizeAssistantContent; archived client comparison chains OOC', () => {
     const chat = fs.readFileSync('apps/server/src/routes/chat.ts', 'utf8');
     assert.match(chat, /sanitizeAssistantContent\(parsed\.content\)/);
-    const bub = fs.readFileSync('apps/web/src/lib/sanitizeBubble.ts', 'utf8');
+    const bub = fs.readFileSync('bench/legacy/sanitizeBubble.ts', 'utf8');
     assert.match(bub, /stripLeadingOocFuel/);
   });
 

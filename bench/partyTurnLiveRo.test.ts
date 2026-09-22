@@ -12,13 +12,13 @@ import {
   partyRenderPlan,
   plansEquivalent,
   type PartyRenderPlan,
-} from '../apps/web/src/lib/partyRenderPlan.ts';
+} from './legacy/partyRenderPlan.ts';
 import {
   partyBlockFromMessage,
   type PartyMessageLike,
   type PartyMessageMeta,
-} from '../apps/web/src/lib/partyTurn.ts';
-import { wrapSpeechMarks } from '../apps/web/src/lib/speechMarks.ts';
+} from './legacy/partyTurn.ts';
+import { wrapSpeechMarks } from './legacy/speechMarks.ts';
 
 const MIXED_SHA12 = '0259d81281ad';
 const COPY = process.env.RPCHAT_RO_DB || '/tmp/rpchat-b2s2-live-ro.db';

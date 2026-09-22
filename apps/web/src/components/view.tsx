@@ -1,7 +1,4 @@
 import type { CSSProperties, ReactNode } from 'react';
-import type { PartyBlock } from '../lib/partyTurn';
-import { hideIncompleteChoicesPrefix, sanitizeBubbleContent } from '../lib/sanitizeBubble';
-import { wrapSpeechMarks } from '../lib/speechMarks';
 
 export function Avatar({ name, avatar, size }: { name: string; avatar?: string | null; size?: 'sm' | 'lg' }) {
   const cls = `avatar${size ? ` ${size}` : ''}`;
@@ -10,7 +7,6 @@ export function Avatar({ name, avatar, size }: { name: string; avatar?: string |
   return <div className={cls} aria-hidden>{initial}</div>;
 }
 
-/** F9F — party speaker header. Bubble + renderContent stay on MessageView. */
 export function SpeakerHeader({ name, avatar, focused }: { name: string; avatar?: string | null; focused?: boolean }) {
   return (
     <div className={`speaker-header${focused ? ' is-focus' : ''}`}>
@@ -20,89 +16,6 @@ export function SpeakerHeader({ name, avatar, focused }: { name: string; avatar?
     </div>
   );
 }
-
-/**
- * f9-swap-passes — the §6 blocks the server assembles.
- *
- * These are presentational only. Order comes from `beat_seq`, the roster chips and
- * numbers come from the `ui` block's JSON, and the portrait comes from
- * `meta.image_url` — a path the server picked from emotion × outfit. The client
- * never parses a header, a chip or an image out of generated prose, which is the
- * whole reason S1 shipped before any of this.
- */
-export function BeatHeader({ text }: { text: string }) {
-  return <div className="beat-header">{sanitizeBubbleContent(text)}</div>;
-}
-
-export function BeatNarration({ text, streaming }: { text: string; streaming?: boolean }) {
-  const shown = sanitizeBubbleContent(text);
-  const visible = streaming ? hideIncompleteChoicesPrefix(shown) : shown;
-  return (
-    <div className="beat-narration">
-      {visible || (streaming ? <span className="muted">…</span> : null)}
-    </div>
-  );
-}
-
-/**
- * MUST dialogue contract: `[Character Name] : "spoken text"` inside a high-contrast bubble.
- * Speaker must be provided by meta or a clear `[Name]` parse — never invented here.
- */
-export function DialogueLine({
-  speaker,
-  speech,
-  focused,
-  streaming,
-}: {
-  speaker: string | null;
-  speech: string;
-  focused?: boolean;
-  streaming?: boolean;
-}) {
-  const cleaned = sanitizeBubbleContent(speech);
-  const visible = streaming ? hideIncompleteChoicesPrefix(cleaned) : cleaned;
-  const spoken = streaming ? visible : wrapSpeechMarks(cleaned);
-  return (
-    <div className={`beat-dialogue${focused ? ' is-focus' : ''}`}>
-      <div className="bubble beat-dialogue-bubble">
-        {speaker ? (
-          <>
-            <span className="beat-dialogue-speaker">[{speaker}]</span>
-            <span className="beat-dialogue-sep"> : </span>
-          </>
-        ) : null}
-        <span className="beat-dialogue-speech">{renderContent(spoken)}</span>
-      </div>
-    </div>
-  );
-}
-
-/**
- * dialog-format — the Dialog.txt-class INFO sheet.
- *
- * The server sends it as text because that is what the format is: a bracketed
- * header line followed by `[라벨]: 값` rows, where the labels are world data and
- * not a schema the client can know. So the client's whole job is to keep the line
- * breaks and stop the rows from being read as prose — it parses nothing.
- */
-export function BeatInfoSheet({ text }: { text: string }) {
-  const lines = sanitizeBubbleContent(text).split('\n').map((l) => l.trim()).filter(Boolean);
-  return (
-    <div className="beat-info">
-      {lines.map((line, i) => {
-        const m = /^\[([^\]]+)\]:\s*(.*)$/.exec(line);
-        if (!m) return <div key={i} className="beat-info-head">{line}</div>;
-        return (
-          <div key={i} className="beat-info-row">
-            <span className="beat-info-label">{m[1]}</span>
-            <span className="beat-info-value">{m[2]}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 
 export type BeatUiData = {
   location_badge?: string | null;
@@ -115,16 +28,6 @@ export type BeatUiData = {
   intent_hint?: string | null;
   focus_id?: string | null;
 };
-
-/** Parses the `ui` block payload. A damaged payload renders nothing, never a crash. */
-export function parseBeatUi(content: string): BeatUiData | null {
-  try {
-    const v: unknown = JSON.parse(content);
-    return typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as BeatUiData) : null;
-  } catch {
-    return null;
-  }
-}
 
 export function BeatUiPanel({ ui }: { ui: BeatUiData }) {
   const sheet = ui.user_sheet;
@@ -216,32 +119,6 @@ export function softHue(name: string): number {
   const s = name || '?';
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return h % 360;
-}
-
-/** B-2 S4 common party renderer. Thought is hidden; BeatNarration does not re-parse. */
-export function PartyBlockView({
-  block,
-  streaming,
-  focusId,
-}: {
-  block: PartyBlock | null;
-  streaming?: boolean;
-  focusId?: string | null;
-}): ReactNode {
-  if (!block) return null;
-  if (block.kind === 'header') return <BeatHeader text={block.text} />;
-  if (block.kind === 'info') return <BeatInfoSheet text={block.text} />;
-  if (block.kind === 'narration') return <BeatNarration text={block.text} streaming={streaming} />;
-  if (block.kind === 'thought') return null;
-  if (block.kind === 'dialogue') return null;
-  const raw =
-    block.kind === 'ui'
-      ? typeof block.payload === 'string'
-        ? block.payload
-        : JSON.stringify(block.payload)
-      : block.text;
-  const ui = parseBeatUi(raw);
-  return ui ? <BeatUiPanel ui={{ ...ui, focus_id: ui.focus_id ?? focusId ?? null }} /> : null;
 }
 
 /**

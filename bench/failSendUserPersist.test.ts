@@ -17,6 +17,7 @@ import { conversationRoutes } from '../apps/server/src/routes/conversations.ts';
 import { chatRoutes } from '../apps/server/src/routes/chat.ts';
 import type { Ctx } from '../apps/server/src/ctx.ts';
 import type { GenParams, GenResult } from '../apps/server/src/model/adapter.ts';
+import { initialChatState, reduceChatEvent } from '../apps/web/src/lib/chatStreamState.ts';
 
 let passed = 0;
 async function t(name: string, fn: () => Promise<void> | void) {
@@ -63,7 +64,11 @@ async function main() {
     assert.equal(chat.includes('const restoreHead = user.parent_id'), false);
     assert.ok(chat.includes('retractUnconfirmedSend(userMessage, conv.head_message_id)'));
     assert.equal(code('apps/web/src/pages/ChatPage.tsx').includes('if (ok === false)'), true);
-    assert.equal(code('apps/web/src/pages/useChat.ts').includes("e.type === 'error'"), true);
+    const failed = reduceChatEvent({ ...initialChatState, generating: true, streamingId: 'failed-message' },
+      { type: 'error', message: 'fixture failure', messageId: 'failed-message' }, 'fixture-conversation');
+    assert.equal(failed.generating, false);
+    assert.equal(failed.streamingId, null);
+    assert.equal(failed.error, 'fixture failure');
     const migs = fs.readdirSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'apps/server/migrations'));
     assert.ok(!migs.some((f) => f.includes('pending') || f.includes('failsend')));
   });

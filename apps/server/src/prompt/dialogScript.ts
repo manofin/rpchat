@@ -26,9 +26,10 @@ import { STORY_CHOICES_INSTRUCTION, substitute } from './templates.js';
 import type { PassCard } from './passes.js';
 import type { CastMember } from './cast.js';
 import type { Scene } from '../types.js';
+import { CHAT_SCRIPT_MAX_LINES, resolveEventActor } from '../contracts/chatActor.js';
 
 /** Prompt-stated cap. `parseScript` enforces it again on the way back. */
-export const PASS_S_MAX_LINES = 12;
+export const PASS_S_MAX_LINES = CHAT_SCRIPT_MAX_LINES;
 
 export type SpeakerSlot = {
   id: string;
@@ -126,11 +127,6 @@ function normalizeName(raw: string): string {
     .trim();
 }
 
-/** Fold width/case so `유키` matches `유키 ` and `Yuki` matches `yuki`. */
-function foldName(v: string): string {
-  return v.normalize('NFKC').replace(/\s+/g, '').toLowerCase();
-}
-
 export type ParseScriptResult = {
   items: ScriptItem[];
   /** Ids that actually got at least one line, in first-spoken order. */
@@ -164,15 +160,6 @@ export function parseScript(text: string, allowed: SpeakerSlot[]): ParseScriptRe
   let dropped = 0;
   let lineCount = 0;
 
-  const byName = new Map<string, SpeakerSlot>();
-  for (const slot of allowed) {
-    byName.set(foldName(slot.name), slot);
-    for (const alias of slot.aliases ?? []) {
-      const key = foldName(alias);
-      if (key && !byName.has(key)) byName.set(key, slot);
-    }
-  }
-
   // Narration accumulates until a line block interrupts it.
   let buf: string[] = [];
   const flush = () => {
@@ -205,7 +192,7 @@ export function parseScript(text: string, allowed: SpeakerSlot[]): ParseScriptRe
       continue;
     }
 
-    const slot = byName.get(foldName(name));
+    const slot = resolveEventActor(name, allowed);
     if (!slot) {
       if (!rejected.includes(name)) rejected.push(name);
       buf.push(line);

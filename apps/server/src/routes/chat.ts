@@ -4,7 +4,7 @@ import type { Ctx } from '../ctx.js';
 import { PROMPT_VERSION, config } from '../config.js';
 import { getSetting, many, nowIso, one, parseJson, run, uid } from '../db/index.js';
 import { interruptOrphanStreaming } from '../db/generation.js';
-import { getPath, insertMessage, messageOut, resolveTurnStart, setHead, updateMessage } from '../db/tree.js';
+import { getPath, insertMessage, messageOut, parseMessageMeta, resolveTurnStart, setHead, updateMessage } from '../db/tree.js';
 import { buildSceneSnapshot, resolveSceneBase } from '../db/sceneBase.js';
 import { ModelError } from '../model/adapter.js';
 import {
@@ -37,6 +37,8 @@ import { estimateTokens, getCalibration, updateCalibration } from '../prompt/tok
 import type { ConversationRow, MessageRow, Scene } from '../types.js';
 import { loadConversation } from './conversations.js';
 import { fireEndingEvalJob } from '../endingJudge.js';
+import { createChatEventStream, sanitizeGeneratedContent } from '../contracts/chatEventAdapter.js';
+import type { ChatEvent } from '@rpchat/contracts/chat-event';
 
 function storyFocusPlanFields(conv: ConversationRow): {
   story_room: boolean;
@@ -87,8 +89,8 @@ type SseBudget = {
 };
 
 type SseEvent =
-  | { type: 'start'; generationId: string; messageId: string; userMessage?: ReturnType<typeof messageOut> }
-  | { type: 'token'; text: string }
+  | { type: 'start'; generationId: string; messageId: string; eventVersion: 1; message: ReturnType<typeof messageOut>; userMessage?: ReturnType<typeof messageOut> }
+  | { type: 'token'; text: string; messageId: string; eventVersion: 1; events: ChatEvent[] }
   | { type: 'done'; message: ReturnType<typeof messageOut>; usage: unknown; ttftMs: number | null; totalMs: number; budget?: SseBudget }
   // f9-swap-passes: every beat block except the streamed one arrives here. `aux`
   // is already append-only and id-deduped on the client, which is exactly the
@@ -352,7 +354,9 @@ export function chatRoutes(ctx: Ctx) {
     setHead(db, conv.id, assistant.id);
 
     const sse = openSse(reply);
-    sse.send({ type: 'start', generationId, messageId: assistant.id, userMessage: userMessage ? messageOut(db, userMessage) : undefined });
+    sse.send({ type: 'start', generationId, messageId: assistant.id, eventVersion: 1, message: messageOut(db, assistant), userMessage: userMessage ? messageOut(db, userMessage) : undefined });
+    const actor = one<{ id: string; name: string }>(db, 'SELECT id, name FROM characters WHERE id = ?', conv.character_id);
+    const streamEvents = createChatEventStream({ ...assistant, meta: parseMessageMeta(assistant.meta_json) }, actor ? { defaultActor: actor, actors: [actor] } : {});
 
     const controller = new AbortController();
     ctx.queue.register({ id: generationId, conversationId: conv.id, messageId: assistant.id, startedAt: nowIso(), controller });
@@ -395,7 +399,7 @@ export function chatRoutes(ctx: Ctx) {
           },
           (delta) => {
             buffer += delta;
-            sse.send({ type: 'token', text: delta });
+            sse.send({ type: 'token', ...streamEvents(buffer) });
             if (Date.now() - lastPersist > PERSIST_INTERVAL_MS) {
               lastPersist = Date.now();
               updateMessage(db, assistant.id, { content: buffer });
@@ -559,7 +563,7 @@ export function chatRoutes(ctx: Ctx) {
     // table, and feeding Pass N a narration the user never saw would make it avoid
     // repeating something that is not there.
     const recentNarrations = getPath(db, convNow)
-      .filter((m) => m.role === 'assistant' && parseJson<{ block_kind?: string }>(m.meta_json, {}).block_kind === 'narration')
+      .filter((m) => m.role === 'assistant' && parseMessageMeta(m.meta_json).block_kind === 'narration')
       .slice(-PASS_N_RECENT_NARRATIONS)
       .map((m) => m.content.trim())
       .filter(Boolean);
@@ -594,7 +598,7 @@ export function chatRoutes(ctx: Ctx) {
     const emitted: MessageRow[] = [];
     /** Creates a beat block row, chained under the previous one. */
     const addBlock = (
-      kind: 'header' | 'narration' | 'line' | 'thought' | 'ui',
+      kind: 'header' | 'narration' | 'line' | 'ui',
       content: string,
       meta: Record<string, unknown> = {},
     ): MessageRow => {
@@ -669,7 +673,8 @@ export function chatRoutes(ctx: Ctx) {
         // final updateMessage below then reset the line's own seq to 0.
         emitted.push(focusRow);
         started = true;
-        sse.send({ type: 'start', generationId, messageId: focusRow.id, userMessage: userMessage ? messageOut(db, userMessage) : undefined });
+        sse.send({ type: 'start', generationId, messageId: focusRow.id, eventVersion: 1, message: messageOut(db, focusRow), userMessage: userMessage ? messageOut(db, userMessage) : undefined });
+        const streamEvents = createChatEventStream({ ...focusRow, meta: parseMessageMeta(focusRow.meta_json) });
 
         const tF = Date.now();
         let lastPersist = Date.now();
@@ -680,7 +685,7 @@ export function chatRoutes(ctx: Ctx) {
           },
           (delta) => {
             buffer += delta;
-            sse.send({ type: 'token', text: delta });
+            sse.send({ type: 'token', ...streamEvents(buffer) });
             if (Date.now() - lastPersist > PERSIST_INTERVAL_MS) {
               lastPersist = Date.now();
               updateMessage(db, focusRow!.id, { content: buffer });
@@ -688,7 +693,7 @@ export function chatRoutes(ctx: Ctx) {
           },
         ), controller.signal);
         passMs.f = Date.now() - tF;
-        focusText = result.text.trim();
+        focusText = sanitizeGeneratedContent(result.text).trim();
       }
 
       // Pass E — each approved extra, serially (queue concurrency is 1 anyway).
@@ -702,7 +707,7 @@ export function chatRoutes(ctx: Ctx) {
             temperature: 0.85, top_p: 0.95, max_tokens: AUX_MAX_TOKENS, stop: [],
             signal: eDeadline.signal,
           }), controller.signal);
-          const text = out.text.trim();
+          const text = sanitizeGeneratedContent(out.text).trim();
           if (text) extraTexts[e.character_id] = text;
         } catch (err) {
           if (controller.signal.aborted) throw err;
@@ -731,13 +736,6 @@ export function chatRoutes(ctx: Ctx) {
         });
       }
 
-      const thought = finished.blocks.find((b) => b.kind === 'thought');
-      if (thought) {
-        send(addBlock('thought', thought.text, {
-          speaker_character_id: thought.speaker_character_id ?? undefined,
-          speaker_name: thought.speaker_name ?? undefined,
-        }));
-      }
       for (const extra of plan.approved_extras) {
         const block = lineOf(extra.character_id);
         if (!block) continue;
@@ -830,7 +828,7 @@ export function chatRoutes(ctx: Ctx) {
       // clear `generating`, not a particular block kind.
       const closing = focusRow ?? uiRow;
       if (!started) {
-        sse.send({ type: 'start', generationId, messageId: closing.id, userMessage: userMessage ? messageOut(db, userMessage) : undefined });
+        sse.send({ type: 'start', generationId, messageId: closing.id, eventVersion: 1, message: messageOut(db, closing), userMessage: userMessage ? messageOut(db, userMessage) : undefined });
       }
       if (focusRow) send(uiRow);
       sse.send({
@@ -1072,11 +1070,14 @@ export function chatRoutes(ctx: Ctx) {
       scriptRow = insertMessage(db, conv.id, head, 'assistant', '', 'streaming', {
         generation_id: generationId, profile: profileName, prompt_version: PROMPT_VERSION,
         beat_seq: scriptSeq,
+        chat_event_script: true,
+        chat_event_actors: plan.speakers.map(({ id, name, aliases }) => ({ id, name, aliases })),
       });
       setHead(db, conv.id, scriptRow.id);
       head = scriptRow.id;
       emitted.push(scriptRow);
-      sse.send({ type: 'start', generationId, messageId: scriptRow.id, userMessage: userMessage ? messageOut(db, userMessage) : undefined });
+      sse.send({ type: 'start', generationId, messageId: scriptRow.id, eventVersion: 1, message: messageOut(db, scriptRow), userMessage: userMessage ? messageOut(db, userMessage) : undefined });
+      const streamEvents = createChatEventStream({ ...scriptRow, meta: parseMessageMeta(scriptRow.meta_json) });
 
       const tS = Date.now();
       let lastPersist = Date.now();
@@ -1087,7 +1088,7 @@ export function chatRoutes(ctx: Ctx) {
         },
         (delta) => {
           buffer += delta;
-          sse.send({ type: 'token', text: delta });
+          sse.send({ type: 'token', ...streamEvents(buffer) });
           if (Date.now() - lastPersist > PERSIST_INTERVAL_MS) {
             lastPersist = Date.now();
             updateMessage(db, scriptRow!.id, { content: buffer });

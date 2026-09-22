@@ -3,9 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "description": "로컬 LLM 기반 개인용 RP 캐릭터 채팅 PWA (Tailscale 사설망 전용)",
-  "workspaces": ["apps/server", "apps/web"],
+  "workspaces": ["apps/server", "apps/web", "packages/contracts"],
   "engines": { "node": ">=22" },
   "scripts": {
+    "test:chat-events": "TSX_TSCONFIG_PATH=apps/web/tsconfig.json RPCHAT_PROMPT_DUMP=0 RPCHAT_REQUEST_DUMP=0 node --import tsx bench/chatEventContract.test.ts && node --import tsx bench/chatEventStream.test.ts && node --import tsx bench/chatEventReconnect.test.ts",
     "dev": "npm run dev --workspace apps/server & npm run dev --workspace apps/web",
     "build": "npm run build --workspace apps/web && npm run build --workspace apps/server",
     "start": "npm run start --workspace apps/server",

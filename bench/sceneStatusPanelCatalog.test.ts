@@ -1,6 +1,6 @@
 /**
  * npx tsx bench/sceneStatusPanelCatalog.test.ts
- * Scene Status Panel catalog v0 — registry, uiState fixtures, placement, BeatUi freeze.
+ * Scene Status Panel catalog v0 — registry, uiState fixtures, placement and transcript separation.
  * Isolated: no live DB, no generate, no apps/server writes.
  */
 import assert from 'node:assert/strict';
@@ -19,6 +19,7 @@ import { buildSceneStatusSpec } from '../apps/web/src/lib/sceneStatusSpec.ts';
 import { SCENE_STATUS_REGISTRY } from '../apps/web/src/components/sceneStatus/registry.ts';
 import { SceneStatusRenderer } from '../apps/web/src/components/sceneStatus/SceneStatusRenderer.tsx';
 import { SceneStatusPanel } from '../apps/web/src/components/sceneStatus/SceneStatusPanel.tsx';
+import { EventRenderer } from '../apps/web/src/components/EventRenderer.tsx';
 
 let passed = 0;
 function t(name: string, fn: () => void) {
@@ -128,31 +129,21 @@ t('CastRow does not duplicate BeatUi roster when hasBeatRoster', () => {
   assert.equal(members[0].active, true);
 });
 
-t('BeatUi / PartyBlockView / ChoiceChips files are untouched vs BASE', () => {
-  const { execSync } = require('node:child_process') as typeof import('node:child_process');
-  const benchSrc = src('bench/sceneStatusPanelCatalog.test.ts');
-  assert.match(benchSrc, /git diff origin\/master\.\.\.HEAD --/);
-  assert.doesNotMatch(benchSrc, /git diff origin\/master --/);
-  const out = execSync(
-    'git diff origin/master...HEAD -- apps/web/src/components/view.tsx apps/server apps/web/src/pages/ChatPage.tsx',
-    { cwd: appRoot, encoding: 'utf8' },
-  );
-  assert.doesNotMatch(out, /function ChoiceChips/);
-  assert.doesNotMatch(out, /export function BeatUiPanel/);
-  assert.doesNotMatch(out, /export function PartyBlockView/);
-  const viewDiff = execSync('git diff origin/master...HEAD -- apps/web/src/components/view.tsx apps/server', {
-    cwd: appRoot,
-    encoding: 'utf8',
-  });
-  assert.equal(viewDiff, '');
+t('status panel stays separate from transcript events and choices', () => {
   const chat = src('apps/web/src/pages/ChatPage.tsx');
   assert.match(chat, /function ChoiceChips/);
   assert.match(chat, /<BeatUiPanel /);
-  assert.match(chat, /PartyBlockView/);
+  assert.match(chat, /<MessageEvents /);
+  const transcript = renderToStaticMarkup(createElement(EventRenderer, { events: [{
+    type: 'system', id: 'status-fixture', presentation: 'ui', text: '', payload: { location_badge: '제3부두' },
+  }] }));
+  assert.match(transcript, /beat-ui-panel/);
+  assert.match(transcript, /제3부두/);
+  assert.doesNotMatch(transcript, /scene-status-panel/);
   const panelDir = src('apps/web/src/components/sceneStatus/SceneStatusPanel.tsx')
     + src('apps/web/src/components/sceneStatus/CastRow.tsx')
     + src('apps/web/src/lib/sceneStatusCatalog.ts');
-  assert.doesNotMatch(panelDir, /BeatUiPanel|ChoiceChips|PartyBlockView/);
+  assert.doesNotMatch(panelDir, /BeatUiPanel|ChoiceChips|EventRenderer|MessageEvents/);
   const pkg = src('apps/web/package.json');
   assert.doesNotMatch(pkg, /shadcn|json-render/);
 });

@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { sanitizeNarration } from '../apps/server/src/prompt/templates.ts';
 import { serializeDialogBeat } from '../apps/server/src/prompt/renderDialog.ts';
-import { sanitizeBubbleContent } from '../apps/web/src/lib/sanitizeBubble.ts';
+import { sanitizeBubbleContent } from './legacy/sanitizeBubble.ts';
 import { narrationLeaks } from './fixtures/narrationLeaks.ts';
 
 let passed = 0;

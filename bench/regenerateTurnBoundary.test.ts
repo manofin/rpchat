@@ -59,6 +59,7 @@ async function main() {
   ).run('rp-balanced', null, 0.8, 0.95, 400, '[]', 'system', null);
 
   let gen = 0;
+  let interruptStream = false;
   const model = {
     complete: async (p: GenParams): Promise<GenResult> => {
       const prompt = String(p.messages?.[0]?.content ?? '');
@@ -72,7 +73,14 @@ async function main() {
     },
     stream: async (_p: GenParams, onToken: (d: string) => void): Promise<GenResult> => {
       const chunks = ['"', '……짝꿍?', '"\n', `${THOUGHT_MARKER} `, '왜 안 피하지.'];
-      for (const c of chunks) { onToken(c); await new Promise((r) => setImmediate(r)); }
+      for (const c of chunks) {
+        onToken(c);
+        await new Promise((r) => setImmediate(r));
+        if (interruptStream) {
+          ctx.queue.activeList[0].controller.abort();
+          throw new Error('fixture interrupted stream');
+        }
+      }
       return { text: chunks.join(''), finishReason: 'stop', usage: null, ttftMs: 1, totalMs: 3 };
     },
     listModels: async () => ['test-model'],
@@ -175,7 +183,7 @@ async function main() {
       assert.equal(r.kind, 'multi', `${kinds(turn)[i]} → ${JSON.stringify(r)}`);
     }
     const starts = new Set(resolved.map((r) => (r as { startId: string }).startId));
-    assert.equal(starts.size, 1, 'all five blocks must name one start block');
+    assert.equal(starts.size, 1, 'all blocks must name one start block');
     assert.equal([...starts][0], turn[0].id, 'and it is the header');
     const parents = new Set(resolved.map((r) => (r as { parentId: string }).parentId));
     assert.equal(parents.size, 1, 'so they all regenerate from one parent');
@@ -183,7 +191,7 @@ async function main() {
 
   // ── the active path after a regenerate ─────────────────────────────────────
 
-  for (const target of ['header', 'narration', 'line', 'thought', 'ui'] as const) {
+  for (const target of ['header', 'narration', 'line', 'ui'] as const) {
     await t(`regenerating a beat turn from its ${target} leaves one turn on the path`, async () => {
       const conv = await newConv();
       await send(conv, '첫 턴');
@@ -267,6 +275,37 @@ async function main() {
       assert.equal(turn.filter((m) => m.meta.beat_seq === 0).length, 1, JSON.stringify(kinds(turn)));
       const gens = new Set(turn.map((m) => m.meta.generation_id));
       assert.equal(gens.size, 1);
+    });
+  }
+
+  for (const legacy of [false, true]) {
+    await t(`${legacy ? 'legacy ' : ''}interrupted dialog regenerates from its INFO start without duplicating the sheet`, async () => {
+      const conv = await newConv('dialog');
+      interruptStream = true;
+      await send(conv, '중단할 턴');
+      interruptStream = false;
+      const before = lastTurn(await messagesOf(conv));
+      const sheet = before.find((m) => m.meta.block_kind === 'info')!;
+      const pending = before.find((m) => m.meta.beat_seq === 1)!;
+      assert.ok(sheet && pending, JSON.stringify(before));
+      assert.equal(pending.meta.block_kind, undefined);
+      if (legacy) {
+        db.prepare('UPDATE messages SET meta_json = ? WHERE id = ?').run(JSON.stringify({
+          generation_id: pending.meta.generation_id, beat_seq: 1,
+        }), pending.id);
+      }
+      const row = db.prepare('SELECT * FROM messages WHERE id = ?').get(pending.id) as MessageRow;
+      assert.equal(row.status, 'interrupted');
+      const boundary = resolveTurnStart(db, row);
+      assert.equal(boundary.kind, 'multi');
+      assert.equal((boundary as { startId: string }).startId, sheet.id);
+      const result = await regen(conv, pending.id);
+      assert.equal(result.status, 200, result.body);
+      const after = lastTurn(await messagesOf(conv));
+      assert.equal(after.some((m) => m.id === sheet.id || m.id === pending.id), false);
+      assert.equal(after.filter((m) => m.meta.block_kind === 'info').length, 1);
+      assert.equal(after.filter((m) => m.meta.beat_seq === 0).length, 1);
+      assert.equal(new Set(after.map((m) => m.meta.generation_id)).size, 1);
     });
   }
 

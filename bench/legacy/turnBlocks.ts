@@ -1,3 +1,4 @@
+// Historical client behavior retained for migration parity tests; never imported by the app.
 /**
  * Display-only structural parse for mixed narration/dialogue turns.
  * Never invents speaker names. Does not touch stored message bytes.

@@ -1,3 +1,4 @@
+// Historical client behavior retained for migration parity tests; never imported by the app.
 /**
  * Client last-line defense for leaked `<choices>` / trailing BeatUi JSON in
  * ordinary bubbles (no block_kind / line). Does not touch real `block_kind:'ui'`

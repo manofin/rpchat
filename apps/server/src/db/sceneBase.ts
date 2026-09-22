@@ -29,7 +29,8 @@
  * Skipping past a legacy turn that has no snapshot would silently reach back to an
  * older turn's state, which is a worse answer than the conversation row.
  */
-import { type DB, one, parseJson } from './index.js';
+import { type DB, one } from './index.js';
+import { parseMessageMeta } from './messageMeta.js';
 import type { MessageMeta, MessageRow, Scene } from '../types.js';
 
 /** Bump only for a change that an older reader would misread, not for added keys. */
@@ -119,7 +120,7 @@ export function resolveSceneBase(db: DB, args: {
   if (args.regenTurnStartId) {
     const start = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', args.regenTurnStartId);
     if (!start) return fallback(1);
-    const snap = readSceneSnapshot(parseJson<MessageMeta>(start.meta_json, {}));
+    const snap = readSceneSnapshot(parseMessageMeta(start.meta_json));
     // A turn written before this module has no snapshot; regenerating it can only
     // fall back, and will then behave exactly as it did before.
     return snap
@@ -136,7 +137,7 @@ export function resolveSceneBase(db: DB, args: {
     const row = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', cur);
     if (!row) return fallback(hops + 1);
     if (row.role === 'assistant') {
-      const meta = parseJson<MessageMeta>(row.meta_json, {});
+      const meta = parseMessageMeta(row.meta_json);
       if (meta.beat_seq === 0) {
         const snap = readSceneSnapshot(meta);
         return snap

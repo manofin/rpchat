@@ -1,6 +1,6 @@
 /**
  * npx tsx bench/partyTurnWeb.test.ts
- * B-2 S2 — client mapper twin + old switch vs new renderer (synthetic).
+ * Current event rendering plus archived B-2 mapper parity fixtures (synthetic).
  * Pure. No live DB, no model, no SSE, no persist.
  */
 import assert from 'node:assert/strict';
@@ -12,17 +12,21 @@ import type { BeatBlock } from '../apps/server/src/prompt/renderBeat.ts';
 import {
   partyBlockFromMessage,
   type PartyMessageLike,
-} from '../apps/web/src/lib/partyTurn.ts';
+} from './legacy/partyTurn.ts';
 import {
   partyRenderPlan,
   plansEquivalent,
   type PartyRenderPlan,
-} from '../apps/web/src/lib/partyRenderPlan.ts';
-import { wrapSpeechMarks } from '../apps/web/src/lib/speechMarks.ts';
+} from './legacy/partyRenderPlan.ts';
+import { wrapSpeechMarks } from './legacy/speechMarks.ts';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { adaptChatEvents } from '../apps/server/src/contracts/chatEventAdapter.ts';
+import { EventRenderer } from '../apps/web/src/components/EventRenderer.tsx';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const chatPage = fs.readFileSync(path.join(root, 'apps/web/src/pages/ChatPage.tsx'), 'utf8');
-const viewSrc = fs.readFileSync(path.join(root, 'apps/web/src/components/view.tsx'), 'utf8');
+const rendererSrc = fs.readFileSync(path.join(root, 'apps/web/src/components/EventRenderer.tsx'), 'utf8');
 
 let passed = 0;
 function t(name: string, fn: () => void) {
@@ -72,18 +76,18 @@ function rowFromBeat(b: BeatBlock): PartyMessageLike {
   return { content: b.text, meta };
 }
 
-t('ChatPage wires partyBlockFromMessage + PartyBlockView; view exports PartyBlockView', () => {
-  assert.match(chatPage, /partyBlockFromMessage/);
-  assert.match(chatPage, /PartyBlockView/);
-  assert.match(viewSrc, /export function PartyBlockView/);
-  assert.match(viewSrc, /kind === 'thought'/);
-  assert.match(viewSrc, /BeatNarration text=\{block\.text\}/);
-  assert.equal(viewSrc.includes('parseTurnBlocks'), false);
-  assert.equal(/BeatHeader|BeatInfoSheet|BeatNarration/.test(chatPage), false);
-  assert.equal(chatPage.includes("kind === 'header' || kind === 'info' || kind === 'narration'"), false);
+t('ChatPage uses canonical events and the renderer never parses raw model content', () => {
+  assert.match(chatPage, /MessageEvents message=\{m\}/);
+  assert.doesNotMatch(chatPage, /partyBlockFromMessage|PartyBlockView|parseTurnBlocks/);
+  assert.doesNotMatch(rendererSrc, /JSON\.parse|parseTurnBlocks|sanitizeBubbleContent/);
+  const events = adaptChatEvents({ id: 'current', role: 'assistant', content: '*비가 내린다.*\n[나리] : "안녕."' });
+  const html = renderToStaticMarkup(createElement(EventRenderer, { events }));
+  assert.match(html, /class="beat-narration">비가 내린다\./);
+  assert.match(html, /class="beat-dialogue-speaker">\[나리\]/);
+  assert.match(html, /class="beat-dialogue-speech">&quot;안녕\.&quot;/);
 });
 
-t('client mapper is S1 partyTurnFromBlocks twin on BeatBlock rows', () => {
+t('archived client mapper remains the S1 partyTurnFromBlocks twin on BeatBlock rows', () => {
   const blocks: BeatBlock[] = [
     blk('header', 'H'),
     blk('narration', 'N'),
@@ -131,7 +135,7 @@ const cases: { name: string; m: PartyMessageLike; streaming?: boolean }[] = [
   { name: 'system', m: { content: 'sys', meta: { block_kind: 'system' } } },
 ];
 
-t('old switch vs new renderer: identical component+props plan per case', () => {
+t('archived pre-S2 switch and S2 mapper retain identical component+props plans', () => {
   for (const c of cases) {
     const oldP = legacyRenderPlan(c.m, !!c.streaming);
     const newP = partyRenderPlan(c.m, { streaming: c.streaming });

@@ -1,0 +1,9 @@
+{
+  "name": "@rpchat/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./chat-event": { "types": "./chat-event.d.ts" }
+  }
+}
