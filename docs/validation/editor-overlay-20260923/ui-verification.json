@@ -1,0 +1,62 @@
+{
+  "status": "PASS",
+  "environment": "Synthetic local DB; no live save",
+  "before": {
+    "cancelRect": {
+      "bottom": 834,
+      "height": 42.5,
+      "left": 256.09375,
+      "right": 312.046875,
+      "top": 791.5,
+      "width": 55.953125,
+      "x": 256.09375,
+      "y": 791.5
+    },
+    "hitText": "명령어",
+    "script": [
+      "/assets/index-C1VpAMOa.js"
+    ]
+  },
+  "after": {
+    "buttons": [
+      {
+        "hitText": "취소",
+        "rect": {
+          "bottom": 834,
+          "height": 42.5,
+          "left": 256.09375,
+          "right": 312.046875,
+          "top": 791.5,
+          "width": 55.953125,
+          "x": 256.09375,
+          "y": 791.5
+        },
+        "text": "취소"
+      },
+      {
+        "hitText": "저장",
+        "rect": {
+          "bottom": 834,
+          "height": 42.5,
+          "left": 320.046875,
+          "right": 376,
+          "top": 791.5,
+          "width": 55.953125,
+          "x": 320.046875,
+          "y": 791.5
+        },
+        "text": "저장"
+      }
+    ],
+    "script": [
+      "/assets/index-BE5ri-tb.js"
+    ]
+  },
+  "checks": [
+    "Before: Cancel center hit app bottom navigation Shortcuts",
+    "After: Cancel and Save center hit their own buttons",
+    "Cancel closes editor and remains on story introduction",
+    "Save displays saved toast and returns to story introduction"
+  ],
+  "consoleWarningsAndErrors": 0
+}
