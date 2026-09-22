@@ -52,7 +52,8 @@ const tests = [
   t('1 migration file is 0021_character_play_guide.sql with a single ALTER', () => {
     assert.ok(fs.existsSync(migPath));
     const names = fs.readdirSync(MIG_DIR).filter((f) => f.endsWith('.sql')).sort();
-    assert.equal(names.at(-1), '0021_character_play_guide.sql');
+    assert.equal(names.filter((name) => name.startsWith('0021_')).length, 1, '0021 numbering stays unique as later migrations are added');
+    assert.ok(names.includes('0021_character_play_guide.sql'));
     const body = migSql
       .split('\n')
       .filter((l) => l.trim() && !l.trimStart().startsWith('--'))
@@ -148,6 +149,12 @@ async function runHttpAndPrompt(): Promise<void> {
   await app.ready();
 
   try {
+    const playGuideColumn = (db.prepare('PRAGMA table_info(characters)').all() as Array<{ name: string; type: string; notnull: number; dflt_value: string }>)
+      .find((column) => column.name === 'play_guide');
+    assert.deepEqual(playGuideColumn && { type: playGuideColumn.type, notnull: playGuideColumn.notnull, default: playGuideColumn.dflt_value },
+      { type: 'TEXT', notnull: 1, default: "''" }, 'all current migrations preserve the play_guide column contract');
+    assert.ok(db.prepare('SELECT 1 FROM schema_migrations WHERE name = ?').get('0021_character_play_guide.sql'));
+
     const tooLong = await app.inject({
       method: 'POST',
       url: '/api/characters',
@@ -171,6 +178,8 @@ async function runHttpAndPrompt(): Promise<void> {
     assert.equal(omitted.statusCode, 201, '5 omitted play_guide stores empty');
     const omittedBody = JSON.parse(omitted.body);
     assert.equal(omittedBody.play_guide, '');
+    assert.throws(() => db.prepare('UPDATE characters SET play_guide = NULL WHERE id = ?').run(omittedBody.id),
+      /NOT NULL constraint failed: characters.play_guide/, 'the migrated DB rejects NULL independently of route validation');
     const omittedGet = await app.inject({ method: 'GET', url: `/api/characters/${omittedBody.id}` });
     assert.equal(omittedGet.statusCode, 200);
     assert.equal(JSON.parse(omittedGet.body).play_guide, '');

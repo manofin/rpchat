@@ -1,15 +1,17 @@
 /** npx tsx bench/builderDifferential.test.ts
  * live-path vs pre-wire characterization:
  * 현재 buildPrompt의 예산 판정(진단 + 주입 텍스트)을, 04a8f1e 이전(35d0a01) builder.ts의
- * 인라인 pre-wire 루프 오라클과 대조한다. allocateSummaryBudget을 오라클로 쓰지 않는다.
+ * 인라인 pre-wire 루프 오라클과 대조한다. 현재 렌더 문구의 토큰 비용은 포함하되,
+ * allocateSummaryBudget을 오라클로 쓰지 않는다.
  */
 import assert from 'node:assert/strict';
 import Database from 'better-sqlite3';
+import { migrateSummaryRelationFixture } from './helpers/summaryRelationFixture.ts';
 import type { DB } from '../apps/server/src/db/index.js';
 
 let passed = 0;
-function t(name: string, fn: () => void) {
-  fn();
+async function t(name: string, fn: () => void | Promise<void>) {
+  await fn();
   passed++;
   console.log(`ok ${passed} ${name}`);
 }
@@ -33,6 +35,7 @@ function seed(): DB {
     CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT);
     INSERT INTO settings VALUES ('token_calibration','1.0');
   `);
+  migrateSummaryRelationFixture(db);
   // 메시지 60개 — created_at zero-pad (사전식 정렬 = 시간순). 최근 24창 = m37~m60.
   const ins = db.prepare(`INSERT INTO messages VALUES (?,?,?,?,?,?)`);
   for (let i = 1; i <= 60; i++) ins.run(`m${String(i).padStart(2, '0')}`, 'conv1', i % 2 ? 'user' : 'assistant', `대화 ${i}입니다.`, 'done', String(i).padStart(4, '0'));
@@ -41,7 +44,7 @@ function seed(): DB {
 
 type Row = Record<string, unknown>;
 function seedSummaries(db: DB, rows: Array<Partial<Row> & { tier: string }>) {
-  const ins = db.prepare(`INSERT INTO summaries VALUES (?,?,?,?,?,?,?,?,?)`);
+  const ins = db.prepare(`INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier, rolled_up_into) VALUES (?,?,?,?,?,?,?,?,?)`);
   rows.forEach((r, i) => ins.run(r.id ?? `s${i}`, 'conv1', r.content ?? '요약 본문입니다.', r.covers_until ?? null, r.covers_from ?? null, 'approved', r.created ?? String(i), r.tier, r.rolled_up_into ?? null));
 }
 
@@ -88,15 +91,16 @@ async function runBuilder(db: DB) {
   return buildPrompt(db, conv, history, 8192, 'test-model', undefined, { diagnostics: true });
 }
 
-t('characterization: wired buildPrompt decisions == inlined pre-wire loop oracle', async () => {
+async function main() {
+await t('characterization: wired buildPrompt decisions == inlined pre-wire loop oracle', async () => {
   const db = seed();
   seedSummaries(db, [
     { tier: 'whole', covers_until: 'm38' },
     { tier: 'state', covers_until: 'm38' },
     { tier: 'episode', covers_until: 'm59' },               // recentGuard 적중 → 생략
-    { tier: 'scene', id: 'scOld1', covers_until: 'm05' },   // 가드 밖 → 주입 후보
-    { tier: 'scene', id: 'scRecent', covers_until: 'm50' }, // 개별 가드 적중 → skip
-    { tier: 'scene', id: 'scOld2', covers_until: 'm06' },   // 가드 밖 → 주입 후보
+    { tier: 'scene', id: 'scOld1', covers_until: 'm05', content: '장면 하나입니다.' },   // 가드 밖 → 주입 후보
+    { tier: 'scene', id: 'scRecent', covers_until: 'm50', content: '장면 두개입니다.' }, // 개별 가드 적중 → skip
+    { tier: 'scene', id: 'scOld2', covers_until: 'm06', content: '장면 세개입니다.' },   // 가드 밖 → 주입 후보
   ]);
   const b = await runBuilder(db);
   const diag = b.budget.diagnostics!.summaries!;
@@ -115,9 +119,10 @@ t('characterization: wired buildPrompt decisions == inlined pre-wire loop oracle
   const wholeContent = '요약 본문입니다.';
   const wholeEstOnly = Math.ceil(estimateTokensRaw(wholeContent) * cal);
   const scenesForOracle = [
-    { id: 'scOld1', coversUntil: 'm05' as const, tokens: tokScene('장면 하나입니다.') },
-    { id: 'scRecent', coversUntil: 'm50' as const, tokens: tokScene('장면 두개입니다.') },
+    // created_at DESC 조회 순서와 일치시킨다.
     { id: 'scOld2', coversUntil: 'm06' as const, tokens: tokScene('장면 세개입니다.') },
+    { id: 'scRecent', coversUntil: 'm50' as const, tokens: tokScene('장면 두개입니다.') },
+    { id: 'scOld1', coversUntil: 'm05' as const, tokens: tokScene('장면 하나입니다.') },
   ];
   function tokScene(content: string): number {
     return Math.ceil(estimateTokensRaw(`- ${content}`) * cal);
@@ -126,9 +131,10 @@ t('characterization: wired buildPrompt decisions == inlined pre-wire loop oracle
   // stateEst/sumBudget도 builder 공식 그대로: memory share = floor(available*0.15), available = 8192-400-64
   const available = 8192 - 400 - 64;
   const sumBudget = Math.floor(available * 0.15); // pinned 없음 → memEst 0
-  // stateEst: builder와 동일 — state seed content는 seedSummaries 기본값 '요약 본문입니다.'
+  // 상태 본문에 붙는 미상 유지 지침도 실제 예산을 소비한다.
+  const expectedState = '### 현재 상태\n요약 본문입니다.\n\n※ 현재 상태에 행방불명·미해결·미상으로 기재된 사실은 임의로 원인이나 주체를 지어내지 않고 알 수 없는 상태로 유지한다.';
   const { estimateTokens } = await import('../apps/server/src/prompt/tokens.js');
-  const stateEst = estimateTokens(`### 현재 상태\n요약 본문입니다.`, cal);
+  const stateEst = estimateTokens(expectedState, cal);
 
   const oracle = legacyDecide({
     sumBudget, stateEst, wholeEstOnly,
@@ -146,7 +152,9 @@ t('characterization: wired buildPrompt decisions == inlined pre-wire loop oracle
   assert.equal(sceneDiag.used, true, 'oracle: scene은 episode 가드와 독립 평가');
   // 주입된 장면 id 집합 일치 (시스템 텍스트에 실제로 주입된 것 기준)
   const sys = b.messages[0].content as string;
+  assert.ok(sys.includes(expectedState), '미상 유지 지침을 포함한 상태가 주입된다');
   assert.ok(sys.includes('### 최근 장면'));
+  assert.ok(sys.includes('### 최근 장면\n- 장면 세개입니다.\n- 장면 하나입니다.'), '장면 본문과 최신순을 보존한다');
   for (const id of ['scOld1', 'scOld2']) {
     const row = many<{ content: string }>(db, `SELECT content FROM summaries WHERE id='${id}'`)[0];
     assert.ok(sys.includes(row.content), `주입 확인: ${id}`);
@@ -157,6 +165,8 @@ t('characterization: wired buildPrompt decisions == inlined pre-wire loop oracle
     oracle.sceneIds.sort(),
   );
 });
+console.log(`passed ${passed}`);
+}
 
 /** tokens.ts의 estimateTokensRaw와 동일 알고리즘 (hangul*0.7 + cjk*1.0 + other/3.6, cjk=한글제외 CJK+가나) */
 function estimateTokensRaw(text: string): number {
@@ -169,4 +179,7 @@ function estimateTokensRaw(text: string): number {
   return Math.ceil(hangul * 0.7 + cjk * 1.0 + (text.length - hangul - cjk) / 3.6);
 }
 
-console.log(`passed ${passed}`);
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

@@ -213,10 +213,19 @@ t('chat generate path threads story_room from story_id and reads the snapshot', 
   assert.equal(chat.includes('participant_ids:'), true);
 });
 
-t('composeBeat forwards story_room and participant_ids into resolveFocus', () => {
-  const s = src('apps/server/src/prompt/composeBeat.ts');
-  assert.equal(s.includes('story_room:'), true);
-  assert.equal(s.includes('participant_ids:'), true);
+t('composeBeat preserves story-room fallback and participant snapshot boundaries', () => {
+  const story = planStory('안녕하세요');
+  assert.equal(story.focus.focus_id, null, 'story_room reaches focus resolution through the planner');
+  assert.equal(story.pass_f, null);
+  const direct = planStory('안녕하세요', { story_room: false });
+  assert.equal(direct.focus.focus_id, 'hayeon', '1:1 keeps the conversation-partner fallback');
+  assert.ok(direct.pass_f);
+
+  const outside = { scene: { location: '교실', present_ids: [...SNAPSHOT, 'soyeon'] } };
+  assert.equal(planStory('한소연', outside).focus.focus_id, null, 'present but unsnapshotted characters cannot become focus');
+  assert.equal(planStory('한소연', { ...outside, participant_ids: [...SNAPSHOT, 'soyeon'] }).focus.focus_id, 'soyeon',
+    'the same named character becomes eligible when included in the snapshot');
+  assert.equal(planStory('나리').assigned.speakers[0]?.character_id, 'nari');
 });
 
 console.log(`\n${passed} passed`);

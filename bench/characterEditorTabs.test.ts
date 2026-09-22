@@ -5,10 +5,11 @@
  * characterEditorSheet.test.ts — this file is additive.
  */
 import assert from 'node:assert/strict';
-import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
+import { astNodes, parseSourceAst } from './helpers/sourceAst.ts';
 
 let passed = 0;
 function t(name: string, fn: () => void) {
@@ -20,14 +21,17 @@ function t(name: string, fn: () => void) {
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const editorPath = path.join(dir, '..', 'apps/web/src/components/CharacterEditor.tsx');
 const editor = fs.readFileSync(editorPath, 'utf8');
+const editorAst = parseSourceAst(editor);
 
-function sgHits(pattern: string, file: string): number {
-  try {
-    const out = execSync(`ast-grep -p '${pattern}' --lang tsx ${file}`, { encoding: 'utf8' });
-    return out.split('\n').filter((l) => l.trim().length > 0).length;
-  } catch {
-    return 0; // ast-grep은 무매칭 시 exit 1
-  }
+function nestedSheetTabs(ast: ts.Node): number {
+  return [...astNodes(ast, ts.isJsxOpeningElement), ...astNodes(ast, ts.isJsxSelfClosingElement)]
+    .filter((element) => ts.isIdentifier(element.tagName) && element.tagName.text === 'div'
+      && element.attributes.properties.some((attribute) => {
+        if (!ts.isJsxAttribute(attribute) || !ts.isIdentifier(attribute.name) || attribute.name.text !== 'className') return false;
+        const value = attribute.initializer && ts.isJsxExpression(attribute.initializer)
+          ? attribute.initializer.expression : attribute.initializer;
+        return value && ts.isStringLiteral(value) && value.text === 'sheet tabs';
+      })).length;
 }
 
 function tabLabels(): string[] {
@@ -64,7 +68,13 @@ t('tabs are className="tabs", not a nested .sheet', () => {
   assert.equal(editor.includes('className="sheet tabs"'), false);
   assert.equal(editor.includes("className='sheet tabs'"), false);
   assert.match(editor, /toolbar=\{\s*<div className="tabs"/);
-  assert.equal(sgHits('<div className="sheet tabs" />', editorPath), 0);
+  assert.equal(nestedSheetTabs(editorAst), 0);
+});
+
+t('AST guard detects nested sheet tabs and ignores comments/string examples', () => {
+  assert.equal(nestedSheetTabs(parseSourceAst('const view = <div className="sheet tabs">body</div>;')), 1);
+  assert.equal(nestedSheetTabs(parseSourceAst('const view = <div className={"sheet tabs"} />;')), 1);
+  assert.equal(nestedSheetTabs(parseSourceAst('// <div className="sheet tabs" />\nconst label = \'<div className="sheet tabs" />\';')), 0);
 });
 
 t('save footer always renders 취소/저장 independent of tab', () => {
@@ -138,8 +148,9 @@ t('fields stay on their mapped tab (no cross-tab label leak)', () => {
 t('scene_background / voice_profile strings are 0 in CharacterEditor.tsx', () => {
   assert.equal(editor.includes('scene_background'), false);
   assert.equal(editor.includes('voice_profile'), false);
-  assert.equal(sgHits('scene_background', editorPath), 0);
-  assert.equal(sgHits('voice_profile', editorPath), 0);
+  const identifiers = astNodes(editorAst, ts.isIdentifier).map((node) => node.text);
+  assert.equal(identifiers.includes('scene_background'), false);
+  assert.equal(identifiers.includes('voice_profile'), false);
 });
 
 t('prev/next tab buttons exist in the body, not the save footer', () => {

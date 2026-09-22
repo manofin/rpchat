@@ -1,11 +1,12 @@
 /** npx tsx bench/storyEndingConditionsUi.test.ts
  * ADR-F8h 후속 "엔딩 조건 저작 UI (StoryEditor 확장)".
- * 구조 펜스는 ast-grep + tgrep (신규 원칙: 정규식 대신 AST 우선).
+ * 구조 펜스는 TypeScript AST, 문구는 JSX 텍스트로 검사한다.
  * 폼 상태 변환은 순수 함수 단위 검증. React 렌더 없음.
  * Web-only slice: apps/web/src + bench. No server, no migration, no live DB.
  */
 import assert from 'node:assert/strict';
-import { execSync } from 'node:child_process';
+import ts from 'typescript';
+import { astNodes, callsNamed, parseSourceAst, rawConditionsPassThroughs, readSourceAst } from './helpers/sourceAst.ts';
 import {
   buildConditions,
   conditionsToDraft,
@@ -20,27 +21,7 @@ async function t(name: string, fn: () => Promise<void> | void) {
   console.log(`ok ${passed} ${name}`);
 }
 
-/** ast-grep 구조 매칭 히트 수 (0 = 없음). 주석·문자열 오탐 원천 차단. */
-function sg(pattern: string, file: string): number {
-  try {
-    const out = execSync(`ast-grep -p '${pattern}' --lang tsx ${file}`, { encoding: 'utf8' });
-    return out.split('\n').filter((l) => l.trim().length > 0).length;
-  } catch {
-    return 0; // ast-grep은 무매칭 시 exit 1
-  }
-}
-
-/** tgrep 리터럴 매칭 히트 수. */
-function tg(literal: string, file: string): number {
-  try {
-    const out = execSync(`tgrep search -F '${literal}' ${file}`, { encoding: 'utf8' });
-    return out.split('\n').filter((l) => l.trim().length > 0).length;
-  } catch {
-    return 0;
-  }
-}
-
-const EDITOR = 'apps/web/src/components/StoryEditor.tsx';
+const editor = readSourceAst('apps/web/src/components/StoryEditor.tsx');
 
 async function main() {
   await t('buildConditions: full draft → wire shape', () => {
@@ -118,22 +99,34 @@ async function main() {
     assert.equal(hasNarrativeHint({ ...emptyConditionsDraft(), hint: '   ' }), false);
   });
 
-  await t('sg: 저장 경로가 buildConditions(e.cond)로 정제 (AST, 주석 오탐 없음)', () => {
-    assert.ok(sg('buildConditions($C)', EDITOR) >= 1, 'save path sanitizes via buildConditions');
-    assert.ok(sg('conditionsToDraft($C)', EDITOR) >= 1, 'load path restores via conditionsToDraft');
-    assert.ok(sg('patchCond($I, $F)', EDITOR) >= 1, 'per-ending draft updater');
+  await t('AST: 저장 경로 정제, 복원 및 조건별 갱신 호출이 존재', () => {
+    assert.ok(callsNamed(editor, 'buildConditions', 1).length >= 1, 'save path sanitizes via buildConditions');
+    assert.ok(callsNamed(editor, 'conditionsToDraft', 1).length >= 1, 'load path restores via conditionsToDraft');
+    assert.ok(callsNamed(editor, 'patchCond', 2).length >= 1, 'per-ending draft updater');
   });
 
-  await t('sg: 구 pass-through (conditions: e.conditions) 소멸 확인', () => {
-    assert.equal(sg('conditions: e.conditions', EDITOR), 0, 'raw pass-through must be gone');
+  await t('AST: 구 pass-through (conditions: e.conditions) 소멸 확인', () => {
+    assert.equal(rawConditionsPassThroughs(editor).length, 0, 'raw pass-through must be gone');
   });
 
-  await t('tgrep: 비용 고지 문구 + 4종 폼 필드 존재 (리터럴)', () => {
-    assert.ok(tg('백그라운드 LLM 판정', EDITOR) >= 1, 'cost notice');
-    assert.ok(tg('도달 조건 — 최소 턴 수', EDITOR) >= 1, 'min_turns field');
-    assert.ok(tg('도달 조건 — 필요 스탯', EDITOR) >= 1, 'stats field');
-    assert.ok(tg('도달 조건 — 필요 플래그', EDITOR) >= 1, 'flags field');
-    assert.ok(tg('도달 조건 — 서사 힌트', EDITOR) >= 1, 'hint field');
+  await t('AST guard distinguishes calls and raw properties from comments/strings', () => {
+    const decoys = parseSourceAst('// buildConditions(e.cond)\nconst text = "conditions: e.conditions";');
+    assert.equal(callsNamed(decoys, 'buildConditions', 1).length, 0);
+    assert.equal(rawConditionsPassThroughs(decoys).length, 0);
+    const unsafe = parseSourceAst('const saved = { conditions: e.conditions };');
+    assert.equal(rawConditionsPassThroughs(unsafe).length, 1);
+    const safe = parseSourceAst('const saved = { conditions: buildConditions(e.cond) };');
+    assert.equal(callsNamed(safe, 'buildConditions', 1).length, 1);
+    assert.equal(rawConditionsPassThroughs(safe).length, 0);
+  });
+
+  await t('JSX: 비용 고지 문구 + 4종 폼 필드 존재', () => {
+    const text = astNodes(editor, ts.isJsxText).map((node) => node.text).join('\n');
+    assert.ok(text.includes('백그라운드 LLM 판정'), 'cost notice');
+    assert.ok(text.includes('도달 조건 — 최소 턴 수'), 'min_turns field');
+    assert.ok(text.includes('도달 조건 — 필요 스탯'), 'stats field');
+    assert.ok(text.includes('도달 조건 — 필요 플래그'), 'flags field');
+    assert.ok(text.includes('도달 조건 — 서사 힌트'), 'hint field');
   });
 
   console.log(`PASS=${passed}`);

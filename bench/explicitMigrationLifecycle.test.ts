@@ -46,11 +46,19 @@ function diskState(dir: string): unknown {
 }
 
 function cli(args: string[]) {
-  return spawnSync('npx', ['tsx', 'apps/server/src/db/cli.ts', ...args], {
-    cwd: root,
-    encoding: 'utf8',
-    env: { ...process.env, DATA_DIR: '/home/hermes/rpchat/data' },
-  });
+  const ignoredDefault = tmp();
+  try {
+    const result = spawnSync(process.execPath, ['--import', 'tsx', 'apps/server/src/db/cli.ts', ...args], {
+      cwd: root,
+      encoding: 'utf8',
+      env: { ...process.env, DATA_DIR: ignoredDefault },
+      timeout: 15000,
+    });
+    assert.deepEqual(fs.readdirSync(ignoredDefault), [], 'CLI must never use the DATA_DIR default');
+    return result;
+  } finally {
+    fs.rmSync(ignoredDefault, { recursive: true, force: true });
+  }
 }
 
 async function main() {

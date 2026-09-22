@@ -5,10 +5,9 @@
  *
  * Locks: persona-switch prior immutable + rel_character_id stable;
  * rollup source = this conversation's scenes only; txn atomicity;
- * extra SELECT for stamp = 0 (handler source guard); builder.ts untouched.
+ * extra SELECT for stamp = 0 (handler source guard); drafts await approval.
  */
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -19,9 +18,8 @@ import type { GenParams, GenResult } from '../apps/server/src/model/adapter.ts';
 import { characterRoutes } from '../apps/server/src/routes/characters.ts';
 import { conversationRoutes } from '../apps/server/src/routes/conversations.ts';
 import { memoryRoutes } from '../apps/server/src/routes/memory.ts';
+import { loadApprovedEpisodeCandidates } from '../apps/server/src/prompt/builder.ts';
 import type { Ctx } from '../apps/server/src/ctx.ts';
-
-const BUILDER_SHA_BASE = 'f04a01d8e36997562275f4d8bcc3755c8cd39fb99dd04d921026d895da27cfe0';
 
 let passed = 0;
 async function t(name: string, fn: () => Promise<void> | void) {
@@ -30,25 +28,9 @@ async function t(name: string, fn: () => Promise<void> | void) {
   console.log(`ok ${passed} ${name}`);
 }
 
-function sha256File(p: string) {
-  return createHash('sha256').update(fs.readFileSync(p)).digest('hex');
-}
-
 async function main() {
   await t('LIVE_NO_TOUCH: this bench uses temp DB + mock model only', () => {
     assert.ok(true);
-  });
-
-  await t('build untouched: builder.ts sha256 matches pre-slice baseline', () => {
-    const p = path.resolve('apps/server/src/prompt/builder.ts');
-    assert.equal(sha256File(p), BUILDER_SHA_BASE);
-    const src = fs.readFileSync(p, 'utf8');
-    assert.equal(src.includes('rel_character_id'), false);
-    assert.equal(src.includes('rel_persona_id'), false);
-    assert.match(
-      src,
-      /SELECT \* FROM summaries WHERE conversation_id = \? AND tier = 'episode' AND status = 'approved'/,
-    );
   });
 
   await t('extra-query-0: rollup handler stamps from existing conv only', () => {
@@ -85,9 +67,11 @@ async function main() {
   ).run('rp-balanced', null, 0.8, 0.95, 400, '[]', 'system', 'bench');
 
   let completeCalls = 0;
+  let lastPrompt = '';
   const model = {
-    complete: async (_p: GenParams): Promise<GenResult> => {
+    complete: async (p: GenParams): Promise<GenResult> => {
       completeCalls++;
+      lastPrompt = JSON.stringify(p.messages);
       return {
         text: JSON.stringify({ episode: `episode-draft-${completeCalls}` }),
         finishReason: 'stop',
@@ -194,6 +178,15 @@ async function main() {
     .prepare(`SELECT id, rel_character_id, rel_persona_id FROM summaries WHERE tier='episode' AND conversation_id=? ORDER BY created_at ASC`)
     .get(conv.id) as { id: string; rel_character_id: string; rel_persona_id: string };
 
+  await t('new stamped episode stays outside prompt candidates until explicit approval', () => {
+    assert.deepEqual(loadApprovedEpisodeCandidates(db, conv), []);
+    db.prepare("UPDATE summaries SET status='approved' WHERE id=?").run(epA.id);
+    assert.deepEqual(loadApprovedEpisodeCandidates(db, conv).map((row) => row.id), [epA.id]);
+    db.prepare("UPDATE summaries SET status='rejected' WHERE id=?").run(epA.id);
+    assert.deepEqual(loadApprovedEpisodeCandidates(db, conv), [], 'rejected episode must not inject');
+    db.prepare("UPDATE summaries SET status='draft' WHERE id=?").run(epA.id);
+  });
+
   await t('atomicity: episode row exists AND rolled scenes point at it', () => {
     assert.ok(epA?.id);
     const rolled = db
@@ -225,6 +218,8 @@ async function main() {
     const body = res.json as { episode: { id: string; content: string }; rolledScenes: string[] };
     assert.deepEqual(body.rolledScenes, ['sc-a3']);
     assert.equal(body.episode.content.includes('FOREIGN'), false);
+    assert.ok(lastPrompt.includes('scene A3'));
+    assert.equal(lastPrompt.includes('FOREIGN SCENE MUST NOT ROLL'), false, 'model input must exclude foreign scenes');
     const foreign = db
       .prepare(`SELECT rolled_up_into, conversation_id FROM summaries WHERE id='sc-foreign'`)
       .get() as { rolled_up_into: string | null; conversation_id: string };
@@ -271,6 +266,20 @@ async function main() {
     };
     assert.equal(body.episode.rel_character_id, character.id);
     assert.equal(body.episode.rel_persona_id, null);
+  });
+
+  await t('scene update failure rolls back episode insert and leaves the source scene unrolled', async () => {
+    insertScene(conv.id, 'sc-fail', 'scene transaction failure');
+    const before = db.prepare('SELECT * FROM summaries ORDER BY id').all();
+    db.exec(`CREATE TRIGGER fail_rollup_update BEFORE UPDATE OF rolled_up_into ON summaries
+      WHEN OLD.id = 'sc-fail' BEGIN SELECT RAISE(ABORT, 'fixture rollup update failure'); END`);
+    try {
+      const res = await api('POST', `/api/conversations/${conv.id}/rollup-episode?force=1`);
+      assert.equal(res.status, 500, res.text);
+      assert.deepEqual(db.prepare('SELECT * FROM summaries ORDER BY id').all(), before);
+    } finally {
+      db.exec('DROP TRIGGER fail_rollup_update');
+    }
   });
 
   await app.close();

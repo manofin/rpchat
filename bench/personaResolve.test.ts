@@ -12,6 +12,7 @@
  */
 import assert from 'node:assert/strict';
 import Database from 'better-sqlite3';
+import { migrateSummaryRelationFixture } from './helpers/summaryRelationFixture.ts';
 import type { DB } from '../apps/server/src/db/index.js';
 import { buildPrompt, resolvePersona } from '../apps/server/src/prompt/builder.js';
 
@@ -41,6 +42,7 @@ function seed(): DB {
     CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT);
     INSERT INTO settings VALUES ('token_calibration','1.0');
   `);
+  migrateSummaryRelationFixture(db);
   const insP = db.prepare(`INSERT INTO personas VALUES (?,?,?,?,?,?,?,?,?)`);
   insP.run('p1', '유저', '호칭1', '외형1', '페르소나성격', '관계1', 0, '0001', '0001');
   insP.run('p2', '기본', null, null, null, null, 1, '0002', '0002');

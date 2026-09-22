@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import Database from 'better-sqlite3';
+import { migrateSummaryRelationFixture } from './helpers/summaryRelationFixture.ts';
 import type { DB } from '../apps/server/src/db/index.js';
 import { buildPrompt } from '../apps/server/src/prompt/builder.js';
 import { PROMPT_VERSION } from '../apps/server/src/config.ts';
@@ -47,6 +48,7 @@ function seed(): DB {
     CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT);
     INSERT INTO settings VALUES ('token_calibration','1.0');
   `);
+  migrateSummaryRelationFixture(db);
   db.prepare(`INSERT INTO personas VALUES (?,?,?,?,?,?,?,?,?)`).run('p1', '유저', '호칭1', '외형1', '페르소나성격', '관계1', 1, '0001', '0001');
   db.prepare(`INSERT INTO messages VALUES (?,?,?,?,?,?)`).run('m01', 'conv1', 'user', '시작입니다.', 'done', '0001');
   db.prepare(`INSERT INTO memories VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(

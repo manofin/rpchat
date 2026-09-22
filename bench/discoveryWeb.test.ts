@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { NAV_TABS, type NavTab } from '../apps/web/src/lib/navTabs.ts';
 
 let passed = 0;
 function t(name: string, fn: () => void) {
@@ -59,15 +60,40 @@ t('S4 search uses real APIs only and keeps /story/:id start path', () => {
   assert.equal(page.includes('formatCount'), false);
 });
 
-t('S4 TopNav reaches 홈/캐릭터/검색/설정 without works/image', () => {
-  const tabs = code('apps/web/src/lib/navTabs.ts');
-  assert.ok(tabs.includes("label: '홈'"));
-  assert.ok(tabs.includes("label: '캐릭터'"));
-  assert.ok(tabs.includes("label: '검색'"));
-  assert.ok(tabs.includes("label: '설정'"));
-  assert.ok(tabs.includes('/?tab=character'));
-  assert.equal(tabs.includes("href: '/works'"), false);
-  assert.equal(tabs.includes("href: '/image'"), false);
+function assertDiscoveryNavigation(tabs: NavTab[]) {
+  assert.deepEqual(tabs.map(({ href, label }) => [href, label]), [
+    ['/', '홈'], ['/chats', '채팅'], ['/shortcuts', '명령어'], ['/settings', '설정'],
+  ]);
+  for (const [route, href] of [
+    ['/', '/'], ['/character/c1', '/'], ['/story/s1', '/'],
+    ['/chats', '/chats'], ['/shortcuts', '/shortcuts'], ['/settings', '/settings'],
+  ]) {
+    assert.deepEqual(tabs.filter((tab) => tab.match(route)).map((tab) => tab.href), [href], route);
+  }
+  for (const route of ['/works', '/image', '/search']) {
+    assert.deepEqual(tabs.filter((tab) => tab.match(route)), [], route);
+  }
+}
+
+t('discovery stays under Home while shared tabs reach chats, shortcuts and settings', () => {
+  assertDiscoveryNavigation(NAV_TABS);
+  const topnav = code('apps/web/src/components/TopNav.tsx');
+  assert.ok(topnav.includes('NAV_TABS.map'));
+  assert.ok(topnav.includes('aria-label="검색"'));
+  assert.ok(topnav.includes('onSubmit={goSearch}'));
+  assert.ok(topnav.includes("navigate(query ? `/search?q=${encodeURIComponent(query)}` : '/search')"));
+});
+
+t('navigation contract rejects removed discovery routes and unrelated active tabs', () => {
+  assert.throws(() => assertDiscoveryNavigation(NAV_TABS.map((tab, i) =>
+    i === 0 ? { ...tab, match: (route) => route === '/' } : tab,
+  )), /\/character\/c1/);
+  assert.throws(() => assertDiscoveryNavigation(NAV_TABS.map((tab, i) =>
+    i === 1 ? { ...tab, match: () => true } : tab,
+  )));
+  assert.throws(() => assertDiscoveryNavigation([
+    ...NAV_TABS, { href: '/works', label: '작품', match: (route) => route === '/works' },
+  ]));
 });
 
 t('S4 CSS ships discovery chips/cards/empty/hero; no Tailwind package', () => {
