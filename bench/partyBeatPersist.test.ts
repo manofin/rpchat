@@ -3,6 +3,9 @@
  * Fake model at the I/O edge only. Temp DB, never live 서리/카이 / school seed.
  */
 import assert from 'node:assert/strict';
+import { sanitizeNarration } from '../apps/server/src/prompt/templates.ts';
+import { sanitizeBubbleContent } from '../apps/web/src/lib/sanitizeBubble.ts';
+import { narrationLeaks } from './fixtures/narrationLeaks.ts';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -250,24 +253,28 @@ async function main() {
     assert.ok(hanChip.locked || hanChip.chip === '🔒');
   });
 
-  await t('Pass N removes internal tags before DB persistence, preserving trailing prose', async () => {
-    const previous = narrationOutput;
-    narrationOutput = '(OOC: 설정 확인)\n\n본문<choices>["a"]</choices> ★주입확인★\n{"location_badge":"x","roster":[]}';
-    try {
-      const start = await api('POST', '/api/conversations', {
-        characterId: hayeon.id, storyId: story.id, mode: 'story',
-      });
-      assert.equal(start.status, 201, start.text);
-      const id = (start.json as { id: string }).id;
-      const send = await api('POST', `/api/conversations/${id}/messages`, { content: '나리, 네 이야기 말인데.' });
-      assert.equal(send.status, 200, send.text);
-      // Read stored rows directly: display sanitization must not hide a persistence regression.
-      const rows = db.prepare("SELECT content FROM messages WHERE conversation_id = ? AND json_extract(meta_json, '$.block_kind') = 'narration'").all(id);
-      assert.deepEqual(rows, [{ content: '본문 ★주입확인★' }]);
-    } finally {
-      narrationOutput = previous;
-    }
-  });
+  for (const { name, raw, expected } of narrationLeaks) {
+    await t(`Pass N persistence converges: ${name}`, async () => {
+      const previous = narrationOutput;
+      narrationOutput = raw;
+      try {
+        const start = await api('POST', '/api/conversations', {
+          characterId: hayeon.id, storyId: story.id, mode: 'story',
+        });
+        assert.equal(start.status, 201, start.text);
+        const id = (start.json as { id: string }).id;
+        const send = await api('POST', `/api/conversations/${id}/messages`, { content: '나리, 네 이야기 말인데.' });
+        assert.equal(send.status, 200, send.text);
+        // Read raw storage so display cleanup cannot mask a persistence regression.
+        const rows = db.prepare("SELECT content FROM messages WHERE conversation_id = ? AND json_extract(meta_json, '$.block_kind') = 'narration'").all(id) as Array<{ content: string }>;
+        assert.deepEqual(rows, [{ content: expected }]);
+        assert.equal(sanitizeNarration(rows[0].content), rows[0].content);
+        assert.equal(sanitizeBubbleContent(rows[0].content), rows[0].content);
+      } finally {
+        narrationOutput = previous;
+      }
+    });
+  }
 
   await t('unnamed greeting persist: Pass N only (F8e C-focus-β), no invented host line, no 1:1 first_message', async () => {
     const start = await api('POST', '/api/conversations', {

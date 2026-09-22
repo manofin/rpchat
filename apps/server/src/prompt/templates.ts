@@ -276,7 +276,14 @@ export function sanitizeDisplayContent(text: string): string {
 /** Narration is sanitized before persistence; ordinary 1:1 choice extraction stays separate. */
 export function sanitizeNarration(text: string): string {
   if (!text) return text;
-  return sanitizeAssistantContent(stripPairedChoices(text));
+  let out = text;
+  let previous: string;
+  do {
+    previous = out;
+    // Removing one leak can expose another. Each changed pass only removes text.
+    out = sanitizeAssistantContent(stripPairedChoices(out));
+  } while (out !== previous);
+  return out;
 }
 
 

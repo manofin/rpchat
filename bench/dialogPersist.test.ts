@@ -7,6 +7,9 @@
  * Fake model at the I/O edge only. Temp DB, never live 서리/카이 rows.
  */
 import assert from 'node:assert/strict';
+import { sanitizeNarration } from '../apps/server/src/prompt/templates.ts';
+import { sanitizeBubbleContent } from '../apps/web/src/lib/sanitizeBubble.ts';
+import { narrationLeaks } from './fixtures/narrationLeaks.ts';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -53,6 +56,7 @@ async function main() {
     `INSERT INTO model_profiles (name, model, temperature, top_p, max_tokens, stop_json, system_mode, notes) VALUES (?,?,?,?,?,?,?,?)`,
   ).run('rp-balanced', null, 0.8, 0.95, 400, '[]', 'system', null);
 
+  let scriptOutput = SCRIPT;
   let streamPrompts = 0;
   let completePrompts = 0;
   const model = {
@@ -66,11 +70,11 @@ async function main() {
     },
     stream: async (_p: GenParams, onToken: (d: string) => void): Promise<GenResult> => {
       streamPrompts++;
-      for (const chunk of SCRIPT.match(/.{1,24}/gs) ?? []) {
+      for (const chunk of scriptOutput.match(/.{1,24}/gs) ?? []) {
         onToken(chunk);
         await new Promise((r) => setImmediate(r));
       }
-      return { text: SCRIPT, finishReason: 'stop', usage: { prompt_tokens: 30, completion_tokens: 40 }, ttftMs: 1, totalMs: 3 };
+      return { text: scriptOutput, finishReason: 'stop', usage: { prompt_tokens: 30, completion_tokens: 40 }, ttftMs: 1, totalMs: 3 };
     },
     listModels: async () => ['test-model'],
   };
@@ -278,6 +282,33 @@ async function main() {
     assert.ok(!kinds.includes('info'), 'the beat path must not emit an info block');
     assert.ok(kinds.includes('ui'), 'the beat path still closes with its UI block');
   });
+
+  for (const { name, raw, expected } of narrationLeaks) {
+    await t(`dialog narration persistence converges: ${name}`, async () => {
+      scriptOutput = raw;
+      try {
+        const start = await api('POST', '/api/conversations', {
+          characterId: seorin.id, storyId: story.id, mode: 'story',
+        });
+        assert.equal(start.status, 201, start.text);
+        const id = (start.json as { id: string }).id;
+        const configure = await api('PATCH', `/api/conversations/${id}`, {
+          scene: { format: 'dialog', present_ids: [seorin.id, yeojin.id] },
+        });
+        assert.equal(configure.status, 200, configure.text);
+        const send = await api('POST', `/api/conversations/${id}/messages`, { content: '주변을 살핀다.' });
+        assert.equal(send.status, 200, send.text);
+        const rows = db.prepare("SELECT content FROM messages WHERE conversation_id = ? AND json_extract(meta_json, '$.block_kind') = 'narration' ORDER BY rowid").all(id) as Array<{ content: string }>;
+        assert.equal(rows.map(({ content }) => content).join('\n'), expected);
+        for (const { content } of rows) {
+          assert.equal(sanitizeNarration(content), content);
+          assert.equal(sanitizeBubbleContent(content), content);
+        }
+      } finally {
+        scriptOutput = SCRIPT;
+      }
+    });
+  }
 
   await app.close();
   db.close();

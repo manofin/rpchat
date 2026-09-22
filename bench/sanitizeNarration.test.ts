@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { sanitizeNarration } from '../apps/server/src/prompt/templates.ts';
 import { serializeDialogBeat } from '../apps/server/src/prompt/renderDialog.ts';
 import { sanitizeBubbleContent } from '../apps/web/src/lib/sanitizeBubble.ts';
+import { narrationLeaks } from './fixtures/narrationLeaks.ts';
 
 let passed = 0;
 function t(name: string, fn: () => void) {
@@ -40,7 +41,13 @@ function main() {
     }
   });
 
-  const all = [...normals, ...leaks];
+  for (const { name, raw, expected } of narrationLeaks) {
+    t(`복합 누출 정제: ${name}`, () => {
+      assert.equal(sanitizeNarration(raw), expected);
+    });
+  }
+
+  const all = [...normals, ...leaks, ...narrationLeaks.map(({ raw }) => raw)];
 
   t('멱등 sanitizeNarration(sanitizeNarration(x))===sanitizeNarration(x)', () => {
     for (const x of all) {
@@ -73,6 +80,17 @@ function main() {
       { kind: 'narration', text: '본문', seq: 0 },
       { kind: 'line', text: line, seq: 1 },
     ]);
+  });
+
+  t('dialog 직렬화에서도 복합 누출이 수렴하고 클라 정제는 no-op', () => {
+    for (const { raw, expected } of narrationLeaks) {
+      const blocks = serializeDialogBeat({
+        header: null, info: null, script: [{ kind: 'narration', text: raw }],
+      });
+      assert.deepEqual(blocks.map(({ text }) => text), [expected]);
+      assert.equal(sanitizeNarration(blocks[0].text), blocks[0].text);
+      assert.equal(sanitizeBubbleContent(blocks[0].text), blocks[0].text);
+    }
   });
 
   console.log(`\n${passed} passed`);
