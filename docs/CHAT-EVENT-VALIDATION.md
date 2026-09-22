@@ -29,7 +29,7 @@ python3 bench/chatEventUiFixture.py "$PWD" /tmp/rpchat-event-ui
 
 ## 실행 결과
 
-2026-09-22, 34개 bench의 419개 항목, 타입 검사, 서버·웹 빌드, `git diff --check` 통과. 핵심 신규 검증은 39개다. 모든 DB·모델 호출은 임시 DB와 모의 모델을 사용했다.
+2026-09-22, 독립 검토 후 원본 fence를 복원한 상태에서 38개 bench의 485개 항목, 타입 검사, 서버·웹 빌드, `git diff --check` 통과. 핵심 신규 검증은 39개다. 모든 DB·모델 호출은 임시 DB와 모의 모델을 사용했다. 초기 `e35e3f8`의 34개/419개 기록은 원본 fence를 교체한 상태였으므로 원본 fence 통과 증거로 사용하지 않는다.
 
 | bench | 통과 항목 |
 | --- | ---: |
@@ -43,8 +43,25 @@ python3 bench/chatEventUiFixture.py "$PWD" /tmp/rpchat-event-ui
 | injectMacroApi / injectMacroClient / emptyUserTurn / composerRecovery | 12 / 14 / 19 / 13 |
 | settingsRegression / partyRender / partyTurnWeb / beatRenderWeb | 6 / 12 / 7 / 19 |
 | rpReadabilityR1 / sceneStatusPanelCatalog / chatLayout / shortcutHub | 13 / 8 / 4 / 8 |
+| composeBeat / beatChoices / fixMobileClip / rpPartyCastR5 | 31 / 22 / 7 / 6 |
 
-표의 각 bench는 `TSX_TSCONFIG_PATH=apps/web/tsconfig.json RPCHAT_PROMPT_DUMP=0 RPCHAT_REQUEST_DUMP=0 node --import tsx bench/<이름>.test.ts`로 실행했다. `shortcutHub`에는 `--no-browser`를 지정했다. 이 bench의 선택적 390px Chrome geometry 검사는 실행하지 않았으며 8개 core 검사만 합계에 포함했다. 과거 단축어 작업의 일회성 “서버 전체 무변경” 단언은 이번 서버 리팩터링의 동작 검사가 아니므로 제거했다.
+표의 각 bench는 `TSX_TSCONFIG_PATH=apps/web/tsconfig.json RPCHAT_PROMPT_DUMP=0 RPCHAT_REQUEST_DUMP=0 node --import tsx bench/<이름>.test.ts`로 실행했다. `shortcutHub`와 `fixMobileClip`에는 `--no-browser`를 지정했다. 선택적 390px Chrome geometry 검사는 실행하지 않았으며 각각 8개와 7개 core 검사만 합계에 포함했다. 과거 단축어 작업의 일회성 “origin/master 대비 서버 전체 무변경” 단언은 제거했지만, `settingsRegression`의 `git diff HEAD -- apps/server` 청결 fence는 아래와 같이 복원했다.
+
+## 독립 검토 후 수정
+
+독립 검증자가 보고한 네 실패를 로컬 `e35e3f8`에서도 재현했다. 이번 후속 변경은 bench와 검증 문서에 한정하며 서버·웹 제품 코드는 바꾸지 않는다.
+
+- `settingsRegression`: BASE의 `no conversation_settings table; server diff clean` 블록 전체를 바이트 동일하게 복원했다. 기존 실패 복구 동작 검사는 유지했다. 원본 fence를 더 좁은 schema 검사로 교체한 것은 잘못이었다.
+- `composeBeat`: 기존 실패는 `addBlock('thought')`를 요구하는 소스 단언이다. thought 미저장은 사용자 요구에 따른 의도된 변경이다. 포커스 뒤 추가 화자, 마지막 UI, parent chain 보존은 계속 검사하고 thought writer의 부재를 명시한다. 실제 저장·SSE 검증도 `beatChoices`에 추가했다.
+- `beatChoices`: 실제 선택지 실패가 아니라 삭제된 `kind !== 'line'` 분기를 찾던 검사였다. 실제 API로 생성한 UI 메시지를 제품의 `MessageView`/`ChoiceChips` 함수로 렌더한다. 최신 응답의 선택지 3개, 이전 응답·생성 중·숨김 상태에서의 비표시, 선택/편집 버튼의 원문 전달을 검사한다. 실제 DB의 header → narration → focus → extras → ui 순서, 연속 beat_seq·parent chain, DB/SSE의 thought 부재도 확인한다.
+- `fixMobileClip`: viewport 파일의 byte guard와 CSS guard를 유지했다. ChatPage 전체 비교는 스크롤 refs·함수·키보드/스크롤 effect 9개의 AST 비교와 DOM 연결 검사로 좁혔다. 이 보호 대상들은 BASE와 동일하다.
+- `rpPartyCastR5`: raw `block_kind` 분기 대신 서버 이벤트를 거친 잠금·포커스 표시, 화자 헤더 강조, 일반 대화에 파티 패널이 섞이지 않는지를 실제 렌더로 검사한다. CSS의 `.beat-info` 검사도 하위 선택자에 잘못 매칭되지 않도록 정확한 선택자로 제한했다.
+
+렌더 검사용 helper는 제품 파일에서 함수를 AST로 추출해 실행한다. 렌더 로직을 별도로 복제하거나 네트워크를 호출하지 않는다.
+
+의도적인 오류를 하나씩 넣는 반례 검사도 수행했다. 서버 파일의 미커밋 변경은 원본 fence가, 이전 응답에도 선택지를 표시하는 변경은 `beatChoices`가, 포커스 강조를 끄는 변경은 `rpPartyCastR5`가, 키보드 sticky 조건 변경은 `fixMobileClip`이, thought writer 재도입은 `composeBeat`가 각각 실패로 잡았다. 각 검사 후 소스 원본 바이트를 복원했으며 서버·웹 diff는 비어 있다.
+
+38개는 선택한 계약/회귀 검사의 범위이며 전체 bench 무실패를 뜻하지 않는다. 사용자가 전달한 독립 검증에서는 별도 16개 실패가 BASE에서도 재현되었다. 이 후속 수정에서 해당 스키마/환경 문제를 변경하거나 다시 귀속하지 않았다.
 
 ## 검증 범위
 
