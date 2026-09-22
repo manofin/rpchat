@@ -112,7 +112,14 @@ npm run db:check --workspace apps/server -- --data-dir /abs/path/to/data
 npm run db:migrate --workspace apps/server -- --data-dir /abs/path/to/data
 ```
 
-`db:check` 는 읽기만 하고 차이가 있으면 non-zero. `db:migrate` 는 기존 DB를
+`db:check`와 기동 전 검사는 원본 DB를 SQLite로 열지 않고 메모리 복사본을 검사한다.
+검사 실패 시 DB 내용·mtime 및 WAL/SHM 파일 목록을 바꾸지 않는다(파일 읽기에 따른 atime은 제외).
+검사는 서비스가 정지한 안정된 DB를 대상으로 하며 DB 크기에 비례하는 메모리가 필요하다.
+비어 있지 않은 WAL 또는 복구 저널, 읽는 동안의 파일 변경은 검사 실패로 처리한다.
+이 경우 WAL/저널을 삭제하지 말고, 서비스 중지와 별도 승인된 복구·checkpoint 후 재검사한다.
+검사와 migration CLI가 자동 복구하거나 WAL을 무시하지 않는다.
+
+`db:check` 는 차이가 있으면 non-zero. `db:migrate` 는 기존 DB를
 바꾸기 전 SQLite backup API 로 `rpchat-pre-migrate-*.db` 를 남기고
 `integrity_check` 가 ok 일 때만 적용한다. 백업 실패면 적용하지 않는다. 파일별
 transaction. 실패 시 즉시 종료하고 적용 완료 목록·실패 파일·백업 위치를 출력한다.

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 import { config } from '../config.js';
+import { defaultSchemaCompatPath, schemaCompatProblems } from './schemaCompat.js';
 import {
   applyMigrations,
   backupDatabase,
@@ -44,6 +45,11 @@ async function migrate(dataDir: string): Promise<number> {
 
   if (fs.existsSync(file)) {
     const pre = inspectSchema(dataDir, mig);
+    if (pre.readError) {
+      printInspection(pre);
+      console.error('DB 검사 실패 — migration 시작 안 함.');
+      return 1;
+    }
     if (pre.extra.length) {
       printInspection(pre);
       console.error('extra in DB — 자동 downgrade·복원 없음. migration 시작 안 함.');
@@ -110,6 +116,11 @@ async function main(): Promise<void> {
     process.exit(2);
   }
   const dataDir = requireAbsDataDir(argv);
+  const specProblems = schemaCompatProblems(config.migrationsDir, defaultSchemaCompatPath());
+  if (specProblems.length) {
+    for (const p of specProblems) console.error(`[schema-compat] ${p}`);
+    process.exit(1);
+  }
   const before = fs.existsSync(dbPath(dataDir));
   if (cmd === 'check') {
     const r = inspectSchema(dataDir, config.migrationsDir);
