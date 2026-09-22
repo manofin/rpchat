@@ -176,6 +176,7 @@ export function ChatPage({ id }: { id: string }) {
   const hasDraft = summaryRows?.some((s) => s.status !== 'approved') ?? false;
 
   async function submit() {
+    const original = draft;
     const resolved = resolveShortcutSubmit(draft, readShortcuts());
     const text = resolved.content.trim();
     const inject = resolved.inject_instruction;
@@ -186,7 +187,7 @@ export function ChatPage({ id }: { id: string }) {
     stickyRef.current = true;
     const ok = await chat.send(text, inject ? { inject_instruction: inject } : undefined);
     if (ok === false) {
-      setDraft(text);
+      setDraft(original);
       requestAnimationFrame(grow);
     }
   }
