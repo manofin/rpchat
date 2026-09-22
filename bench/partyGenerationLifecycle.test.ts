@@ -258,7 +258,16 @@ async function main() {
     const dialogAbort = await newConv('dialog');
     await t('dialog abort during scene-delta stops and unregisters', () => abortDuringDelta(dialogAbort, 'dialog'));
 
-    async function planAssemblyBoom(conv: string, label: string) {
+    async function planAssemblyBoom(conv: string, label: string, branch = false) {
+      if (branch) {
+        for (const content of ['first turn', 'second turn']) {
+          assert.equal((await api('POST', `/api/conversations/${conv}/messages`, { content })).status, 200);
+        }
+      }
+      const before = await api('GET', `/api/conversations/${conv}`);
+      const firstUser = (before.json as { messages: { id: string; role: string }[] }).messages.find((m) => m.role === 'user');
+      const beforeUsers = userCount(conv);
+      const beforeScene = sceneOf(conv);
       const orig = db.prepare.bind(db);
       db.prepare = ((sql: string) => {
         if (typeof sql === 'string' && sql.includes('SELECT * FROM characters WHERE id IN')) {
@@ -268,7 +277,9 @@ async function main() {
       }) as typeof db.prepare;
       let res: { status: number; text: string };
       try {
-        res = await api('POST', `/api/conversations/${conv}/messages`, { content: `${label} plan boom` });
+        res = await api('POST', `/api/conversations/${conv}/${branch ? 'branch' : 'messages'}`, {
+          content: `${label} plan boom`, ...(branch ? { messageId: firstUser!.id } : {}),
+        });
       } finally {
         db.prepare = orig as typeof db.prepare;
       }
@@ -276,8 +287,15 @@ async function main() {
       const afterActive = await api('GET', '/api/generations/active');
       assert.equal((afterActive.json as { active: unknown[]; queued: number }).active.length, 0, `${label} active after plan boom`);
       assert.equal((afterActive.json as { queued: number }).queued, 0, `${label} queued after plan boom`);
+      assert.equal(userCount(conv), beforeUsers, `${label} failed user must be retracted`);
+      const after = await api('GET', `/api/conversations/${conv}`);
+      const detail = (r: typeof before) => r.json as { conversation: { head_message_id: string | null }; messages: unknown[] };
+      assert.equal(detail(after).conversation.head_message_id, detail(before).conversation.head_message_id);
+      assert.deepEqual(detail(after).messages, detail(before).messages);
+      assert.equal(sceneOf(conv), beforeScene);
       const retry = await api('POST', `/api/conversations/${conv}/messages`, { content: `${label} retry` });
       assert.equal(retry.status, 200, `${label} retry after plan boom: ${retry.text}`);
+      assert.equal(userCount(conv), beforeUsers + 1, `${label} exactly one successful user after retry`);
     }
 
     const beatPlan = await newConv();
@@ -285,6 +303,12 @@ async function main() {
 
     const dialogPlan = await newConv('dialog');
     await t('dialog plan-assembly exception unregisters and next send works', () => planAssemblyBoom(dialogPlan, 'dialog'));
+
+    for (const format of [undefined, 'dialog'] as const) {
+      const conv = await newConv(format);
+      await t(`${format ?? 'beat'} branch setup failure restores prior tree and permits retry`, () =>
+        planAssemblyBoom(conv, format ?? 'beat', true));
+    }
 
     await t('explicit abort 499 does not restore composer; HTTP fail does', () => {
       assert.equal(sendOkForComposer(new ApiError(499, '생성이 중단되었습니다'), false), true);

@@ -14,6 +14,7 @@ export type SchemaInspection = {
   missing: string[];
   extra: string[];
   problems: string[];
+  readError?: string;
 };
 
 export type ApplyResult = {
@@ -45,7 +46,36 @@ export function openDb(dataDir: string): DB {
 }
 
 export function openReadonlyDb(dataDir: string): DB {
-  return new Database(dbPath(dataDir), { readonly: true, fileMustExist: true });
+  const file = dbPath(dataDir);
+  // Even SQLITE_OPEN_READONLY can create WAL/SHM. Inspect a settled image in
+  // memory instead; never ignore pending WAL or recover the source implicitly.
+  const state = () => [file, `${file}-wal`, `${file}-shm`, `${file}-journal`].map((p) => {
+    try {
+      const s = fs.statSync(p, { bigint: true });
+      if (!s.isFile()) throw new Error(`검사 대상이 일반 파일이 아님: ${p}`);
+      if ((p.endsWith('-wal') || p.endsWith('-journal')) && s.size > 0n) {
+        throw new Error('WAL/복구 저널이 남아 있어 무변경 검사를 할 수 없음. 서비스 중지 및 별도 승인된 복구 후 재검사');
+      }
+      return `${s.dev}:${s.ino}:${s.size}:${s.mtimeNs}:${s.ctimeNs}`;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === 'ENOENT' && p !== file) return null;
+      throw e;
+    }
+  });
+  const before = state();
+  const bytes = fs.readFileSync(file);
+  const after = state();
+  if (before.some((v, i) => v !== after[i])) throw new Error('검사 중 DB 파일이 변경됨. 서비스 중지 후 재검사');
+  if (bytes.length < 100 || bytes.subarray(0, 16).toString() !== 'SQLite format 3\0') {
+    throw new Error('유효한 SQLite DB 헤더가 아님');
+  }
+  // sqlite3_deserialize cannot read WAL-mode images. Only the private buffer's
+  // journal-mode bytes change: https://sqlite.org/c3ref/deserialize.html
+  if (bytes[18] === 2 && bytes[19] === 2) {
+    bytes[18] = 1;
+    bytes[19] = 1;
+  }
+  return new Database(bytes, { readonly: true });
 }
 
 export function appliedMigrationNames(db: DB): string[] {
@@ -81,7 +111,8 @@ export function inspectSchema(dataDir: string, migrationsDir: string): SchemaIns
   } catch (e) {
     const r = base();
     r.exists = true;
-    r.problems.push(`DB를 읽기 전용으로 열 수 없음: ${(e as Error).message}`);
+    r.readError = `DB를 읽기 전용으로 열 수 없음: ${(e as Error).message}`;
+    r.problems.push(r.readError);
     return r;
   }
   try {
@@ -105,6 +136,12 @@ export function inspectSchema(dataDir: string, migrationsDir: string): SchemaIns
       extra,
       problems,
     };
+  } catch (e) {
+    const r = base();
+    r.exists = true;
+    r.readError = `스키마를 읽을 수 없음: ${(e as Error).message}`;
+    r.problems.push(r.readError);
+    return r;
   } finally {
     db.close();
   }

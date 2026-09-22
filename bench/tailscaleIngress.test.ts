@@ -10,7 +10,7 @@ import path from 'node:path';
 import Fastify from 'fastify';
 import fastifyCookie from '@fastify/cookie';
 import { config, validateConfig } from '../apps/server/src/config.ts';
-import { openDb } from '../apps/server/src/db/index.ts';
+import { openMigratedDb } from '../apps/server/src/db/index.ts';
 import {
   SESSION_COOKIE,
   createSession,
@@ -51,7 +51,7 @@ function restoreAuth() {
 
 async function main() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rpchat-tailscale-ingress-'));
-  const db = openDb(tmp, path.resolve('apps/server/migrations'));
+  const db = openMigratedDb(tmp, path.resolve('apps/server/migrations'));
 
   await t('parse: empty default is no extra peers', () => {
     const p = parseTrustedProxyIps('');

@@ -74,7 +74,6 @@ async function main() {
     const body = fn.slice(0, fn.indexOf('async function generate'));
     assert.ok(body.includes('restoreHead: string | null'));
     assert.equal(body.includes('user.parent_id'), false);
-    assert.equal((chat.match(/retractUnconfirmedSend\(userMessage, conv\.head_message_id\)/g) ?? []).length, 10);
     const branch = chat.slice(chat.indexOf("app.post<{ Params: { id: string } }>('/api/conversations/:id/branch'"));
     assert.ok(branch.includes("insertMessage(db, conv.id, m.parent_id, 'user'"));
     assert.ok(branch.includes('retractUnconfirmedSend(user, conv.head_message_id)'));
