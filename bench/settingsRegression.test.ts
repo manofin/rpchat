@@ -5,12 +5,15 @@ import assert from 'node:assert/strict';
 import { execSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import ts from 'typescript';
+import type { Message, SseEvent } from '../apps/web/src/types.ts';
+import { ApiError, sendOkForComposer } from '../apps/web/src/lib/api.ts';
 import { WEB_APP_VERSION } from '../apps/web/src/lib/conversationSettings.ts';
 
 const root = join(import.meta.dirname, '..');
 let passed = 0;
-function t(name: string, fn: () => void) {
-  fn();
+async function t(name: string, fn: () => void | Promise<void>) {
+  await fn();
   passed++;
   console.log(`ok ${passed} ${name}`);
 }
@@ -19,12 +22,13 @@ function git(args: string): string {
   return execSync(`git ${args}`, { cwd: root, encoding: 'utf8' });
 }
 
-t('WEB_APP_VERSION matches apps/web/package.json', () => {
+async function main() {
+await t('WEB_APP_VERSION matches apps/web/package.json', () => {
   const pkg = JSON.parse(readFileSync(join(root, 'apps/web/package.json'), 'utf8')) as { version: string };
   assert.equal(WEB_APP_VERSION, pkg.version);
 });
 
-t('CSS contracts: dvh via --app-height, safe-area, contain, 44px, focus-visible', () => {
+await t('CSS contracts: dvh via --app-height, safe-area, contain, 44px, focus-visible', () => {
   const css = readFileSync(join(root, 'apps/web/src/app.css'), 'utf8');
   assert.match(css, /--app-height:\s*100dvh/);
   assert.match(css, /\.settings-screen[\s\S]*min-height:\s*var\(--app-height\)/);
@@ -36,21 +40,127 @@ t('CSS contracts: dvh via --app-height, safe-area, contain, 44px, focus-visible'
   assert.match(css, /\.settings-row:focus-visible/);
 });
 
-t('existing chat SSE generate path is unchanged', () => {
+await t('chat SSE FailSend recovery contract remains intact', async () => {
   const chat = readFileSync(join(root, 'apps/web/src/pages/useChat.ts'), 'utf8');
   const api = readFileSync(join(root, 'apps/web/src/lib/api.ts'), 'utf8');
   assert.match(chat, /runStream\(`\/api\/conversations\/\$\{conversationId\}\/messages`/);
-  assert.match(chat, /streamPost\(path, body, applyEvent/);
   assert.match(api, /accept: 'text\/event-stream'/);
   assert.match(api, /res\.body\.getReader\(\)/);
+
+  // Execute the actual hook callback with I/O doubles; no React renderer or
+  // duplicate recovery implementation. AST extraction ignores layout/arg names.
+  const source = ts.createSourceFile('useChat.ts', chat, ts.ScriptTarget.Latest, true);
+  const callbacks: ts.ArrowFunction[] = [];
+  function visit(node: ts.Node): void {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === 'runStream') {
+      const init = node.initializer;
+      assert.ok(init && ts.isCallExpression(init), 'runStream must be a useCallback call');
+      const callback = init.arguments[0];
+      assert.ok(callback && ts.isArrowFunction(callback), 'runStream callback must exist');
+      callbacks.push(callback);
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(source);
+  assert.equal(callbacks.length, 1, 'one runStream callback');
+  const compiled = ts.transpileModule(`const runStream = ${callbacks[0].getText(source)};`, {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
+  }).outputText;
+
+  type Event = SseEvent;
+  async function scenario(events: Event[], error?: Error, abort = false) {
+    const received: Event[] = [];
+    const calls: string[] = [];
+    const scheduled: Array<() => Promise<unknown>> = [];
+    const abortRef: { current: AbortController | null } = { current: null };
+    const request = { content: 'fixture send' };
+    let releaseReload: (() => void) | undefined;
+    let notifyReload!: () => void;
+    const reloading = new Promise<void>((resolve) => { notifyReload = resolve; });
+    const deps = {
+      state: { generating: false }, abortRef, genIdRef: { current: null },
+      patchState: () => {}, ApiError, sendOkForComposer, AbortController,
+      applyEvent: (e: Event) => { received.push(e); },
+      reload: async () => {
+        calls.push('reload');
+        await new Promise<void>((resolve) => { releaseReload = resolve; notifyReload(); });
+      },
+      setTimeout: (fn: () => Promise<unknown>) => { scheduled.push(fn); },
+      streamPost: async (url: string, body: unknown, onEvent: (e: Event) => void, signal: AbortSignal) => {
+        assert.equal(url, '/fixture/messages');
+        assert.equal(body, request);
+        assert.equal(signal, abortRef.current?.signal);
+        for (const e of events) onEvent(e);
+        if (abort) abortRef.current!.abort();
+        if (error) throw error;
+      },
+    };
+    const run = new Function(...Object.keys(deps), `${compiled}\nreturn runStream;`)(...Object.values(deps)) as
+      (url: string, body: unknown) => Promise<boolean | undefined>;
+    let settled = false;
+    const result = run('/fixture/messages', request).then((value) => {
+      settled = true;
+      calls.push('return');
+      return value;
+    });
+    let timeout!: ReturnType<typeof setTimeout>;
+    const deadline = new Promise<never>((_, reject) => {
+      timeout = setTimeout(() => reject(new Error('runStream recovery did not settle')), 1000);
+    });
+    try {
+      await Promise.race([reloading, result, deadline]);
+      if (releaseReload) {
+        assert.equal(settled, false, 'SSE failure must await reload before restoring composer');
+        releaseReload();
+      }
+      const value = await Promise.race([result, deadline]);
+      assert.deepEqual(received, events, 'forward every SSE event to applyEvent');
+      assert.equal(abortRef.current, null, 'release generation controller');
+      for (const reload of scheduled) {
+        const pending = reload();
+        releaseReload!();
+        await pending;
+      }
+      return { value, calls };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  const message: Message = {
+    id: 'fixture-message', conversation_id: 'fixture-conversation', parent_id: null,
+    role: 'assistant', content: 'fixture text', status: 'complete', meta: {},
+    bookmarked: false, created_at: '2026-09-22T00:00:00Z',
+  };
+  const ordinary: SseEvent[] = [
+    { type: 'start', generationId: 'fixture-generation', messageId: message.id },
+    { type: 'token', text: 'fixture ' },
+    { type: 'aux', message: { ...message, id: 'fixture-aux', meta: { block_kind: 'narration' } } },
+    { type: 'token', text: 'text' },
+    { type: 'done', message, usage: null, ttftMs: 1, totalMs: 2 },
+  ];
+  assert.deepEqual(await scenario(ordinary), { value: true, calls: ['return'] }, 'successful stream');
+  assert.deepEqual(await scenario([...ordinary, { type: 'error', message: 'failed' }]),
+    { value: false, calls: ['reload', 'return'] }, 'SSE error retracts and restores composer after reload');
+  for (const [error, abort, expected] of [
+    [new ApiError(503, 'server failure'), false, false],
+    [new TypeError('network disconnected'), false, true],
+    [new ApiError(499, 'explicit stop'), false, true],
+    [new Error('aborted'), true, true],
+    [new ApiError(503, 'abort overrides HTTP failure'), true, true],
+  ] as const) {
+    const result = await scenario([], error, abort);
+    assert.equal(result.value, expected, `${error.message}: composer recovery`);
+    assert.equal(result.calls.filter((call) => call === 'reload').length, 1, `${error.message}: resynchronize`);
+  }
 });
 
-t('existing swipe sibling selection remains in ChatPage', () => {
+await t('existing swipe sibling selection remains in ChatPage', () => {
   const src = readFileSync(join(root, 'apps/web/src/pages/ChatPage.tsx'), 'utf8');
   assert.match(src, /selectSibling|swipe|touchstart|onTouchStart/);
 });
 
-t('no conversation_settings table; server diff clean', () => {
+await t('no conversation_settings table; server diff clean', () => {
   const changed = git('diff --name-only HEAD -- apps/server apps/web');
   assert.doesNotMatch(changed, /conversation_settings/);
   // C3 가 합법적으로 play_guide 를 추가함 — /play_guide/ 부재 검사는 제거.
@@ -58,7 +168,7 @@ t('no conversation_settings table; server diff clean', () => {
   assert.equal(serverDiff.trim(), '');
 });
 
-t('no new migration files vs HEAD', () => {
+await t('no new migration files vs HEAD', () => {
   const migDir = join(root, 'apps/server/migrations');
   const listed = readdirSync(migDir).sort();
   const tracked = git('ls-files apps/server/migrations')
@@ -72,3 +182,9 @@ t('no new migration files vs HEAD', () => {
 });
 
 console.log(`passed ${passed}`);
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
