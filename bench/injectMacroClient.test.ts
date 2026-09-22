@@ -55,7 +55,7 @@ function memKv(init: Record<string, string> = {}): Kv {
 
 const ROOT = path.resolve('apps/web/src');
 const helperSrc = fs.readFileSync(path.join(ROOT, 'lib/shortcutMacro.ts'), 'utf8');
-const editorSrc = fs.readFileSync(path.join(ROOT, 'components/StoryEditor.tsx'), 'utf8');
+const shortcutsSrc = fs.readFileSync(path.join(ROOT, 'pages/ShortcutsPage.tsx'), 'utf8');
 const chatSrc = fs.readFileSync(path.join(ROOT, 'pages/ChatPage.tsx'), 'utf8');
 const useChatSrc = fs.readFileSync(path.join(ROOT, 'pages/useChat.ts'), 'utf8');
 const serverChatSrc = fs.readFileSync(path.resolve('apps/server/src/routes/chat.ts'), 'utf8');
@@ -139,11 +139,11 @@ t('IMC-09 insert resolve still expands; no inject field', () => {
   assert.equal(r.inject_instruction, undefined);
 });
 
-t('IMC-10 StoryEditor has mode labels; ChatPage uses resolve; useChat posts inject_instruction', () => {
-  assert.ok(editorSrc.includes('입력창에 넣기'));
-  assert.ok(editorSrc.includes('지침으로 주입'));
-  assert.ok(editorSrc.includes('INJECT_INSTRUCTION_MAX'));
-  assert.ok(editorSrc.includes('inject_too_long'));
+t('IMC-10 ShortcutsPage owns mode labels; ChatPage uses resolve; useChat posts inject_instruction', () => {
+  assert.ok(shortcutsSrc.includes('입력창에 넣기'));
+  assert.ok(shortcutsSrc.includes('지침으로 주입'));
+  assert.ok(shortcutsSrc.includes('INJECT_INSTRUCTION_MAX'));
+  assert.ok(shortcutsSrc.includes('inject_too_long'));
   assert.ok(chatSrc.includes('resolveShortcutSubmit'));
   assert.ok(chatSrc.includes('inject_instruction'));
   assert.ok(useChatSrc.includes('inject_instruction'));
@@ -187,11 +187,13 @@ t('IMC-13 1:1 path: readShortcuts() works without storyId; resolve inject conten
   assert.equal(chatSrc.includes('readShortcuts(storyId)'), false);
 });
 
-t('IMC-14 StoryEditor global persist only (no story.id)', () => {
-  assert.equal(editorSrc.includes('persistShortcuts(story.id'), false);
-  assert.equal(editorSrc.includes('readShortcuts(story.id)'), false);
-  assert.ok(editorSrc.includes('persistShortcuts('));
-  assert.ok(editorSrc.includes('readShortcuts()'));
+t('IMC-14 ShortcutsPage global persist only (no story.id)', () => {
+  assert.equal(shortcutsSrc.includes('persistShortcuts(story.id'), false);
+  assert.equal(shortcutsSrc.includes('readShortcuts(story.id)'), false);
+  assert.ok(shortcutsSrc.includes('upsertShortcut('));
+  assert.ok(shortcutsSrc.includes('removeShortcut('));
+  assert.ok(shortcutsSrc.includes('persistShortcuts('));
+  assert.ok(shortcutsSrc.includes('readShortcuts()'));
 });
 
 console.log(`passed ${passed}`);

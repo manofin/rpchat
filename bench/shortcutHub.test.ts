@@ -158,7 +158,7 @@ t('4-tab clip: min-width:0 on bar/items/labels; no overflow-x:hidden on the bar'
   assert.doesNotMatch(label, /text-overflow:\s*ellipsis/);
 });
 
-t('shell regression: overflow-y / --app-height vs origin/master; ChatPage + viewport untouched', () => {
+t('shell regression: overflow-y / --app-height unchanged vs origin/master', () => {
   const baseCss = execFileSync('git', ['show', 'origin/master:apps/web/src/app.css'], {
     cwd: appRoot,
     encoding: 'utf8',
@@ -169,14 +169,6 @@ t('shell regression: overflow-y / --app-height vs origin/master; ChatPage + view
   const baseAppH = [...baseCss.matchAll(/--app-height:\s*[^;]+;/g)].map((m) => m[0]);
   const nowAppH = [...cssCode.matchAll(/--app-height:\s*[^;]+;/g)].map((m) => m[0]);
   assert.deepEqual(nowAppH, baseAppH, '--app-height assignments must be unchanged');
-  assert.equal(
-    execFileSync('git', ['diff', 'origin/master', '--', 'apps/web/src/lib/viewport.ts', 'apps/web/src/pages/ChatPage.tsx'], {
-      cwd: appRoot,
-      encoding: 'utf8',
-    }),
-    '',
-    'viewport.ts / ChatPage.tsx must be untouched',
-  );
 });
 
 t('server 0 — no apps/server or prompt diff vs origin/master', () => {

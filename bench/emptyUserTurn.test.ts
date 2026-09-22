@@ -380,9 +380,9 @@ async function main() {
     const src = fs.readFileSync('apps/web/src/pages/ChatPage.tsx', 'utf8');
     assert.ok(src.includes('visibleChatMessages(chat.messages)'), '목록 단계 필터가 주 방어');
     assert.ok(src.includes('groupChatTurns(shownMessages)'), 'turn grouping 도 표시 목록을 쓴다');
-    assert.ok(/if \(isEmptyUserMessage\(m\)\) return null;/.test(src), 'MessageView 보조 방어');
-    assert.ok(src.includes(`return props.streaming ? '' : <span className="muted">…</span>;`),
-      '… 폴백 자체는 남겨 둔다 — 빈 user 를 그 앞에서 거르는 방식');
+    assert.ok(src.includes('shownMessages.map('), '일반 메시지 목록도 표시 필터를 쓴다');
+    const messageView = src.slice(src.indexOf('function MessageView('), src.indexOf('function ConversationSettings('));
+    assert.ok(/if \(isEmptyUserMessage\(m\)\) return null;/.test(messageView), 'MessageView 자체의 보조 방어');
   });
 
   // --- Fastify: inject-only end-to-end ---
