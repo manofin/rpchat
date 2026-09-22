@@ -1,0 +1,9 @@
+ok 1 story filter runs before the limit despite 205 newer unrelated conversations
+ok 2 story pages preserve recency, created-time order, null-last and deterministic ties
+ok 3 character and story filters intersect before pagination
+ok 4 story and character IDs are literal bound values, including quotes and query punctuation
+ok 5 default and character-only lists retain their previous filtering, limits and output
+ok 6 rows retain readable preview, character name and serialized scene/boolean shape
+ok 7 invalid offsets safely behave as zero instead of producing SQL errors
+ok 8 all list requests leave persisted conversations and messages unchanged
+passed 8

@@ -1,0 +1,11 @@
+{
+  "reviewedAt": "2026-09-22T22:30:21.095Z",
+  "scope": "Production callbacks and source review only. No repository writes, live writes, build, model calls, or fixture writes.",
+  "results": [
+    "PASS removed cast references filtered on editor open, default+extra opening and unrelated text preserved",
+    "PASS same-frame repeated start produces one POST and late completion after unmount has no navigation/state writes",
+    "PASS empty state does not issue preflight or enable new story start",
+    "PASS archived state does not issue preflight or enable new story start",
+    "PASS over12 state does not issue preflight or enable new story start"
+  ]
+}

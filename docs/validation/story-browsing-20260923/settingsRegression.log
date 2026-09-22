@@ -1,0 +1,7 @@
+ok 1 WEB_APP_VERSION matches apps/web/package.json
+ok 2 CSS contracts: dvh via --app-height, safe-area, contain, 44px, focus-visible
+ok 3 chat SSE FailSend recovery contract remains intact
+ok 4 existing swipe sibling selection remains in ChatPage
+ok 5 no conversation_settings table; server diff clean
+ok 6 no new migration files vs HEAD
+passed 6

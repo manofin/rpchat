@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "origin": "http://127.0.0.1:59273",
+  "pid": 43818,
+  "conversationId": "52181dbb-8ceb-4599-8895-cf300291ca39",
+  "storyId": "da2aa8fa-ce80-43e8-8827-d5a97c40464c",
+  "participantOrder": [
+    "9130e07c-fd24-481d-9ecc-b2c8945a3ba1",
+    "f3bd1171-1e39-4b10-8f93-793816ab4f51"
+  ],
+  "extraOpeningId": "rainy-stacks",
+  "openingSnapshotByteIdentical": true,
+  "location": "east_stack",
+  "place": "동쪽 서고",
+  "weather": "별비",
+  "characterOnlyConversationExcluded": true,
+  "method": "GET health/story/story-filtered conversation list only; no mutations, detail endpoint or model calls",
+  "requests": [
+    "/api/health",
+    "/api/stories/da2aa8fa-ce80-43e8-8827-d5a97c40464c",
+    "/api/conversations?storyId=da2aa8fa-ce80-43e8-8827-d5a97c40464c&limit=200"
+  ]
+}
