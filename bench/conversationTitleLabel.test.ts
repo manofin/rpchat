@@ -9,6 +9,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { execSync } from 'node:child_process';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { ConversationRow } from '../apps/web/src/pages/CharacterPage.tsx';
+import { UiProvider } from '../apps/web/src/components/ui.tsx';
+import type { Conversation } from '../apps/web/src/types.ts';
 
 const require2 = createRequire(import.meta.url);
 let helper: typeof import('../apps/web/src/lib/conversationTitleLabel.ts');
@@ -149,8 +154,15 @@ t('three list screens share helper; inline || 대화 removed', () => {
     assert.match(text, /from ['\"]\.\.\/lib\/conversationTitleLabel['\"]/, rel);
     assert.doesNotMatch(text, /\|\| ['\"]대화['\"]/, rel);
   }
-  const characterPage = src('apps/web/src/pages/CharacterPage.tsx');
-  assert.match(characterPage, /resume\.title \|\| ['\"]최근 대화['\"]/);
+  for (const title of ['', '   ']) {
+    const conv = { id: 'title-fixture', title, character_name: '캐릭터', story_name_snapshot: '스토리',
+      favorite: false, preview: '최근 내용', created_at: '2026-01-01T00:00:00Z' } as Conversation;
+    const html = renderToStaticMarkup(createElement(UiProvider, {
+      children: createElement(ConversationRow, { conv, onChanged() {} }),
+    }));
+    assert.ok(html.includes('캐릭터 · 스토리'), 'chooser rows retain the title fallback after the inline resume CTA is removed');
+    assert.ok(html.includes('최근 내용'), 'chooser rows retain the preview beside the fallback');
+  }
 });
 
 t('/chats hides meta-only .p when label==meta; muted time/preview kept', () => {
