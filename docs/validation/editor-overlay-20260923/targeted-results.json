@@ -1,6 +1,6 @@
 {
-  "startedAt": "2026-09-22T23:10:33.099Z",
-  "gitHead": "ff4bc38f631787e707eb689dda6bea257dec9289",
+  "startedAt": "2026-09-22T23:14:27.486Z",
+  "gitHead": "405f11a3e00492030814ac35660635dcfefd3ec3",
   "node": "v22.16.0",
   "executable": "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
   "cwd": "/Users/llm/claude/rpchat",
@@ -11,7 +11,7 @@
     "storyBrowsing",
     "characterDetail",
     "--output-dir",
-    "/private/tmp/rpchat-editor-overlay-20260923"
+    "/private/tmp/rpchat-editor-toast-overlay-20260923"
   ],
   "coverage": "Top-level tests only; explicit exclusions and optional browser omissions are listed per file.",
   "checkCountMeaning": "Number of emitted test/group success lines (ok N or ok - N), not individual assertion calls.",
@@ -126,8 +126,8 @@
       "status": "passed",
       "exitCode": 0,
       "signal": null,
-      "durationMs": 396,
-      "log": "/private/tmp/rpchat-editor-overlay-20260923/characterDetail.log",
+      "durationMs": 399,
+      "log": "/private/tmp/rpchat-editor-toast-overlay-20260923/characterDetail.log",
       "command": [
         "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
         "--import",
@@ -457,15 +457,15 @@
       "status": "passed",
       "exitCode": 0,
       "signal": null,
-      "durationMs": 271,
-      "log": "/private/tmp/rpchat-editor-overlay-20260923/modalOverlay.log",
+      "durationMs": 272,
+      "log": "/private/tmp/rpchat-editor-toast-overlay-20260923/modalOverlay.log",
       "command": [
         "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
         "--import",
         "tsx",
         "bench/modalOverlay.test.ts"
       ],
-      "reportedChecks": 3
+      "reportedChecks": 4
     },
     {
       "file": "bench/narrationContinuity.test.ts",
@@ -733,8 +733,8 @@
       "status": "passed",
       "exitCode": 0,
       "signal": null,
-      "durationMs": 713,
-      "log": "/private/tmp/rpchat-editor-overlay-20260923/storyBrowsing.log",
+      "durationMs": 707,
+      "log": "/private/tmp/rpchat-editor-toast-overlay-20260923/storyBrowsing.log",
       "command": [
         "/private/tmp/node-v22.16.0-darwin-arm64/bin/node",
         "--import",
@@ -935,8 +935,8 @@
     "failed": 0,
     "excluded": 173,
     "notRun": 0,
-    "reportedChecks": 34
+    "reportedChecks": 35
   },
-  "finishedAt": "2026-09-22T23:10:34.490Z",
+  "finishedAt": "2026-09-22T23:14:28.876Z",
   "interrupted": false
 }
