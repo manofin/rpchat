@@ -1,15 +1,20 @@
-/** npx tsx bench/leakChoicesDisplay.test.ts
+/** TSX_TSCONFIG_PATH=apps/web/tsconfig.json node --import tsx bench/leakChoicesDisplay.test.ts
  * leak-choices-display — paired <choices> strip even with trailing junk.
- * Display-only. LIVE_NO_TOUCH. Persist path unchanged.
+ * Legacy helper coverage and server-event-to-renderer regression. LIVE_NO_TOUCH.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { adaptChatEvents } from '../apps/server/src/contracts/chatEventAdapter.ts';
+import { MessageEvents } from '../apps/web/src/components/EventRenderer.tsx';
+import type { Message } from '../apps/web/src/types.ts';
 import {
   displayBubbleContent,
   hideIncompleteChoicesPrefix,
   sanitizeBubbleContent,
   stripPairedChoices,
-} from '../apps/web/src/lib/sanitizeBubble.ts';
+} from './legacy/sanitizeBubble.ts';
 import { visibleChoices } from '../apps/web/src/lib/choices.ts';
 
 let passed = 0;
@@ -55,28 +60,24 @@ function main() {
     assert.doesNotMatch(cleaned, /location_badge/);
   });
 
-  t('party narration + same Finley tail uses the same helper', () => {
-    const cleaned = sanitizeBubbleContent(FINLEY_RAW);
-    assert.doesNotMatch(cleaned, /<\s*\/?choices>/i);
-    assert.match(cleaned, /★주입확인★/);
-    const view = fs.readFileSync('apps/web/src/components/view.tsx', 'utf8');
-    assert.match(view, /sanitizeBubbleContent/);
-    assert.match(view, /export function BeatNarration/);
-    const narr = view.slice(view.indexOf('export function BeatNarration'));
-    const narrFn = narr.slice(0, narr.indexOf('export function DialogueLine'));
-    assert.match(narrFn, /sanitizeBubbleContent/);
-    const header = view.slice(view.indexOf('export function BeatHeader'));
-    const headerFn = header.slice(0, header.indexOf('export function BeatNarration'));
-    assert.match(headerFn, /sanitizeBubbleContent/);
-    const info = view.slice(view.indexOf('export function BeatInfoSheet'));
-    const infoFn = info.slice(0, info.indexOf('export type BeatUiData'));
-    assert.match(infoFn, /sanitizeBubbleContent/);
+  t('party narration, header and info consume canonical server events', () => {
+    for (const block_kind of ['narration', 'header', 'info']) {
+      const events = adaptChatEvents({ id: block_kind, role: 'assistant', content: FINLEY_RAW, meta: { block_kind } });
+      const html = renderToStaticMarkup(React.createElement(MessageEvents, { message: { eventVersion: 1, events, status: 'complete' } }));
+      assert.match(html, /빗소리/);
+      assert.match(html, /★주입확인★/);
+      assert.doesNotMatch(html, /choices|편지를 집어들며/i);
+    }
   });
 
-  t('saved-message and streaming render both sanitize', () => {
-    const page = fs.readFileSync('apps/web/src/pages/ChatPage.tsx', 'utf8');
-    assert.doesNotMatch(page, /if \(props\.streaming\) return renderContent\(m\.content\)/);
-    assert.match(page, /const shown = sanitizeBubbleContent\(m\.content\)/);
+  t('saved and streaming surfaces ignore raw content and use the same snapshot', () => {
+    const events = adaptChatEvents({ id: 'saved', role: 'assistant', content: FINLEY_RAW });
+    for (const streaming of [false, true]) {
+      const message = { eventVersion: 1, events, status: streaming ? 'streaming' : 'complete', content: 'RAW_PRIVATE <choices>["]' } as Message;
+      const html = renderToStaticMarkup(React.createElement(MessageEvents, { message, streaming }));
+      assert.match(html, /빗소리/);
+      assert.doesNotMatch(html, /RAW_PRIVATE|choices|편지를 집어들며/i);
+    }
   });
 
   t('streaming partial unmatched <choices> stripped; prose kept', () => {
@@ -93,12 +94,11 @@ function main() {
     assert.match(sanitizeBubbleContent(FINLEY_RAW), /★주입확인★/);
   });
 
-  t('BeatNarration sanitizes while streaming', () => {
-    const view = fs.readFileSync('apps/web/src/components/view.tsx', 'utf8');
-    const narr = view.slice(view.indexOf('export function BeatNarration'));
-    const narrFn = narr.slice(0, narr.indexOf('export function DialogueLine'));
-    assert.match(narrFn, /sanitizeBubbleContent/);
-    assert.doesNotMatch(narrFn, /streaming \? text/);
+  t('canonical streaming narration hides unmatched choice payload', () => {
+    const events = adaptChatEvents({ id: 'partial', role: 'assistant', content: '빗소리가 처마를 스쳤다.<choices>["편지', meta: { block_kind: 'narration' } }, { streaming: true });
+    const html = renderToStaticMarkup(React.createElement(MessageEvents, { message: { eventVersion: 1, events, status: 'streaming' }, streaming: true }));
+    assert.match(html, /빗소리/);
+    assert.doesNotMatch(html, /choices|편지/);
   });
 
   t('정상 choices → meta/칩 visibleChoices 회귀', () => {
@@ -150,19 +150,20 @@ function main() {
     assert.equal(fs.readFileSync('apps/web/src/components/sceneStatus/SceneStatusPanel.tsx', 'utf8').includes('hideIncompleteChoicesPrefix'), false);
   });
 
-  t('1:1 and party streaming surfaces call hideIncompleteChoicesPrefix', () => {
-    const page = fs.readFileSync('apps/web/src/pages/ChatPage.tsx', 'utf8');
-    assert.match(page, /hideIncompleteChoicesPrefix\(shown\)/);
-    const view = fs.readFileSync('apps/web/src/components/view.tsx', 'utf8');
-    const narr = view.slice(view.indexOf('export function BeatNarration'));
-    const narrFn = narr.slice(0, narr.indexOf('export function DialogueLine'));
-    assert.match(narrFn, /hideIncompleteChoicesPrefix/);
-    const dlg = view.slice(view.indexOf('export function DialogueLine'));
-    const dlgFn = dlg.slice(0, dlg.indexOf('export function BeatInfoSheet'));
-    assert.match(dlgFn, /hideIncompleteChoicesPrefix/);
+  t('1:1 and party event snapshots hide every partial choices delimiter', () => {
+    for (const block_kind of [undefined, 'narration', 'line']) {
+      for (const tag of ['<choices>', '</choices>']) {
+        for (let length = 1; length < tag.length; length++) {
+          const events = adaptChatEvents({ id: 'prefix', role: 'assistant', content: '보이는 문장' + tag.slice(0, length), meta: { block_kind } }, { streaming: true });
+          const html = renderToStaticMarkup(React.createElement(MessageEvents, { message: { eventVersion: 1, events, status: 'streaming' }, streaming: true }));
+          assert.match(html, /보이는 문장/);
+          assert.doesNotMatch(html, /&lt;|choices/i);
+        }
+      }
+    }
   });
 
-  t('this bench stays display-only (web sanitize + visibleChoices)', () => {
+  t('choice chips keep their own formatting while legacy and canonical display are covered', () => {
     const self = fs.readFileSync('bench/leakChoicesDisplay.test.ts', 'utf8');
     assert.match(self, /sanitizeBubbleContent/);
     assert.match(self, /visibleChoices/);

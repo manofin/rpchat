@@ -1,8 +1,12 @@
-import { type DB, many, nowIso, one, parseJson, run, uid } from './index.js';
-import { sanitizeDisplayContent } from '../prompt/templates.js';
+import { type DB, many, nowIso, one, run, uid } from './index.js';
 import type { ConversationRow, MessageMeta, MessageRow, MessageStatus } from '../types.js';
+import type { ChatEvent, ChatEventSnapshot } from '@rpchat/contracts/chat-event';
+import { adaptChatEvents, isChatEvent, sanitizeGeneratedContent, stripThoughtContent, type AdaptOptions } from '../contracts/chatEventAdapter.js';
+import { objectMessageMeta, parseMessageMeta } from './messageMeta.js';
 
-export interface MessageOut extends Omit<MessageRow, 'meta_json' | 'bookmarked'> {
+export { parseMessageMeta } from './messageMeta.js';
+
+export interface MessageOut extends Omit<MessageRow, 'meta_json' | 'bookmarked'>, ChatEventSnapshot {
   meta: MessageMeta;
   bookmarked: boolean;
   siblings: { index: number; count: number; ids: string[] };
@@ -15,7 +19,35 @@ export function messageOut(db: DB, m: MessageRow): MessageOut {
     m.conversation_id, m.parent_id,
   ).map((r) => r.id);
   const { meta_json, bookmarked, ...rest } = m;
-  return { ...rest, meta: parseJson<MessageMeta>(meta_json, {}), bookmarked: !!bookmarked, siblings: { index: Math.max(0, ids.indexOf(m.id)), count: ids.length, ids } };
+  return { ...rest, meta: parseMessageMeta(meta_json), eventVersion: 1, events: messageEvents(db, m), bookmarked: !!bookmarked, siblings: { index: Math.max(0, ids.indexOf(m.id)), count: ids.length, ids } };
+}
+
+function eventContext(db: DB, conversationId: string): AdaptOptions {
+  const actor = one<{ id: string; name: string }>(db,
+    'SELECT c.id, c.name FROM conversations v JOIN characters c ON c.id = v.character_id WHERE v.id = ?', conversationId);
+  return actor ? { defaultActor: actor, actors: [actor] } : {};
+}
+
+export function messageEvents(db: DB, message: MessageRow): ChatEvent[] {
+  const meta = parseMessageMeta(message.meta_json);
+  if (meta.chat_event_version === 1 && Array.isArray(meta.events) && meta.events.every(isChatEvent)) return meta.events;
+  return adaptChatEvents({ ...message, meta }, { ...eventContext(db, message.conversation_id), ...(meta.chat_event_actors ? { actors: meta.chat_event_actors } : {}) });
+}
+
+function eventMeta(db: DB, row: Pick<MessageRow, 'id' | 'conversation_id' | 'role' | 'content' | 'status'>, meta: MessageMeta): MessageMeta {
+  const defaultActor = meta.chat_event_default_actor ?? eventContext(db, row.conversation_id).defaultActor;
+  const actorMeta = { ...meta, ...(defaultActor ? { chat_event_default_actor: defaultActor } : {}) };
+  return {
+    ...actorMeta,
+    chat_event_version: 1,
+    events: adaptChatEvents({ ...row, meta: actorMeta }, { defaultActor, actors: meta.chat_event_actors ?? (defaultActor ? [defaultActor] : []) }),
+  };
+}
+
+function safeNewContent(role: MessageRow['role'], content: string, status: MessageStatus, meta: MessageMeta): string {
+  if (role === 'user' || meta.block_kind === 'ui' || meta.block_kind === 'panel') return content;
+  if (meta.block_kind === 'thought') return '';
+  return stripThoughtContent(content, { streaming: status !== 'complete' });
 }
 
 const PREVIEW_HOP_CAP = 12;
@@ -35,10 +67,10 @@ export function readablePreview(db: DB, headMessageId: string | null | undefined
     seen.add(cur);
     const m: MessageRow | undefined = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', cur);
     if (!m) return '';
-    const kind = parseJson<MessageMeta>(m.meta_json, {}).block_kind;
+    const kind = parseMessageMeta(m.meta_json).block_kind;
     if (kind === 'header') return '';
     if (kind == null || kind === 'narration' || kind === 'line') {
-      return sanitizeDisplayContent(m.content ?? '').slice(0, 120);
+      return sanitizeGeneratedContent(m.content ?? '').slice(0, 120);
     }
     cur = m.parent_id;
   }
@@ -84,12 +116,15 @@ export function insertMessage(
   status: MessageStatus,
   meta: MessageMeta,
 ): MessageRow {
+  meta = objectMessageMeta(meta);
   const id = uid();
   const t = nowIso();
+  const canonical = eventMeta(db, { id, conversation_id: convId, role, content, status }, meta);
+  const safeContent = safeNewContent(role, content, status, meta);
   run(
     db,
     'INSERT INTO messages (id, conversation_id, parent_id, role, content, status, meta_json, bookmarked, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)',
-    id, convId, parentId, role, content, status, JSON.stringify(meta), t,
+    id, convId, parentId, role, safeContent, status, JSON.stringify(canonical), t,
   );
   run(db, 'UPDATE conversations SET last_message_at = ?, updated_at = ? WHERE id = ?', t, t, convId);
   return one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', id)!;
@@ -98,11 +133,20 @@ export function insertMessage(
 export function updateMessage(db: DB, id: string, patch: { content?: string; status?: MessageStatus; meta?: MessageMeta; bookmarked?: boolean }): void {
   const cur = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', id);
   if (!cur) return;
-  const meta = patch.meta ? { ...parseJson<MessageMeta>(cur.meta_json, {}), ...patch.meta } : parseJson<MessageMeta>(cur.meta_json, {});
+  const metaPatch = objectMessageMeta(patch.meta);
+  let meta = { ...parseMessageMeta(cur.meta_json), ...metaPatch };
+  const status = patch.status ?? cur.status;
+  let content = patch.content ?? cur.content;
+  if (patch.content !== undefined) {
+    meta = eventMeta(db, { ...cur, content, status }, meta);
+    content = safeNewContent(cur.role, content, status, meta);
+  } else if (meta.chat_event_version === 1 && (patch.status !== undefined || metaPatch.block_kind !== undefined || metaPatch.speaker_character_id !== undefined || metaPatch.speaker_name !== undefined)) {
+    meta = eventMeta(db, { ...cur, content, status }, meta);
+  }
   run(
     db,
     'UPDATE messages SET content = ?, status = ?, meta_json = ?, bookmarked = ? WHERE id = ?',
-    patch.content ?? cur.content, patch.status ?? cur.status, JSON.stringify(meta), patch.bookmarked === undefined ? cur.bookmarked : patch.bookmarked ? 1 : 0, id,
+    content, status, JSON.stringify(meta), patch.bookmarked === undefined ? cur.bookmarked : patch.bookmarked ? 1 : 0, id,
   );
 }
 
@@ -137,11 +181,9 @@ const TURN_WALK_LIMIT = 64;
 
 export function resolveTurnStart(db: DB, target: MessageRow): TurnStart {
   if (target.role !== 'assistant') return { kind: 'unresolved', reason: 'not_assistant' };
-  const meta = parseJson<MessageMeta>(target.meta_json, {});
-  // The 1:1 writer sets generation_id but never block_kind, so its absence is the
-  // discriminator — not the presence of beat_seq, which a 1:1 row could never have
-  // but a partially-written multi-row row might also lack.
-  if (!meta.block_kind) return { kind: 'single', parentId: target.parent_id };
+  const meta = parseMessageMeta(target.meta_json);
+  // An unfinished dialog script has its turn position before its final block kind.
+  if (!meta.block_kind && meta.beat_seq === undefined && !meta.chat_event_script) return { kind: 'single', parentId: target.parent_id };
 
   const generation = meta.generation_id;
   const seen = new Set<string>();
@@ -152,7 +194,7 @@ export function resolveTurnStart(db: DB, target: MessageRow): TurnStart {
     seen.add(cur.id);
     if (cur.conversation_id !== target.conversation_id) return { kind: 'unresolved', reason: 'crossed_conversation' };
     if (cur.role !== 'assistant') return { kind: 'unresolved', reason: 'crossed_user_message' };
-    const m = parseJson<MessageMeta>(cur.meta_json, {});
+    const m = parseMessageMeta(cur.meta_json);
     // Crossing into another generation before finding a start means this row's own
     // first block is not among its ancestors — the corrupted shape this slice
     // exists to stop making. Refuse rather than pick the neighbouring turn's start.

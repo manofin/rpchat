@@ -1,3 +1,4 @@
+// Historical client behavior retained for migration parity tests; never imported by the app.
 /**
  * B-2 S2 — render-contract plan from PartyBlock (new path).
  * Display-only: wrapSpeechMarks is not stored on the block.

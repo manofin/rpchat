@@ -1,21 +1,19 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { get, patch, post } from '../lib/api';
 import { back, navigate, useRoute } from '../lib/router';
 import { NAV_TABS } from '../lib/navTabs';
 import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, StoryEnding, Summary } from '../types';
 import {
-  Avatar, BeatUiPanel, PartyBlockView, parseBeatUi,
-  renderContent, SpeakerHeader,
+  Avatar, BeatUiPanel, renderContent, SpeakerHeader,
 } from '../components/view';
 import { OverlayDrawer } from '../components/OverlayDrawer';
 import { SceneStatusPanel } from '../components/sceneStatus';
 import { resolveSceneAction, type SceneActionIntent } from '../lib/sceneStatusCatalog';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { visibleChoices } from '../lib/choices';
-import { hideIncompleteChoicesPrefix, sanitizeBubbleContent } from '../lib/sanitizeBubble';
 import { groupChatTurns, isEmptyUserMessage, shouldReorderTurn, turnChoicesHost, visibleChatMessages, visualAssistantOrder } from '../lib/chatLayout';
-import { wrapSpeechMarks } from '../lib/speechMarks';
-import { partyBlockFromMessage } from '../lib/partyTurn';
+import { MessageEvents } from '../components/EventRenderer';
+import { eventUiData, hasEventContract } from '../lib/chatEvents';
 import { expandLeadingShortcut, readShortcuts, resolveShortcutSubmit } from '../lib/shortcutMacro';
 import { useDesktopLayout } from '../lib/useDesktopLayout';
 import {
@@ -200,8 +198,9 @@ export function ChatPage({ id }: { id: string }) {
   const persona = chat.detail!.persona;
   const lastAssistant = [...chat.messages].reverse().find((m) => m.role === 'assistant');
   const lastMsg = chat.messages[chat.messages.length - 1];
-  const lastUiMsg = [...chat.messages].reverse().find((m) => m.meta.block_kind === 'ui');
-  const lastUi = lastUiMsg ? parseBeatUi(lastUiMsg.content) : null;
+  const lastUi = [...chat.messages].reverse()
+    .flatMap((message) => hasEventContract(message) ? [...message.events].reverse() : [])
+    .map(eventUiData).find((panel) => panel !== null) ?? null;
   const hasBeatRoster = Boolean(lastUi?.roster?.length);
   const onSceneIntent = (intent: SceneActionIntent) => {
     const d = resolveSceneAction(intent, id);
@@ -681,45 +680,17 @@ function MessageView(props: {
     );
   }
 
-  // f9-swap-passes: a beat row renders as its §6 slot. A message with no
-  // `block_kind` — every 1:1 message, and everything written before the beat
-  // engine — falls through to the ordinary bubble below, untouched.
-  const kind = m.meta.block_kind;
-  const block = partyBlockFromMessage(m);
-  if (!isUser && kind && kind !== 'line') {
-    let body: ReactNode = null;
-    // 속마음 말풍선 제거: Pass F 는 `속마음:` 분리·저장을 그대로 하고(행은 남는다),
-    // 화면에만 그리지 않는다. 나중에 별도 명령으로 이 행들을 모아 보여줄 여지를 남긴다.
-    if (kind === 'thought') body = null;
-    else {
-      body = <PartyBlockView block={block} streaming={props.streaming} focusId={props.isLastAssistant ? props.focusId : null} />;
-    }
-    // dialog-format: choices ride on whichever block a turn actually ends on
-    // (narration or a speaker's line), not just the `line` kind — see chat.ts
-    // generateDialog. The chip row below is otherwise identical to the 1:1 one.
-    const chips = !props.hideChoices && !props.streaming && !props.generating && props.isLastAssistant && m.meta.choices && m.meta.choices.length > 0
-      ? <ChoiceChips choices={m.meta.choices} onChoice={props.onChoice} onEdit={props.onEditChoice} disabled={props.generating} />
-      : null;
-    if (!body && !chips) return null;
-    return (
-      <>
-        {body}
-        {chips}
-      </>
-    );
-  }
-
+  if (!isUser && hasEventContract(m) && m.events.length === 0 && m.status === 'complete' && !m.meta.choices?.length && !m.meta.error) return null;
+  const firstDialogue = !isUser && hasEventContract(m) ? m.events.find((event) => event.type === 'dialogue') : undefined;
   const showActions = !props.streaming && !props.generating;
-  // R1: 파티/dialog `line`만 화면에 「」를 입힌다. 저장 원문·1:1·스트리밍 중은 그대로.
-  const lineSpeech = !isUser && kind === 'line';
-  const lineFocus = Boolean(lineSpeech && props.focusId && m.meta.speaker_character_id === props.focusId);
+  const lineFocus = Boolean(!isUser && props.focusId && m.events?.some((event) => event.type === 'dialogue' && event.actorId === props.focusId));
   return (
-    <div id={props.domId} className={`msg ${isUser ? 'user' : 'assistant'} ${m.meta.ooc ? 'ooc' : ''} ${lineSpeech ? 'beat-line' : ''}${lineFocus ? ' is-focus' : ''}`}>
-      {!isUser && m.meta.speaker_character_id ? (
-        <SpeakerHeader name={m.meta.speaker_name ?? props.charName} avatar={m.meta.image_url ?? m.meta.speaker_avatar} focused={lineFocus} />
+    <div id={props.domId} className={`msg ${isUser ? 'user' : 'assistant'} ${m.meta.ooc ? 'ooc' : ''}${lineFocus ? ' is-focus' : ''}`}>
+      {firstDialogue?.actorName ? (
+        <SpeakerHeader name={firstDialogue.actorName} avatar={m.meta.image_url ?? m.meta.speaker_avatar} focused={lineFocus} />
       ) : null}
       <div
-        className={`bubble ${m.status === 'interrupted' ? 'interrupted' : ''} ${m.status === 'error' ? 'error' : ''}`}
+        className={`${isUser ? 'bubble' : 'chat-event-body'} ${m.status === 'interrupted' ? 'interrupted' : ''} ${m.status === 'error' ? 'error' : ''}`}
         style={{
           transform: dragX ? `translateX(${dragX}px)` : undefined,
           transition: dragX ? 'none' : 'transform 0.2s ease-out',
@@ -729,33 +700,7 @@ function MessageView(props: {
         onTouchEnd={onTouchEnd}
         onTouchCancel={onTouchCancel}
       >
-        {(() => {
-          // Display-only: same sanitize on streaming and complete. Persist is untouched.
-          // Real `block_kind:'ui'` never reaches this branch.
-          const shown = sanitizeBubbleContent(m.content);
-          const visible = props.streaming ? hideIncompleteChoicesPrefix(shown) : shown;
-          if (!visible) return <span className="muted">…</span>;
-          // R1 MUST: completed party/dialog lines render as [Name] : "speech".
-          // wrapSpeechMarks waits until complete to avoid style flicker.
-          if (lineSpeech && !props.streaming) {
-            const speaker = (block?.kind === 'dialogue' ? block.speakerName : null)
-              || m.meta.speaker_name
-              || (m.meta.speaker_character_id ? props.charName : null);
-            const spoken = wrapSpeechMarks(shown);
-            return (
-              <>
-                {speaker ? (
-                  <>
-                    <span className="beat-dialogue-speaker">[{speaker}]</span>
-                    <span className="beat-dialogue-sep"> : </span>
-                  </>
-                ) : null}
-                <span className="beat-dialogue-speech">{renderContent(spoken)}</span>
-              </>
-            );
-          }
-          return renderContent(visible);
-        })()}
+        {isUser ? renderContent(m.content) : <MessageEvents message={m} streaming={props.streaming} focusId={props.isLastAssistant ? props.focusId : null} />}
         {props.streaming && <span className="cursor" />}
         {m.status === 'error' && <div className="small" style={{ color: 'var(--danger)', marginTop: 6 }}>{m.meta.error ?? '생성 실패'}</div>}
         {m.status === 'interrupted' && <div className="small muted" style={{ marginTop: 4 }}>(중단됨)</div>}

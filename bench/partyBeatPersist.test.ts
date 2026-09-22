@@ -4,7 +4,7 @@
  */
 import assert from 'node:assert/strict';
 import { sanitizeNarration } from '../apps/server/src/prompt/templates.ts';
-import { sanitizeBubbleContent } from '../apps/web/src/lib/sanitizeBubble.ts';
+import { sanitizeBubbleContent } from './legacy/sanitizeBubble.ts';
 import { narrationLeaks } from './fixtures/narrationLeaks.ts';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -205,7 +205,7 @@ async function main() {
     assert.ok(soloMsgs.some((m) => m.role === 'assistant' && m.content.includes('밧줄')));
   });
 
-  await t('POST /messages persists header/line/thought/ui in order, with stream chunks', async () => {
+  await t('POST /messages persists header/line/ui in order, with private thoughts omitted', async () => {
     const res = await fetch(`${origin}/api/conversations/${convId}/messages`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -225,7 +225,7 @@ async function main() {
     const kinds = msgs.filter((m) => m.role === 'assistant').map((m) => m.meta.block_kind);
     assert.ok(kinds.includes('header'), JSON.stringify(kinds));
     assert.ok(kinds.includes('line'), JSON.stringify(kinds));
-    assert.ok(kinds.includes('thought'), JSON.stringify(kinds));
+    assert.equal(kinds.includes('thought'), false, JSON.stringify(kinds));
     assert.ok(kinds.includes('ui'), JSON.stringify(kinds));
     assert.equal(kinds[kinds.length - 1], 'ui');
 
@@ -238,9 +238,9 @@ async function main() {
     assert.equal(line.meta.speaker_character_id, nari.id);
     assert.ok(String(line.content).includes('짝꿍'));
 
-    const thought = msgs.find((m) => m.meta.block_kind === 'thought')!;
-    assert.equal(thought.meta.speaker_name, '나리');
-    assert.equal(thought.content, '왜 안 피하지.');
+    assert.equal(msgs.some((m) => m.content.includes('왜 안 피하지.')), false, 'private thoughts never persist');
+    assert.equal(JSON.stringify(msgs.map((m) => m.meta.events)).includes('왜 안 피하지.'), false, 'private thoughts never enter canonical events');
+    assert.equal(raw.includes('왜 안 피하지.'), false, 'private thoughts never enter SSE');
 
     const extraLines = msgs.filter((m) => m.meta.block_kind === 'line' && m.meta.speaker_name !== '나리');
     assert.ok(extraLines.length <= 2);

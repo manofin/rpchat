@@ -63,6 +63,19 @@ t('name matching folds width and case but is never a substring match', () => {
   assert.equal(parseScript('설록이 | 응.', ALLOWED).items[0].kind, 'narration');
 });
 
+t('duplicate display names never choose an arbitrary character id', () => {
+  const r = parseScript('설록 | 누구일까.', [SEOLROK, { id: 'other', name: '설록' }]);
+  assert.deepEqual(r.items, [{ kind: 'narration', text: '설록 | 누구일까.' }]);
+  assert.deepEqual(r.spoke_ids, []);
+  assert.deepEqual(r.rejected_names, ['설록']);
+});
+
+t('an alias colliding with another character name remains ambiguous', () => {
+  const r = parseScript('낯선 여자 | 누구일까.', [{ ...SEOLROK, aliases: ['낯선 여자'] }, STRANGER]);
+  assert.equal(r.items[0].kind, 'narration');
+  assert.deepEqual(r.spoke_ids, []);
+});
+
 // ---- parser: shape --------------------------------------------------------
 
 t('narration and lines interleave in written order, speakers repeating', () => {

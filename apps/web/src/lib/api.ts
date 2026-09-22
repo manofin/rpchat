@@ -7,6 +7,13 @@ export class ApiError extends Error {
   }
 }
 
+export class StreamInterruptedError extends Error {
+  constructor() {
+    super('응답 연결이 끊겨 저장된 대화를 다시 확인합니다.');
+    this.name = 'StreamInterruptedError';
+  }
+}
+
 /** true → keep composer empty (success, user abort, network drop). false → restore (HTTP fail after retract). */
 export function sendOkForComposer(e: unknown, aborted: boolean): boolean {
   if (aborted) return true;
@@ -81,24 +88,33 @@ export async function streamPost(path: string, body: unknown, onEvent: (e: SseEv
   const reader = res.body.getReader();
   const dec = new TextDecoder();
   let buf = '';
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += dec.decode(value, { stream: true });
-    let idx: number;
-    while ((idx = buf.indexOf('\n\n')) >= 0) {
-      const chunk = buf.slice(0, idx);
-      buf = buf.slice(idx + 2);
-      for (const line of chunk.split('\n')) {
-        if (!line.startsWith('data:')) continue;
+  let terminal = false;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let boundary: RegExpExecArray | null;
+      while ((boundary = /\r?\n\r?\n/.exec(buf))) {
+        const chunk = buf.slice(0, boundary.index);
+        buf = buf.slice(boundary.index + boundary[0].length);
+        const data = chunk.split(/\r?\n/).filter((line) => line.startsWith('data:')).map((line) => line.slice(5).trim()).join('\n');
+        if (!data) continue;
+        let event: SseEvent;
         try {
-          onEvent(JSON.parse(line.slice(5).trim()) as SseEvent);
+          event = JSON.parse(data) as SseEvent;
         } catch {
-          /* 잘못된 이벤트 무시 */
+          continue;
         }
+        if (event.type === 'start') terminal = false;
+        if (event.type === 'done' || event.type === 'error') terminal = true;
+        onEvent(event);
       }
     }
+  } finally {
+    reader.releaseLock();
   }
+  if (!terminal) throw new StreamInterruptedError();
 }
 
 export const abortGeneration = (generationId: string) => post<{ ok: boolean }>(`/api/generations/${generationId}/abort`);

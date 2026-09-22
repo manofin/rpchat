@@ -4,12 +4,15 @@
  * Isolated: no browser, no DB, no model, no network, no systemd.
  */
 import assert from 'node:assert/strict';
-import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { wrapSpeechMarks } from '../apps/web/src/lib/speechMarks.ts';
-import { parseTurnBlocks } from '../apps/web/src/lib/turnBlocks.ts';
+import { wrapSpeechMarks } from './legacy/speechMarks.ts';
+import { parseTurnBlocks } from './legacy/turnBlocks.ts';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { adaptChatEvents } from '../apps/server/src/contracts/chatEventAdapter.ts';
+import { EventRenderer } from '../apps/web/src/components/EventRenderer.tsx';
 
 let passed = 0;
 function t(name: string, fn: () => void) {
@@ -25,17 +28,14 @@ const css = src('apps/web/src/app.css');
 const cssCode = css.replace(/\/\*[\s\S]*?\*\//g, '');
 const view = src('apps/web/src/components/view.tsx');
 const chat = src('apps/web/src/pages/ChatPage.tsx');
-
-function git(args: string): string {
-  return execSync(`git ${args}`, { cwd: appRoot, encoding: 'utf8' });
-}
+const renderer = src('apps/web/src/components/EventRenderer.tsx');
 
 function rule(sel: string, from = cssCode): string {
   const re = new RegExp(`${sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{[^}]*\\}`);
   return re.exec(from)?.[0] ?? '';
 }
 
-t('wrapSpeechMarks is display-only: quotes unquoted speech, leaves marked text', () => {
+t('archived wrapSpeechMarks quotes unquoted speech and leaves marked text', () => {
   assert.equal(wrapSpeechMarks('문을 열어요.'), '「문을 열어요.」');
   assert.equal(wrapSpeechMarks('「이미 따옴표」'), '「이미 따옴표」');
   assert.equal(wrapSpeechMarks('『코너』'), '『코너』');
@@ -69,30 +69,31 @@ t('parseTurnBlocks keeps incomplete dialogue as narration while streaming', () =
   assert.equal(parseTurnBlocks('[유키] : 「왔어?」', { streaming: true })[0].kind, 'dialogue');
 });
 
-t('ChatPage applies [Name] : speech MUST format on completed beat line bubbles only', () => {
-  assert.match(chat, /import\s*\{[^}]*wrapSpeechMarks[^}]*\}\s*from\s*['"]\.\.\/lib\/speechMarks['"]/);
-  assert.match(chat, /kind\s*===\s*['"]line['"]/);
-  assert.match(chat, /beat-dialogue-speaker/);
-  assert.match(chat, /wrapSpeechMarks\(/);
-  assert.match(chat, /lineSpeech && !props\.streaming/);
-  // 1:1 / no-block_kind still renders via renderContent without the MUST prefix path alone.
-  assert.match(chat, /return renderContent\(shown\)/);
-  assert.equal(/kind === 'line' && props\.sceneFormat === 'hunter'/.test(chat), false);
-  assert.equal(src('apps/web/src/pages/useChat.ts').includes('wrapSpeechMarks'), false);
+t('dialogue events use [Name] : "speech" for ordinary and party messages', () => {
+  for (const meta of [{}, { block_kind: 'line', speaker_name: '유키', speaker_character_id: 'yuki' }]) {
+    const content = meta.block_kind ? '「왔어?」' : '[유키] : 「왔어?」';
+    const events = adaptChatEvents({ id: 'readability', role: 'assistant', content, meta });
+    const html = renderToStaticMarkup(createElement(EventRenderer, { events }));
+    assert.match(html, /class="beat-dialogue-speaker">\[유키\]/);
+    assert.match(html, /class="beat-dialogue-sep"> : /);
+    assert.match(html, /class="beat-dialogue-speech">&quot;왔어\?&quot;/);
+  }
+  assert.match(chat, /isUser \? renderContent\(m.content\) : <MessageEvents/);
+  assert.doesNotMatch(chat, /wrapSpeechMarks|parseTurnBlocks/);
 });
 
-t('BeatNarration is raw text; DialogueLine exists for clear speakers', () => {
-  assert.equal(view.includes('parseTurnBlocks'), false, '결정3: BeatNarration must not re-parse');
-  assert.match(view, /export function BeatNarration/);
-  assert.match(view, /export function DialogueLine/);
-  assert.match(view, /beat-dialogue-speaker/);
+t('narration events render their exact text without client parsing', () => {
+  const text = '[유키] : "이 문장은 서버가 서술로 분류했다."';
+  const html = renderToStaticMarkup(createElement(EventRenderer, { events: [{ type: 'narration', id: 'n', text }] }));
+  assert.match(html, /class="beat-narration"/);
+  assert.doesNotMatch(html, /beat-dialogue-speaker/);
+  assert.doesNotMatch(renderer, /parseTurnBlocks|sanitizeBubbleContent|wrapSpeechMarks/);
   assert.match(chat, /streaming=\{props.streaming\}/);
 });
 
-t('beat-line bubble keeps high-contrast speech surface', () => {
-  assert.match(chat, /beat-line/);
-  assert.match(cssCode, /\.msg\.beat-line\s+\.bubble\s*\{/);
-  const speech = rule('.msg.beat-line .bubble');
+t('dialogue events keep the high-contrast speech surface', () => {
+  assert.match(renderer, /bubble beat-dialogue-bubble/);
+  const speech = rule('.beat-dialogue-bubble');
   assert.match(speech, /color:\s*var\(--kami-text-strong\)/);
   assert.match(speech, /font-weight:\s*500/);
 });
@@ -158,14 +159,11 @@ t('1:1 bubble rules are byte-stable vs HEAD for assistant/user/bubble selectors'
   assert.match(cssCode, /\.msg\.user\s+\.bubble\s*\{/);
 });
 
-t('R1 does not touch server sources or 1:1 prompt files', () => {
-  assert.equal(git('diff HEAD -- apps/server').trim(), '');
+t('production rendering has no server implementation or historical parser dependency', () => {
   assert.doesNotMatch(chat, /from ['"]\.\.\/\.\.\/server/);
   assert.doesNotMatch(view, /from ['"]\.\.\/\.\.\/server/);
-  const marks = src('apps/web/src/lib/speechMarks.ts');
-  assert.doesNotMatch(marks, /buildPrompt|HARD_RULES|PROMPT_VERSION/);
-  const blocks = src('apps/web/src/lib/turnBlocks.ts');
-  assert.doesNotMatch(blocks, /buildPrompt|HARD_RULES|PROMPT_VERSION/);
+  assert.doesNotMatch(renderer, /from ['"][^'"]*(?:server|bench\/legacy)/);
+  assert.doesNotMatch(chat + renderer + view, /parseTurnBlocks|partyBlockFromMessage/);
 });
 
 console.log(`\n${passed} passed`);

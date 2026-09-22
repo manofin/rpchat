@@ -291,12 +291,18 @@ export interface Conversation {
 
 export type MessageStatus = 'streaming' | 'complete' | 'interrupted' | 'error';
 
+export type { ChatEvent } from '@rpchat/contracts/chat-event';
+import type { ChatEvent } from '@rpchat/contracts/chat-event';
+
 export interface Message {
   id: string;
   conversation_id: string;
   parent_id: string | null;
   role: 'user' | 'assistant';
   content: string;
+  /** Optional only to detect an older server; assistant display never falls back to content. */
+  eventVersion?: 1;
+  events?: ChatEvent[];
   status: MessageStatus;
   meta: {
     usage?: { prompt_tokens?: number; completion_tokens?: number } | null;
@@ -428,8 +434,8 @@ export type SseBudget = {
 };
 
 export type SseEvent =
-  | { type: 'start'; generationId: string; messageId: string; userMessage?: Message }
-  | { type: 'token'; text: string }
+  | { type: 'start'; generationId: string; messageId: string; eventVersion: 1; message?: Message; userMessage?: Message }
+  | { type: 'token'; text: string; eventVersion: 1; messageId: string; events: ChatEvent[] }
   | { type: 'done'; message: Message; usage: unknown; ttftMs: number | null; totalMs: number; budget?: SseBudget }
   | { type: 'aux'; message: Message }
   | { type: 'error'; message: string; messageId?: string };

@@ -178,10 +178,13 @@ function main() {
     assert.ok(/speaker-name/.test(src));
   });
 
-  t('MessageView adds SpeakerHeader only when speaker_character_id; bubble keeps renderContent', () => {
+  t('MessageView derives speaker identity from canonical dialogue and uses the shared event renderer', () => {
     const src = srcOf(chatPagePath);
     assert.ok(/SpeakerHeader/.test(src));
-    assert.ok(/speaker_character_id/.test(src));
+    assert.ok(/firstDialogue\?\.actorName/.test(src));
+    assert.ok(/name=\{firstDialogue\.actorName\}/.test(src));
+    assert.ok(/<MessageEvents message=\{m\}/.test(src));
+    assert.doesNotMatch(src, /name=\{m\.meta\.speaker_name/);
     assert.ok(/renderContent\(\s*m\.content\s*\)/.test(src));
   });
 

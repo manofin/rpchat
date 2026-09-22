@@ -1,3 +1,5 @@
+import type { ChatEvent } from '@rpchat/contracts/chat-event';
+
 export interface ModelProfile {
   name: string;
   model: string | null;
@@ -250,6 +252,11 @@ export interface ConversationRow {
 export type MessageStatus = 'streaming' | 'complete' | 'interrupted' | 'error';
 
 export interface MessageMeta {
+  chat_event_version?: 1;
+  events?: ChatEvent[];
+  chat_event_script?: boolean;
+  chat_event_default_actor?: { id: string; name: string };
+  chat_event_actors?: Array<{ id: string; name: string; aliases?: string[] }>;
   usage?: { prompt_tokens?: number; completion_tokens?: number } | null;
   finish_reason?: string | null;
   choices?: string[];

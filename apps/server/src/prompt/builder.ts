@@ -1,4 +1,5 @@
 import { type DB, many, one, parseJson, getSetting } from '../db/index.js';
+import { parseMessageMeta } from '../db/messageMeta.js';
 import type {
   BudgetReport, CharacterRow, ChatMessage, ConversationRow, LoreEntryRow, MemoryRow, MessageRow, ModelProfile, PersonaRow, Scene, SummaryRow,
 } from '../types.js';
@@ -192,7 +193,7 @@ export function loadApprovedEpisodeCandidates(
 const ECHO_BLOCK_KINDS = new Set(['ui', 'header', 'thought']);
 
 export function isEchoFuelMessage(m: Pick<MessageRow, 'meta_json'>): boolean {
-  const kind = parseJson<{ block_kind?: string }>(m.meta_json, {}).block_kind;
+  const kind = parseMessageMeta(m.meta_json).block_kind;
   return !!kind && ECHO_BLOCK_KINDS.has(kind);
 }
 
@@ -202,7 +203,7 @@ export function isEchoFuelMessage(m: Pick<MessageRow, 'meta_json'>): boolean {
  */
 export function partyContextFromHistory(history: Array<Pick<MessageRow, 'content' | 'meta_json'>>): string | null {
   for (let i = history.length - 1; i >= 0; i--) {
-    const meta = parseJson<{ block_kind?: string }>(history[i].meta_json, {});
+    const meta = parseMessageMeta(history[i].meta_json);
     if (meta.block_kind !== 'ui') continue;
     try {
       const ui = JSON.parse(history[i].content) as {

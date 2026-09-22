@@ -1,143 +1,132 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { abortGeneration, ApiError, get, patch, post, put, del, sendOkForComposer, streamPost } from '../lib/api';
-import type { ConversationDetail, Message, SseBudget, SseEvent } from '../types';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { abortGeneration, ApiError, get, patch, post, del, sendOkForComposer, streamPost } from '../lib/api';
+import type { ConversationDetail, Message, SseEvent } from '../types';
+import { initialChatState, reduceChatEvent, type ChatState } from '../lib/chatStreamState';
 
-export interface ChatState {
-  detail: ConversationDetail | null;
-  messages: Message[];
-  loading: boolean;
-  error: string | null;
-  generating: boolean;
-  streamingId: string | null;
-  lastBudget: SseBudget | null;
-  budgetAtHead: string | null;
-}
+export type { ChatState } from '../lib/chatStreamState';
 
 export function useChat(conversationId: string) {
-  const [state, setState] = useState<ChatState>({ detail: null, messages: [], loading: true, error: null, generating: false, streamingId: null, lastBudget: null, budgetAtHead: null });
+  const [state, setState] = useState<ChatState>(initialChatState);
+  const [streamConnected, setStreamConnected] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const genIdRef = useRef<string | null>(null);
-  const streamBuf = useRef<Map<string, string>>(new Map());
+  const scope = useMemo(() => ({ conversationId, revision: 0, reloadSequence: 0 }), [conversationId]);
+  const scopeRef = useRef<typeof scope | null>(scope);
+  scopeRef.current = scope;
 
-  const patchState = (p: Partial<ChatState>) => setState((s) => ({ ...s, ...p }));
+  const patchState = useCallback((patch: Partial<ChatState>) => {
+    if (scopeRef.current === scope) setState((current) => ({ ...current, ...patch }));
+  }, [scope]);
 
   const reload = useCallback(async () => {
+    if (scopeRef.current !== scope) return null;
+    const sequence = ++scope.reloadSequence;
+    const revision = scope.revision;
     try {
-      const d = await get<ConversationDetail>(`/api/conversations/${conversationId}`);
-      if (d.activeGeneration) genIdRef.current = d.activeGeneration.id;
+      const detail = await get<ConversationDetail>(`/api/conversations/${conversationId}`);
+      // A response from an old room or before a newer stream snapshot is stale.
+      if (scopeRef.current !== scope || sequence !== scope.reloadSequence || revision !== scope.revision) return null;
+      if (detail.activeGeneration) genIdRef.current = detail.activeGeneration.id;
       else if (!abortRef.current) genIdRef.current = null;
-      setState((s) => ({ ...s, detail: d, messages: d.messages, loading: false, error: null, generating: !!d.activeGeneration, streamingId: d.activeGeneration?.messageId ?? null }));
-      return d;
-    } catch (e) {
-      patchState({ loading: false, error: (e as Error).message });
+      setState((current) => ({ ...current, detail, messages: detail.messages, loading: false, error: null,
+        generating: !!detail.activeGeneration, streamingId: detail.activeGeneration?.messageId ?? null }));
+      return detail;
+    } catch (error) {
+      if (sequence === scope.reloadSequence && revision === scope.revision) {
+        patchState({ loading: false, error: (error as Error).message });
+      }
       return null;
     }
-  }, [conversationId]);
+  }, [conversationId, patchState, scope]);
 
   useEffect(() => {
-    patchState({ loading: true, lastBudget: null, budgetAtHead: null });
-    reload();
-    return () => abortRef.current?.abort();
-  }, [conversationId, reload]);
+    scopeRef.current = scope;
+    setState(initialChatState);
+    setStreamConnected(false);
+    genIdRef.current = null;
+    void reload();
+    return () => {
+      const controller = abortRef.current;
+      controller?.abort();
+      if (abortRef.current === controller) abortRef.current = null;
+      if (scopeRef.current === scope) scopeRef.current = null;
+    };
+  }, [reload, scope]);
 
-  // 재접속: 라이브 SSE 가 없을 때만 GET 폴링. 서버는 800ms persist.
+  // Polling resumes when the transport closes while the server is still generating.
   useEffect(() => {
-    if (!state.generating || abortRef.current) return;
-    const t = window.setInterval(() => { void reload(); }, 700);
-    return () => window.clearInterval(t);
-  }, [state.generating, conversationId, reload]);
+    if (!state.generating || streamConnected) return;
+    let cancelled = false;
+    let timer: number;
+    const poll = async () => {
+      await reload();
+      // Overlapping polls invalidate each other's responses on slow connections.
+      if (!cancelled) timer = window.setTimeout(poll, 700);
+    };
+    timer = window.setTimeout(poll, 700);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [state.generating, streamConnected, reload]);
 
   useEffect(() => {
-    const onVis = () => {
+    const onVisibility = () => {
       if (document.visibilityState === 'visible' && !abortRef.current) void reload();
     };
-    document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
   }, [reload]);
 
-  const applyEvent = useCallback((e: SseEvent) => {
-    setState((s) => {
-      switch (e.type) {
-        case 'start': {
-          genIdRef.current = e.generationId;
-          const msgs = [...s.messages];
-          if (e.userMessage && !msgs.find((m) => m.id === e.userMessage!.id)) msgs.push(e.userMessage);
-          streamBuf.current.set(e.messageId, '');
-          const placeholder: Message = { id: e.messageId, conversation_id: conversationId, parent_id: e.userMessage?.id ?? s.detail?.conversation.head_message_id ?? null, role: 'assistant', content: '', status: 'streaming', meta: {}, bookmarked: false, created_at: new Date().toISOString(), siblings: { index: 0, count: 1, ids: [e.messageId] } };
-          return { ...s, messages: [...msgs, placeholder], generating: true, streamingId: e.messageId };
-        }
-        case 'token': {
-          const id = s.streamingId;
-          if (!id) return s;
-          const prev = streamBuf.current.get(id) ?? '';
-          const next = prev + e.text;
-          streamBuf.current.set(id, next);
-          return { ...s, messages: s.messages.map((m) => (m.id === id ? { ...m, content: next } : m)) };
-        }
-        case 'done': {
-          streamBuf.current.delete(e.message.id);
-          const complete = e.message.status === 'complete';
-          return {
-            ...s,
-            messages: s.messages.map((m) => (m.id === e.message.id ? e.message : m)),
-            generating: false,
-            streamingId: null,
-            lastBudget: complete && e.budget ? e.budget : s.lastBudget,
-            budgetAtHead: complete && e.budget ? e.message.id : s.budgetAtHead,
-          };
-        }
-        // f9-aux-speaker-generate: a secondary's interjection arrives after `done`
-        // as its own message row. Append it; the main turn is already settled.
-        case 'aux': {
-          if (s.messages.some((m) => m.id === e.message.id)) return s;
-          return { ...s, messages: [...s.messages, e.message] };
-        }
-        case 'error': {
-          const id = e.messageId ?? s.streamingId;
-          return {
-            ...s,
-            messages: s.messages.map((m) => (m.id === id ? { ...m, status: 'error', meta: { ...m.meta, error: e.message } } : m)),
-            generating: false,
-            streamingId: null,
-            error: e.message,
-          };
-        }
-        default:
-          return s;
-      }
-    });
-  }, [conversationId]);
+  const applyEvent = useCallback((event: SseEvent) => {
+    if (scopeRef.current !== scope) return;
+    scope.revision++;
+    if (event.type === 'start') genIdRef.current = event.generationId;
+    setState((current) => reduceChatEvent(current, event, conversationId));
+  }, [conversationId, scope]);
 
   const runStream = useCallback(async (path: string, body: unknown) => {
     if (state.generating || abortRef.current) return;
+    if (scopeRef.current !== scope) return;
     const ctrl = new AbortController();
     abortRef.current = ctrl;
+    scope.revision++;
+    setStreamConnected(true);
     patchState({ error: null, generating: true });
     genIdRef.current = null;
     let failed = false;
+    let resync = false;
+    let result = true;
+    let requestError: string | null = null;
     try {
-      await streamPost(path, body, (e) => {
-        if (e.type === 'error') failed = true;
-        applyEvent(e);
+      await streamPost(path, body, (event) => {
+        if (scopeRef.current !== scope || abortRef.current !== ctrl) return;
+        if (event.type === 'error') {
+          failed = true;
+          requestError = event.message;
+        }
+        applyEvent(event);
       }, ctrl.signal);
       if (failed) {
-        await reload();
-        return false;
+        result = false;
+        resync = true;
       }
-      return true;
-    } catch (e) {
-      const aborted = ctrl.signal.aborted || (e instanceof ApiError && e.status === 499);
-      if (!aborted) {
-        // 네트워크 단절: 서버는 계속 생성 중일 수 있으므로 상태를 재동기화
-        patchState({ error: (e as Error).message, generating: false, streamingId: null });
-      }
-      setTimeout(() => reload(), 400);
-      // 499 = 명시적 중단. 실패 전송으로 입력창을 되돌리지 않는다.
-      return sendOkForComposer(e, ctrl.signal.aborted);
+    } catch (error) {
+      const aborted = ctrl.signal.aborted || (error instanceof ApiError && error.status === 499);
+      if (!aborted) requestError = (error as Error).message;
+      resync = true;
+      // Network drops and explicit stop retain the already submitted composer.
+      result = sendOkForComposer(error, ctrl.signal.aborted);
     } finally {
       if (abortRef.current === ctrl) abortRef.current = null;
+      if (scopeRef.current === scope) {
+        setStreamConnected(false);
+        if (resync) patchState({ generating: false, streamingId: null, error: requestError });
+      }
     }
-  }, [state.generating, applyEvent, reload]);
+    if (resync && scopeRef.current === scope) {
+      await reload();
+      if (requestError) patchState({ error: requestError });
+    }
+    return scopeRef.current === scope ? result : true;
+  }, [state.generating, applyEvent, patchState, reload, scope]);
 
   const send = useCallback((content: string, opts?: { inject_instruction?: string }) => {
     const body: { content: string; inject_instruction?: string } = { content };
@@ -150,6 +139,8 @@ export function useChat(conversationId: string) {
   const branchEdit = useCallback((messageId: string, content: string) => runStream(`/api/conversations/${conversationId}/branch`, { messageId, content }), [runStream, conversationId]);
 
   const stop = useCallback(async () => {
+    if (scopeRef.current !== scope) return;
+    const controller = abortRef.current;
     let gid = genIdRef.current;
     // start SSE is after scene-delta; stop before that still has to reach the server job.
     if (!gid) {
@@ -163,35 +154,48 @@ export function useChat(conversationId: string) {
         await abortGeneration(gid);
       } catch { /* 이미 끝났을 수 있음 */ }
     }
-    abortRef.current?.abort();
+    controller?.abort();
     // done(interrupted) 이벤트가 오지 않는 경우 대비해 잠시 후 재동기화
     setTimeout(() => reload(), 500);
-  }, [reload, conversationId]);
+  }, [reload, conversationId, scope]);
 
   const selectSibling = useCallback(async (messageId: string) => {
     const r = await post<{ messages: Message[] }>(`/api/messages/${messageId}/select`, {});
+    scope.revision++;
     patchState({ messages: r.messages });
-  }, []);
+  }, [patchState, scope]);
 
   const editMessage = useCallback(async (messageId: string, content: string) => {
     const updated = await patch<Message>(`/api/messages/${messageId}`, { content });
+    if (scopeRef.current !== scope) return;
+    scope.revision++;
     setState((s) => ({ ...s, messages: s.messages.map((m) => (m.id === messageId ? updated : m)) }));
-  }, []);
+  }, [scope]);
 
   const deleteMessage = useCallback(async (messageId: string) => {
     const r = await del<{ messages: Message[] }>(`/api/messages/${messageId}`);
+    scope.revision++;
     patchState({ messages: r.messages });
-  }, []);
+  }, [patchState, scope]);
 
   const toggleBookmark = useCallback(async (messageId: string, val: boolean) => {
     const updated = await patch<Message>(`/api/messages/${messageId}`, { bookmarked: val });
+    if (scopeRef.current !== scope) return;
+    scope.revision++;
     setState((s) => ({ ...s, messages: s.messages.map((m) => (m.id === messageId ? updated : m)) }));
-  }, []);
+  }, [scope]);
 
   const updateConversation = useCallback(async (body: Record<string, unknown>) => {
     const conv = await patch<ConversationDetail['conversation']>(`/api/conversations/${conversationId}`, body);
+    if (scopeRef.current !== scope) return;
+    scope.revision++;
     setState((s) => (s.detail ? { ...s, detail: { ...s.detail, conversation: conv } } : s));
-  }, [conversationId]);
+  }, [conversationId, scope]);
 
-  return { ...state, reload, send, regenerate, branchEdit, stop, selectSibling, editMessage, deleteMessage, toggleBookmark, updateConversation };
+  return {
+    ...state,
+    loading: state.loading || (!!state.detail && state.detail.conversation.id !== conversationId),
+    generating: state.generating || streamConnected,
+    reload, send, regenerate, branchEdit, stop, selectSibling, editMessage, deleteMessage, toggleBookmark, updateConversation,
+  };
 }

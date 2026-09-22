@@ -1,5 +1,5 @@
 /** npx tsx bench/settingsRegression.test.ts
- * Gate 2 — no server/builder/memory/SSE/swipe change; no new migration.
+ * Settings invariants and chat recovery behavior; synthetic I/O only.
  */
 import assert from 'node:assert/strict';
 import { execSync } from 'node:child_process';
@@ -7,7 +7,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import ts from 'typescript';
 import type { Message, SseEvent } from '../apps/web/src/types.ts';
-import { ApiError, sendOkForComposer } from '../apps/web/src/lib/api.ts';
+import { ApiError, sendOkForComposer, StreamInterruptedError } from '../apps/web/src/lib/api.ts';
 import { WEB_APP_VERSION } from '../apps/web/src/lib/conversationSettings.ts';
 
 const root = join(import.meta.dirname, '..');
@@ -68,29 +68,41 @@ await t('chat SSE FailSend recovery contract remains intact', async () => {
   }).outputText;
 
   type Event = SseEvent;
-  async function scenario(events: Event[], error?: Error, abort = false) {
+  async function scenario(events: Event[], error?: Error, abort = false, switchAfterFirst = false) {
     const received: Event[] = [];
     const calls: string[] = [];
-    const scheduled: Array<() => Promise<unknown>> = [];
     const abortRef: { current: AbortController | null } = { current: null };
+    const scope = { conversationId: 'fixture-conversation', revision: 0, reloadSequence: 0 };
+    const scopeRef = { current: scope };
+    const connections: boolean[] = [];
+    const nextController = new AbortController();
     const request = { content: 'fixture send' };
+    let visibleError: string | null = null;
     let releaseReload: (() => void) | undefined;
     let notifyReload!: () => void;
     const reloading = new Promise<void>((resolve) => { notifyReload = resolve; });
     const deps = {
-      state: { generating: false }, abortRef, genIdRef: { current: null },
-      patchState: () => {}, ApiError, sendOkForComposer, AbortController,
-      applyEvent: (e: Event) => { received.push(e); },
+      state: { generating: false }, abortRef, genIdRef: { current: null }, scope, scopeRef,
+      setStreamConnected: (connected: boolean) => { connections.push(connected); },
+      patchState: (patch: { error?: string | null }) => { if (patch.error !== undefined) visibleError = patch.error; }, ApiError, sendOkForComposer, AbortController,
+      applyEvent: (e: Event) => { received.push(e); if (e.type === 'error') visibleError = e.message; },
       reload: async () => {
+        assert.equal(abortRef.current, null, 'release transport before reload so polling can resume');
         calls.push('reload');
         await new Promise<void>((resolve) => { releaseReload = resolve; notifyReload(); });
+        visibleError = null;
       },
-      setTimeout: (fn: () => Promise<unknown>) => { scheduled.push(fn); },
       streamPost: async (url: string, body: unknown, onEvent: (e: Event) => void, signal: AbortSignal) => {
         assert.equal(url, '/fixture/messages');
         assert.equal(body, request);
         assert.equal(signal, abortRef.current?.signal);
-        for (const e of events) onEvent(e);
+        for (const [index, e] of events.entries()) {
+          onEvent(e);
+          if (switchAfterFirst && index === 0) {
+            scopeRef.current = { conversationId: 'new-room', revision: 0, reloadSequence: 0 };
+            abortRef.current = nextController;
+          }
+        }
         if (abort) abortRef.current!.abort();
         if (error) throw error;
       },
@@ -114,14 +126,11 @@ await t('chat SSE FailSend recovery contract remains intact', async () => {
         releaseReload();
       }
       const value = await Promise.race([result, deadline]);
-      assert.deepEqual(received, events, 'forward every SSE event to applyEvent');
-      assert.equal(abortRef.current, null, 'release generation controller');
-      for (const reload of scheduled) {
-        const pending = reload();
-        releaseReload!();
-        await pending;
-      }
-      return { value, calls };
+      assert.deepEqual(received, switchAfterFirst ? events.slice(0, 1) : events, 'forward only current-room SSE events to applyEvent');
+      assert.equal(abortRef.current, switchAfterFirst ? nextController : null, 'release only the current generation controller');
+      assert.deepEqual(connections, switchAfterFirst ? [true] : [true, false], 'old room completion cannot change the new connection state');
+      assert.equal(scope.revision, 1, 'invalidate pre-stream reloads before sending');
+      return { value, calls, visibleError };
     } finally {
       clearTimeout(timeout);
     }
@@ -131,20 +140,23 @@ await t('chat SSE FailSend recovery contract remains intact', async () => {
     id: 'fixture-message', conversation_id: 'fixture-conversation', parent_id: null,
     role: 'assistant', content: 'fixture text', status: 'complete', meta: {},
     bookmarked: false, created_at: '2026-09-22T00:00:00Z',
+    eventVersion: 1, events: [{ type: 'narration', id: 'fixture-message:0', text: 'fixture text' }],
+    siblings: { index: 0, count: 1, ids: ['fixture-message'] },
   };
   const ordinary: SseEvent[] = [
-    { type: 'start', generationId: 'fixture-generation', messageId: message.id },
-    { type: 'token', text: 'fixture ' },
+    { type: 'start', generationId: 'fixture-generation', messageId: message.id, eventVersion: 1 },
+    { type: 'token', text: 'fixture ', messageId: message.id, eventVersion: 1, events: [{ type: 'narration', id: 'fixture-message:0', text: 'fixture ' }] },
     { type: 'aux', message: { ...message, id: 'fixture-aux', meta: { block_kind: 'narration' } } },
-    { type: 'token', text: 'text' },
+    { type: 'token', text: 'text', messageId: message.id, eventVersion: 1, events: message.events! },
     { type: 'done', message, usage: null, ttftMs: 1, totalMs: 2 },
   ];
-  assert.deepEqual(await scenario(ordinary), { value: true, calls: ['return'] }, 'successful stream');
+  assert.deepEqual(await scenario(ordinary), { value: true, calls: ['return'], visibleError: null }, 'successful stream');
   assert.deepEqual(await scenario([...ordinary, { type: 'error', message: 'failed' }]),
-    { value: false, calls: ['reload', 'return'] }, 'SSE error retracts and restores composer after reload');
+    { value: false, calls: ['reload', 'return'], visibleError: 'failed' }, 'SSE error remains visible after reload retracts the send and restores composer');
   for (const [error, abort, expected] of [
     [new ApiError(503, 'server failure'), false, false],
     [new TypeError('network disconnected'), false, true],
+    [new StreamInterruptedError(), false, true],
     [new ApiError(499, 'explicit stop'), false, true],
     [new Error('aborted'), true, true],
     [new ApiError(503, 'abort overrides HTTP failure'), true, true],
@@ -152,7 +164,11 @@ await t('chat SSE FailSend recovery contract remains intact', async () => {
     const result = await scenario([], error, abort);
     assert.equal(result.value, expected, `${error.message}: composer recovery`);
     assert.equal(result.calls.filter((call) => call === 'reload').length, 1, `${error.message}: resynchronize`);
+    assert.equal(result.visibleError, abort || (error instanceof ApiError && error.status === 499) ? null : error.message,
+      `${error.message}: retain failure after resync, keep explicit stop quiet`);
   }
+  assert.deepEqual(await scenario(ordinary, new ApiError(503, 'old room failed'), false, true),
+    { value: true, calls: ['return'], visibleError: null }, 'old room failure cannot restore composer, resync or alter the new stream');
 });
 
 await t('existing swipe sibling selection remains in ChatPage', () => {

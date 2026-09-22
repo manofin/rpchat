@@ -1,4 +1,4 @@
-/** npx tsx bench/beatChoices.test.ts
+/** TSX_TSCONFIG_PATH=apps/web/tsconfig.json npx tsx bench/beatChoices.test.ts
  * beat-post-extras-choices — Pass C: the beat's choices, generated after Pass E.
  *
  * The contract this locks is an *ordering* one, and ordering is exactly what a
@@ -17,6 +17,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
+import { isValidElement, type ReactNode } from 'react';
 import { openMigratedDb } from '../apps/server/src/db/index.js';
 import { GenerationQueue } from '../apps/server/src/model/queue.js';
 import { characterRoutes } from '../apps/server/src/routes/characters.js';
@@ -29,6 +30,8 @@ import { passCWith } from '../apps/server/src/prompt/composeBeat.js';
 import { shouldReorderTurn } from '../apps/web/src/lib/chatLayout.js';
 import type { Ctx } from '../apps/server/src/ctx.js';
 import type { GenParams, GenResult } from '../apps/server/src/model/adapter.js';
+import type { Message } from '../apps/web/src/types.ts';
+import { choiceChips, renderChatMessage } from './helpers/chatMessageView.ts';
 
 let passed = 0;
 async function t(name: string, fn: () => Promise<void> | void) {
@@ -235,19 +238,20 @@ async function main() {
     return res.json as { id: string; name: string };
   };
 
-  type Msg = { role: string; content: string; meta: Record<string, unknown> };
+  type Msg = Message;
   const messagesOf = async (convId: string): Promise<Msg[]> => {
     const detail = await api('GET', `/api/conversations/${convId}`);
     assert.equal(detail.status, 200, detail.text);
     return (detail.json as { messages: Msg[] }).messages;
   };
+  let lastSse = '';
   const send = async (convId: string, content: string) => {
     calls.length = 0;
     const res = await fetch(`${origin}/api/conversations/${convId}/messages`, {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content }),
     });
     assert.equal(res.status, 200, `SSE 200 expected, got ${res.status}`);
-    await res.text();
+    lastSse = await res.text();
   };
   const assistants = (msgs: Msg[]) => msgs.filter((m) => m.role === 'assistant');
   /** The blocks of the most recent turn only: everything after the last user row. */
@@ -308,6 +312,34 @@ async function main() {
       if (order[i] === 'e') assert.ok(i < cAt, `a Pass E ran after Pass C: ${JSON.stringify(order)}`);
     }
     assert.ok(order.indexOf('f') < order.lastIndexOf('e') || !order.includes('e'), JSON.stringify(order));
+  });
+
+  await t('persisted beat keeps header → narration → focus → extras → ui, without private thought', async () => {
+    const msgs = await messagesOf(convId);
+    const turn = lastTurn(msgs);
+    assert.deepEqual(turn.map((m) => m.meta.block_kind), ['header', 'narration', 'line', 'line', 'line', 'ui']);
+    assert.deepEqual(turn.map((m) => m.meta.beat_seq), [0, 1, 2, 3, 4, 5]);
+    const speakers = turn.filter((m) => m.meta.block_kind === 'line').map((m) => m.meta.speaker_character_id);
+    assert.equal(speakers[0], nari.id);
+    assert.deepEqual(new Set(speakers.slice(1)), new Set([sera.id, hayeon.id]));
+    for (let i = 1; i < turn.length; i++) assert.equal(turn[i].parent_id, turn[i - 1].id);
+    for (const m of turn) {
+      const raw = db.prepare('SELECT content, meta_json FROM messages WHERE id = ?').get(m.id);
+      assert.doesNotMatch(JSON.stringify(raw), /속마음|왜 안 피하지/);
+    }
+    assert.doesNotMatch(lastSse, /속마음|왜 안 피하지/);
+    assert.ok(turn.at(-1)!.events?.some((e) => e.type === 'system' && e.presentation === 'ui'));
+  });
+
+  await t('the actual persisted ui message renders its panel and latest choices', async () => {
+    const ui = lastUi(await messagesOf(convId));
+    const html = renderChatMessage(ui);
+    assert.match(html, /beat-ui-panel/);
+    assert.equal((html.match(/class="chip"/g) ?? []).length, 3);
+    for (const text of CHOICES) assert.ok(html.includes(text));
+    for (const options of [{ isLastAssistant: false }, { streaming: true }, { generating: true }, { hideChoices: true }]) {
+      assert.doesNotMatch(renderChatMessage(ui, options), /class="chips"/, JSON.stringify(options));
+    }
   });
 
   await t('the Pass C prompt contains the focus line and every extra line that was persisted', async () => {
@@ -472,20 +504,27 @@ await t('an absent scene.format is still beat, and still the path Pass C runs in
   assert.ok(/return generateBeat\(/.test(router));
 });
 
-await t('the web renders these chips with no change: flat path, last assistant, non-line block', () => {
+await t('beat choices stay on the flat path and the web never generates them', () => {
   // beat is not reordered, so every message goes through the plain map and keeps
   // its own chips — the turn-host path is dialog only.
   assert.equal(shouldReorderTurn('beat'), false);
   assert.equal(shouldReorderTurn(undefined), false);
   const page = src('apps/web/src/pages/ChatPage.tsx');
-  const kindAt = page.indexOf("const kind = m.meta.block_kind;");
-  const chipsAt = page.indexOf('<ChoiceChips', kindAt);
-  const branch = page.slice(kindAt, chipsAt + '<ChoiceChips'.length);
-  assert.ok(branch.includes("kind !== 'line'"), 'the ui block goes through this branch');
-  assert.ok(branch.includes('props.isLastAssistant && m.meta.choices'), 'and it already renders chips');
-  assert.ok(branch.includes('<ChoiceChips'));
   // the web is a reader here: it neither generates nor writes a format
   assert.equal(/passCWith|parseChoicesPass|renderPassC/.test(page), false);
+});
+
+await t('each choice button sends its own draft and edit button opens the same draft', () => {
+  const sent: string[] = [], edited: string[] = [];
+  function clickButtons(node: ReactNode): void {
+    if (Array.isArray(node)) { node.forEach(clickButtons); return; }
+    if (!isValidElement<{ children?: ReactNode; className?: string; onClick?: () => void }>(node)) return;
+    if (node.type === 'button' && (node.props.className === 'chip' || node.props.className === 'chip-edit')) node.props.onClick!();
+    clickButtons(node.props.children);
+  }
+  clickButtons(choiceChips({ choices: CHOICES, onChoice: (text) => sent.push(text), onEdit: (text) => edited.push(text), disabled: false }));
+  assert.deepEqual(sent, CHOICES);
+  assert.deepEqual(edited, CHOICES);
 });
 
 }

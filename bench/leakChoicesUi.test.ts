@@ -7,6 +7,10 @@
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { adaptChatEvents } from '../apps/server/src/contracts/chatEventAdapter.ts';
+import { EventRenderer } from '../apps/web/src/components/EventRenderer.tsx';
 import {
   extractChoices,
   stripTrailingBeatUiJson,
@@ -18,7 +22,7 @@ import {
   isEchoFuelMessage,
   partyContextFromHistory,
 } from '../apps/server/src/prompt/builder.ts';
-import { sanitizeBubbleContent } from '../apps/web/src/lib/sanitizeBubble.ts';
+import { sanitizeBubbleContent } from './legacy/sanitizeBubble.ts';
 
 const FIXTURE_UI = {
   location_badge: '보관소 안쪽',
@@ -143,7 +147,7 @@ function main() {
     assert.equal(stripLeakTail('본문\n</choices>\n' + JSON.stringify(FIXTURE_UI)), '본문');
   });
 
-  t('client sanitizeBubbleContent: same fixture cleaned; paired mid-body stripped, surrounding kept', () => {
+  t('archived client sanitizer: same fixture cleaned; paired mid-body stripped, surrounding kept', () => {
     const cleaned = sanitizeBubbleContent(FIXTURE_CONTENT);
     assert.match(cleaned, /빗소리/);
     assert.doesNotMatch(cleaned, /<choices>/i);
@@ -155,12 +159,17 @@ function main() {
     assert.match(cleanedMid, /라고 했고 끝/);
   });
 
-  t('client: MessageView uses sanitize; ui block_kind path untouched', () => {
-    const page = fs.readFileSync('apps/web/src/pages/ChatPage.tsx', 'utf8');
-    assert.match(page, /sanitizeBubbleContent/);
-    assert.match(page, /block_kind === 'ui'|kind === 'ui'|parseBeatUi/);
-    // ui branch still uses BeatUiPanel
-    assert.match(page, /BeatUiPanel/);
+  t('canonical events hide leaked controls while real UI rows render a panel', () => {
+    const render = (content: string, meta = {}) => renderToStaticMarkup(createElement(EventRenderer, {
+      events: adaptChatEvents({ id: 'fixture', role: 'assistant', content, meta }),
+    }));
+    const narrative = render(FIXTURE_CONTENT);
+    assert.match(narrative, /빗소리/);
+    assert.doesNotMatch(narrative, /choices|location_badge|beat-ui-panel/);
+    const panel = render(JSON.stringify(FIXTURE_UI), { block_kind: 'ui' });
+    assert.match(panel, /beat-ui-panel/);
+    assert.match(panel, /보관소 안쪽/);
+    assert.doesNotMatch(panel, /location_badge/);
   });
 
   console.log(`\n${passed} passed`);

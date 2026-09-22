@@ -1,3 +1,4 @@
+// Historical client behavior retained for migration parity tests; never imported by the app.
 /** Display-only speech marks. Never used in prompts or stored message text. */
 export function wrapSpeechMarks(text: string): string {
   if (!text) return text;

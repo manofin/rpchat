@@ -1,15 +1,18 @@
 /**
  * npx tsx bench/beatRenderWeb.test.ts
- * f9-swap-passes (S4) — the client renders §6 blocks, and only §6 blocks.
- * The load-bearing case is the negative one: a message with no `block_kind` must
- * keep the ordinary bubble, or every message written before the beat engine gets
- * reinterpreted as beat chrome on first load.
+ * Beat rendering through the shared server event contract, including legacy rows.
  * Isolated: no systemd, no live DB, no model call, no migration, no live generate.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { adaptChatEvents, type EventMessage } from '../apps/server/src/contracts/chatEventAdapter.ts';
+import { EventRenderer } from '../apps/web/src/components/EventRenderer.tsx';
+import { initialChatState, reduceChatEvent } from '../apps/web/src/lib/chatStreamState.ts';
+import type { Message } from '../apps/web/src/types.ts';
 
 let passed = 0;
 function t(name: string, fn: () => void) {
@@ -25,10 +28,12 @@ const code = (rel: string) => src(rel).replace(/\/\*[\s\S]*?\*\//g, '').replace(
 
 const view = () => src('apps/web/src/components/view.tsx');
 const chatPage = () => src('apps/web/src/pages/ChatPage.tsx');
-const useChat = () => src('apps/web/src/pages/useChat.ts');
 const webTypes = () => src('apps/web/src/types.ts');
 const serverTypes = () => src('apps/server/src/types.ts');
 const chat = () => src('apps/server/src/routes/chat.ts');
+const render = (content: string, meta: EventMessage['meta'] = {}) => renderToStaticMarkup(createElement(EventRenderer, {
+  events: adaptChatEvents({ id: 'fixture', role: 'assistant', content, meta }),
+}));
 
 // ── 1. block_kind is optional on both sides ─────────────────────────────────
 t('block_kind / beat_seq / image_url are optional in server and web MessageMeta', () => {
@@ -39,48 +44,43 @@ t('block_kind / beat_seq / image_url are optional in server and web MessageMeta'
   }
 });
 
-t('a message with no block_kind falls through to the existing bubble', () => {
+t('a message with no block_kind uses canonical events without becoming beat chrome', () => {
   const s = code('apps/web/src/pages/ChatPage.tsx');
-  const guard = /const kind = m\.meta\.block_kind;[\s\S]{0,120}if \(!isUser && kind && kind !== 'line'\)/;
-  assert.match(s, guard, 'the beat branch must be gated on block_kind being present');
-  // the ordinary path is still there, below the guard
-  const at = s.search(guard);
-  assert.ok(s.slice(at).includes('renderContent(shown)'), 'bubble rendering survives');
-  assert.ok(s.slice(at).includes('className={`msg '), 'the msg wrapper survives');
+  assert.match(render('평범한 서술'), /class="beat-narration">평범한 서술/);
+  assert.doesNotMatch(render('평범한 서술'), /beat-header|beat-ui-panel/);
+  assert.match(s, /isUser \? renderContent\(m.content\) : <MessageEvents/);
 });
 
 t("a 'line' block keeps the bubble — it is speech, not chrome", () => {
-  const s = code('apps/web/src/pages/ChatPage.tsx');
-  assert.ok(s.includes("kind !== 'line'"), "'line' must be excluded from the chrome branch");
+  const html = render('대사입니다.', { block_kind: 'line', speaker_name: '나리', speaker_character_id: 'nari' });
+  assert.match(html, /class="bubble beat-dialogue-bubble"/);
+  assert.match(html, /\[나리\]/);
+  assert.doesNotMatch(html, /beat-header|beat-ui-panel/);
 });
 
 // ── 2. each block kind has a renderer ───────────────────────────────────────
-t('view.tsx exports a renderer for every rendered non-line block kind', () => {
-  const s = view();
-  for (const fn of ['BeatHeader', 'BeatNarration', 'BeatUiPanel', 'parseBeatUi', 'PartyBlockView']) {
-    assert.ok(s.includes(`export function ${fn}`), fn);
+t('EventRenderer draws headers, info, narration and server-decoded panels', () => {
+  for (const [kind, className] of [['header', 'beat-header'], ['info', 'beat-info'], ['narration', 'beat-narration']] as const) {
+    assert.match(render('표시 내용', { block_kind: kind }), new RegExp(`class="${className}"`));
   }
+  assert.match(render('{"location_badge":"교실"}', { block_kind: 'ui' }), /beat-ui-panel/);
   const page = chatPage();
-  assert.match(page, /PartyBlockView/, 'non-line chrome goes through PartyBlockView');
-  assert.match(page, /parseBeatUi/, 'roster path still parses ui payloads');
+  assert.match(page, /MessageEvents/);
+  assert.match(page, /eventUiData/, 'roster reads structured event payloads');
   assert.match(page, /BeatUiPanel/, 'roster path still uses BeatUiPanel');
 });
 
-t("'thought' is stored but never drawn — the 속마음 bubble is gone, not the row", () => {
+t('historical thought rows produce no event or DOM', () => {
   assert.equal(view().includes('BeatThought'), false, 'no thought renderer may come back silently');
-  const page = chatPage();
-  assert.match(page, /kind === 'thought'\) body = null/, 'thought must resolve to no body');
-  assert.match(page, /if \(!body && !chips\) return null/, 'a thought with no chips must emit no DOM');
-  // the kind itself stays legal: the server still writes these rows.
+  assert.equal(render('private historical thought', { block_kind: 'thought' }), '');
   assert.match(webTypes(), /block_kind\?: 'header' \| 'narration' \| 'line' \| 'thought' \| 'ui'/);
 });
 
-t('the speaker header is used for line blocks only', () => {
+t('the speaker header reads a dialogue event with an explicit actor name', () => {
   const s = code('apps/web/src/pages/ChatPage.tsx');
   assert.ok(s.includes('<SpeakerHeader'));
-  const at = s.indexOf('<SpeakerHeader');
-  const branchAt = s.indexOf("kind !== 'line'");
-  assert.ok(branchAt < at, 'SpeakerHeader lives below the chrome branch, i.e. on the bubble path');
+  assert.match(s, /events.find\(\(event\) => event.type === 'dialogue'\)/);
+  assert.match(s, /firstDialogue\?\.actorName \?/);
 });
 
 t('BeatUiPanel prints gear, inventory and traits from the user_sheet', () => {
@@ -94,9 +94,7 @@ t('BeatUiPanel prints gear, inventory and traits from the user_sheet', () => {
 });
 
 t('a damaged ui payload renders nothing rather than throwing', () => {
-  const s = view();
-  assert.match(s, /export function parseBeatUi[\s\S]{0,400}catch \{\s*return null;/);
-  assert.match(s, /ui \? <BeatUiPanel ui=\{/, 'a null parse must render nothing');
+  assert.equal(render('{not valid json', { block_kind: 'ui' }), '');
 });
 
 // ── 3. the image is a server path, never model output ───────────────────────
@@ -126,8 +124,15 @@ t('every beat block except the streamed one rides the append-only aux channel', 
 });
 
 t('aux is id-deduped and append-only, so it is safe before start', () => {
-  const s = useChat();
-  assert.match(s, /case 'aux': \{\s*\n\s*if \(s\.messages\.some\(\(m\) => m\.id === e\.message\.id\)\) return s;/);
+  const message: Message = {
+    id: 'aux', conversation_id: 'conversation', parent_id: null, role: 'assistant', content: '표시 내용', status: 'complete',
+    meta: {}, eventVersion: 1, events: [{ type: 'narration', id: 'aux:0', text: '표시 내용' }],
+    bookmarked: false, created_at: '2026-01-01T00:00:00Z', siblings: { index: 0, count: 1, ids: ['aux'] },
+  };
+  const event = { type: 'aux' as const, message };
+  const first = reduceChatEvent(initialChatState, event, 'conversation');
+  const replay = reduceChatEvent(first, event, 'conversation');
+  assert.deepEqual(replay.messages, [message]);
 });
 
 t('exactly one start/done pair per beat, whether or not there is a focus', () => {
@@ -185,8 +190,7 @@ t('the 1:1 client path is unchanged: no block_kind is ever written there', () =>
 
 t('beat styles are additive; no existing class was redefined', () => {
   const css = src('apps/web/src/app.css');
-  // `.beat-thought` is intentionally absent: the 속마음 bubble was removed from the
-  // client. The server still writes `thought` rows — only the rendering is gone.
+  // Historical thought rows have no visible surface.
   for (const cls of ['.beat-header', '.beat-narration', '.beat-ui', '.beat-chip']) {
     assert.ok(css.includes(cls), cls);
   }

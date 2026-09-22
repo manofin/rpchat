@@ -238,6 +238,12 @@ textarea { resize: none; }
 .msg.ooc .bubble { border: 1px dashed var(--fg-3); opacity: 0.85; }
 .bubble.interrupted { border: 1px solid var(--warn); }
 .bubble.error { border: 1px solid var(--danger); }
+.chat-event-body { display: flex; flex-direction: column; gap: 4px; width: 100%; min-width: 0; }
+.chat-event-body.interrupted { border-left: 2px solid var(--warn); }
+.chat-event-body.error { border-left: 2px solid var(--danger); }
+.chat-event-system { color: var(--kami-text-muted); font-size: 13px; white-space: pre-wrap; padding: 6px 8px; }
+.chat-event-error { color: var(--danger); font-size: 13px; white-space: pre-wrap; padding: 6px 8px; }
+.chat-event-body .beat-info { white-space: pre-wrap; }
 .bubble em { font-style: italic; color: var(--kami-text-muted); }
 .cursor::after { content: '▍'; animation: pulse 0.9s infinite; color: var(--role-violet-text); }
 .msg-meta { display: flex; gap: 6px; align-items: center; margin-top: 4px; font-size: 12px; color: var(--kami-text-faint); font-family: system-ui, sans-serif; }

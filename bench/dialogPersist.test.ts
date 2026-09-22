@@ -8,7 +8,7 @@
  */
 import assert from 'node:assert/strict';
 import { sanitizeNarration } from '../apps/server/src/prompt/templates.ts';
-import { sanitizeBubbleContent } from '../apps/web/src/lib/sanitizeBubble.ts';
+import { sanitizeBubbleContent } from './legacy/sanitizeBubble.ts';
 import { narrationLeaks } from './fixtures/narrationLeaks.ts';
 import fs from 'node:fs';
 import os from 'node:os';

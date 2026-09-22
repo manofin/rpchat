@@ -328,6 +328,7 @@ async function main() {
     const conv = await newConv();
     await send(conv, '첫 턴');
     const before = JSON.stringify(sceneOf(conv));
+    const beforeMessages = await messagesOf(conv);
 
     sceneWrites = 0;
     passFail = true;
@@ -339,9 +340,7 @@ async function main() {
 
     assert.equal(JSON.stringify(sceneOf(conv)), before, 'scene is byte-identical to before the turn');
     assert.equal(sceneWrites, 0, 'no conversation scene write at all on the failure path');
-    const turn = lastTurn(await messagesOf(conv));
-    const start = turn.find((m) => m.meta.beat_seq === 0);
-    if (start) assert.equal(snapOf(start), null, 'an unfinished turn carries no completed snapshot');
+    assert.deepEqual(await messagesOf(conv), beforeMessages, 'the failed branch is retracted and the previous committed snapshots remain unchanged');
   });
 
   await t('a delta call failure and a parse failure both leave the scene untouched', async () => {
