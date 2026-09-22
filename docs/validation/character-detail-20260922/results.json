@@ -1,0 +1,54 @@
+{
+  "gitHead": "463077a98020ef82998e1de30ec13d891d0b58fe",
+  "node": "v22.16.0",
+  "totals": {
+    "discovered": 173,
+    "passed": 170,
+    "failed": 0,
+    "excluded": 3,
+    "notRun": 0,
+    "reportedChecks": 2110
+  },
+  "startedAt": "2026-09-22T10:14:16.772Z",
+  "finishedAt": "2026-09-22T10:14:52.197Z",
+  "scope": "Character detail web UI and regression fixtures only; no server, schema, live DB, merge or deployment.",
+  "excluded": [
+    {
+      "file": "bench/characterAssetsWrite.test.ts",
+      "reason": "Source mutation: select this name alone with --allow-source-mutation in a temporary isolated checkout."
+    },
+    {
+      "file": "bench/partyTurnLiveRo.test.ts",
+      "reason": "Separate private-copy validation: requires an approved RPCHAT_RO_DB and matching private fixture."
+    },
+    {
+      "file": "bench/settingsViewport.test.ts",
+      "reason": "Separate browser validation: requires a configured Chrome binary and viewport screenshots."
+    }
+  ],
+  "browser": {
+    "fixture": "Synthetic character and stories, isolated temporary DB, loopback mock model",
+    "testedWidths": [
+      360,
+      390,
+      720,
+      1280
+    ],
+    "realGalaxyDevice": false,
+    "checks": [
+      "character selection shows authoring data, not conversation list",
+      "linked story opens correct story",
+      "Start opens existing conversations and New conversation",
+      "existing conversation resumes",
+      "new conversation preserves title, scene, persona and character-only body",
+      "empty character and conversation list",
+      "editor header/close visible at360x667",
+      "mobile footer and chooser stop above bottom navigation",
+      "no horizontal content overflow",
+      "no browser console warnings or errors"
+    ]
+  },
+  "typecheck": 0,
+  "build": 0,
+  "diffCheck": 0
+}
