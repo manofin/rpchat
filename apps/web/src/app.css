@@ -1479,100 +1479,66 @@ textarea { resize: none; }
   font-size: 13px;
   color: var(--kami-text-muted);
 }
-.char-hero {
-  border: 1px solid var(--kami-line);
-  border-radius: 16px;
-  background: var(--bg-2);
-  padding: 0;
-  margin-bottom: 16px;
-  overflow: hidden;
-}
-.char-hero-cover {
-  position: relative;
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-  background: var(--bg-3);
-}
-.char-hero-cover-img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+/* Character detail keeps reading separate from choosing a conversation. */
+.char-hero { margin: 0 -12px; overflow: hidden; }
+.char-hero-cover { position: relative; aspect-ratio: 5 / 4; max-height: 420px; overflow: hidden; background: var(--bg-3); }
+.char-hero-cover-img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 25%; }
 .char-hero-cover-soft {
-  width: 100%;
-  height: 100%;
-  background:
-    radial-gradient(ellipse at 30% 20%, hsla(var(--disc-hue), 55%, 62%, 0.55), transparent 55%),
-    linear-gradient(160deg, hsl(var(--disc-hue), 28%, 22%) 0%, #1a1614 100%);
+  width: 100%; height: 100%; display: grid; place-items: center;
+  background: radial-gradient(ellipse at 30% 20%, hsla(var(--disc-hue), 55%, 62%, 0.55), transparent 55%), linear-gradient(160deg, hsl(var(--disc-hue), 28%, 22%) 0%, #1a1614 100%);
 }
-.char-hero-cover-scrim {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(18, 14, 12, 0.78) 0%, rgba(18, 14, 12, 0.28) 42%, transparent 72%);
-  pointer-events: none;
+.char-hero-cover-soft span { font-size: 52px; color: rgba(255,255,255,.55); font-weight: 700; }
+.char-hero-cover.is-empty { aspect-ratio: auto; height: 156px; }
+.char-hero-cover-scrim { position: absolute; inset: 0; background: linear-gradient(to top, rgba(18,14,12,.65), transparent 72%); pointer-events: none; }
+.char-hero-body { padding: 22px 18px 8px; }
+.char-hero-name { margin: 0; font-size: 26px; font-weight: 800; color: var(--kami-text-strong); line-height: 1.25; overflow-wrap: anywhere; }
+.char-hero-tag { margin: 6px 0 0; font-size: 14px; line-height: 1.65; color: var(--fg-2); }
+
+.char-detail-content { padding-top: 0; }
+.char-detail-tags { margin-top: 12px; }
+.char-detail-section { padding: 22px 6px; border-bottom: 1px solid var(--kami-line-soft); }
+.char-detail-section h2 { margin: 0 0 14px; font-size: 17px; font-weight: 750; color: var(--kami-text-strong); }
+.char-detail-section h3 { margin: 18px 0 6px; font-size: 13px; color: var(--fg); }
+.char-detail-section p { margin: 0; font-size: 14px; line-height: 1.8; color: var(--fg-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.char-section-count { margin-left: 8px; color: var(--fg-2); font-weight: 500; font-size: 14px; }
+.char-detail-stories { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.char-story-card { display: flex; flex-direction: column; min-width: 0; text-align: left; padding: 0; border: 0; border-radius: 12px; background: var(--bg-2); color: var(--fg); overflow: hidden; cursor: pointer; }
+.char-story-card .disc-cover { width: 100%; aspect-ratio: 4 / 3; }
+.char-story-card .disc-card-name { font-size: 15px; }
+.char-story-caption { padding: 12px 12px 0; font-size: 12px; line-height: 1.65; color: var(--fg-2); overflow-wrap: anywhere; }
+.char-story-link { margin-top: auto; padding: 10px 12px 12px; font-size: 12px; color: var(--role-coral-text); }
+.char-world-entry { padding: 12px 14px; border: 1px solid var(--kami-line-soft); border-radius: 12px; background: var(--bg-2); }
+.char-world-entry + .char-world-entry { margin-top: 10px; }
+.char-world-entry summary { cursor: pointer; font-size: 14px; font-weight: 650; overflow-wrap: anywhere; }
+.char-world-entry p { margin-top: 12px; }
+.char-first-message { margin: 0; padding: 16px; border-left: 3px solid var(--role-coral); border-radius: 0 12px 12px 0; background: var(--bg-2); white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; font-size: 14px; }
+.char-detail-manage { padding: 20px 6px; color: var(--fg-2); font-size: 13px; }
+.char-detail-manage summary { cursor: pointer; }
+.char-detail-manage .btn { margin-top: 12px; }
+.char-detail-footer { flex: 0 0 auto; padding: 12px max(16px, var(--safe-right)) 12px max(16px, var(--safe-left)); border-top: 1px solid var(--kami-line-soft); background: var(--bg); }
+.char-sheet-heading { display: flex; align-items: center; gap: 8px; padding: 10px 14px 14px; }
+.char-sheet-heading > div, .char-sheet-heading > strong { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.char-sheet-heading p { font-size: 13px; color: var(--fg-2); margin: 6px 0 0; }
+.char-new-conversation { min-height: 48px; }
+.char-conversations-title { margin: 24px 0 12px; font-size: 14px; }
+.char-conversation-row { gap: 4px; padding: 8px; }
+.char-conversation-open { border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; padding: 6px; }
+.char-conversation-open > span { display: block; }
+.char-conversation-open .p { white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+.char-start-scene { margin-bottom: 16px; color: var(--fg-2); font-size: 13px; }
+.char-start-scene summary { cursor: pointer; padding: 8px 0; }
+.char-start-scene > div { padding-top: 8px; }
+.char-detail-notice { padding: 12px 0; }
+.char-detail-notice p { margin: 0 0 10px; font-size: 13px; color: var(--fg-2); }
+@media (max-width: 767px) {
+  .char-detail-footer { margin-bottom: var(--bottom-nav-offset); }
+  .tab-shell .char-detail-content { padding-bottom: 0; }
 }
-.char-hero-cover-avatar {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  z-index: 1;
-  transform: translate(-50%, 50%);
-}
-.char-hero-cover-avatar .avatar.lg {
-  margin: 0;
-  box-shadow: 0 0 0 3px var(--bg-2);
-}
-.char-hero-body {
-  padding: 76px 16px 16px;
-}
-.char-hero-main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 12px;
-}
-@media (min-width: 560px) {
-  .char-hero-cover-avatar {
-    left: 20px;
-    transform: translateY(50%);
-  }
-  .char-hero-main {
-    align-items: flex-start;
-    text-align: left;
-  }
-  .char-hero-main .avatar.lg { margin: 0; }
-}
-.char-hero-copy { min-width: 0; flex: 1; }
-.char-hero-name {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--kami-text-strong);
-  line-height: 1.25;
-}
-.char-hero-tag {
-  margin: 6px 0 0;
-  font-size: 14px;
-  color: var(--fg-2);
-}
-.char-hero-meta { margin-top: 10px; }
-.char-hero-desc {
-  margin: 14px 0 0;
-  font-size: 14px;
-  line-height: 1.65;
-  color: var(--fg-2);
-  white-space: pre-wrap;
-}
-.char-hero-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid var(--kami-line-soft);
-}
+
+.char-conversation-sheet { display: contents; }
+.char-conversation-sheet .sheet { bottom: var(--bottom-nav-offset, 0px); max-height: calc(var(--app-height) * 0.86 - var(--bottom-nav-offset, 0px)); }
+
+.char-story-card:focus-visible, .char-conversation-open:focus-visible { outline: 2px solid var(--role-coral); outline-offset: -2px; }
 .disc-start-cta {
   min-height: 48px;
   font-weight: 800;
