@@ -42,8 +42,19 @@ export function authState(req: FastifyRequest, db: DB): AuthState {
 
 export function registerAuthHook(app: FastifyInstance, db: DB): void {
   app.addHook('onRequest', async (req, reply) => {
-    if (!req.url.startsWith('/api/')) return; // 정적 파일은 통과 (번들에 비밀 없음)
-    if (req.url.startsWith('/api/health') || req.url.startsWith('/api/auth/')) return;
+    // Fastify can match an encoded URL (for example /%61pi/...) to an /api route.
+    // Authorize the matched route, not the untrusted request target. Also protect
+    // unmatched encoded API paths instead of letting the static fallback handle them.
+    const routePath = req.routeOptions.url;
+    const rawPath = req.url.split('?', 1)[0] ?? '';
+    let decodedPath: string;
+    try {
+      decodedPath = decodeURIComponent(rawPath);
+    } catch {
+      decodedPath = rawPath;
+    }
+    if (!routePath?.startsWith('/api/') && !decodedPath.startsWith('/api/')) return;
+    if (routePath === '/api/health' || routePath?.startsWith('/api/auth/')) return;
     const st = authState(req, db);
     if (st.authenticated) return;
     const hint =
