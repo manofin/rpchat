@@ -26,6 +26,11 @@ export class GenerationQueue {
   register(g: ActiveGeneration): void {
     this.active.set(g.id, g);
   }
+  setMessageId(id: string, messageId: string): void {
+    const generation = this.active.get(id);
+    if (!generation) throw new Error(`generation not active: ${id}`);
+    generation.messageId = messageId;
+  }
   unregister(id: string): void {
     this.active.delete(id);
   }

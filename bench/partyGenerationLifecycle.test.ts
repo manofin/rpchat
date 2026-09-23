@@ -10,6 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
 import { openMigratedDb } from '../apps/server/src/db/index.ts';
+import { interruptOrphanStreaming } from '../apps/server/src/db/generation.ts';
 import { GenerationQueue } from '../apps/server/src/model/queue.ts';
 import { characterRoutes } from '../apps/server/src/routes/characters.ts';
 import { conversationRoutes } from '../apps/server/src/routes/conversations.ts';
@@ -93,6 +94,9 @@ async function main() {
   let holdDelta = false;
   let deltaHeld = false;
   let deltaRelease: (() => void) | undefined;
+  let holdStream = false;
+  let streamHeld = false;
+  let streamRelease: (() => void) | undefined;
   const completePrompts: string[] = [];
 
   const model = {
@@ -123,6 +127,12 @@ async function main() {
         ? DIALOG_SCRIPT
         : `"……짝꿍?"\n${THOUGHT_MARKER} 왜 안 피하지.`;
       onToken(text);
+      if (holdStream) {
+        await new Promise<void>((resolve) => {
+          streamRelease = resolve;
+          streamHeld = true;
+        });
+      }
       return { text, finishReason: 'stop', usage: null, ttftMs: 1, totalMs: 3 };
     },
     listModels: async () => ['test-model'],
@@ -257,6 +267,43 @@ async function main() {
 
     const dialogAbort = await newConv('dialog');
     await t('dialog abort during scene-delta stops and unregisters', () => abortDuringDelta(dialogAbort, 'dialog'));
+
+    for (const format of [undefined, 'dialog'] as const) {
+      const conv = await newConv(format);
+      await t(`${format ?? 'beat'} streaming row survives conversation polling`, async () => {
+        const setup = await api('PATCH', `/api/conversations/${conv}`, {
+          scene: { location: '교실', present_ids: [hayeon.id, nari.id, sera.id] },
+        });
+        assert.equal(setup.status, 200, setup.text);
+        holdStream = true;
+        streamHeld = false;
+        const pending = fetch(`${origin}/api/conversations/${conv}/messages`, {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ content: '나리, stream hold' }),
+        });
+        try {
+          await waitUntil(() => streamHeld, `${format ?? 'beat'} stream is held`);
+          const active = ctx.queue.activeList.find((g) => g.conversationId === conv);
+          assert.ok(active?.messageId, 'active generation exposes its streaming message ID');
+          // Make the row old enough that GET's race grace period cannot mask it.
+          db.prepare('UPDATE messages SET created_at = ? WHERE id = ?').run('2020-01-01T00:00:00.000Z', active.messageId);
+          // Another conversation's send runs this cleanup without the GET grace period.
+          interruptOrphanStreaming(db, { keepMessageIds: ctx.queue.activeList.map((g) => g.messageId) });
+          const polled = await api('GET', `/api/conversations/${conv}`);
+          assert.equal(polled.status, 200, polled.text);
+          const detail = polled.json as {
+            activeGeneration: { messageId: string };
+            messages: Array<{ id: string; status: string }>;
+          };
+          assert.equal(detail.activeGeneration.messageId, active.messageId);
+          assert.equal(detail.messages.find((m) => m.id === active.messageId)?.status, 'streaming');
+        } finally {
+          holdStream = false;
+          streamRelease?.();
+          assert.equal((await pending).status, 200);
+        }
+      });
+    }
 
     async function planAssemblyBoom(conv: string, label: string, branch = false) {
       if (branch) {
