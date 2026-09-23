@@ -1,4 +1,7 @@
-/** Editor controls cover app navigation; ordinary sheets and confirmation ordering stay intact. */
+/** TSX_TSCONFIG_PATH=apps/web/tsconfig.json npx tsx bench/modalOverlay.test.ts
+ * Editor controls cover app navigation; ordinary sheets and confirmation ordering stay intact.
+ * CSS z-index + ui.tsx source + static render only. No live HTTP / systemd / DB / commit / deploy / restart.
+ */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import React from 'react';
