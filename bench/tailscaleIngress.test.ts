@@ -150,14 +150,16 @@ async function main() {
   const app = Fastify({ logger: false, trustProxy: false });
   registerAuthHook(app, db);
   app.get('/api/probe', async () => ({ ok: true }));
+  app.get('/api/health', async () => ({ ok: true }));
+  app.get('/api/auth/me', async () => ({ ok: true }));
   await app.ready();
 
-  async function probe(opts: { remoteAddress: string; login?: string; extraHeaders?: Record<string, string> }) {
+  async function probe(opts: { remoteAddress: string; login?: string; url?: string; extraHeaders?: Record<string, string> }) {
     const headers: Record<string, string> = { ...(opts.extraHeaders ?? {}) };
     if (opts.login !== undefined) headers['tailscale-user-login'] = opts.login;
     const res = await app.inject({
       method: 'GET',
-      url: '/api/probe',
+      url: opts.url ?? '/api/probe',
       remoteAddress: opts.remoteAddress,
       headers,
     });
@@ -185,6 +187,24 @@ async function main() {
   await t('untrusted peer × wrong header → 401', async () => {
     const r = await probe({ remoteAddress: '10.9.9.9', login: 'other@github' });
     assert.equal(r.status, 401);
+  });
+
+  await t('encoded API paths cannot bypass login or peer checks', async () => {
+    for (const url of ['/%61pi/probe', '/api%2Fprobe', '/%61pi/%70robe']) {
+      const anonymous = await probe({ remoteAddress: '127.0.0.1', url });
+      assert.equal(anonymous.status, 401, `${url}: anonymous request`);
+      const wrongPeer = await probe({ remoteAddress: '10.9.9.9', login: LOGIN, url });
+      assert.equal(wrongPeer.status, 401, `${url}: untrusted peer`);
+      const allowed = await probe({ remoteAddress: '127.0.0.1', login: LOGIN, url });
+      assert.equal(allowed.status, url === '/api%2Fprobe' ? 404 : 200, `${url}: authorized route`);
+    }
+  });
+
+  await t('only matched health and auth routes remain public', async () => {
+    for (const url of ['/api/health', '/%61pi/health', '/api/auth/me', '/%61pi/auth/me']) {
+      assert.equal((await probe({ remoteAddress: '127.0.0.1', url })).status, 200, url);
+    }
+    assert.equal((await probe({ remoteAddress: '127.0.0.1', url: '/%61pi/health-extra' })).status, 401);
   });
 
   await t('IPv4 loopback peer × correct header → 200', async () => {
