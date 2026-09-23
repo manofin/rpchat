@@ -666,6 +666,7 @@ export function chatRoutes(ctx: Ctx) {
           block_kind: 'line', beat_seq: focusSeq,
           speaker_character_id: plan.focus.focus_id, speaker_name: focusName,
         });
+        ctx.queue.setMessageId(generationId, focusRow.id);
         setHead(db, conv.id, focusRow.id);
         head = focusRow.id;
         // The focus row occupies a beat position like any other block, so it has to
@@ -1074,6 +1075,7 @@ export function chatRoutes(ctx: Ctx) {
         chat_event_script: true,
         chat_event_actors: plan.speakers.map(({ id, name, aliases }) => ({ id, name, aliases })),
       });
+      ctx.queue.setMessageId(generationId, scriptRow.id);
       setHead(db, conv.id, scriptRow.id);
       head = scriptRow.id;
       emitted.push(scriptRow);
