@@ -131,6 +131,12 @@ export type AttachInjectToIcPassOpts = {
   promptTokenBudget: number;
   /** Token calibration (default 1.0; callers may pass getCalibration(db)). */
   calibration?: number;
+  /**
+   * profile-instruction (0023): rendered `## 서술 지침` block from the room's model
+   * profile, or null. Inserted immediately before `## 규칙` (see
+   * insertProfileInstructionBeforeRules). Absent/null → byte-identical to pre-0023.
+   */
+  profileInstruction?: string | null;
 };
 
 /**
@@ -146,13 +152,18 @@ export function attachInjectToIcPass(
   instruction: string | null | undefined,
   opts: AttachInjectToIcPassOpts,
 ): { prompt: string; droppedRecent: number } {
-  if (instruction == null || instruction === '') {
+  const profileBlock = opts.profileInstruction;
+  const hasProfile = !(profileBlock == null || profileBlock === '');
+  if ((instruction == null || instruction === '') && !hasProfile) {
     return { prompt, droppedRecent: 0 };
   }
 
   const cal = opts.calibration ?? 1.0;
   const budget = opts.promptTokenBudget;
-  let current = prependInjectToRules(prompt, instruction);
+  // inject first (after this pass's own `## 규칙`), then the profile block before
+  // that same header — reversed, a `## 규칙` string inside the instruction text
+  // could capture the inject slot. Both helpers are identity on null/''.
+  let current = insertProfileInstructionBeforeRules(prependInjectToRules(prompt, instruction), profileBlock);
   let droppedRecent = 0;
 
   while (estimateTokens(current, cal) > budget) {
@@ -160,8 +171,11 @@ export function attachInjectToIcPass(
     if (next == null) {
       const est = estimateTokens(current, cal);
       throw new Error(
-        `attachInjectToIcPass: inject_instruction exceeds pass prompt budget ` +
-          `(est=${est} budget=${budget}); inject is never truncated`,
+        hasProfile
+          ? `attachInjectToIcPass: profile instruction + inject_instruction exceed pass prompt budget ` +
+            `(est=${est} budget=${budget}); neither is truncated`
+          : `attachInjectToIcPass: inject_instruction exceeds pass prompt budget ` +
+            `(est=${est} budget=${budget}); inject is never truncated`,
       );
     }
     current = next;
@@ -169,4 +183,28 @@ export function attachInjectToIcPass(
   }
 
   return { prompt: current, droppedRecent };
+}
+
+/**
+ * profile-instruction (0023): 모델 프로필 서술 지침을 파티 IC 호출(N/F/E/S)에 붙인다.
+ * attachInjectToIcPass 의 `opts.profileInstruction` 으로만 호출된다(attach 경로는 하나).
+ * 한 호출 프롬프트에 한 번만 들어간다(카드·캐릭터 수만큼 반복하지 않는다). 장면 판정
+ * (scene delta)과 Pass C(선택지)는 이 함수를 거치지 않는다.
+ *
+ * 자리: 그 호출의 `## 규칙` 머리 **바로 앞**에 독립 절(`## 서술 지침 …`)로 넣는다. 규칙
+ * 목록 안(inject 자리)에 넣지 않는 이유: 지침 원문이 자체 `#`/`##` 머리를 가져서, 규칙
+ * 목록 안에 들어가면 뒤따르는 호출 규칙이 지침의 마지막 절에 속한 것처럼 읽힌다. 호출
+ * 규칙이 지침 뒤에 오므로 출력 계약(문장 수·대사 줄 수·화자)은 그대로 마지막 말을 한다.
+ *
+ * - `block` 은 호출 측이 renderProfileInstruction(…, '## 서술 지침', …) 으로 만든 완성 문자열
+ * - null / '' → 그대로 반환 (바이트 불변)
+ * - `## 규칙` 머리 없음 → throw (prependInjectToRules 와 같은 fail-closed)
+ */
+export function insertProfileInstructionBeforeRules(prompt: string, block: string | null | undefined): string {
+  if (block == null || block === '') return prompt;
+  const header = '## 규칙';
+  const at = prompt.indexOf(`${header}\n`);
+  const idx = at >= 0 ? at : (prompt === header ? 0 : prompt.endsWith(`\n${header}`) ? prompt.length - header.length : -1);
+  if (idx < 0) throw new Error('insertProfileInstructionBeforeRules: missing ## 규칙 header');
+  return prompt.slice(0, idx) + block + '\n\n' + prompt.slice(idx);
 }

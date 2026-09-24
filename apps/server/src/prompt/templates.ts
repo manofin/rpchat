@@ -30,6 +30,33 @@ function headerRule(policy: HeaderPolicy): string {
 
 const LENGTH_HINT = '응답 길이는 4~10문장. 장면·감각·감정 묘사를 포함해 서사적으로 쓴다.';
 
+/**
+ * PromptPolicy.enforceProseOrder=false 일 때 HARD_RULES[3] 자리에 들어간다.
+ * HARD_RULES[3] 에서 마지막 문장(산문 순서 강제)만 뺀 것 — 반복 금지는 유지한다.
+ * HARD_RULES 배열 자체는 바꾸지 않는다(기본 경로 바이트 불변).
+ */
+const PROSE_ORDER_RULE_INDEX = 3;
+const HARD_RULE_4_NO_PROSE_ORDER = '직전 응답의 문장·표현·전개를 반복하지 않는다. 매 응답에 관찰 가능한 변화, NPC 반응, 결정 지점 중 하나를 넣는다.';
+
+/** renderRules 가 쓰는 PromptPolicy 부분. 생략하면 기본(모두 true) — 0023 이전과 같은 출력. */
+export type RulesPolicy = { enforceProseOrder: boolean; includeLengthHint: boolean };
+const DEFAULT_RULES_POLICY: RulesPolicy = { enforceProseOrder: true, includeLengthHint: true };
+
+/**
+ * 서술 지침 뒤에 붙는 앱 공통 문구(엔진 이름에 의존하지 않음). 우선순위를 명시해
+ * 모델이 규칙과 지침 사이에서 고르지 않게 한다:
+ * - 로그·상태창·접기 블록: 이 앱은 렌더하지 않으므로 출력 금지.
+ * - 이 요청의 규칙(1:1 규칙 목록 / 파티 호출의 ## 규칙)이 정한 형식·길이·화자 제한이 우선.
+ * - <choices> 는 본문이 아닌 입력창 제안이므로 {{user}} 대필 금지의 예외(요구받은 경우에만).
+ */
+export const PROFILE_INSTRUCTION_ADAPTER =
+  '위 서술 지침이 로그·상태창·접기(<details>) 블록 출력을 요구하더라도 출력하지 않고 본문만 쓴다. 이 요청의 규칙이 정한 출력 형식·길이·화자 제한은 서술 지침보다 우선한다. 응답 끝에 <choices> 블록을 요구받았다면 그 블록은 본문이 아니라 {{user}}의 입력창에 채울 제안이므로 {{user}} 대필 금지의 예외이고, 본문에는 그 금지가 그대로 적용된다.';
+
+/** 1:1 은 `### 서술 지침`, 파티 IC 호출은 `## 서술 지침` (각 프롬프트의 절 머리 수준에 맞춤). */
+export function renderProfileInstruction(text: string, heading: '### 서술 지침' | '## 서술 지침', charName: string, userName: string): string {
+  return substitute(`${heading}\n${text.trim()}\n\n${PROFILE_INSTRUCTION_ADAPTER}`, charName, userName);
+}
+
 export const STORY_CHOICES_INSTRUCTION =
   '응답의 맨 마지막 줄에 {{user}}가 다음에 보낼 입력 초안 3개를 정확히 다음 형식으로만 출력한다: <choices>["초안 1","초안 2","초안 3"]</choices>. 각 초안은 지금 장면에 실제로 있는 사물·환경에 근거한 행동이나 {{user}}의 감정을 별표(*)로 감싼 상황·감정 묘사 1문장 이상으로 먼저 쓰고(예: *샌드위치를 한 입 베어 물고는 덤덤하게 웃으며*, *창밖을 무심히 바라보다가*), 이어서 별표 밖에 {{user}} 1인칭 대사를 3문장 이상 붙인다. 대사는 가벼운 잡담이 아니라 상대를 이름으로 부르거나 감정이 걸린 질문·고백처럼 장면을 다음 국면으로 밀어붙이는 내용이어야 한다. 세 초안은 서로 태도(거절·회피·거래·맞대응 등)가 뚜렷이 달라야 한다. 초안 문자열 안에 큰따옴표는 쓰지 않는다. 선택지는 입력창을 채우는 제안일 뿐이며 특정 선택지의 성공을 예고하지 않는다. 초안의 화자는 항상 {{user}}다. {{char}}의 대사·행동·생각·서술을 초안에 쓰지 않는다. 직전 본문을 {{char}} 시점으로 이어 쓰지 않는다. All choices must be written as messages spoken or acted by {{user}}. Never write {{char}} dialogue, actions, thoughts, or narration inside choices.';
 
@@ -41,11 +68,15 @@ export function renderRules(
   charName: string,
   userName: string,
   headerPolicy: HeaderPolicy = DEFAULT_HEADER_POLICY,
+  policy: RulesPolicy = DEFAULT_RULES_POLICY,
 ): string {
-  const lines = HARD_RULES.map((r, i) => `${i + 1}. ${r}`);
+  const hard = policy.enforceProseOrder
+    ? HARD_RULES
+    : HARD_RULES.map((r, i) => (i === PROSE_ORDER_RULE_INDEX ? HARD_RULE_4_NO_PROSE_ORDER : r));
+  const lines = hard.map((r, i) => `${i + 1}. ${r}`);
   lines.push(`${lines.length + 1}. ${headerRule(headerPolicy)}`);
   if (contentPolicy.trim()) lines.push(`${lines.length + 1}. ${contentPolicy.trim()}`);
-  lines.push(`${lines.length + 1}. ${LENGTH_HINT}`);
+  if (policy.includeLengthHint) lines.push(`${lines.length + 1}. ${LENGTH_HINT}`);
   return substitute(`당신은 역할극(RP) 파트너로서 오직 '{{char}}' 역할만 연기한다. 상대는 '{{user}}'다.\n규칙:\n${lines.join('\n')}`, charName, userName);
 }
 

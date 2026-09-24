@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../ctx.js';
@@ -25,16 +26,17 @@ import {
 } from '../prompt/clockObserve.js';
 import { PASS_E_MAX_SENTENCES, PASS_N_RECENT_NARRATIONS } from '../prompt/passes.js';
 import { parseChoicesPass } from '../prompt/beatChoices.js';
-import { resolvePersona } from '../prompt/builder.js';
+import { loadProfile, resolvePersona } from '../prompt/builder.js';
 import { parseParticipantSnapshot } from '../prompt/resolveFocus.js';
 import type { PassCard } from '../prompt/passes.js';
 import type { CharacterRow } from '../types.js';
 import { buildPrompt } from '../prompt/builder.js';
 import { parseInjectInstruction, attachInjectToIcPass, type InjectContext } from '../prompt/injectContext.js';
+import { formatInstructionOverflow, profileInstructionText } from '../prompt/promptPolicy.js';
 import { dumpGenerationPrompt } from '../prompt/dump.js';
-import { extractChoices, sanitizeAssistantContent, sanitizeNarration } from '../prompt/templates.js';
+import { extractChoices, renderProfileInstruction, sanitizeAssistantContent, sanitizeNarration } from '../prompt/templates.js';
 import { estimateTokens, getCalibration, updateCalibration } from '../prompt/tokens.js';
-import type { ConversationRow, MessageRow, Scene } from '../types.js';
+import type { ConversationRow, InstructionOverflow, MessageRow, Scene } from '../types.js';
 import { loadConversation } from './conversations.js';
 import { fireEndingEvalJob } from '../endingJudge.js';
 import { createChatEventStream, sanitizeGeneratedContent } from '../contracts/chatEventAdapter.js';
@@ -114,6 +116,8 @@ const SCENE_DELTA_MAX_TOKENS = 200;
 const AUX_MAX_TOKENS = 220;
 /** Pass N is scene-setting, not a chapter. */
 const PASS_N_MAX_TOKENS = 300;
+/** Pass F — the focus line (streamed). */
+const PASS_F_MAX_TOKENS = 500;
 /** Pass N failing must not cost the turn, so it gets a short leash. */
 const PASS_N_TIMEOUT_MS = 20_000;
 const PASS_E_TIMEOUT_MS = 15_000;
@@ -177,6 +181,40 @@ function sealClockObserve(
  * fast rather than adding a minute to the turn. Composing a signal here keeps that
  * local to the beat path instead of changing the shared client for 1:1 too.
  */
+/**
+ * profile-instruction (0023): 파티 IC 호출(N/F/E/S)에 붙일 모델 프로필 서술 지침.
+ * - 프로필은 방에 저장된 `conv.profile_name` 으로 조회한다(방 생성 때 정해져 방에서 바꾼 값이
+ *   유지된다 — 스토리 기본값을 매 턴 다시 읽지 않는다).
+ * - 지침 원문은 턴마다 한 번 읽고 호출마다 한 번 렌더한다(attachInjectToIcPass 의
+ *   `profileInstruction`). {{char}} 는 그 호출의 연기자 이름(F=초점, E=그 추가 화자),
+ *   서술자·대본 호출(N/S)은 빈 문자열(대본 경로의 기존 관례).
+ * - 장면 판정과 Pass C(선택지)에는 붙이지 않는다. 샘플링은 호출별 값을 그대로 쓴다.
+ * - logField: 지침이 있을 때만 generation_log budget_json 에 `profile_instruction` 키를 더한다.
+ */
+function partyProfileInstruction(
+  db: Ctx['db'],
+  conv: ConversationRow,
+  userName: string,
+): {
+  forCall: (charName: string) => string | null;
+  overflow: (smallestIcBudget: number, calibration: number) => InstructionOverflow | null;
+  logField: { profile_instruction?: { profile: string; sha256_8: string } };
+} {
+  const profile = loadProfile(db, conv.profile_name);
+  const text = profileInstructionText(profile);
+  return {
+    forCall: (charName) => (text ? renderProfileInstruction(text, '## 서술 지침', charName, userName) : null),
+    overflow: (smallestIcBudget, calibration) => {
+      if (!text) return null;
+      const est = estimateTokens(renderProfileInstruction(text, '## 서술 지침', '', userName), calibration);
+      return est > smallestIcBudget ? { profile: profile.name, instruction_tokens: est, required: est, available: smallestIcBudget } : null;
+    },
+    logField: text
+      ? { profile_instruction: { profile: profile.name, sha256_8: createHash('sha256').update(text).digest('hex').slice(0, 8) } }
+      : {},
+  };
+}
+
 function withDeadline(ms: number, parent: AbortSignal): { signal: AbortSignal; done: () => void } {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(new Error('pass timeout')), ms);
@@ -283,6 +321,17 @@ export function chatRoutes(ctx: Ctx) {
   }
 
   /**
+   * 생성 전 거부(프롬프트 조립 실패 500, 모델 이름 503, 서술 지침 초과 422)의 공통 정리.
+   * generate() 는 판정보다 먼저 head 를 parentId 로 옮긴다. 새 입력이면 그 입력을 걷어 내며 head 를
+   * 되돌리고(retractUnconfirmedSend), 재생성처럼 걷어 낼 입력이 없으면 head 만 원래 값으로 되돌린다
+   * — 그러지 않으면 기존 답변이 활성 경로에서 빠진다(P1). assistant 행이 생긴 뒤의 실패는 대상이 아니다.
+   */
+  function refuseBeforeGeneration(user: MessageRow | undefined, conv: ConversationRow): void {
+    if (user && user.role === 'user') retractUnconfirmedSend(user, conv.head_message_id);
+    else setHead(db, conv.id, conv.head_message_id);
+  }
+
+  /**
    * 공통 생성 경로. parentId 를 head 로 두고 그 아래에 assistant 메시지를 만들어 스트리밍한다.
    * 클라이언트가 끊겨도 생성은 계속되어 DB 에 저장된다(모바일 백그라운드 대응). 중단은 abort 엔드포인트로만.
    */
@@ -340,12 +389,17 @@ export function chatRoutes(ctx: Ctx) {
     try {
       built = buildPrompt(db, convNow, history, config.model.contextTokens, ctx.resolvedModel(), undefined, { inject });
     } catch (err) {
-      retractUnconfirmedSend(userMessage, conv.head_message_id);
+      refuseBeforeGeneration(userMessage, conv);
       return reply.code(500).send({ error: `프롬프트 조립 실패: ${(err as Error).message}` });
     }
     if (!built.model) {
-      retractUnconfirmedSend(userMessage, conv.head_message_id);
+      refuseBeforeGeneration(userMessage, conv);
       return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
+    }
+    // profile-instruction: 지침을 넣으면 현재 턴조차 못 들어가는 경우 — 모델 호출·메시지 생성 전에 거부.
+    if (built.budget.instruction_overflow) {
+      refuseBeforeGeneration(userMessage, conv);
+      return reply.code(422).send({ error: formatInstructionOverflow(built.budget.instruction_overflow) });
     }
 
     const assistant = insertMessage(db, conv.id, parentId, 'assistant', '', 'streaming', {
@@ -475,8 +529,18 @@ export function chatRoutes(ctx: Ctx) {
       Math.max(512, config.model.contextTokens - completionMax - 64);
     const model = ctx.resolvedModel();
     if (!model) {
-      retractUnconfirmedSend(userMessage, conv.head_message_id);
+      refuseBeforeGeneration(userMessage, conv);
       return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
+    }
+
+    // profile-instruction: 방 프로필(conv.profile_name)의 서술 지침. 지침 블록만으로 이 형식의 가장
+    // 작은 IC 호출 예산을 넘으면 장면 판정·생성 전에 거부한다. 그 밖의 호출별 초과는
+    // attachInjectToIcPass 가 fail-closed(지침·inject 를 자르지 않고 오래된 서술부터 줄인 뒤 throw).
+    const icInstruction = partyProfileInstruction(db, convNow, resolvePersona(db, convNow)?.name || '나');
+    const icOverflow = icInstruction.overflow(icPromptBudget(Math.max(PASS_N_MAX_TOKENS, PASS_F_MAX_TOKENS, AUX_MAX_TOKENS)), injectCal);
+    if (icOverflow) {
+      refuseBeforeGeneration(userMessage, conv);
+      return reply.code(422).send({ error: formatInstructionOverflow(icOverflow) });
     }
 
     // scene-branch-snapshot: plan against the branch this generation is on, not
@@ -636,7 +700,7 @@ export function chatRoutes(ctx: Ctx) {
       const nDeadline = withDeadline(PASS_N_TIMEOUT_MS, controller.signal);
       try {
         const out = await ctx.queue.run(() => ctx.model.complete({
-          model, messages: [{ role: 'user', content: attachInjectToIcPass(plan.pass_n, injectInstr, { promptTokenBudget: icPromptBudget(PASS_N_MAX_TOKENS), calibration: injectCal }).prompt }],
+          model, messages: [{ role: 'user', content: attachInjectToIcPass(plan.pass_n, injectInstr, { promptTokenBudget: icPromptBudget(PASS_N_MAX_TOKENS), calibration: injectCal, profileInstruction: icInstruction.forCall('') }).prompt }],
           temperature: 0.8, top_p: 0.95, max_tokens: PASS_N_MAX_TOKENS, stop: [],
           signal: nDeadline.signal,
         }), controller.signal);
@@ -656,7 +720,7 @@ export function chatRoutes(ctx: Ctx) {
       // IC Pass F: one shared attachInjectToIcPass hook (not format-local attach)
       const passFRaw = passFWith(planInput, plan, narration);
       const passF = passFRaw
-        ? attachInjectToIcPass(passFRaw, injectInstr, { promptTokenBudget: icPromptBudget(500), calibration: injectCal }).prompt
+        ? attachInjectToIcPass(passFRaw, injectInstr, { promptTokenBudget: icPromptBudget(PASS_F_MAX_TOKENS), calibration: injectCal, profileInstruction: icInstruction.forCall(cast.find((c) => c.id === plan.focus.focus_id)?.name ?? '') }).prompt
         : null;
       if (passF && plan.focus.focus_id) {
         const focusName = cast.find((c) => c.id === plan.focus.focus_id)?.name ?? '';
@@ -682,7 +746,7 @@ export function chatRoutes(ctx: Ctx) {
         const result = await ctx.queue.run(() => ctx.model.stream(
           {
             model, messages: [{ role: 'user', content: passF }],
-            temperature: 0.9, top_p: 0.95, max_tokens: 500, stop: [], signal: controller.signal,
+            temperature: 0.9, top_p: 0.95, max_tokens: PASS_F_MAX_TOKENS, stop: [], signal: controller.signal,
           },
           (delta) => {
             buffer += delta;
@@ -704,7 +768,7 @@ export function chatRoutes(ctx: Ctx) {
         const eDeadline = withDeadline(PASS_E_TIMEOUT_MS, controller.signal);
         try {
           const out = await ctx.queue.run(() => ctx.model.complete({
-            model, messages: [{ role: 'user', content: attachInjectToIcPass(e.prompt, injectInstr, { promptTokenBudget: icPromptBudget(AUX_MAX_TOKENS), calibration: injectCal }).prompt }],
+            model, messages: [{ role: 'user', content: attachInjectToIcPass(e.prompt, injectInstr, { promptTokenBudget: icPromptBudget(AUX_MAX_TOKENS), calibration: injectCal, profileInstruction: icInstruction.forCall(e.name) }).prompt }],
             temperature: 0.85, top_p: 0.95, max_tokens: AUX_MAX_TOKENS, stop: [],
             signal: eDeadline.signal,
           }), controller.signal);
@@ -820,6 +884,7 @@ export function chatRoutes(ctx: Ctx) {
             pass_ms: passMs,
             clock_observe: sealClockObserve(clockCore, 'beat', scene, convNow, regenTurnStartId, 'success', plan.applied.discarded),
           },
+          ...icInstruction.logField,
         }),
         nowIso(),
       );
@@ -929,8 +994,18 @@ export function chatRoutes(ctx: Ctx) {
       Math.max(512, config.model.contextTokens - completionMax - 64);
     const model = ctx.resolvedModel();
     if (!model) {
-      retractUnconfirmedSend(userMessage, conv.head_message_id);
+      refuseBeforeGeneration(userMessage, conv);
       return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
+    }
+
+    // profile-instruction: 방 프로필(conv.profile_name)의 서술 지침. 지침 블록만으로 이 형식의 가장
+    // 작은 IC 호출 예산을 넘으면 장면 판정·생성 전에 거부한다. 그 밖의 호출별 초과는
+    // attachInjectToIcPass 가 fail-closed(지침·inject 를 자르지 않고 오래된 서술부터 줄인 뒤 throw).
+    const icInstruction = partyProfileInstruction(db, convNow, resolvePersona(db, convNow)?.name || '나');
+    const icOverflow = icInstruction.overflow(icPromptBudget(PASS_S_MAX_TOKENS), injectCal);
+    if (icOverflow) {
+      refuseBeforeGeneration(userMessage, conv);
+      return reply.code(422).send({ error: formatInstructionOverflow(icOverflow) });
     }
 
     // scene-branch-snapshot: plan against the branch this generation is on, not
@@ -1086,7 +1161,7 @@ export function chatRoutes(ctx: Ctx) {
       let lastPersist = Date.now();
       const result = await ctx.queue.run(() => ctx.model.stream(
         {
-          model, messages: [{ role: 'user', content: attachInjectToIcPass(plan.pass_s, injectInstr, { promptTokenBudget: icPromptBudget(PASS_S_MAX_TOKENS), calibration: injectCal }).prompt }],
+          model, messages: [{ role: 'user', content: attachInjectToIcPass(plan.pass_s, injectInstr, { promptTokenBudget: icPromptBudget(PASS_S_MAX_TOKENS), calibration: injectCal, profileInstruction: icInstruction.forCall('') }).prompt }],
           temperature: 0.9, top_p: 0.95, max_tokens: PASS_S_MAX_TOKENS, stop: [], signal: controller.signal,
         },
         (delta) => {
@@ -1167,6 +1242,7 @@ export function chatRoutes(ctx: Ctx) {
             pass_ms: passMs,
             clock_observe: sealClockObserve(clockCore, 'dialog', scene, convNow, regenTurnStartId, 'success', plan.applied.discarded),
           },
+          ...icInstruction.logField,
         }),
         nowIso(),
       );

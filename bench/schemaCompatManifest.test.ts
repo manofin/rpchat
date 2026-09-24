@@ -45,12 +45,14 @@ async function main() {
   const migDir = path.join(root, 'apps/server/migrations');
   const compatPath = path.join(root, 'deploy/schema-compat.json');
 
-  await t('live tree: 22 sql files, 22 required, sets equal', () => {
+  // 0023_profile_instruction.sql (profile-instruction) moved the snapshot 22 → 23.
+  await t('live tree: 23 sql files, 23 required, sets equal', () => {
     const files = listMigrationFilenames(migDir);
     const loaded = loadRequiredMigrations(compatPath);
     assert.equal(loaded.error, undefined);
-    assert.equal(files.length, 22);
-    assert.equal(loaded.required.length, 22);
+    assert.equal(files.length, 23);
+    assert.equal(loaded.required.length, 23);
+    assert.equal(files[22], '0023_profile_instruction.sql');
     const d = diffMigrationManifest(files, loaded.required);
     assert.deepEqual(d.missingInSpec, []);
     assert.deepEqual(d.extraInSpec, []);
@@ -136,10 +138,12 @@ async function main() {
     assert.equal(src.includes('db:check'), false);
   });
 
-  await t('no new sql files added by this lock (22 existing only)', () => {
+  // Originally "no new sql files added by this lock (22 existing only)". Re-scoped when
+  // profile-instruction added 0023: still a snapshot — any further migration must edit this.
+  await t('sql files after 0022 are exactly 0023_profile_instruction.sql', () => {
     const files = listMigrationFilenames(migDir);
-    assert.equal(files.filter((f) => f.startsWith('0023_')).length, 0);
-    assert.equal(files.length, 22);
+    assert.deepEqual(files.filter((f) => f > '0022_summaries_relation_scope.sql'), ['0023_profile_instruction.sql']);
+    assert.equal(files.length, 23);
   });
 
   console.log(`${passed} passed`);

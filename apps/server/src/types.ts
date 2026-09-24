@@ -9,6 +9,10 @@ export interface ModelProfile {
   stop_json: string;
   system_mode: 'system' | 'merge';
   notes: string | null;
+  /** 0023: 1 이면 instruction_text 를 서술 지침으로 주입 (PromptPolicy). */
+  instruction_enabled: number;
+  /** 0023: 비공개 런타임 데이터. NULL/공백이면 지침 없음. */
+  instruction_text: string | null;
 }
 
 export interface CharacterRow {
@@ -24,6 +28,8 @@ export interface CharacterRow {
   example_dialogue: string;
   taboos: string;
   play_guide: string;
+  /** 0023: 새 1:1 방의 기본 프로필(스토리 기본값·명시값보다 뒤). */
+  default_profile_name: string | null;
   tags_json: string;
   scene_background: string | null;
   voice_profile: string | null;
@@ -362,6 +368,22 @@ export interface BudgetReport {
   recent_from_id: string | null;
   recent_to_id: string | null;
   diagnostics?: BudgetDiagnostics;
+  /**
+   * 0023: 서술 지침을 넣으면 현재 턴조차 가용 예산에 못 들어갈 때만 채워진다.
+   * 생성 경로(routes/chat.ts)는 이 값이 있으면 모델 호출 전에 422 로 거부한다.
+   * 인스펙터·미리보기는 그대로 보고만 한다. 지침이 없는 턴에는 키 자체가 없다.
+   */
+  instruction_overflow?: InstructionOverflow;
+}
+
+export interface InstructionOverflow {
+  profile: string;
+  /** 렌더된 서술 지침 블록의 추정 토큰 */
+  instruction_tokens: number;
+  /** 고정·로어·기억·지침·inject + 현재 턴의 추정 합 */
+  required: number;
+  /** 1:1 은 context − max_tokens(실제 한도), 파티는 그 호출 형식의 가장 작은 IC 프롬프트 예산 */
+  available: number;
 }
 
 export interface BudgetDiagnostics {

@@ -54,6 +54,11 @@ function excerptFixedBlock(text: string): { fixedExcerpt: string; fixedTruncated
   };
 }
 
+/** default_profile_name 이 있으면 그 프로필이 실제로 있어야 한다(FK 위반 500 대신 400). */
+function unknownProfile(db: Ctx['db'], name: string | null | undefined): boolean {
+  return !!name && !one(db, 'SELECT 1 FROM model_profiles WHERE name = ?', name);
+}
+
 export function characterOut(c: CharacterRow) {
   return { ...c, tags: parseJson<string[]>(c.tags_json, []), archived: !!c.archived };
 }
@@ -83,6 +88,8 @@ const characterSchema = z.object({
   example_dialogue: z.string().max(20000).default(''),
   taboos: z.string().max(5000).default(''),
   play_guide: z.string().max(500).default(''),
+  // 0023: 새 1:1 방의 기본 모델 프로필. 생략하면 PUT 에서 기존 값 유지, null 이면 해제.
+  default_profile_name: z.string().min(1).max(60).nullable().optional(),
   tags: z.array(z.string().max(30)).max(20).default([]),
   scene_background: z.string().max(300).nullable().optional(),
   voice_profile: z.string().max(100).nullable().optional(),
@@ -151,14 +158,15 @@ export function characterRoutes(ctx: Ctx) {
       const p = characterSchema.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
       const d = p.data;
+      if (unknownProfile(db, d.default_profile_name)) return reply.code(400).send({ error: `unknown profile: ${d.default_profile_name}` });
       const id = uid();
       const t = nowIso();
       run(
         db,
-        `INSERT INTO characters (id, name, tagline, avatar, description, personality, speech_style, scenario, first_message, example_dialogue, taboos, play_guide, tags_json, scene_background, voice_profile, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO characters (id, name, tagline, avatar, description, personality, speech_style, scenario, first_message, example_dialogue, taboos, play_guide, tags_json, scene_background, voice_profile, default_profile_name, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         id, d.name, d.tagline, d.avatar ?? null, d.description, d.personality, d.speech_style, d.scenario, d.first_message, d.example_dialogue, d.taboos, d.play_guide,
-        JSON.stringify(d.tags), d.scene_background ?? null, d.voice_profile ?? null, t, t,
+        JSON.stringify(d.tags), d.scene_background ?? null, d.voice_profile ?? null, d.default_profile_name ?? null, t, t,
       );
       run(db, 'INSERT INTO lorebooks (id, character_id, name, created_at) VALUES (?, ?, ?, ?)', uid(), id, `${d.name} 로어북`, t);
       return reply.code(201).send(characterOut(one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', id)!));
@@ -275,7 +283,8 @@ export function characterRoutes(ctx: Ctx) {
         persona_id: null,
         title: '',
         mode: 'chat',
-        profile_name: 'rp-balanced',
+        // 0023: 미리보기는 이 캐릭터로 새 1:1 방을 열 때 쓰일 프로필(서술 지침 포함)을 보여 준다.
+        profile_name: character.default_profile_name ?? 'rp-balanced',
         scene_json: '{}',
         head_message_id: null,
         prompt_version: PROMPT_VERSION,
@@ -373,11 +382,14 @@ export function characterRoutes(ctx: Ctx) {
       const p = characterSchema.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
       const d = p.data;
+      if (unknownProfile(db, d.default_profile_name)) return reply.code(400).send({ error: `unknown profile: ${d.default_profile_name}` });
       run(
         db,
-        `UPDATE characters SET name=?, tagline=?, avatar=?, description=?, personality=?, speech_style=?, scenario=?, first_message=?, example_dialogue=?, taboos=?, play_guide=?, tags_json=?, scene_background=?, voice_profile=?, updated_at=? WHERE id=?`,
+        `UPDATE characters SET name=?, tagline=?, avatar=?, description=?, personality=?, speech_style=?, scenario=?, first_message=?, example_dialogue=?, taboos=?, play_guide=?, tags_json=?, scene_background=?, voice_profile=?,
+           default_profile_name = CASE WHEN ? THEN ? ELSE default_profile_name END, updated_at=? WHERE id=?`,
         d.name, d.tagline, d.avatar ?? null, d.description, d.personality, d.speech_style, d.scenario, d.first_message, d.example_dialogue, d.taboos, d.play_guide,
-        JSON.stringify(d.tags), d.scene_background ?? null, d.voice_profile ?? null, nowIso(), c.id,
+        JSON.stringify(d.tags), d.scene_background ?? null, d.voice_profile ?? null,
+        d.default_profile_name !== undefined ? 1 : 0, d.default_profile_name ?? null, nowIso(), c.id,
       );
       return characterOut(one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', c.id)!);
     });
