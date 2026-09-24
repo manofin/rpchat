@@ -165,6 +165,8 @@ export interface Character {
   example_dialogue: string;
   taboos: string;
   play_guide: string;
+  /** 0023: 이 캐릭터로 새 1:1 방을 열 때의 기본 모델 프로필. */
+  default_profile_name: string | null;
   tags: string[];
   archived: boolean;
   created_at: string;
@@ -378,6 +380,9 @@ export interface ModelProfile {
   stop: string[];
   system_mode: 'system' | 'merge';
   notes: string | null;
+  /** 0023 서술 지침. 1 이고 text 가 공백이 아니면 주입된다. */
+  instruction_enabled: number;
+  instruction_text: string | null;
 }
 
 export interface BudgetReport {

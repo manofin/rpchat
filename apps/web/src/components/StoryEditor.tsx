@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ApiError, del, get, post, postBinary, put } from '../lib/api';
 import type { Character, ModelProfile, SceneCatalog, SceneCatalogPlace, Story, StoryEnding, StoryOpening, StoryOpeningExtra } from '../types';
+import { instructionBadge } from '../lib/profileInstruction';
 import {
   STAT_MAX,
   emptyStat,
@@ -462,8 +463,9 @@ export function StoryEditor({
             <label>기본 모델 프로필</label>
             <select value={d.default_profile_name} onChange={(e) => set('default_profile_name', e.target.value)}>
               <option value="">기본값 없음</option>
-              {rpProfiles(profiles).map((p) => <option key={p.name} value={p.name}>{p.name}{p.notes ? ` — ${p.notes}` : ''}</option>)}
+              {rpProfiles(profiles).map((p) => <option key={p.name} value={p.name}>{p.name}{p.notes ? ` — ${p.notes}` : ''}{instructionBadge(p)}</option>)}
             </select>
+            <span className="hint">새 방을 만들 때 한 번 정해져 방에 저장된다. 서술 지침은 1:1과 파티(서술 호출마다 1회) 모두에 적용된다.</span>
           </div>
         </>
       )}
