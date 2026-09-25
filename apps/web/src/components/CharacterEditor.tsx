@@ -33,7 +33,8 @@ import {
   generateCharacterField,
   type AuthoringTargetField,
 } from '../lib/characterGenerate';
-import type { Character, CharacterAssetGroup, CharacterStoryLink } from '../types';
+import type { Character, CharacterAssetGroup, CharacterStoryLink, ModelProfile } from '../types';
+import { instructionBadge } from '../lib/profileInstruction';
 import { CharacterPromptPreview } from './CharacterPromptPreview';
 import { AuthoringDraftButton, AuthoringGeneratePanel } from './CharacterFieldGenerate';
 import { LorePanel, type LoreEntry } from './LorePanel';
@@ -60,7 +61,7 @@ const DEFAULT_TAGS = ['party:role=secondary'];
 
 const EMPTY: Draft = {
   name: '', tagline: '', avatar: null, description: '', personality: '', speech_style: '', scenario: '',
-  first_message: '', example_dialogue: '', taboos: '', play_guide: '', tags: DEFAULT_TAGS, // scene/voice optional
+  first_message: '', example_dialogue: '', taboos: '', play_guide: '', default_profile_name: null, tags: DEFAULT_TAGS, // scene/voice optional
 };
 
 /** C1 tab-shell reflow only — no new field, no payload change. */
@@ -269,6 +270,7 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
   const [storyCatalog, setStoryCatalog] = useState<Array<{ id: string; name: string }>>([]);
   const [storyPickId, setStoryPickId] = useState('');
   const [assetGroups, setAssetGroups] = useState<CharacterAssetGroup[]>([]);
+  const [profiles, setProfiles] = useState<ModelProfile[]>([]);
   const [assetOutfit, setAssetOutfit] = useState('');
   const [assetN, setAssetN] = useState('0');
   const [assetBusy, setAssetBusy] = useState(false);
@@ -376,6 +378,14 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
     })();
     return () => { cancelled = true; };
   }, [open, character?.id]);
+
+  // 0023: 기본 모델 프로필 선택지. 실패해도 편집은 계속된다(선택 목록만 빈다).
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    get<ModelProfile[]>('/api/profiles').then((p) => { if (!cancelled) setProfiles(p); }).catch(() => { if (!cancelled) setProfiles([]); });
+    return () => { cancelled = true; };
+  }, [open]);
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => {
     dirtyRef.current = true;
@@ -522,7 +532,13 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
 
   function restoreDraft() {
     if (!pendingDraft) return;
-    setD({ ...EMPTY, ...pendingDraft, play_guide: pendingDraft.play_guide ?? '' });
+    // 0023 이전에 저장된 초안에는 default_profile_name 이 없다 — 그때는 저장된 캐릭터 값을 지킨다.
+    setD({
+      ...EMPTY,
+      ...pendingDraft,
+      play_guide: pendingDraft.play_guide ?? '',
+      default_profile_name: pendingDraft.default_profile_name !== undefined ? pendingDraft.default_profile_name : (character?.default_profile_name ?? null),
+    });
     applyExampleSource(pendingDraft.example_dialogue);
     setPendingDraft(null);
   }
@@ -956,6 +972,16 @@ export function CharacterEditor({ open, character, onClose, onSaved }: { open: b
             <FieldCount value={d.taboos} field="taboos" />
             <AuthoringDraftButton field="taboos" disabled={genBusy} onOpen={openAuthoringGenerate} />
             <TokenChips field="taboos" onInsert={insertToken} />
+          </div>
+          <div className="field">
+            <label>기본 모델 프로필</label>
+            <select value={d.default_profile_name ?? ''} onChange={(e) => set('default_profile_name', e.target.value || null)}>
+              <option value="">기본값 없음 (rp-balanced)</option>
+              {profiles.filter((p) => p.name.startsWith('rp-')).map((p) => (
+                <option key={p.name} value={p.name}>{p.name}{p.notes ? ` — ${p.notes}` : ''}{instructionBadge(p)}</option>
+              ))}
+            </select>
+            <span className="hint">이 캐릭터로 새 1:1 대화를 열 때 쓰는 프로필. 스토리 기본 프로필이 있으면 스토리가 우선한다. 저장 후 미리보기에 반영.</span>
           </div>
           <CharacterPromptPreview characterId={character?.id} />
         </>

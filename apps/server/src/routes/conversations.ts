@@ -227,7 +227,9 @@ export function conversationRoutes(ctx: Ctx) {
       // story lookup above so a story's default_profile_name can stand in for
       // the hardcoded 'rp-balanced'. An explicit profileName in the request body
       // always wins.
-      const profileName = d.profileName ?? story?.default_profile_name ?? 'rp-balanced';
+      // 0023: 명시값 > 스토리 기본 > 캐릭터 기본 > 'rp-balanced'. 여기서 한 번 정해져
+      // conversations.profile_name 에 저장되고, 이후 턴은 그 값만 읽는다.
+      const profileName = d.profileName ?? story?.default_profile_name ?? character.default_profile_name ?? 'rp-balanced';
       let sceneJson = JSON.stringify(d.scene);
       let partyOpening = false;
       let openingGreeting = '';

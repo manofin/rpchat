@@ -1,7 +1,8 @@
+import { createHash } from 'node:crypto';
 import { type DB, many, one, parseJson, getSetting } from '../db/index.js';
 import { parseMessageMeta } from '../db/messageMeta.js';
 import type {
-  BudgetReport, CharacterRow, ChatMessage, ConversationRow, LoreEntryRow, MemoryRow, MessageRow, ModelProfile, PersonaRow, Scene, SummaryRow,
+  BudgetReport, CharacterRow, ChatMessage, ConversationRow, InstructionOverflow, LoreEntryRow, MemoryRow, MessageRow, ModelProfile, PersonaRow, Scene, SummaryRow,
 } from '../types.js';
 import { estimateTokens, estimateMessageTokens, getCalibration, truncateToTokens } from './tokens.js';
 import { loreEntryMatch } from './loreMatch.js';
@@ -9,8 +10,9 @@ import { MIN_EPISODE_TOKENS, SCENE_RECENT_GUARD, allocateSummaryBudget } from '.
 import { effectiveCompactionEndIndex, resolveWatermarkIndex } from './compaction.js';
 import { allocateUserContextBudget } from './userContextBudget.js';
 import {
-  OOC_INSTRUCTION, STORY_CHOICES_INSTRUCTION, renderCharacter, renderEpisode, renderLore, renderMemories, renderPersona, renderRules, renderScene, renderState, renderStory, renderSummary, substitute,
+  DEFAULT_HEADER_POLICY, OOC_INSTRUCTION, STORY_CHOICES_INSTRUCTION, renderCharacter, renderEpisode, renderLore, renderMemories, renderPersona, renderProfileInstruction, renderRules, renderScene, renderState, renderStory, renderSummary, substitute,
 } from './templates.js';
+import { DEFAULT_PROMPT_POLICY, resolvePromptPolicy } from './promptPolicy.js';
 import { resolveStory } from './resolveStory.js';
 import { resolveOpening } from './storyOpening.js';
 import type { InjectContext } from './injectContext.js';
@@ -30,6 +32,8 @@ const SHARE = { fixed: 0.25, lore: 0.15, memory: 0.15 }; // 나머지(45%+여분
 export const STORY_SETTING_SHARE = 0.7;
 export const STORY_CAST_SHARE = 0.3;
 const REPLY_MARGIN = 64;
+/** 서술 지침이 available 의 이 비율을 넘으면 예산 note 에 경고(잘라 넣지는 않는다). */
+export const PROFILE_INSTRUCTION_WARN_SHARE = 0.2;
 const LORE_SCAN_MESSAGES = 6;
 
 function storyCastLine(item: unknown): string | null {
@@ -120,7 +124,7 @@ export function loadProfile(db: DB, name: string): ModelProfile {
   return (
     one<ModelProfile>(db, 'SELECT * FROM model_profiles WHERE name = ?', name) ??
     one<ModelProfile>(db, 'SELECT * FROM model_profiles WHERE name = ?', 'rp-balanced') ??
-    ({ name: 'fallback', model: null, temperature: 0.8, top_p: 0.95, max_tokens: 400, stop_json: '[]', system_mode: 'system', notes: null } as ModelProfile)
+    ({ name: 'fallback', model: null, temperature: 0.8, top_p: 0.95, max_tokens: 400, stop_json: '[]', system_mode: 'system', notes: null, instruction_enabled: 0, instruction_text: null } as ModelProfile)
   );
 }
 
@@ -248,6 +252,8 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   const userName = persona?.name || '나';
   const last = history[history.length - 1];
   const isOoc = !!last && isOocMessage(last);
+  // PromptPolicy: OOC 턴은 항상 기본 정책(지침 미주입) — OOC 프롬프트는 프로필과 무관하게 바이트 불변.
+  const policy = isOoc ? DEFAULT_PROMPT_POLICY : resolvePromptPolicy(profile);
   // 브랜치 스코프 가드: 스와이프/재생성으로 갈라진 다른 가지에서 만든 요약이 현재 경로로 새지 않도록,
   // covers_until_message_id 가 현재 활성 경로(history)에 실제로 있는 것만 후보로 인정한다.
   const pathIds = new Set(history.map((m) => m.id));
@@ -262,7 +268,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   let used = 0;
 
   // 1) 고정 블록: 규칙 + 캐릭터 + 페르소나 + 장면 + 유저노트
-  const rules = renderRules(contentPolicy, charName, userName);
+  const rules = renderRules(contentPolicy, charName, userName, DEFAULT_HEADER_POLICY, policy);
   const personaText = renderPersona(persona, charName, userName);
   const sceneText = renderScene(parseJson<Scene>(conv.scene_json, {}));
   // user_note: persona 다음 순위. 고정 블록 잔여분만 주입 (userContextBudget 정책, whole-or-nothing).
@@ -308,6 +314,20 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   }
   sections.push({ name: '시스템 규칙+카드+페르소나+장면', est_tokens: fixedEst, budget: budgets.fixed, note: fixedNote, kind: 'system' });
   used += fixedEst;
+
+  // 1a) 프로필 서술 지침: 고정·로어·기억 예산은 그대로 두고 used 에 먼저 넣어 최근 대화만 줄인다
+  // (inject 와 같은 방식). 잘라 넣지 않는다. 지침이 없으면 섹션도 없다.
+  const instructionRaw = policy.includeEngineInstruction ? (profile.instruction_text ?? '') : '';
+  const profileInstructionText = instructionRaw ? renderProfileInstruction(instructionRaw, '### 서술 지침', charName, userName) : null;
+  let instructionSection: BudgetReport['sections'][number] | null = null;
+  if (profileInstructionText) {
+    const est = estimateTokens(profileInstructionText, cal);
+    const notes = [`프로필 ${profile.name}`, `sha256 ${createHash('sha256').update(instructionRaw).digest('hex').slice(0, 8)}`];
+    if (est > Math.floor(available * PROFILE_INSTRUCTION_WARN_SHARE)) notes.push(`예산의 ${Math.round((est / available) * 100)}% — LITE 권장`);
+    instructionSection = { name: '서술 지침', est_tokens: est, budget: est, note: notes.join(' · '), kind: 'system' };
+    sections.push(instructionSection);
+    used += est;
+  }
 
   // 1b) 스토리 스냅샷: fixed 잔여. setting 0.7 truncate → 조연 잔여 prefix whole-or-drop. 라이브 stories 조회 없음.
   const resolvedStory = isOoc ? null : resolveStory(conv);
@@ -503,6 +523,33 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
     used += injectEst;
   }
 
+  // The choices contract is appended to the system message below. Reserve it
+  // before packing recent turns when a profile instruction is active.
+  const choicesText = isOoc ? null : substitute(STORY_CHOICES_INSTRUCTION, charName, userName);
+  if (instructionSection && choicesText) {
+    const choicesEst = estimateTokens(choicesText, cal);
+    sections.push({ name: '선택지 출력 계약', est_tokens: choicesEst, budget: choicesEst, kind: 'system' });
+    used += choicesEst;
+  }
+
+  // 3c) 지침 초과 판정: 지침을 넣고 나면 현재 턴조차 실제 한도에 못 들어가면 보고한다(잘라 넣지 않는다).
+  // 생성 경로는 이 보고로 모델 호출 전에 거부한다. 지침이 없는 턴은 판정하지 않는다(기존 동작 불변).
+  // 한도는 `available`(REPLY_MARGIN 까지 뺀 패킹 예산)이 아니라 context − max_tokens 다. 최근 대화
+  // 패킹은 available 을 몇 토큰 차이로 채우고, 제목·구분자·메시지당 여유분이 그 위에 얹히므로
+  // available 로 판정하면 긴 대화의 평범한 턴이 거부된다(P0, 300메시지 40건 중 38건).
+  const hardLimit = contextTokens - profile.max_tokens;
+  let instructionOverflow: InstructionOverflow | undefined;
+  if (instructionSection) {
+    const currentTurn = last?.role === 'user' && last.content.trim()
+      ? last.content
+      : substitute(last ? '(장면을 이어서 {{char}}의 차례로 진행한다.)' : '첫 장면을 {{char}}의 인사로 시작한다.', charName, userName);
+    const required = used + estimateMessageTokens(currentTurn, cal);
+    if (required > hardLimit) {
+      instructionOverflow = { profile: profile.name, instruction_tokens: instructionSection.est_tokens, required, available: hardLimit };
+      instructionSection.note = `${instructionSection.note} · 컨텍스트 초과 — 생성 거부`;
+    }
+  }
+
   // 4) 최근 대화: 남은 예산 전부. OOC 쌍은 제외(현재 입력 제외)
   const recentBudget = Math.max(0, available - used);
   const skip = new Set<number>();
@@ -555,11 +602,11 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
 
   // 5) 시스템 메시지 합성
   const partyCtx = partyContextFromHistory(history);
-  const systemParts = [rules, charText, personaText, noteIncluded ? noteText : null, sceneText, partyCtx, storyText, renderMemories(memItems), stateText, renderSummary(summaryText), episodeText, sceneTierText, loreText].filter((x): x is string => !!x);
+  const systemParts = [rules, profileInstructionText, charText, personaText, noteIncluded ? noteText : null, sceneText, partyCtx, storyText, renderMemories(memItems), stateText, renderSummary(summaryText), episodeText, sceneTierText, loreText].filter((x): x is string => !!x);
   if (isOoc) systemParts.push(OOC_INSTRUCTION);
   else {
     // Order: choices first, then inject (both coexist when inject present).
-    systemParts.push(substitute(STORY_CHOICES_INSTRUCTION, charName, userName));
+    systemParts.push(choicesText!);
     if (injectText) systemParts.push(injectText);
   }
   const systemText = systemParts.join('\n\n');
@@ -576,6 +623,16 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
     messages = turns;
   } else {
     messages = [{ role: 'system', content: systemText }, ...turns];
+  }
+
+  // Joined system blocks and merge-mode wrappers also consume tokens. The
+  // inspector still receives the prompt; generation rejects this report.
+  if (instructionSection) {
+    const finalRequired = messages.reduce((sum, message) => sum + estimateMessageTokens(message.content, cal), 0);
+    if (finalRequired > hardLimit && (!instructionOverflow || finalRequired > instructionOverflow.required)) {
+      instructionOverflow = { profile: profile.name, instruction_tokens: instructionSection.est_tokens, required: finalRequired, available: hardLimit };
+      if (!instructionSection.note?.includes('컨텍스트 초과')) instructionSection.note = `${instructionSection.note} · 컨텍스트 초과 — 생성 거부`;
+    }
   }
 
   const stop = uniq([`\n${userName}:`, `\n${userName} :`, ...parseJson<string[]>(profile.stop_json, [])]).slice(0, 4);
@@ -601,6 +658,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   if (opts?.diagnostics) {
     budget.diagnostics = { lore: loreDiag, memories: memDiag, summaries };
   }
+  if (instructionOverflow) budget.instruction_overflow = instructionOverflow;
 
   return { messages, budget, profile, model: profile.model || defaultModel, stop, charName, userName, isOoc };
 }

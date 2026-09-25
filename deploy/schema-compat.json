@@ -23,6 +23,7 @@
     "0019_story_openings_extra.sql",
     "0020_story_endings.sql",
     "0021_character_play_guide.sql",
-    "0022_summaries_relation_scope.sql"
+    "0022_summaries_relation_scope.sql",
+    "0023_profile_instruction.sql"
   ]
 }

@@ -5,6 +5,7 @@ import type { ConversationDetail, ModelProfile } from '../types';
 import { SettingsEmptyState, SettingsPageHeader, SettingsPageLayout } from '../components/settings';
 import { Spinner } from '../components/ui';
 import { outputProfileLabel, settingsBackFallback } from '../lib/conversationSettings';
+import { instructionBadge } from '../lib/profileInstruction';
 
 export function rpOutputProfiles(profiles: ModelProfile[]): ModelProfile[] {
   return profiles.filter((p) => p.name.startsWith('rp-'));
@@ -44,7 +45,7 @@ export function OutputView({
         >
           {options.map((p) => (
             <option key={p.name} value={p.name}>
-              {outputProfileLabel(p.name)} · {p.name} · max {p.max_tokens}
+              {outputProfileLabel(p.name)} · {p.name} · max {p.max_tokens}{instructionBadge(p)}
             </option>
           ))}
         </select>

@@ -4,6 +4,7 @@ import { back } from '../lib/router';
 import type { Health, ModelProfile, Persona } from '../types';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { applyTheme, persistTheme, readTheme, type Theme } from '../lib/theme';
+import { PROFILE_INSTRUCTION_MAX, PROFILE_NAME_RE, estimateInstructionTokens, hasInstruction, instructionBadge } from '../lib/profileInstruction';
 
 export function SettingsPage() {
   const [health, setHealth] = useState<Health | null>(null);
@@ -172,22 +173,51 @@ function PersonasSection() {
   );
 }
 
+function profilePayload(p: ModelProfile) {
+  return {
+    model: p.model, temperature: p.temperature, top_p: p.top_p, max_tokens: p.max_tokens, stop: p.stop, system_mode: p.system_mode, notes: p.notes,
+    instruction_enabled: p.instruction_enabled === 1, instruction_text: p.instruction_text,
+  };
+}
+
 function ProfilesSection() {
   const ui = useUi();
   const [profiles, setProfiles] = useState<ModelProfile[] | null>(null);
   const [edit, setEdit] = useState<ModelProfile | null>(null);
+  const [cloneName, setCloneName] = useState('');
+  const [calibration, setCalibration] = useState(1);
 
   async function load() {
     setProfiles(await get<ModelProfile[]>('/api/profiles'));
   }
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    get<{ token_calibration?: string }>('/api/settings')
+      .then((s) => { const v = Number(s.token_calibration); if (Number.isFinite(v) && v > 0) setCalibration(v); })
+      .catch(() => {});
+  }, []);
 
   async function save(p: ModelProfile) {
     try {
-      await put(`/api/profiles/${p.name}`, { model: p.model, temperature: p.temperature, top_p: p.top_p, max_tokens: p.max_tokens, stop: p.stop, system_mode: p.system_mode, notes: p.notes });
+      await put(`/api/profiles/${p.name}`, profilePayload(p));
       setEdit(null);
       await load();
       ui.toast('프로필 저장됨');
+    } catch (e) {
+      ui.toast((e as Error).message, 'err');
+    }
+  }
+
+  /** 편집 중인 값 그대로 새 이름으로 만든다(원본은 그대로). 이미 있는 이름은 막는다. */
+  async function saveAsNew(p: ModelProfile, name: string) {
+    if (!PROFILE_NAME_RE.test(name)) { ui.toast('이름은 소문자/숫자/하이픈 2~40자', 'err'); return; }
+    if (profiles?.some((x) => x.name === name)) { ui.toast('이미 있는 프로필 이름', 'err'); return; }
+    try {
+      await put(`/api/profiles/${name}`, profilePayload(p));
+      setCloneName('');
+      setEdit(null);
+      await load();
+      ui.toast(`${name} 만듦`);
     } catch (e) {
       ui.toast((e as Error).message, 'err');
     }
@@ -200,12 +230,12 @@ function ProfilesSection() {
         <div className="list">
           {profiles.map((p) => (
             <div key={p.name} className="list-item" onClick={() => setEdit({ ...p })}>
-              <div className="body"><div className="t">{p.name}</div><div className="p">temp {p.temperature} · top_p {p.top_p} · max {p.max_tokens}{p.model ? ` · ${p.model}` : ''}</div></div>
+              <div className="body"><div className="t">{p.name}</div><div className="p">temp {p.temperature} · top_p {p.top_p} · max {p.max_tokens}{p.model ? ` · ${p.model}` : ''}{instructionBadge(p)}</div></div>
             </div>
           ))}
         </div>
       )}
-      <BottomSheet open={!!edit} onClose={() => setEdit(null)}>
+      <BottomSheet open={!!edit} onClose={() => { setEdit(null); setCloneName(''); }}>
         {edit && (
           <div className="sheet-body">
             <strong>{edit.name}</strong>
@@ -222,7 +252,27 @@ function ProfilesSection() {
                 <option value="merge">첫 user 메시지에 병합 (system 미지원 모델용)</option>
               </select>
             </div>
+            <div className="field">
+              <label>
+                <input type="checkbox" checked={edit.instruction_enabled === 1} onChange={(e) => setEdit({ ...edit, instruction_enabled: e.target.checked ? 1 : 0 })} /> 서술 지침 사용
+              </label>
+              <textarea
+                rows={8}
+                value={edit.instruction_text ?? ''}
+                maxLength={PROFILE_INSTRUCTION_MAX}
+                onChange={(e) => setEdit({ ...edit, instruction_text: e.target.value || null })}
+                placeholder="이 프로필로 생성할 때 규칙 뒤에 붙는 서술 지침. {{user}}·{{char}} 치환 가능."
+              />
+              <span className="hint">
+                추정 {estimateInstructionTokens(edit.instruction_text ?? '', calibration)} 토큰 · {(edit.instruction_text ?? '').length}/{PROFILE_INSTRUCTION_MAX}자
+                {hasInstruction(edit) ? ' · 켜짐: 1:1은 산문 순서·응답 길이 규칙 대신 이 지침, 파티는 서술 호출마다 1회' : ' · 꺼짐: 프롬프트 변화 없음'}
+              </span>
+            </div>
             <button className="btn primary block" onClick={() => save(edit)}>저장</button>
+            <div className="row" style={{ marginTop: 12 }}>
+              <input value={cloneName} onChange={(e) => setCloneName(e.target.value.trim())} placeholder="새 프로필 이름 (예: rp-my-engine)" />
+              <button className="btn sm" disabled={!cloneName} onClick={() => saveAsNew(edit, cloneName)}>복제해서 새 프로필</button>
+            </div>
           </div>
         )}
       </BottomSheet>
