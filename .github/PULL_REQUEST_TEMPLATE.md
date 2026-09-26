@@ -16,6 +16,7 @@
 - [ ] UI: 스크린샷 / 녹화 첨부, 같은 절차가 통과함을 보임
 - [ ] 백엔드 · perf: 수치 첨부 (지연 · 건수 · 크기, before → after)
 - [ ] 버그 수정: 위 재현 → 같은 절차 통과
+- [ ] 스위트 영수증: `test:benches` results.json 경로 · pass/fail/excluded 수 · typecheck EXIT (제외 ≠ 통과, 재실행 횟수 포함)
 
 <!-- 여기 붙이기 -->
 
