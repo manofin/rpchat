@@ -66,8 +66,13 @@ async function main() {
     assert.equal(code.includes('reached_ending_id'), false, 'no reached_ending_id write');
   });
 
-  await t('no retry/backoff/queue mechanics in the judge (non-goals)', () => {
-    assert.equal(/retry|backoff|queue\.run/i.test(judgeSrc), false);
+  await t('no retry/backoff in the judge; queue.run required in fireEndingEvalJob adapter', () => {
+    assert.equal(/retry|backoff/i.test(judgeSrc), false, 'no retry/backoff');
+    // Adapter fence: complete must go through queue.run (GenerationQueue serialization).
+    assert.ok(/complete:\s*\(p\)\s*=>\s*ctx\.queue\.run\(/.test(judgeSrc), 'adapter wraps complete with queue.run');
+    // Inner judgeNarratives / runEndingEvalInner still call injected complete — not queue directly.
+    const fireBlock = judgeSrc.slice(judgeSrc.indexOf('export function fireEndingEvalJob'));
+    assert.ok(fireBlock.includes('ctx.queue.run'), 'queue.run lives in fireEndingEvalJob adapter');
   });
 
   await t('selectNarrativeCandidates: hint-only, rank order, N cap', () => {
@@ -285,9 +290,15 @@ async function main() {
     assert.equal(chatSrc.includes('queue.register') && /ending/i.test(chatSrc.split('queue.register')[0].slice(-200)), false);
   });
 
-  await t('judge bypasses the generation queue and active registry (no 409 self-block)', () => {
-    assert.equal(/queue\.run/.test(judgeSrc), false);
-    assert.equal(judgeSrc.includes('register('), false);
+  await t('judge uses queue.run via adapter; no register/activeList for eval (no 409 self-block)', () => {
+    assert.ok(/ctx\.queue\.run\(\(\) => ctx\.model\.complete\(p\), p\.signal\)/.test(judgeSrc), 'adapter path');
+    // Fence on executable code only (JSDoc may name the banned APIs).
+    const code = judgeSrc
+      .split('\n')
+      .filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*'))
+      .join('\n');
+    assert.equal(code.includes('register('), false, 'no queue.register for ending eval');
+    assert.equal(code.includes('activeList'), false, 'no activeList for ending eval');
   });
 
   await app.close();

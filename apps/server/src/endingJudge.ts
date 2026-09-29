@@ -230,17 +230,21 @@ function loadConversationShim(db: DB, id: string): ConversationRow | undefined {
 export interface CtxLike {
   db: DB;
   model: { complete: (p: GenParams) => Promise<GenResult> };
+  /** Duck-type GenerationQueue.run — serialize judge complete with ordinary gens. */
+  queue: { run: <T>(fn: () => Promise<T>, signal?: AbortSignal) => Promise<T> };
   resolvedModel: () => string;
   log: { info: (obj: object, msg: string) => void };
 }
 
-/** chat.ts 훅용 어댑터. ctx.log.info 1건 = 관측 1건. */
+/** chat.ts 훅용 어댑터. ctx.log.info 1건 = 관측 1건.
+ * complete goes through queue.run so ending eval does not bypass the gen fence.
+ * Still void fire-and-forget; no queue.register / activeList for eval jobs. */
 export function fireEndingEvalJob(ctx: CtxLike, conversationId: string): void {
   void runEndingEvalJob(
     {
       db: ctx.db,
       modelName: ctx.resolvedModel(),
-      complete: (p) => ctx.model.complete(p),
+      complete: (p) => ctx.queue.run(() => ctx.model.complete(p), p.signal),
       log: (fields) => ctx.log.info(fields, 'ending-llm-eval'),
     },
     conversationId,
