@@ -304,9 +304,9 @@ export function ChatPage({ id }: { id: string }) {
         )}
         {desktop ? (
           <>
-            <div className="chat-rail-head">전체 대화</div>
+            <div className="chat-rail-head">최근 전체 대화</div>
             <ChatListRail activeId={id} onPick={() => setListOpen(false)} />
-            <div className="chat-rail-head">이 캐릭터</div>
+            <div className="chat-rail-head">이 캐릭터의 대화</div>
             <ChatListRail characterId={char.id} activeId={id} onPick={() => setListOpen(false)} />
           </>
         ) : (

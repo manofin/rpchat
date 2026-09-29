@@ -106,8 +106,8 @@ function main() {
   });
 
   t('Desktop ChatPage: global rail + character-scoped secondary', () => {
-    assert.match(chatPage, /전체 대화/);
-    assert.match(chatPage, /이 캐릭터/);
+    assert.match(chatPage, /className="chat-rail-head">최근 전체 대화</);
+    assert.match(chatPage, /className="chat-rail-head">이 캐릭터의 대화</);
     assert.match(chatPage, /<ChatListRail characterId=\{char\.id\}/);
   });
 
