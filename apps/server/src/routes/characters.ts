@@ -595,8 +595,12 @@ export function characterRoutes(ctx: Ctx) {
     });
 
     app.delete<{ Params: { id: string } }>('/api/personas/:id', async (req, reply) => {
-      const inUse = one<{ c: number }>(db, 'SELECT COUNT(*) AS c FROM conversations WHERE persona_id = ?', req.params.id)?.c ?? 0;
-      if (inUse > 0) return reply.code(409).send({ error: `대화 ${inUse}건이 이 페르소나를 사용 중` });
+      const convCount = one<{ c: number }>(db, 'SELECT COUNT(*) AS c FROM conversations WHERE persona_id = ?', req.params.id)?.c ?? 0;
+      const summaryCount = one<{ c: number }>(db, 'SELECT COUNT(*) AS c FROM summaries WHERE rel_persona_id = ?', req.params.id)?.c ?? 0;
+      if (convCount > 0 || summaryCount > 0) {
+        const parts = [convCount && `대화 ${convCount}건`, summaryCount && `요약 ${summaryCount}건`].filter(Boolean);
+        return reply.code(409).send({ error: `${parts.join('·')}이 이 페르소나를 사용 중` });
+      }
       const r = run(db, 'DELETE FROM personas WHERE id = ?', req.params.id);
       if (r.changes === 0) return reply.code(404).send({ error: 'not found' });
       return { ok: true };
