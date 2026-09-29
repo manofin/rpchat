@@ -144,6 +144,7 @@ textarea { resize: none; }
 .topbar .title { flex: 1; min-width: 0; }
 .topbar .title h1 { font-size: 15px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: "Noto Serif KR", serif; font-weight: 500; color: var(--kami-text-strong); }
 .topbar .title .sub { font-size: 11px; color: var(--kami-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: system-ui, sans-serif; }
+.topbar .title .sub.chat-model-sub { white-space: normal; overflow: visible; text-overflow: unset; line-height: 1.35; }
 .home-tabs { display: flex; gap: 4px; align-items: center; padding: 6px 12px 8px; overflow-x: auto; flex: 0 0 auto; min-width: 0; align-self: stretch; box-sizing: border-box; border-bottom: 1px solid var(--kami-line); background: var(--kami-deep); }
 .home-tabs button { flex: 0 0 auto; border: none; background: transparent; color: var(--fg-2); padding: 8px 14px; border-radius: 999px; cursor: pointer; font-weight: 650; font-size: 14px; }
 .home-tabs button.active { background: color-mix(in srgb, var(--role-coral) 14%, transparent); color: var(--role-coral-text); }

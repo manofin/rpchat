@@ -5,6 +5,7 @@ import type { Health, ModelProfile, Persona } from '../types';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { applyTheme, persistTheme, readTheme, type Theme } from '../lib/theme';
 import { PROFILE_INSTRUCTION_MAX, PROFILE_NAME_RE, estimateInstructionTokens, hasInstruction, instructionBadge } from '../lib/profileInstruction';
+import { settingsModelLines } from '../lib/modelDisplay';
 
 export function SettingsPage() {
   const [health, setHealth] = useState<Health | null>(null);
@@ -37,15 +38,10 @@ export function SettingsPage() {
                 <span className="spacer" />
                 <button className="btn sm" onClick={loadHealth} disabled={refreshing}>{refreshing ? '…' : '새로고침'}</button>
               </div>
-              {health.model.ok ? (
-                <div className="small muted">
-                  모델: {health.model.resolvedModel || '(미해석)'}<br />
-                  컨텍스트: {health.model.contextTokens.toLocaleString()}t · 지연 {health.model.latencyMs}ms<br />
-                  사용 가능: {health.model.models.join(', ') || '—'}
-                </div>
-              ) : (
+              <SettingsModelStatus health={health} />
+              {!health.model.ok ? (
                 <div className="small" style={{ color: 'var(--danger)' }}>{health.model.error}</div>
-              )}
+              ) : null}
               <div className="small muted" style={{ marginTop: 6 }}>인증: {health.authMode} · 프롬프트 {health.promptVersion}{health.generation.active.length ? ` · 생성 중 ${health.generation.active.length}` : ''}</div>
             </>
           )}
@@ -64,6 +60,26 @@ export function SettingsPage() {
         )}
         <div style={{ height: 24 }} />
       </div>
+    </div>
+  );
+}
+
+/** Display only. Never a model `<select>` — switching needs another endpoint or a restart. */
+export function SettingsModelStatus({ health }: { health: Health }) {
+  const view = settingsModelLines({
+    resolvedModel: health.model.resolvedModel,
+    models: health.model.models,
+  });
+  return (
+    <div className="small muted" data-test="settings-model-status">
+      모델: {view.current}<br />
+      {health.model.ok ? (
+        <>컨텍스트: {health.model.contextTokens.toLocaleString()}t · 지연 {health.model.latencyMs}ms<br /></>
+      ) : null}
+      사용 가능: {view.list || '—'}
+      {view.guidance ? (
+        <p className="small" data-test="settings-model-guidance" style={{ margin: '8px 0 0' }}>{view.guidance}</p>
+      ) : null}
     </div>
   );
 }
