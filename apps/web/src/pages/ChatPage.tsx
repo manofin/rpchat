@@ -26,6 +26,8 @@ import { useChat } from './useChat';
 import { ChatDrawer } from './ChatDrawer';
 import { ChatListRail } from './ChatListRail';
 import { ConversationTools } from './ConversationTools';
+import { outputProfileLabel } from '../lib/conversationSettings';
+import { chatModelSubtitle, partyCertainty } from '../lib/modelDisplay';
 
 /** ADR-F8g: snapshot is the reader-visible endings list. Damaged → no picker. */
 function parseEndingsSnapshot(raw: string | null | undefined): StoryEnding[] {
@@ -56,6 +58,24 @@ export function ChatPage({ id }: { id: string }) {
   const [endingOpen, setEndingOpen] = useState(false);
   const [endingPick, setEndingPick] = useState('');
   const [endingSaving, setEndingSaving] = useState(false);
+  const [healthModel, setHealthModel] = useState<string | null | undefined>(undefined);
+  const [samplingProfiles, setSamplingProfiles] = useState<ModelProfile[] | null>(null);
+  const [profileLoad, setProfileLoad] = useState<'pending' | 'ready' | 'failed'>('pending');
+
+  useEffect(() => {
+    let cancelled = false;
+    get<Health>('/api/health')
+      .then((h) => { if (!cancelled) setHealthModel(h.model.resolvedModel ?? null); })
+      .catch(() => { /* keep unknown or the last confirmed name */ });
+    get<ModelProfile[]>('/api/profiles')
+      .then((rows) => {
+        if (cancelled) return;
+        setSamplingProfiles(rows);
+        setProfileLoad('ready');
+      })
+      .catch(() => { if (!cancelled) setProfileLoad('failed'); });
+    return () => { cancelled = true; };
+  }, [id]);
 
   /** ADR-F8h Slice 4: V3 제안형 엔딩 배너. 강제 잠금 없음, 닫기 가능. */
   const endingBanner = useEndingSuggestions(id, { detail: chat.detail, generating: chat.generating, loading: chat.loading });
@@ -196,6 +216,15 @@ export function ChatPage({ id }: { id: string }) {
   const conv = chat.detail!.conversation;
   const char = chat.detail!.character;
   const persona = chat.detail!.persona;
+  const activeSampling = samplingProfiles?.find((p) => p.name === conv.profile_name);
+  const modelSubtitle = chatModelSubtitle({
+    resolvedModel: healthModel,
+    resolvedKnown: healthModel !== undefined,
+    profileName: conv.profile_name,
+    profileModel: activeSampling?.model ?? null,
+    profileModelState: profileLoad,
+    party: partyCertainty(conv),
+  });
   const lastAssistant = [...chat.messages].reverse().find((m) => m.role === 'assistant');
   const lastMsg = chat.messages[chat.messages.length - 1];
   const lastUi = [...chat.messages].reverse()
@@ -324,7 +353,7 @@ export function ChatPage({ id }: { id: string }) {
         <Avatar name={char.name} avatar={char.avatar} size="sm" />
         <div className="title" onClick={() => setToolsOpen(true)} style={{ cursor: 'pointer' }}>
           <h1>{char.name}</h1>
-          <div className="sub">{conv.profile_name} · {persona?.name ?? '나'}</div>
+          <div className="sub chat-model-sub" data-test="chat-model-subtitle">{modelSubtitle}</div>
         </div>
         {/* P5-R1: 인스펙터는 이미 드로어에 있다 — 없던 것은 '여기로 들어간다'는 표시. 새 표면 추가 금지. */}
         <button
@@ -847,11 +876,11 @@ function ConversationSettings({ open, conversationId, generating, onClose, onCha
           <span className="hint">미구현 (별도 잠금)</span>
         </div>
         <div className="field">
-          <label>최대 출력량</label>
+          <label>출력/톤</label>
           <select value={conv.profile_name} disabled={!!generating} onChange={(e) => { setConv({ ...conv, profile_name: e.target.value }); save({ profileName: e.target.value }); }}>
-            {profiles.filter((p) => p.name.startsWith('rp-')).map((p) => <option key={p.name} value={p.name}>{p.name} · temp {p.temperature} · max {p.max_tokens}</option>)}
+            {profiles.filter((p) => p.name.startsWith('rp-')).map((p) => <option key={p.name} value={p.name}>{outputProfileLabel(p.name)} · max {p.max_tokens}</option>)}
           </select>
-          <span className="hint">모델 프로필의 max_tokens 를 따릅니다. summary·memory-extract 는 내부 전용입니다.</span>
+          <span className="hint">출력량·온도입니다. 모델을 바꾸지 않습니다.</span>
         </div>
         <button className="btn sm block" style={{ marginTop: 6 }} onClick={onOpenMemory}>요약 메모리</button>
 

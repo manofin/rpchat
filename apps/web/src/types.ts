@@ -279,6 +279,8 @@ export interface Conversation {
   persona_applied_at: string | null;
   /** Present on GET conversation; null on 1:1. A9 macros key off this. */
   story_id: string | null;
+  /** Frozen participant ids already on the conversation row. Length ≥ 2 is the party generate gate. */
+  story_participant_ids_snapshot?: string | null;
   /** Frozen story title at apply time; omit/null when no story. */
   story_name_snapshot?: string | null;
   /** ADR-F8g: frozen copy of stories.endings_json. Null on 1:1. */
