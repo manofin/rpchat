@@ -2,10 +2,17 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { spawn, execFileSync } from 'node:child_process';
+import { spawn, spawnSync, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// Node major fence (engines.node >=22) — fail before discovering/running benches
+{
+  const assertScript = path.join(root, 'scripts', 'assert-node-major.mjs');
+  const assertResult = spawnSync(process.execPath, [assertScript], { stdio: 'inherit' });
+  if (assertResult.status !== 0) process.exit(assertResult.status ?? 1);
+}
+
 const files = fs.readdirSync(path.join(root, 'bench'))
   .filter((name) => name.endsWith('.test.ts')).sort();
 const exclusions = {
