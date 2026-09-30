@@ -109,9 +109,9 @@ function cloneScene(s: Scene): Scene {
   }
   if (s.last_beat) {
     out.last_beat = {
-      focus_id: s.last_beat.focus_id,
-      extra_ids: [...s.last_beat.extra_ids],
-      unresolved: [...s.last_beat.unresolved],
+      focus_id: typeof s.last_beat.focus_id === 'string' ? s.last_beat.focus_id : null,
+      extra_ids: Array.isArray(s.last_beat.extra_ids) ? s.last_beat.extra_ids.filter((id) => typeof id === 'string') : [],
+      unresolved: Array.isArray(s.last_beat.unresolved) ? s.last_beat.unresolved.filter((id) => typeof id === 'string') : [],
     };
   }
   if (s.hunter) {

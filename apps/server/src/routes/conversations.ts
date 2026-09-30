@@ -395,6 +395,9 @@ export function conversationRoutes(ctx: Ctx) {
       const p = patchSchema.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
       const d = p.data;
+      if (d.scene && ctx.queue.activeList.some((g) => g.conversationId === conv.id)) {
+        return reply.code(409).send({ error: '생성 중에는 장면 상태를 수정할 수 없음' });
+      }
       if (d.personaId && !one(db, 'SELECT 1 FROM personas WHERE id = ?', d.personaId)) return reply.code(404).send({ error: 'persona not found' });
       // snapshot lock: personaId set → copy live row into snapshot columns in the same statement.
       // Reapply = PATCH the same personaId again.
@@ -408,7 +411,9 @@ export function conversationRoutes(ctx: Ctx) {
       } else if (d.personaId === null) {
         snap = { n: null, a: null, ap: null, pe: null, pr: null, at: null };
       }
-      const scene = d.scene ? { ...parseJson<Scene>(conv.scene_json, {}), ...d.scene } : null;
+      const scene = d.scene ? { ...parseJson<Scene>(conv.scene_json, {}), ...d.scene,
+        pending_edit: { head_message_id: conv.head_message_id },
+      } : null;
       const personaFlag = personaTouched ? 1 : 0;
       run(
         db,

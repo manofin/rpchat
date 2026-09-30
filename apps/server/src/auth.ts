@@ -53,7 +53,8 @@ export function registerAuthHook(app: FastifyInstance, db: DB): void {
     } catch {
       decodedPath = rawPath;
     }
-    if (!routePath?.startsWith('/api/') && !decodedPath.startsWith('/api/')) return;
+    const protectedPath = (path: string | undefined) => path?.startsWith('/api/') || path?.startsWith('/media/');
+    if (!protectedPath(routePath) && !protectedPath(decodedPath)) return;
     if (routePath === '/api/health' || routePath?.startsWith('/api/auth/')) return;
     const st = authState(req, db);
     if (st.authenticated) return;

@@ -126,6 +126,8 @@ export interface Scene {
   /** f9-presence-model: who is actually in the scene. Scene-owned, not character-owned. */
   present_ids?: string[];
   scene_version?: number;
+  /** Server-owned, branch-anchored edit. Consumed by the next successful turn. */
+  pending_edit?: { head_message_id: string | null };
   /**
    * f9-beat-render (0012): server-owned beat state. Every key is optional, so a
    * conversation that has never run a beat keeps byte-identical scene_json.
