@@ -9,8 +9,7 @@ import {
 
 export function healthRoutes(ctx: Ctx) {
   return async function plugin(app: FastifyInstance) {
-    app.get('/api/health', async () => {
-      const model = await ctx.health();
+    app.get('/api/health', async (req) => {
       const dbOk = (() => {
         try {
           one(ctx.db, 'SELECT 1');
@@ -19,6 +18,13 @@ export function healthRoutes(ctx: Ctx) {
           return false;
         }
       })();
+      // Policy A (LOCK-AuthSurface): unauthenticated callers get a slim liveness body only.
+      // /media/* remains out of scope; auth allowlist keeps /api/health public for probes.
+      const st = authState(req, ctx.db);
+      if (!st.authenticated) {
+        return { ok: dbOk, db: dbOk ? 'ok' : 'error' };
+      }
+      const model = await ctx.health();
       const active = ctx.queue.activeList.map((g) => ({ id: g.id, kind: g.kind ?? 'chat', conversationId: g.conversationId, messageId: g.messageId, startedAt: g.startedAt }));
       return {
         ok: dbOk && model.ok,
