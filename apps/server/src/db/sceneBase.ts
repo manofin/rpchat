@@ -49,6 +49,7 @@ export type SceneBaseSource =
   | 'regen_before'
   /** Normal turn: the previous turn on this branch finished here. */
   | 'prev_after'
+  | 'manual_edit'
   /** No usable snapshot — legacy row, malformed meta, or the first turn. */
   | 'conversation';
 
@@ -113,8 +114,11 @@ export function resolveSceneBase(db: DB, args: {
   parentId: string | null;
   regenTurnStartId?: string | null;
 }): SceneBase {
+  const pending = args.conversationScene.pending_edit;
+  const edited = freezeCopy(args.conversationScene);
+  delete edited.pending_edit;
   const fallback = (hops: number): SceneBase => ({
-    scene: args.conversationScene, source: 'conversation', hops,
+    scene: pending ? edited : args.conversationScene, source: 'conversation', hops,
   });
 
   if (args.regenTurnStartId) {
@@ -136,6 +140,11 @@ export function resolveSceneBase(db: DB, args: {
     seen.add(cur);
     const row = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', cur);
     if (!row) return fallback(hops + 1);
+    // Check the edit's exact head before the previous turn's snapshot. A swipe
+    // to a sibling never crosses this anchor and keeps its own historical state.
+    if (pending?.head_message_id === row.id) {
+      return { scene: edited, source: 'manual_edit', hops: hops + 1 };
+    }
     if (row.role === 'assistant') {
       const meta = parseMessageMeta(row.meta_json);
       if (meta.beat_seq === 0) {

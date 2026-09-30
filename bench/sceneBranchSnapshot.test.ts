@@ -211,6 +211,22 @@ async function main() {
     assert.equal(r.source, 'conversation');
   });
 
+  await t('manual edit is anchored to its branch; regenerating and siblings keep historical snapshots', () => {
+    const edited: Scene = { user_sheet: { hp: 77 }, pending_edit: { head_message_id: 't2ae' } };
+    const before = JSON.stringify(edited);
+    const next = resolveSceneBase(unitDb, { conversationScene: edited, parentId: 'u3' });
+    assert.equal(next.source, 'manual_edit');
+    assert.equal(next.scene.user_sheet?.hp, 77);
+    assert.equal(next.scene.pending_edit, undefined);
+    const sibling = resolveSceneBase(unitDb, { conversationScene: edited, parentId: 't2be' });
+    assert.equal(sibling.source, 'prev_after');
+    assert.equal(sibling.scene.clock_minutes, 99);
+    const regen = resolveSceneBase(unitDb, { conversationScene: edited, parentId: 'u2', regenTurnStartId: 't2as' });
+    assert.equal(regen.source, 'regen_before');
+    assert.equal(regen.scene.clock_minutes, 11);
+    assert.equal(JSON.stringify(edited), before);
+  });
+
   unitDb.close();
   fs.rmSync(unitTmp, { recursive: true, force: true });
 
@@ -617,6 +633,41 @@ async function main() {
     // delta + Pass N + Pass C (+ extras none) completes; Pass F streams.
     assert.equal(streamCalls, 1);
     assert.ok(completeCalls >= 2 && completeCalls <= 6, `completeCalls=${completeCalls}`);
+  });
+
+  await t('manual edits reach the next beat and dialog without rewriting old snapshots', async () => {
+    for (const format of [undefined, 'dialog'] as const) {
+      const conv = await newConv(format);
+      await send(conv, '첫 턴');
+      const old = startOf(lastTurn(await messagesOf(conv)));
+      const oldBytes = JSON.stringify(old.meta);
+      const edit = await api('PATCH', `/api/conversations/${conv}`, { scene: { user_sheet: { hp: 77 } } });
+      assert.equal(edit.status, 200);
+      await send(conv, '편집 뒤 진행');
+      const next = startOf(lastTurn(await messagesOf(conv)));
+      assert.equal(snapOf(next)?.before_delta.user_sheet?.hp, 77);
+      assert.equal(sceneOf(conv).user_sheet?.hp, 77);
+      assert.equal((sceneOf(conv) as any).pending_edit, undefined, 'success consumes the edit marker');
+      const reread = (await messagesOf(conv)).find((m) => m.id === old.id)!;
+      assert.equal(JSON.stringify(reread.meta), oldBytes);
+      assert.equal((await regen(conv, next.id)).status, 200);
+      assert.equal(snapOf(startOf(lastTurn(await messagesOf(conv))))?.before_delta.user_sheet?.hp, 77);
+    }
+  });
+
+  await t('scene PATCH refuses active chat and ending judge jobs with no write', async () => {
+    const conv = await newConv();
+    for (const kind of ['chat', 'ending-judge'] as const) {
+      const before = JSON.stringify(sceneOf(conv));
+      ctx.queue.register({ id: 'held-edit', kind, conversationId: conv, messageId: '',
+        startedAt: new Date().toISOString(), controller: new AbortController() });
+      try {
+        const patch = await api('PATCH', `/api/conversations/${conv}`, { scene: { user_sheet: { hp: 1 } }, title: 'blocked' });
+        assert.equal(patch.status, 409);
+        assert.equal(JSON.stringify(sceneOf(conv)), before);
+        assert.equal((await api('PATCH', `/api/conversations/${conv}`, { title: 'allowed' })).status, 200);
+      } finally { ctx.queue.unregister('held-edit'); }
+    }
   });
 
   const sampleStart = db.prepare(

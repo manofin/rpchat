@@ -150,6 +150,7 @@ async function main() {
   const app = Fastify({ logger: false, trustProxy: false });
   registerAuthHook(app, db);
   app.get('/api/probe', async () => ({ ok: true }));
+  app.get('/media/avatars/:file', async () => ({ ok: true }));
   app.get('/api/health', async () => ({ ok: true }));
   app.get('/api/auth/me', async () => ({ ok: true }));
   await app.ready();
@@ -197,6 +198,16 @@ async function main() {
       assert.equal(wrongPeer.status, 401, `${url}: untrusted peer`);
       const allowed = await probe({ remoteAddress: '127.0.0.1', login: LOGIN, url });
       assert.equal(allowed.status, url === '/api%2Fprobe' ? 404 : 200, `${url}: authorized route`);
+    }
+  });
+
+  await t('media including encoded paths requires the same trusted peer and login', async () => {
+    for (const url of ['/media/avatars/probe.webp', '/%6dedia/avatars/probe.webp', '/media%2Favatars/probe.webp']) {
+      assert.equal((await probe({ remoteAddress: '127.0.0.1', url })).status, 401, url);
+      assert.equal((await probe({ remoteAddress: '10.9.9.9', login: LOGIN, url })).status, 401, url);
+      assert.equal((await probe({ remoteAddress: '127.0.0.1', login: 'wrong', url })).status, 401, url);
+      assert.equal((await probe({ remoteAddress: '127.0.0.1', login: LOGIN, url })).status,
+        url.includes('%2F') ? 404 : 200, url);
     }
   });
 
