@@ -379,7 +379,7 @@ export function conversationRoutes(ctx: Ctx) {
         minAgeMs: 2000,
       });
       const messages = getPath(db, conv).map((m) => messageOut(db, m));
-      const active = ctx.queue.activeList.find((g) => g.conversationId === conv.id);
+      const active = ctx.queue.activeList.find((g) => g.conversationId === conv.id && g.kind !== 'ending-judge');
       return {
         conversation: conversationOut(conv),
         character: characterOut(character),

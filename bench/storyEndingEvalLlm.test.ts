@@ -52,13 +52,13 @@ async function main() {
     assert.ok(LLM_EVAL_MAX_TOKENS > 0 && LLM_EVAL_MAX_TOKENS <= 1024);
   });
 
-  await t('judge never touches generation_log/budget_json, queue registry, or ended_at writes', () => {
+  await t('judge never writes generation_log/budget_json or ending state', () => {
     // Fences bind on code, not prose: the header comment names the forbidden stores.
     const code = judgeSrc
       .split('\n')
       .filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*'))
       .join('\n');
-    for (const banned of ['generation_log', 'budget_json', 'queue.register', 'activeList']) {
+    for (const banned of ['generation_log', 'budget_json']) {
       assert.equal(code.includes(banned), false, banned);
     }
     // ended_at READ is the ended-room skip (제약 1). What is banned is WRITING it.
@@ -69,7 +69,7 @@ async function main() {
   await t('no retry/backoff in the judge; queue.run required in fireEndingEvalJob adapter', () => {
     assert.equal(/retry|backoff/i.test(judgeSrc), false, 'no retry/backoff');
     // Adapter fence: complete must go through queue.run (GenerationQueue serialization).
-    assert.ok(/complete:\s*\(p\)\s*=>\s*ctx\.queue\.run\(/.test(judgeSrc), 'adapter wraps complete with queue.run');
+    assert.ok(judgeSrc.includes('ctx.queue.run(call, signal)'), 'adapter schedules complete with queue.run');
     // Inner judgeNarratives / runEndingEvalInner still call injected complete — not queue directly.
     const fireBlock = judgeSrc.slice(judgeSrc.indexOf('export function fireEndingEvalJob'));
     assert.ok(fireBlock.includes('ctx.queue.run'), 'queue.run lives in fireEndingEvalJob adapter');
@@ -290,14 +290,15 @@ async function main() {
     assert.equal(chatSrc.includes('queue.register') && /ending/i.test(chatSrc.split('queue.register')[0].slice(-200)), false);
   });
 
-  await t('judge uses queue.run via adapter; no register/activeList for eval (no 409 self-block)', () => {
-    assert.ok(/ctx\.queue\.run\(\(\) => ctx\.model\.complete\(p\), p\.signal\)/.test(judgeSrc), 'adapter path');
+  await t('judge uses queue.run and owns registry cleanup without inspecting activeList', () => {
+    assert.ok(judgeSrc.includes('ctx.queue.run(call, signal)'), 'adapter schedules inside queue with cancellation');
     // Fence on executable code only (JSDoc may name the banned APIs).
     const code = judgeSrc
       .split('\n')
       .filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*'))
       .join('\n');
-    assert.equal(code.includes('register('), false, 'no queue.register for ending eval');
+    assert.ok(code.includes('ctx.queue.register('), 'pending judge is tracked');
+    assert.ok(code.includes('ctx.queue.unregister(id)'), 'completed judge is removed');
     assert.equal(code.includes('activeList'), false, 'no activeList for ending eval');
   });
 

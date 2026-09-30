@@ -1408,7 +1408,7 @@ export function chatRoutes(ctx: Ctx) {
     });
 
     app.get('/api/generations/active', async () => ({
-      active: ctx.queue.activeList.map((g) => ({ id: g.id, conversationId: g.conversationId, messageId: g.messageId, startedAt: g.startedAt })),
+      active: ctx.queue.activeList.map((g) => ({ id: g.id, kind: g.kind ?? 'chat', conversationId: g.conversationId, messageId: g.messageId, startedAt: g.startedAt })),
       queued: ctx.queue.queued,
     }));
   };

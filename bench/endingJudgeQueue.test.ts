@@ -1,7 +1,7 @@
 /** npx tsx bench/endingJudgeQueue.test.ts
  * LOCK-EndingJudgeQueue-20260930: ending judge complete goes through
  * GenerationQueue.run (no direct model.complete bypass). Occupied-queue
- * must not deadlock. Still void fire-and-forget; no queue.register.
+ * must not deadlock. Fire-and-forget judges remain tracked until cleanup.
  * Isolated: temp DB + fake model. No systemd, no live DB, no deploy.
  */
 import assert from "node:assert/strict";
@@ -55,17 +55,14 @@ async function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise
 async function main() {
   const judgeSrc = fs.readFileSync("apps/server/src/endingJudge.ts", "utf8");
 
-  await t("source: fireEndingEvalJob adapter uses queue.run; no register", () => {
-    assert.ok(
-      /complete:\s*\(p\)\s*=>\s*ctx\.queue\.run\(\(\) => ctx\.model\.complete\(p\), p\.signal\)/.test(judgeSrc),
-      "adapter wraps complete with queue.run + signal",
-    );
+  await t("source: fireEndingEvalJob schedules through queue.run and tracks lifetime", () => {
     const code = judgeSrc
       .split("\n")
       .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*"))
       .join("\n");
-    assert.equal(code.includes("queue.register"), false);
-    assert.equal(code.includes("activeList"), false);
+    assert.ok(code.includes("ctx.queue.run(call, signal)"));
+    assert.ok(code.includes("ctx.queue.register"));
+    assert.ok(code.includes("ctx.queue.unregister(id)"));
     assert.equal(/await fireEndingEvalJob/.test(judgeSrc), false);
   });
 
@@ -132,23 +129,22 @@ async function main() {
     let runCalls = 0;
     let completeCalls = 0;
     const logs: object[] = [];
-    const fakeQueue = {
-      run: async <T>(fn: () => Promise<T>, _signal?: AbortSignal): Promise<T> => {
+    const fakeQueue = new GenerationQueue(1);
+    const run = fakeQueue.run.bind(fakeQueue);
+    fakeQueue.run = async <T>(fn: () => Promise<T>, signal?: AbortSignal): Promise<T> => {
         runCalls++;
-        insideRun = true;
-        try {
-          return await fn();
-        } finally {
-          insideRun = false;
-        }
-      },
+        return run(async () => {
+          insideRun = true;
+          try { return await fn(); }
+          finally { insideRun = false; }
+        }, signal);
     };
     const model = {
       complete: async (_p: GenParams): Promise<GenResult> => {
         completeCalls++;
         assert.equal(insideRun, true, "direct complete outside queue.run callback fails");
         return okResult(
-          {evals: [{ending_id: h1, eligible: true, confidence: 0.8, reason: ok}]},
+          JSON.stringify({evals: [{ending_id: 'h1', eligible: true, confidence: 0.8, reason: 'ok'}]}),
         );
       },
     };
@@ -172,6 +168,7 @@ async function main() {
     assert.equal(runCalls, 1);
     assert.equal(completeCalls, 1);
     assert.ok(logs.length >= 1);
+    assert.equal((logs[0] as { llm_called: number }).llm_called, 1);
   });
 
   await t("concurrency=1 occupied queue: ending job waits, then completes (no deadlock)", async () => {
@@ -192,7 +189,7 @@ async function main() {
       complete: async (_p: GenParams): Promise<GenResult> => {
         completeCalls++;
         return okResult(
-          {evals: [{ending_id: h1, eligible: false, confidence: 0.1, reason: no}]},
+          JSON.stringify({evals: [{ending_id: 'h1', eligible: false, confidence: 0.1, reason: 'no'}]}),
         );
       },
     };
@@ -220,7 +217,8 @@ async function main() {
     // Give the fire-and-forget a chance to enqueue; still blocked.
     await sleep(80);
     assert.equal(completeCalls, 0, "still blocked until hold releases");
-    assert.equal(queue.activeList.length, 0, "ending eval must not queue.register");
+    assert.equal(queue.activeList.length, 1, "queued ending eval stays visible");
+    assert.equal(queue.activeList[0].kind, 'ending-judge');
 
     release();
     await withTimeout(occupyDone, 3000, "occupy release");
@@ -233,7 +231,8 @@ async function main() {
     );
     assert.equal(completeCalls, 1, "exactly one complete after release");
     assert.ok(logs.length >= 1, "job finished with log");
-    assert.equal(queue.activeList.length, 0, "still no register after finish");
+    assert.equal(queue.activeList.length, 0, "registry is empty after finish");
+    assert.equal((logs[0] as { llm_called: number }).llm_called, 1);
   });
 
   await t("void fire-and-forget: returns sync; model throw does not reach caller", async () => {

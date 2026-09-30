@@ -19,7 +19,7 @@ export function healthRoutes(ctx: Ctx) {
           return false;
         }
       })();
-      const active = ctx.queue.activeList.map((g) => ({ id: g.id, conversationId: g.conversationId, messageId: g.messageId, startedAt: g.startedAt }));
+      const active = ctx.queue.activeList.map((g) => ({ id: g.id, kind: g.kind ?? 'chat', conversationId: g.conversationId, messageId: g.messageId, startedAt: g.startedAt }));
       return {
         ok: dbOk && model.ok,
         time: new Date().toISOString(),
