@@ -1,5 +1,6 @@
 export interface ActiveGeneration {
   id: string;
+  kind?: 'chat' | 'ending-judge';
   conversationId: string;
   messageId: string;
   startedAt: string;

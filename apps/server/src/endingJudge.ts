@@ -10,10 +10,11 @@
  *   확정 계약(POST .../end)은 rule 재검증 그대로다.
  */
 import type { DB } from './db/index.js';
-import { one } from './db/index.js';
+import { one, uid } from './db/index.js';
 import { getPath } from './db/tree.js';
 import type { ConversationRow, MessageRow } from './types.js';
 import type { GenParams, GenResult } from './model/adapter.js';
+import type { GenerationQueue } from './model/queue.js';
 import { EVALUATION_VERSION, suggestEndings } from './endingEval.js';
 import { parseEndings } from './routes/stories.js';
 
@@ -57,6 +58,8 @@ export interface JudgeDeps {
   complete: (p: GenParams) => Promise<GenResult>;
   model: string;
   log: (fields: JudgeLogFields) => void;
+  schedule?: (call: () => Promise<GenResult>, signal?: AbortSignal) => Promise<GenResult>;
+  signal?: AbortSignal;
 }
 
 /**
@@ -146,21 +149,25 @@ export function parseJudgeOutput(text: string): Record<string, JudgeVerdict> | n
  * 파싱 실패는 빈 결과 + 로그 없음(호출자가 llm_called:0으로 기록)으로 귀결.
  */
 export async function judgeNarratives(
-  deps: Pick<JudgeDeps, 'complete' | 'model'>,
+  deps: Pick<JudgeDeps, 'complete' | 'model' | 'schedule' | 'signal'>,
   candidates: NarrativeCandidate[],
   turns: string[],
 ): Promise<{ verdicts: Record<string, JudgeVerdict>; llmCalled: 0 | 1; latencyMs: number }> {
   const t0 = Date.now();
   if (!candidates.length) return { verdicts: {}, llmCalled: 0, latencyMs: 0 };
   try {
-    const res = await deps.complete({
+    const call = () => deps.complete({
       model: deps.model,
       messages: buildJudgePrompt(candidates, turns),
       temperature: 0,
       max_tokens: LLM_EVAL_MAX_TOKENS,
       stop: [],
-      signal: AbortSignal.timeout(LLM_EVAL_TIMEOUT_MS),
+      signal: deps.signal
+        ? AbortSignal.any([deps.signal, AbortSignal.timeout(LLM_EVAL_TIMEOUT_MS)])
+        : AbortSignal.timeout(LLM_EVAL_TIMEOUT_MS),
     });
+    // The model timeout starts inside the acquired slot, not while queued.
+    const res = await (deps.schedule ? deps.schedule(call, deps.signal) : call());
     const verdicts = parseJudgeOutput(res.text);
     return { verdicts: verdicts ?? {}, llmCalled: 1, latencyMs: Date.now() - t0 };
   } catch {
@@ -173,6 +180,8 @@ export interface EvalJobCtx {
   modelName: string;
   complete: (p: GenParams) => Promise<GenResult>;
   log: (fields: JudgeLogFields) => void;
+  schedule?: JudgeDeps['schedule'];
+  signal?: AbortSignal;
 }
 
 /**
@@ -200,7 +209,7 @@ async function runEndingEvalInner(exec: EvalJobCtx, conversationId: string): Pro
   const path = getPath(db, conv);
   const turns = buildJudgeContext(path);
   const { verdicts, llmCalled, latencyMs } = await judgeNarratives(
-    { complete: exec.complete, model: exec.modelName },
+    { complete: exec.complete, model: exec.modelName, schedule: exec.schedule, signal: exec.signal },
     targets.map((c) => ({ ending_id: c.ending_id, title: endings.find((e) => e.id === c.ending_id)?.title ?? '', narrative_hint: c.narrative_hint, rule_count: c.rule_count })),
     turns,
   );
@@ -230,23 +239,30 @@ function loadConversationShim(db: DB, id: string): ConversationRow | undefined {
 export interface CtxLike {
   db: DB;
   model: { complete: (p: GenParams) => Promise<GenResult> };
-  /** Duck-type GenerationQueue.run — serialize judge complete with ordinary gens. */
-  queue: { run: <T>(fn: () => Promise<T>, signal?: AbortSignal) => Promise<T> };
+  queue: Pick<GenerationQueue, 'run' | 'register' | 'unregister'>;
   resolvedModel: () => string;
   log: { info: (obj: object, msg: string) => void };
 }
 
-/** chat.ts 훅용 어댑터. ctx.log.info 1건 = 관측 1건.
- * complete goes through queue.run so ending eval does not bypass the gen fence.
- * Still void fire-and-forget; no queue.register / activeList for eval jobs. */
+/** chat.ts 훅용 어댑터. ctx.log.info 1건 = 관측 1건. */
 export function fireEndingEvalJob(ctx: CtxLike, conversationId: string): void {
+  const id = uid();
+  const controller = new AbortController();
   void runEndingEvalJob(
     {
       db: ctx.db,
       modelName: ctx.resolvedModel(),
-      complete: (p) => ctx.queue.run(() => ctx.model.complete(p), p.signal),
+      complete: (p) => ctx.model.complete(p),
+      signal: controller.signal,
+      schedule: (call, signal) => {
+        ctx.queue.register({
+          id, kind: 'ending-judge', conversationId, messageId: '',
+          startedAt: new Date().toISOString(), controller,
+        });
+        return ctx.queue.run(call, signal);
+      },
       log: (fields) => ctx.log.info(fields, 'ending-llm-eval'),
     },
     conversationId,
-  );
+  ).finally(() => ctx.queue.unregister(id));
 }
