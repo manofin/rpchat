@@ -1899,6 +1899,7 @@ textarea { resize: none; }
 .story-sheet-heading p, .story-notice p { font-size: 13px; color: var(--fg-2); margin: 6px 0 12px; }
 .story-conversations-title { font-size: 14px; margin: 24px 0 12px; }
 .story-notice { padding: 12px 0; }
+.story-orphan-actions { display: grid; gap: 8px; margin-top: 8px; }
 .story-start-cast { padding: 0 0 18px; }
 .story-start-cast h3 { font-size: 14px; margin: 0 0 8px; }
 .story-start-cast p { color: var(--fg-2); font-size: 14px; overflow-wrap: anywhere; margin: 0 0 8px; }
