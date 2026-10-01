@@ -14,11 +14,11 @@ export class StreamInterruptedError extends Error {
   }
 }
 
-/** true → keep composer empty (success, user abort, network drop). false → restore (HTTP fail after retract). */
+/** true → keep composer empty. false → restore draft (send not confirmed). */
 export function sendOkForComposer(e: unknown, aborted: boolean): boolean {
   if (aborted) return true;
   if (e instanceof ApiError && e.status === 499) return true;
-  return e instanceof ApiError ? false : true;
+  return false;
 }
 
 export const UNAUTHORIZED_EVENT = 'rpchat:unauthorized';

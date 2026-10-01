@@ -18,6 +18,7 @@ import { chatRoutes } from '../apps/server/src/routes/chat.ts';
 import type { Ctx } from '../apps/server/src/ctx.ts';
 import type { GenParams, GenResult } from '../apps/server/src/model/adapter.ts';
 import { initialChatState, reduceChatEvent } from '../apps/web/src/lib/chatStreamState.ts';
+import { ApiError, sendOkForComposer } from '../apps/web/src/lib/api.ts';
 
 let passed = 0;
 async function t(name: string, fn: () => Promise<void> | void) {
@@ -275,7 +276,15 @@ async function main() {
     assert.equal(head.head_message_id, greeting4);
     const useChat = code('apps/web/src/pages/useChat.ts');
     assert.equal(useChat.includes('sendOkForComposer'), true);
-    assert.equal(code('apps/web/src/lib/api.ts').includes('e instanceof ApiError ? false : true'), true);
+    const apiSrc = code('apps/web/src/lib/api.ts');
+    assert.equal(apiSrc.includes('e instanceof ApiError ? false : true'), false);
+    assert.match(apiSrc, /if \(aborted\) return true;/);
+    assert.match(apiSrc, /e instanceof ApiError && e\.status === 499/);
+    assert.match(apiSrc, /return false;/);
+    assert.equal(sendOkForComposer(new ApiError(400, 'rejected'), false), false);
+    assert.equal(sendOkForComposer(new Error('network'), false), false);
+    assert.equal(sendOkForComposer(new ApiError(499, 'stopped'), false), true);
+    assert.equal(sendOkForComposer(new Error('aborted'), true), true);
     assert.equal(code('apps/web/src/pages/ChatPage.tsx').includes('if (ok === false)'), true);
   });
 

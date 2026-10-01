@@ -37,7 +37,10 @@ function composer(input: string, generating = false, ended_at: string | null = n
   let resolveSend!: (value: boolean | undefined) => void;
   let frames = 0;
   const stickyRef = { current: false };
-  const setDraft = (value: string) => { draft = value; states.push(value); };
+  const setDraft = (value: string | ((current: string) => string)) => {
+    draft = typeof value === 'function' ? value(draft) : value;
+    states.push(draft);
+  };
   const common = { resolveShortcutSubmit, expandLeadingShortcut, readShortcuts: () => shortcuts, setDraft };
   return {
     get draft() { return draft; }, states, requests, stickyRef,
@@ -108,6 +111,16 @@ async function main() {
       assert.equal(c.frames, 1);
     });
   }
+  await test('pending send keeps a newer draft typed before failure', async () => {
+    const c = composer('original text');
+    const pending = c.submit();
+    assert.equal(c.draft, '', 'clear composer while request is pending');
+    c.change('newer draft');
+    assert.equal(c.draft, 'newer draft');
+    c.resolveSend(false);
+    await pending;
+    assert.equal(c.draft, 'newer draft', 'failure must not clobber text typed while the send was pending');
+  });
   for (const [label, input, generating, ended_at] of [
     ['empty input', '  ', false, null],
     ['generation in progress', '/일기', true, null],

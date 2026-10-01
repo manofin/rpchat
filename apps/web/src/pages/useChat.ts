@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { abortGeneration, ApiError, get, patch, post, del, sendOkForComposer, streamPost } from '../lib/api';
+import { abortGeneration, ApiError, get, patch, post, del, sendOkForComposer, streamPost, StreamInterruptedError } from '../lib/api';
 import type { ConversationDetail, Message, SseEvent } from '../types';
 import { initialChatState, reduceChatEvent, type ChatState } from '../lib/chatStreamState';
 
@@ -94,6 +94,7 @@ export function useChat(conversationId: string) {
     let failed = false;
     let resync = false;
     let result = true;
+    let ambiguousInterrupt = false;
     let requestError: string | null = null;
     try {
       await streamPost(path, body, (event) => {
@@ -110,10 +111,18 @@ export function useChat(conversationId: string) {
       }
     } catch (error) {
       const aborted = ctrl.signal.aborted || (error instanceof ApiError && error.status === 499);
-      if (!aborted) requestError = (error as Error).message;
+      if (aborted) {
+        result = true;
+      } else {
+        requestError = (error as Error).message;
+        if (error instanceof StreamInterruptedError) {
+          ambiguousInterrupt = true;
+          result = false;
+        } else {
+          result = sendOkForComposer(error, false);
+        }
+      }
       resync = true;
-      // Network drops and explicit stop retain the already submitted composer.
-      result = sendOkForComposer(error, ctrl.signal.aborted);
     } finally {
       if (abortRef.current === ctrl) abortRef.current = null;
       if (scopeRef.current === scope) {
@@ -122,8 +131,20 @@ export function useChat(conversationId: string) {
       }
     }
     if (resync && scopeRef.current === scope) {
-      await reload();
-      if (requestError) patchState({ error: requestError });
+      const detail = await reload();
+      // Interrupt is ambiguous: empty the composer only if this user row is already on the head path. Never auto-resend.
+      if (ambiguousInterrupt && scopeRef.current === scope) {
+        const submitted = body && typeof body === 'object' && 'content' in body && typeof (body as { content?: unknown }).content === 'string'
+          ? (body as { content: string }).content
+          : null;
+        if (submitted == null) {
+          result = true;
+        } else {
+          const messages = detail?.messages ?? state.messages ?? [];
+          if ([...messages].reverse().some((m) => m.role === 'user' && m.content === submitted)) result = true;
+        }
+      }
+      if (requestError && scopeRef.current === scope) patchState({ error: requestError });
     }
     return scopeRef.current === scope ? result : true;
   }, [state.generating, applyEvent, patchState, reload, scope]);

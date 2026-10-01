@@ -108,14 +108,15 @@ for (const [label, frames] of [
   ['EOF before start', []],
   ['EOF between party rows', [frame(start('a')), frame(done('a')), frame(start('b'))]],
 ] as const) {
-  await assert.rejects(transport([...frames]), (error) => error instanceof StreamInterruptedError && sendOkForComposer(error, false));
-  console.log(`ok ${++passed} ${label} raises resync error without restoring submitted composer`);
+  await assert.rejects(transport([...frames]), (error) => error instanceof StreamInterruptedError && sendOkForComposer(error, false) === false);
+  console.log(`ok ${++passed} ${label} raises resync error and does not confirm composer success`);
 }
 await transport([frame({ type: 'error', message: 'failed' })]);
 assert.equal(sendOkForComposer(new ApiError(400, 'rejected'), false), false);
 assert.equal(sendOkForComposer(new ApiError(499, 'stopped'), false), true);
+assert.equal(sendOkForComposer(new Error('network'), false), false);
 assert.equal(sendOkForComposer(new Error('network'), true), true);
-console.log(`ok ${++passed} terminal failure and composer failure/stop semantics remain distinct`);
+console.log(`ok ${++passed} network and interrupt are not clear-success; aborted and 499 stay empty`);
 const callbackFailure = new Error('callback');
 await assert.rejects(transport([frame(done('a'))], () => { throw callbackFailure; }), (error) => error === callbackFailure);
 console.log(`ok ${++passed} consumer exceptions are not mistaken for malformed JSON`);

@@ -205,7 +205,7 @@ export function ChatPage({ id }: { id: string }) {
     stickyRef.current = true;
     const ok = await chat.send(text, inject ? { inject_instruction: inject } : undefined);
     if (ok === false) {
-      setDraft(original);
+      setDraft((cur) => (cur === '' ? original : cur));
       requestAnimationFrame(grow);
     }
   }
@@ -254,7 +254,7 @@ export function ChatPage({ id }: { id: string }) {
     stickyRef.current = true;
     void chat.send(text).then((ok) => {
       if (ok === false) {
-        setDraft(text);
+        setDraft((cur) => (cur === '' ? text : cur));
         requestAnimationFrame(grow);
       }
     });

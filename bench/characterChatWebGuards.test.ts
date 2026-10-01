@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { execSync } from 'node:child_process';
 import ts from 'typescript';
-import { ApiError, sendOkForComposer } from '../apps/web/src/lib/api.ts';
+import { ApiError, sendOkForComposer, StreamInterruptedError } from '../apps/web/src/lib/api.ts';
 import { resolveShortcutSubmit } from '../apps/web/src/lib/shortcutMacro.ts';
 
 const require2 = createRequire(import.meta.url);
@@ -95,7 +95,11 @@ function callback(name: string, dependencies: Record<string, unknown>, file = 'a
   return new Function(...Object.keys(dependencies), compiled)(...Object.values(dependencies));
 }
 
-function streamHarness(transport: () => Promise<void>, generating = false) {
+function streamHarness(
+  transport: () => Promise<void>,
+  generating = false,
+  reloadedMessages: Array<{ role: string; content: string }> | null = null,
+) {
   const abortRef: { current: AbortController | null } = { current: null };
   const scope = { conversationId: 'fixture-room', revision: 0, reloadSequence: 0 };
   const visible = { generating, streamingId: 'previous' as string | null, error: null as string | null };
@@ -103,8 +107,8 @@ function streamHarness(transport: () => Promise<void>, generating = false) {
   const connected: boolean[] = [];
   let reloads = 0;
   const runStream = callback('runStream', {
-    state: { generating }, abortRef, scope, scopeRef: { current: scope }, genIdRef: { current: null },
-    AbortController, ApiError, sendOkForComposer,
+    state: { generating, messages: [] as Array<{ role: string; content: string }> }, abortRef, scope, scopeRef: { current: scope }, genIdRef: { current: null },
+    AbortController, ApiError, sendOkForComposer, StreamInterruptedError,
     setStreamConnected: (value: boolean) => connected.push(value),
     patchState: (patch: Partial<typeof visible>) => Object.assign(visible, patch),
     applyEvent: () => {},
@@ -112,7 +116,7 @@ function streamHarness(transport: () => Promise<void>, generating = false) {
       assert.equal(abortRef.current, null, 'release the send latch before recovery');
       assert.equal(visible.generating, false, 'release generating before recovery');
       reloads++;
-      return null;
+      return reloadedMessages == null ? null : { messages: reloadedMessages };
     },
     streamPost: async (path: string, body: unknown, _onEvent: unknown, signal: AbortSignal) => {
       assert.equal(visible.generating, true, 'generating becomes true before POST');
@@ -187,7 +191,35 @@ t('8 composer and choice send use the message endpoint and preserve optional inj
   ]);
 });
 
-t('9 no server file changes in this slice', () => {
+t('9 network drop is not composer success; abort and 499 stay empty', () => {
+  assert.equal(sendOkForComposer(new Error('network'), false), false);
+  assert.equal(sendOkForComposer(new ApiError(499, 'stopped'), false), true);
+  assert.equal(sendOkForComposer(new Error('network'), true), true);
+});
+
+t('10 interrupt keeps composer empty only when the submitted user row landed', async () => {
+  const landed = streamHarness(async () => { throw new StreamInterruptedError(); }, false, [{ role: 'user', content: 'landed' }]);
+  assert.equal(await landed.send('landed'), true);
+  assert.equal(landed.reloads(), 1);
+  assert.equal(landed.requests.length, 1, 'interrupt must not auto-resend');
+
+  const missing = streamHarness(async () => { throw new StreamInterruptedError(); }, false, [{ role: 'assistant', content: 'landed' }]);
+  assert.equal(await missing.send('landed'), false);
+  assert.equal(missing.requests.length, 1, 'missing row must not auto-resend');
+});
+
+t('11 regenerate interrupt without content stays empty; branchEdit follows content', async () => {
+  const regen = streamHarness(async () => { throw new StreamInterruptedError(); }, false, []);
+  assert.equal(await regen.runStream('/api/conversations/fixture-room/regenerate', { messageId: 'm1' }), true);
+
+  const absent = streamHarness(async () => { throw new StreamInterruptedError(); }, false, []);
+  assert.equal(await absent.runStream('/api/conversations/fixture-room/branch', { messageId: 'm1', content: 'edited' }), false);
+
+  const present = streamHarness(async () => { throw new StreamInterruptedError(); }, false, [{ role: 'user', content: 'edited' }]);
+  assert.equal(await present.runStream('/api/conversations/fixture-room/branch', { messageId: 'm1', content: 'edited' }), true);
+});
+
+t('12 no server file changes in this slice', () => {
   const changed = execSync('git diff --name-only HEAD -- apps/server', { cwd: root, encoding: 'utf8' }).trim();
   assert.equal(changed, '');
   const untracked = execSync('git ls-files --others --exclude-standard -- apps/server', { cwd: root, encoding: 'utf8' }).trim();
