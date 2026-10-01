@@ -14,7 +14,7 @@ import {
 } from '../prompt/composeBeat.js';
 import type { CastMember } from '../prompt/cast.js';
 import {
-  finishDialogBeat, planDialogBeat, type DialogPlanInput,
+  finishDialogBeat, planDialogBeat,
 } from '../prompt/composeDialog.js';
 import type { PartyTagRow } from '../prompt/tagsCatalog.js';
 import { catalogFromStory } from '../prompt/sceneCatalog.js';
@@ -31,6 +31,8 @@ import { parseParticipantSnapshot } from '../prompt/resolveFocus.js';
 import type { PassCard } from '../prompt/passes.js';
 import type { CharacterRow } from '../types.js';
 import { buildPrompt } from '../prompt/builder.js';
+import { loadStoryRoster, dialogPlanInput } from '../prompt/dialogContext.js';
+import { buildDialogPrompt, DIALOG_MAX_TOKENS } from '../prompt/dialogPrompt.js';
 import { parseInjectInstruction, attachInjectToIcPass, type InjectContext } from '../prompt/injectContext.js';
 import { formatInstructionOverflow, profileInstructionText } from '../prompt/promptPolicy.js';
 import { dumpGenerationPrompt } from '../prompt/dump.js';
@@ -58,29 +60,6 @@ function userTextFrom(db: Ctx['db'], parentId: string | null, userMessage?: Mess
   if (!parentId) return '';
   const parent = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', parentId);
   return parent?.role === 'user' ? (parent.content ?? '') : '';
-}
-
-function loadStoryRoster(db: Ctx['db'], conv: ConversationRow): PartyTagRow[] {
-  const snapshot = parseParticipantSnapshot(conv.story_participant_ids_snapshot);
-  if (snapshot && snapshot.length) {
-    const rows = many<PartyTagRow>(
-      db,
-      `SELECT id, name, tags_json FROM characters WHERE archived = 0 AND id IN (${snapshot.map(() => '?').join(',')})`,
-      ...snapshot,
-    );
-    const byId = new Map(rows.map((r) => [r.id, r]));
-    return snapshot.map((id) => byId.get(id)).filter((r): r is PartyTagRow => Boolean(r));
-  }
-  if (!conv.story_id) return [];
-  return many<PartyTagRow>(
-    db,
-    `SELECT c.id, c.name, c.tags_json
-       FROM story_characters sc
-       JOIN characters c ON c.id = sc.character_id
-      WHERE sc.story_id = ?
-      ORDER BY sc.sort_order ASC, c.name ASC`,
-    conv.story_id,
-  );
 }
 
 type SseBudget = {
@@ -144,7 +123,7 @@ const PASS_C_TIMEOUT_MS = 20_000;
  * needs the room the beat path splits across N + F + E. It is also the only call
  * that turn, which is why one budget this size still costs less than the mix.
  */
-const PASS_S_MAX_TOKENS = 900;
+const PASS_S_MAX_TOKENS = DIALOG_MAX_TOKENS;
 
 /** User abort, including the window before a focus/script row exists. */
 function wasAborted(controller: AbortController, err: unknown): boolean {
@@ -378,7 +357,7 @@ export function chatRoutes(ctx: Ctx) {
       const rawFmt = (JSON.parse(convNow.scene_json || '{}') as Scene).format as string | undefined;
       const fmt = rawFmt === 'hunter' ? 'beat' : rawFmt;
       if (fmt === 'dialog') {
-        return generateDialog(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage, regenTurnStartId ?? null, inject);
+        return generateDialog(req, reply, conv, parentId, convNow, partyCast, generationId, userMessage, regenTurnStartId ?? null, inject);
       }
       return generateBeat(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage, regenTurnStartId ?? null, inject);
     }
@@ -981,33 +960,19 @@ export function chatRoutes(ctx: Ctx) {
     parentId: string | null,
     convNow: ConversationRow,
     cast: CastMember[],
-    roster: PartyTagRow[],
     generationId: string,
     userMessage: MessageRow | undefined,
     regenTurnStartId: string | null,
     inject: InjectContext = { instruction: null },
   ) {
     // Party IC passes apply inject regardless of 1:1 isOoc (party has no isOoc gate today).
-    const injectInstr = inject.instruction;
-    const injectCal = getCalibration(db);
-    const icPromptBudget = (completionMax: number) =>
-      Math.max(512, config.model.contextTokens - completionMax - 64);
     const model = ctx.resolvedModel();
     if (!model) {
       refuseBeforeGeneration(userMessage, conv);
       return reply.code(503).send({ error: '모델 이름을 해석할 수 없음 (MODEL_NAME 설정 또는 모델 서버 확인)' });
     }
 
-    // profile-instruction: 방 프로필(conv.profile_name)의 서술 지침. 지침 블록만으로 이 형식의 가장
-    // 작은 IC 호출 예산을 넘으면 장면 판정·생성 전에 거부한다. 그 밖의 호출별 초과는
-    // attachInjectToIcPass 가 fail-closed(지침·inject 를 자르지 않고 오래된 서술부터 줄인 뒤 throw).
     const icInstruction = partyProfileInstruction(db, convNow, resolvePersona(db, convNow)?.name || '나');
-    const icOverflow = icInstruction.overflow(icPromptBudget(PASS_S_MAX_TOKENS), injectCal);
-    if (icOverflow) {
-      refuseBeforeGeneration(userMessage, conv);
-      return reply.code(422).send({ error: formatInstructionOverflow(icOverflow) });
-    }
-
     // scene-branch-snapshot: plan against the branch this generation is on, not
     // against the conversation row. On a regenerate the conversation row already
     // holds the abandoned turn's delta, which is how repeats used to accumulate.
@@ -1017,12 +982,18 @@ export function chatRoutes(ctx: Ctx) {
       regenTurnStartId,
     });
     const scene: Scene = sceneBase.scene;
-    const storyCatalogRow = one<{ scene_catalog: string }>(
-      db, 'SELECT scene_catalog FROM stories WHERE id = ?', convNow.story_id,
-    );
-    const catalog = catalogFromStory(storyCatalogRow?.scene_catalog ?? '{}');
-    const baseVersion = currentSceneVersion(scene);
     const userText = userTextFrom(db, parentId, userMessage);
+    const history = getPath(db, convNow);
+    const lastUser = history.at(-1)?.role === 'user' ? history.at(-1)! : null;
+    const seed = lastUser?.parent_id ?? (lastUser ? null : parentId);
+    const initialInput = dialogPlanInput(db, convNow, scene, userText, seed)!;
+    const catalog = initialInput.catalog;
+    const preflight = buildDialogPrompt(db, convNow, history, planDialogBeat(initialInput).pass_s, userText,
+      config.model.contextTokens, model, inject);
+    if (preflight.budget.instruction_overflow) {
+      refuseBeforeGeneration(userMessage, conv);
+      return reply.code(422).send({ error: formatInstructionOverflow(preflight.budget.instruction_overflow) });
+    }
 
     // Same contract as generateBeat: lock before the first await (scene-delta).
     const controller = new AbortController();
@@ -1062,39 +1033,13 @@ export function chatRoutes(ctx: Ctx) {
     const clockCore: ClockObserveCore = heldClock.observe;
     patch = heldClock.patch ?? null;
 
-    const cards: Record<string, PassCard> = {};
-    for (const row of many<CharacterRow>(
-      db,
-      `SELECT * FROM characters WHERE id IN (${roster.map(() => '?').join(',')})`,
-      ...roster.map((r) => r.id),
-    )) {
-      cards[row.id] = {
-        name: row.name,
-        tagline: row.tagline,
-        description: row.description,
-        personality: row.personality,
-        speech_style: row.speech_style,
-        taboos: row.taboos,
-      };
-    }
-
-    const persona = resolvePersona(db, convNow);
-    const planInput: DialogPlanInput = {
-      conversation_id: conv.id,
-      scene,
-      patch: patch ?? undefined,
-      catalog,
-      current_version: baseVersion,
-      user_text: userText,
-      user_name: persona?.name || '나',
-      cast,
-      cards,
-      main_character_id: convNow.character_id,
-      message_id: userMessage?.id ?? null,
-      content_policy: getSetting(db, 'content_policy', ''),
-      ...storyFocusPlanFields(convNow),
-    };
+    const planInput = { ...initialInput, patch: patch ?? undefined };
     const plan = planDialogBeat(planInput);
+    const built = buildDialogPrompt(db, convNow, history, plan.pass_s, userText, config.model.contextTokens, model, inject);
+    if (built.budget.instruction_overflow) {
+      refuseBeforeGeneration(userMessage, conv);
+      return reply.code(422).send({ error: formatInstructionOverflow(built.budget.instruction_overflow) });
+    }
 
     // scene-commit-on-success (ADR-F9c §2): the applied scene is NOT written here.
     // `conversations.scene_json` means "the last successfully committed turn", so an
@@ -1161,7 +1106,7 @@ export function chatRoutes(ctx: Ctx) {
       let lastPersist = Date.now();
       const result = await ctx.queue.run(() => ctx.model.stream(
         {
-          model, messages: [{ role: 'user', content: attachInjectToIcPass(plan.pass_s, injectInstr, { promptTokenBudget: icPromptBudget(PASS_S_MAX_TOKENS), calibration: injectCal, profileInstruction: icInstruction.forCall('') }).prompt }],
+          model, messages: built.messages,
           temperature: 0.9, top_p: 0.95, max_tokens: PASS_S_MAX_TOKENS, stop: [], signal: controller.signal,
         },
         (delta) => {
@@ -1223,9 +1168,10 @@ export function chatRoutes(ctx: Ctx) {
         `INSERT INTO generation_log (id, conversation_id, message_id, profile_name, prompt_version, est_prompt_tokens, actual_prompt_tokens, completion_tokens, ttft_ms, total_ms, finish_reason, status, budget_json, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         uid(), conv.id, scriptRow.id, profileName, PROMPT_VERSION,
-        estimateTokens(plan.pass_s, 1), null, null, null,
+        built.budget.est_total, null, null, null,
         Date.now() - tBeat, 'dialog', 'complete',
         JSON.stringify({
+          ...built.budget,
           dialog_log: {
             focus_id: plan.focus.focus_id,
             focus_reason: plan.focus.reason,
@@ -1250,7 +1196,7 @@ export function chatRoutes(ctx: Ctx) {
       sse.send({
         type: 'done',
         message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', scriptRow.id)!),
-        usage: null, ttftMs: null, totalMs: Date.now() - tBeat,
+        usage: null, ttftMs: null, totalMs: Date.now() - tBeat, budget: sseBudget(built.budget),
       });
       // ADR-F8h Slice 3 (V2): dialog 완료 직후 백그라운드 판정 (non-blocking).
       void fireEndingEvalJob(ctx, conv.id);

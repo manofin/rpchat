@@ -11,6 +11,8 @@ import {
 } from '../db/generation.js';
 import { deepestLeaf, getPath, insertMessage, messageOut, readablePreview, setHead, updateMessage } from '../db/tree.js';
 import { buildPrompt, resolvePersona } from '../prompt/builder.js';
+import { previewDialog } from '../prompt/dialogPreview.js';
+import { parseInjectInstruction } from '../prompt/injectContext.js';
 import { substitute } from '../prompt/templates.js';
 import { catalogFromStory } from '../prompt/sceneCatalog.js';
 import { castFromCharacters, castFromParticipants, withConversationStarter, type PartyTagRow } from '../prompt/tagsCatalog.js';
@@ -514,16 +516,26 @@ export function conversationRoutes(ctx: Ctx) {
     });
 
     // ---- 프롬프트 미리보기 (모델 호출 없음) ----
-    app.get<{ Params: { id: string }; Querystring: { draft?: string } }>('/api/conversations/:id/prompt-preview', async (req, reply) => {
+    app.get<{ Params: { id: string }; Querystring: { draft?: string; regenerate?: string; branch?: string; inject_instruction?: string } }>('/api/conversations/:id/prompt-preview', async (req, reply) => {
       const conv = loadConversation(ctx, req.params.id);
       if (!conv) return reply.code(404).send({ error: 'not found' });
+      const inject = parseInjectInstruction(req.query.inject_instruction);
+      if (!inject.ok) return reply.code(400).send({ error: inject.error });
+      if ((JSON.parse(conv.scene_json || '{}') as Scene).format === 'dialog') {
+        if (req.query.regenerate && (req.query.branch || req.query.draft !== undefined)) return reply.code(400).send({ error: 'conflicting preview mode' });
+        if (req.query.branch && req.query.draft === undefined) return reply.code(400).send({ error: 'branch preview requires draft' });
+        try {
+          const preview = previewDialog(db, conv, config.model.contextTokens, ctx.resolvedModel(), { ...req.query, inject: inject.ctx });
+          if (preview) return preview;
+        } catch (err) { return reply.code(400).send({ error: (err as Error).message }); }
+      }
       const history = getPath(db, conv);
-      if (req.query.draft) {
+      if (req.query.draft !== undefined) {
         history.push({
           id: 'draft', conversation_id: conv.id, parent_id: conv.head_message_id, role: 'user', content: req.query.draft, status: 'complete', meta_json: '{}', bookmarked: 0, created_at: nowIso(),
         });
       }
-      const built = buildPrompt(db, conv, history, config.model.contextTokens, ctx.resolvedModel(), undefined, { diagnostics: true });
+      const built = buildPrompt(db, conv, history, config.model.contextTokens, ctx.resolvedModel(), undefined, { diagnostics: true, inject: inject.ctx });
       return { messages: built.messages, budget: built.budget, model: built.model, profile: built.profile, stop: built.stop, isOoc: built.isOoc };
     });
 

@@ -167,8 +167,13 @@ async function main() {
 
   await t('source: one attach family; C / delta never wrapped; format modules untouched', () => {
     const chat = src('apps/server/src/routes/chat.ts');
+    const dialog = src('apps/server/src/prompt/dialogPrompt.ts');
     const calls = chat.match(/attachInjectToIcPass\([^\n]*/g) ?? [];
-    assert.equal(calls.length, 4, calls.join('\n'));
+    assert.equal(calls.length, 3, calls.join('\n'));
+    assert.equal((dialog.match(/attachInjectToIcPass\(/g) ?? []).length, 1);
+    assert.ok(chat.includes('model, messages: built.messages'));
+    assert.ok(dialog.includes('profileInstruction: profileBlock'));
+    assert.ok(dialog.includes("renderProfileInstruction(instruction, '## 서술 지침', '', userName)"));
     for (const c of calls) assert.ok(c.includes('profileInstruction: icInstruction.forCall('), c);
     assert.equal(/attachInjectToIcPass\(\s*(passCWith|renderSceneDeltaPrompt)/.test(chat), false);
     assert.equal(/renderProfileInstruction\(/.test(chat.slice(chat.indexOf('function partyProfileInstruction'), chat.indexOf('function withDeadline'))), true);

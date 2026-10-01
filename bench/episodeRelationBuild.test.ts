@@ -97,7 +97,10 @@ function insertEpisode(
 }
 
 function main() {
-  const builderSrc = fs.readFileSync('apps/server/src/prompt/builder.ts', 'utf8');
+  const builder = fs.readFileSync('apps/server/src/prompt/builder.ts', 'utf8');
+  assert.match(builder, /selectContext\(db, conv, history, budgets, cal\)/);
+  assert.match(builder, /export \{ episodeRelationInjectParts, episodeRelationInjectBinds, loadApprovedEpisodeCandidates \} from '\.\/contextSelection\.js'/);
+  const builderSrc = fs.readFileSync('apps/server/src/prompt/contextSelection.ts', 'utf8');
 
   t('source: episode SELECT uses UNION (not naive OR); whole/state/scene stay conv-only', () => {
     assert.match(builderSrc, /UNION \$\{relSql\}|UNION \$\{relSql\}/);
@@ -135,7 +138,7 @@ function main() {
     void binds;
     // loadApprovedEpisodeCandidates body must not call SELECT on characters/personas
     const start = builderSrc.indexOf('export function loadApprovedEpisodeCandidates');
-    const end = builderSrc.indexOf('export function buildPrompt', start);
+    const end = builderSrc.indexOf('export interface SelectedContext', start);
     const fn = builderSrc.slice(start, end);
     assert.equal(/FROM characters/i.test(fn), false);
     assert.equal(/FROM personas/i.test(fn), false);

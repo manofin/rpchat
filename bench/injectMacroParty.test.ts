@@ -469,7 +469,11 @@ async function main() {
     assert.ok(chatSrc.includes('attachInjectToIcPass(plan.pass_n'));
     assert.ok(chatSrc.includes('attachInjectToIcPass(passFRaw') || chatSrc.includes('attachInjectToIcPass(passF'));
     assert.ok(chatSrc.includes('attachInjectToIcPass(e.prompt'));
-    assert.ok(chatSrc.includes('attachInjectToIcPass(plan.pass_s'));
+    const dialogSrc = src('apps/server/src/prompt/dialogPrompt.ts');
+    assert.ok(chatSrc.includes('buildDialogPrompt(db, convNow, history, plan.pass_s'));
+    assert.ok(chatSrc.includes('model, messages: built.messages'));
+    assert.ok(dialogSrc.includes('attachInjectToIcPass(passS, inject.instruction'));
+    assert.equal(/prependInjectToRules\(/.test(dialogSrc), false);
     assert.equal(chatSrc.includes('attachInjectToIcPass(plan.pass_h'), false);
     assert.ok(chatSrc.includes('promptTokenBudget'));
     assert.ok(chatSrc.includes('config.model.contextTokens'));
