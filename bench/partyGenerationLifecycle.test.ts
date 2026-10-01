@@ -360,7 +360,7 @@ async function main() {
     await t('explicit abort 499 does not restore composer; HTTP fail does', () => {
       assert.equal(sendOkForComposer(new ApiError(499, '생성이 중단되었습니다'), false), true);
       assert.equal(sendOkForComposer(new ApiError(503, '모델 없음'), false), false);
-      assert.equal(sendOkForComposer(new Error('network drop'), false), true);
+      assert.equal(sendOkForComposer(new Error('network drop'), false), false);
       assert.equal(sendOkForComposer(new ApiError(500, 'x'), true), true);
     });
 

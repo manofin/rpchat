@@ -84,7 +84,7 @@ await t('chat SSE FailSend recovery contract remains intact', async () => {
     const deps = {
       state: { generating: false }, abortRef, genIdRef: { current: null }, scope, scopeRef,
       setStreamConnected: (connected: boolean) => { connections.push(connected); },
-      patchState: (patch: { error?: string | null }) => { if (patch.error !== undefined) visibleError = patch.error; }, ApiError, sendOkForComposer, AbortController,
+      patchState: (patch: { error?: string | null }) => { if (patch.error !== undefined) visibleError = patch.error; }, ApiError, sendOkForComposer, StreamInterruptedError, AbortController,
       applyEvent: (e: Event) => { received.push(e); if (e.type === 'error') visibleError = e.message; },
       reload: async () => {
         assert.equal(abortRef.current, null, 'release transport before reload so polling can resume');
@@ -155,8 +155,8 @@ await t('chat SSE FailSend recovery contract remains intact', async () => {
     { value: false, calls: ['reload', 'return'], visibleError: 'failed' }, 'SSE error remains visible after reload retracts the send and restores composer');
   for (const [error, abort, expected] of [
     [new ApiError(503, 'server failure'), false, false],
-    [new TypeError('network disconnected'), false, true],
-    [new StreamInterruptedError(), false, true],
+    [new TypeError('network disconnected'), false, false],
+    [new StreamInterruptedError(), false, false],
     [new ApiError(499, 'explicit stop'), false, true],
     [new Error('aborted'), true, true],
     [new ApiError(503, 'abort overrides HTTP failure'), true, true],
