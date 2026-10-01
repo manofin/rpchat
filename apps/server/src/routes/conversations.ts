@@ -12,7 +12,7 @@ import {
 import { deepestLeaf, getPath, insertMessage, messageOut, readablePreview, setHead, updateMessage } from '../db/tree.js';
 import { buildPrompt, resolvePersona } from '../prompt/builder.js';
 import { previewDialog } from '../prompt/dialogPreview.js';
-import { dialogContextSchema } from '../prompt/dialogActorContext.js';
+import { dialogContextSchema, invalidAssignmentAnchor } from '../prompt/dialogActorContext.js';
 import { parseInjectInstruction } from '../prompt/injectContext.js';
 import { substitute } from '../prompt/templates.js';
 import { catalogFromStory } from '../prompt/sceneCatalog.js';
@@ -204,6 +204,7 @@ export function conversationRoutes(ctx: Ctx) {
       const p = createSchema.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
       const d = p.data;
+      if (d.scene?.dialog_context?.entries.length) return reply.code(400).send({ error: 'dialog_context anchor는 대화 생성 후 저장된 현재 분기 메시지를 지정해야 함' });
       const character = one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ? AND archived = 0', d.characterId);
       if (!character) return reply.code(404).send({ error: 'character not found' });
       if (d.personaId && !one(db, 'SELECT 1 FROM personas WHERE id = ?', d.personaId)) return reply.code(404).send({ error: 'persona not found' });
@@ -411,6 +412,9 @@ export function conversationRoutes(ctx: Ctx) {
       const d = p.data;
       if (d.scene && ctx.queue.activeList.some((g) => g.conversationId === conv.id)) {
         return reply.code(409).send({ error: '생성 중에는 장면 상태를 수정할 수 없음' });
+      }
+      if (d.scene?.dialog_context && invalidAssignmentAnchor(db, conv.id, new Set(getPath(db, conv).map(m => m.id)), d.scene.dialog_context)) {
+        return reply.code(400).send({ error: 'dialog_context anchor는 저장된 현재 대화의 활성 분기 메시지여야 함' });
       }
       if (d.personaId && !one(db, 'SELECT 1 FROM personas WHERE id = ?', d.personaId)) return reply.code(404).send({ error: 'persona not found' });
       // snapshot lock: personaId set → copy live row into snapshot columns in the same statement.

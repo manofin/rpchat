@@ -29,10 +29,13 @@ export function previewDialog(db: DB, conv: ConversationRow, contextTokens: numb
   const scene = resolveSceneBase(db, {
     conversationScene: JSON.parse(conv.scene_json || '{}') as Scene, parentId, regenTurnStartId,
   }).scene;
-  if (opts.draft !== undefined) history.push({
-    id: 'draft', conversation_id: conv.id, parent_id: parentId, role: 'user', content: opts.draft.trim(),
-    status: 'complete', meta_json: '{}', bookmarked: 0, created_at: nowIso(),
-  });
+  if (opts.draft !== undefined) {
+    const draft: MessageRow & { prompt_preview_draft: true } = {
+      id: 'draft', conversation_id: conv.id, parent_id: parentId, role: 'user', content: opts.draft.trim(),
+      status: 'complete', meta_json: '{}', bookmarked: 0, created_at: nowIso(), prompt_preview_draft: true,
+    };
+    history.push(draft);
+  }
   const last = history.at(-1);
   const userText = last?.role === 'user' ? last.content : '';
   const seed = last?.role === 'user' ? last.parent_id : parentId;

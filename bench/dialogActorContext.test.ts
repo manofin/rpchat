@@ -237,5 +237,78 @@ async function main() {
     assert.ok(!JSON.stringify(p.actor_context.public_facts).includes('missing-memory'));
     assert.ok(!actual.messages.some(m => m.content.includes('missing-memory'))); budget(p);
   });
+
+  await t('synthetic, foreign, deleted and sibling anchors are rejected at write and excluded from legacy assembly', async () => {
+    const other = await api('POST', '/api/conversations', { characterId: a.id });
+    const foreign = insertMessage(db, other.id, null, 'user', 'FOREIGN_ANCHOR', 'complete');
+    const deleted = insertMessage(db, room.id, root.id, 'user', 'DELETED_ANCHOR', 'complete');
+    db.prepare('DELETE FROM messages WHERE id = ?').run(deleted.id);
+    const sibling = insertMessage(db, room.id, root.id, 'user', 'SIBLING_ANCHOR', 'complete');
+    const reject = async (anchor: string) => {
+      const before = (db.prepare('SELECT scene_json FROM conversations WHERE id = ?').get(room.id) as any).scene_json;
+      const r = await app.inject({ method: 'PATCH', url: `/api/conversations/${room.id}`, payload: { scene: { dialog_context: { version: 1, entries: [metadata.entries[0], { ...metadata.entries[1], anchor_message_id: anchor }] } } } });
+      assert.equal(r.statusCode, 400, anchor);
+      assert.equal((db.prepare('SELECT scene_json FROM conversations WHERE id = ?').get(room.id) as any).scene_json, before);
+    };
+    const legacy = async (anchor: string, reason: string) => {
+      // Rehearse old/bypassed stored JSON: assembly must remain safe even without the write guard.
+      const c = db.prepare('SELECT scene_json, head_message_id FROM conversations WHERE id = ?').get(room.id) as any;
+      const scene = JSON.parse(c.scene_json);
+      scene.dialog_context = { version: 1, entries: [metadata.entries[0], { ...metadata.entries[1], anchor_message_id: anchor }] };
+      scene.pending_edit = { head_message_id: c.head_message_id };
+      db.prepare('UPDATE conversations SET scene_json = ? WHERE id = ?').run(JSON.stringify(scene), room.id);
+      const p = await preview(); const actual = await send();
+      assert.deepEqual(actual.messages, p.messages, 'draft anchor must not grant knowledge in preview only');
+      assert.ok(p.actor_context.excluded.some((e: any) => e.memory_id === secret.id && e.reason === reason));
+      assert.ok(!JSON.stringify(p.actor_context.actors).includes('PRIVATE_FACT'));
+      assert.ok(!actual.messages.some(m => m.content.includes('PRIVATE_FACT'))); budget(p);
+    };
+    for (const anchor of ['draft', foreign.id, deleted.id]) { await reject(anchor); await legacy(anchor, 'invalid-anchor'); }
+    await reject(sibling.id); await legacy(sibling.id, 'assignment-off-branch');
+    const collision = insertMessage(db, room.id, root.id, 'user', 'DRAFT_ID_COLLISION', 'complete');
+    db.prepare("UPDATE messages SET id = 'draft' WHERE id = ?").run(collision.id);
+    await reject('draft'); await legacy('draft', 'assignment-off-branch');
+    const { buildActorContext } = await import('../apps/server/src/prompt/dialogActorContext.js');
+    const c = db.prepare('SELECT * FROM conversations WHERE id = ?').get(room.id) as any;
+    for (const anchor of [foreign.id, deleted.id]) {
+      const built = buildActorContext(db, c, new Set([root.id, anchor]), { version: 1, entries: [{ ...metadata.entries[1], anchor_message_id: anchor }] }, [a, b].map(({ id, name }) => ({ id, name })), 2000, 1);
+      assert.ok(built.packet.excluded.some(e => e.reason === 'invalid-anchor'), 'membership alone is insufficient');
+    }
+    await spec(metadata.entries);
+    const p = await preview(); const actual = await send(); assert.deepEqual(actual.messages, p.messages);
+    assert.ok(actor(p, a.id).facts.some((f: any) => f.memory_id === secret.id), 'stored ancestor stays eligible');
+    const fresh = await app.inject({ method: 'POST', url: '/api/conversations', payload: { characterId: a.id, scene: { dialog_context: metadata } } });
+    assert.equal(fresh.statusCode, 400, 'new room cannot anchor to another room before it has messages');
+  });
+
+  await t('a stored draft ID ancestor stays valid and virtual collision cannot extend summary coverage', async () => {
+    const { buildDialogPrompt } = await import('../apps/server/src/prompt/dialogPrompt.js');
+    const { getPath } = await import('../apps/server/src/db/tree.js');
+    const c = await api('POST', '/api/conversations', { characterId: a.id, storyId: story.id, mode: 'story', scene: { format: 'dialog' } });
+    // Remove the isolated sibling collision from the previous group, then create a real ancestor.
+    db.prepare("DELETE FROM messages WHERE id = 'draft'").run();
+    const start = insertMessage(db, c.id, null, 'user', 'COLLISION_OLD_ROOT', 'complete');
+    db.prepare("UPDATE messages SET id = 'draft' WHERE id = ?").run(start.id);
+    let parent = 'draft';
+    for (let i = 1; i < 40; i++) parent = insertMessage(db, c.id, parent, i % 2 ? 'assistant' : 'user', `COLLISION_KEEP_${i}`, 'complete').id;
+    setHead(db, c.id, parent);
+    const remembered = await api('POST', '/api/memories?confirm=1', { conversationId: c.id, content: 'VALID_STORED_ANCHOR_FACT', evidenceMessageIds: ['draft'] });
+    await api('PATCH', `/api/conversations/${c.id}`, { scene: { dialog_context: { version: 1, entries: [{ ...entry(remembered, 'fact', [a.id]), anchor_message_id: 'draft' }] } } });
+    const p = await api('GET', `/api/conversations/${c.id}/prompt-preview?draft=${encodeURIComponent('나리, COLLISION_CURRENT')}`);
+    assert.ok(actor(p, a.id).facts.some((f: any) => f.memory_id === remembered.id), 'stored ancestor is valid regardless of its ID spelling');
+    calls.length = 0; await api('POST', `/api/conversations/${c.id}/messages`, { content: '나리, COLLISION_CURRENT' });
+    assert.deepEqual(calls.find(v => v.max_tokens === 900)!.messages, p.messages);
+    db.prepare(`INSERT INTO summaries (id, conversation_id, content, status, tier, covers_until_message_id, created_at)
+      VALUES ('collision-summary', ?, 'COLLISION_SUMMARY', 'approved', 'whole', 'draft', '2026')`).run(c.id);
+    const stored = db.prepare('SELECT * FROM conversations WHERE id = ?').get(c.id) as any;
+    const history = getPath(db, stored);
+    const virtual = { ...history[0], id: 'draft', role: 'user' as const, content: 'VIRTUAL_CURRENT', prompt_preview_draft: true };
+    history.push(virtual);
+    const built = buildDialogPrompt(db, stored, history, '## 규칙\nrules', 'VIRTUAL_CURRENT', 8192, 'mock');
+    const request = built.messages.map(m => m.content).join('\n');
+    assert.ok(request.includes('COLLISION_SUMMARY'));
+    assert.ok(!request.includes('COLLISION_OLD_ROOT'));
+    assert.ok(request.includes('COLLISION_KEEP_1'), 'virtual ID must not move the stored ancestor watermark forward'); budget(built);
+  });
 }
 main().then(() => console.log(`PASS=${passed}`)).catch(e => { console.error(e); process.exitCode = 1; }).finally(async () => { await app.close(); db.close(); fs.rmSync(tmp, { recursive: true, force: true }); });

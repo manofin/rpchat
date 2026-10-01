@@ -22,6 +22,10 @@ const entrySchema = z.object({
 export const dialogContextSchema = z.object({ version: z.literal(1), entries: z.array(entrySchema).max(64) }).strict()
   .superRefine((s, ctx) => { if (new Set(s.entries.map(e => e.memory_id)).size !== s.entries.length) ctx.addIssue({ code: 'custom', message: 'duplicate memory_id' }); });
 export type DialogKnowledgeSpec = z.infer<typeof dialogContextSchema>;
+export function invalidAssignmentAnchor(db: DB, conversationId: string, pathIds: Set<string>, spec: DialogKnowledgeSpec): boolean {
+  return spec.entries.some(e => !one(db, 'SELECT id FROM messages WHERE id = ? AND conversation_id = ?', e.anchor_message_id, conversationId)
+    || !pathIds.has(e.anchor_message_id));
+}
 type Fact = { memory_id: string; kind: DialogKnowledgeSpec['entries'][number]['kind']; text: string; subject_id?: string; target_id?: string };
 export type ActorContext = {
   version: 1;
@@ -73,6 +77,7 @@ export function buildActorContext(db: DB, conv: ConversationRow, pathIds: Set<st
   for (const { e, m } of entries) {
     let reason: string | null = null;
     if (e.status !== 'active') reason = 'resolved';
+    else if (!one(db, 'SELECT id FROM messages WHERE id = ? AND conversation_id = ?', e.anchor_message_id, conv.id)) reason = 'invalid-anchor';
     else if (!pathIds.has(e.anchor_message_id)) reason = 'assignment-off-branch';
     else if (!m || m.status !== 'pinned') reason = 'not-approved';
     else if (!((m.scope === 'conversation' && m.conversation_id === conv.id) || (m.scope === 'character' && !!m.character_id && actorIds.has(m.character_id)))) reason = 'foreign-scope';

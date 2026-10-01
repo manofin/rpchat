@@ -58,7 +58,8 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
   const profileBlock = instruction ? renderProfileInstruction(instruction, '## 서술 지침', '', userName) : null;
   // Attach uses the existing party hook; final role/message overhead is counted below.
   const scoped = scene?.dialog_context !== undefined;
-  const mandatory = attachInjectToIcPass(scoped ? `${passS}\n\n${ACTOR_CONTEXT_RULES}` : passS, inject.instruction, {
+  if (scoped) passS += `\n\n${ACTOR_CONTEXT_RULES}`;
+  const mandatory = attachInjectToIcPass(passS, inject.instruction, {
     promptTokenBudget: Number.MAX_SAFE_INTEGER, calibration: cal, profileInstruction: profileBlock,
   }).prompt;
   const current: ChatMessage = { role: 'user', content: userText.trim() ? userText : '(장면을 이어서 진행한다.)' };
@@ -90,7 +91,10 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
   const filtered = dialogHistory(db, currentRow ? history.slice(0, -1) : history);
   // Current input also participates in lore matching, including OOC (party IC policy unchanged).
   const scanHistory = currentRow ? [...filtered, { ...currentRow, content: userText }] : filtered;
-  const pathIds = new Set(history.map(m => m.id));
+  // The preview's synthetic row can match an old DB id; it is never branch provenance.
+  const indexedHistory = history.map((message, index) => ({ message, index }))
+    .filter(({ message }) => !(message as MessageRow & { prompt_preview_draft?: true }).prompt_preview_draft);
+  const pathIds = new Set(indexedHistory.map(({ message }) => message.id));
   const actorCap = scoped ? Math.floor(memoryCap / 2) : 0;
   const actors = scoped ? loadStoryRoster(db, conv).map(({ id, name }) => ({ id, name })) : [];
   const assigned = scoped ? buildActorContext(db, conv, pathIds, scene!.dialog_context, actors, actorCap, cal) : null;
@@ -102,7 +106,7 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
   const system = [mandatory, staticText, ...selected.parts, assigned?.text].filter(Boolean).join('\n\n');
   // Only complete bodies retained in the final system prompt can replace their source coverage.
   // A coverage starting later in the path must not erase an uncovered earlier prefix.
-  const indexById = new Map(history.map((m, i) => [m.id, i]));
+  const indexById = new Map(indexedHistory.map(({ message, index }) => [message.id, index]));
   const compactIds = new Set<string>();
   const lastCompactable = history.length - SCENE_RECENT_GUARD - 1;
   for (const s of selected.compactionSummaries) {
