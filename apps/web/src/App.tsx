@@ -1,10 +1,10 @@
 import { useEffect, useState, type ReactElement } from 'react';
-import { get } from './lib/api';
-import { UNAUTHORIZED_EVENT } from './lib/api';
+import { get, isAuthRejection, isConnectionFailure, UNAUTHORIZED_EVENT } from './lib/api';
 import { match, useRoute } from './lib/router';
 import { resolveSettingsRoute } from './lib/conversationSettings';
 import { SearchPage } from './pages/SearchPage';
 import { useVisualViewport } from './lib/viewport';
+import { ConnectionFailureView } from './components/ConnectionFailureView';
 import { Spinner, UiProvider } from './components/ui';
 import { HomePage } from './pages/HomePage';
 import { ChatsPage } from './pages/ChatsPage';
@@ -27,13 +27,21 @@ export default function App() {
   useVisualViewport();
   const [me, setMe] = useState<Me | null>(null);
   const [checked, setChecked] = useState(false);
+  const [connectionFailure, setConnectionFailure] = useState(false);
 
   async function checkAuth() {
     try {
       const m = await get<Me>('/api/auth/me');
       setMe(m);
-    } catch {
-      setMe({ mode: 'token', authenticated: false });
+      setConnectionFailure(false);
+    } catch (e) {
+      if (isAuthRejection(e)) {
+        setMe({ mode: 'token', authenticated: false });
+        setConnectionFailure(false);
+      } else if (isConnectionFailure(e)) {
+        setConnectionFailure(true);
+        setMe((prev) => prev);
+      }
     } finally {
       setChecked(true);
     }
@@ -46,6 +54,14 @@ export default function App() {
   }, []);
 
   if (!checked) return <UiProvider><Spinner label="시작하는 중…" /></UiProvider>;
+
+  if (connectionFailure) {
+    return (
+      <UiProvider>
+        <ConnectionFailureView onRetry={checkAuth} />
+      </UiProvider>
+    );
+  }
 
   // token 모드에서 미인증이면 로그인. tailscale/none 은 서버가 판정하며, 미인증이면 안내만.
   if (me && !me.authenticated) {
