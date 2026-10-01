@@ -23,6 +23,17 @@ export function sendOkForComposer(e: unknown, aborted: boolean): boolean {
 
 export const UNAUTHORIZED_EVENT = 'rpchat:unauthorized';
 
+/** True only for auth-gate style rejection. Not every 403 (resource forbidden). */
+export function isAuthRejection(e: unknown): boolean {
+  return e instanceof ApiError && e.status === 401;
+}
+
+/** checkAuth / shell: treat as connectivity, not logout. */
+export function isConnectionFailure(e: unknown): boolean {
+  if (e instanceof ApiError) return e.status !== 401;
+  return true; // TypeError Failed to fetch, AbortError, etc.
+}
+
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(path, {
     credentials: 'same-origin',
