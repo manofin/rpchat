@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { del, get, post, put } from '../lib/api';
-import { back } from '../lib/router';
 import type { Health, ModelProfile, Persona } from '../types';
 import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { applyTheme, persistTheme, readTheme, type Theme } from '../lib/theme';
 import { PROFILE_INSTRUCTION_MAX, PROFILE_NAME_RE, estimateInstructionTokens, hasInstruction, instructionBadge } from '../lib/profileInstruction';
 import { settingsModelLines } from '../lib/modelDisplay';
+import { SettingsNavigationRow, SettingsSection } from '../components/settings';
+import { back, navigate } from '../lib/router';
 
 export function SettingsPage() {
   const [health, setHealth] = useState<Health | null>(null);
@@ -50,6 +51,8 @@ export function SettingsPage() {
         <ThemeSection />
         <PersonasSection />
         <ProfilesSection />
+        <OpsSection />
+
         <ContentPolicySection />
 
         {health?.authMode === 'token' && (
@@ -321,6 +324,18 @@ function ContentPolicySection() {
       </div>
       <button className="btn sm block" onClick={save}>지침 저장</button>
     </>
+  );
+}
+
+function OpsSection() {
+  return (
+    <SettingsSection title="운영">
+      <SettingsNavigationRow
+        title="고아 스토리"
+        href="/settings/orphans"
+        onNavigate={(href) => navigate(href)}
+      />
+    </SettingsSection>
   );
 }
 

@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../ctx.js';
 import { PROMPT_VERSION, config } from '../config.js';
-import { many, nowIso, one, parseJson, run, uid } from '../db/index.js';
+import { many, nowIso, one, parseJson, run, uid, type DB } from '../db/index.js';
 import { buildPrompt, computeStoryInjection } from '../prompt/builder.js';
 import { parseSceneCatalog } from '../prompt/sceneCatalog.js';
 import { parseOpening, storedOpening, validateOpeningPut } from '../prompt/storyOpening.js';
@@ -535,6 +535,41 @@ export function restoreCandidatesForStory(db: Ctx['db'], storyId: string): { roo
   return { room_n: rooms.length, candidates };
 }
 
+
+export type OrphanStoryListItem = {
+  id: string;
+  name: string;
+  archived: boolean;
+  room_n: number;
+  updated_at: string;
+};
+
+/** Ops discovery: roster empty AND at least one non-archived room. Read-only. */
+export function listOrphanStories(db: DB): OrphanStoryListItem[] {
+  const rows = many<{
+    id: string;
+    name: string;
+    archived: number;
+    updated_at: string;
+    room_n: number;
+  }>(
+    db,
+    `SELECT s.id, s.name, s.archived, s.updated_at,
+      (SELECT COUNT(*) FROM conversations c WHERE c.story_id = s.id AND c.archived = 0) AS room_n
+     FROM stories s
+     WHERE (SELECT COUNT(*) FROM story_characters sc WHERE sc.story_id = s.id) = 0
+       AND (SELECT COUNT(*) FROM conversations c WHERE c.story_id = s.id AND c.archived = 0) > 0
+     ORDER BY room_n DESC, s.updated_at DESC`,
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    archived: !!r.archived,
+    room_n: Number(r.room_n),
+    updated_at: r.updated_at,
+  }));
+}
+
 const restoreApplySchema = z.object({
   characterIds: z.array(z.string().min(1)).max(200),
 });
@@ -605,6 +640,9 @@ export function storyRoutes(ctx: Ctx) {
       );
       return reply.code(201).send(storyOut(one<StoryRow>(db, 'SELECT * FROM stories WHERE id = ?', id)!));
     });
+
+    // Static path must register before /api/stories/:id (Fastify param capture).
+    app.get('/api/stories/orphans', async () => listOrphanStories(db));
 
     app.get<{ Params: { id: string } }>('/api/stories/:id', async (req, reply) => {
       const s = one<StoryRow>(db, 'SELECT * FROM stories WHERE id = ?', req.params.id);
