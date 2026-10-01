@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -30,5 +31,5 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: List benches
-        run: npm run test:benches -- --list
+      - name: Core regression benches
+        run: npm run test:core-regression -- --output-dir "$RUNNER_TEMP/core-regression"
