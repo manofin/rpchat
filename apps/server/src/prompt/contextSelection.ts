@@ -53,6 +53,8 @@ export interface SelectedContext {
   sections: BudgetReport['sections']; used: number; memoryParts: string[]; loreText: string | null; parts: (string | null)[];
   activeLore: Array<{ title: string; content: string }>; droppedLore: string[]; memItems: string[]; droppedMemItems: string[];
   summaryText: string | null; diagnostics: NonNullable<BudgetReport['diagnostics']>;
+  /** Complete summary bodies that survived final rendered-budget selection. */
+  compactionSummaries: SummaryRow[];
 }
 
 export function selectContext(db: DB, conv: ConversationRow, history: MessageRow[], budgets: { lore: number; memory: number }, cal: number, opts?: { pathIds?: Set<string>; branchScoped?: boolean; strictBudget?: boolean }): SelectedContext {
@@ -73,6 +75,13 @@ export function selectContext(db: DB, conv: ConversationRow, history: MessageRow
       const ids = sourcePath(r.conversation_id);
       return (!r.covers_from_message_id || ids.has(r.covers_from_message_id)) && (!r.covers_until_message_id || ids.has(r.covers_until_message_id));
     }) : rows;
+  // Dialog limits eligible candidates, so newer sibling rows cannot starve an active summary.
+  const localSummaryCandidates = (tier: 'whole' | 'state') => {
+    const query = tier === 'whole'
+      ? `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'whole' AND status = 'approved' ORDER BY created_at DESC LIMIT 5`
+      : `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'state' AND status = 'approved' ORDER BY created_at DESC LIMIT 5`;
+    return onBranch(many<SummaryRow>(db, opts?.branchScoped ? query.replace(' LIMIT 5', '') : query, conv.id)).slice(0, 5);
+  };
   // 2) 활성 로어: 최근 발화 키워드 매칭 (결정론적)
   //
   // story-editor-tabs A8: candidate set = 전역(character_id IS NULL AND story_id
@@ -158,11 +167,11 @@ export function selectContext(db: DB, conv: ConversationRow, history: MessageRow
     memDiag.push({ content: m.content, status: 'included', importance: m.importance, tokens: t });
   }
   const summaryRow = pickOnPath(
-    onBranch(many<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'whole' AND status = 'approved' ORDER BY created_at DESC LIMIT 5`, conv.id)),
+    localSummaryCandidates('whole'),
     pathIds,
   );
   const stateRow = pickOnPath(
-    onBranch(many<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'state' AND status = 'approved' ORDER BY created_at DESC LIMIT 5`, conv.id)),
+    localSummaryCandidates('state'),
     pathIds,
   );
   const sumBudget = Math.max(0, budgets.memory - memEst);
@@ -176,7 +185,9 @@ export function selectContext(db: DB, conv: ConversationRow, history: MessageRow
   const recentGuardIds = new Set(history.slice(-SCENE_RECENT_GUARD).map((m) => m.id));
   // episode: 최신 approved 1건, 예약(상태 후 잔여의 35%), recentGuard 적용
   const episodeRow = pickEpisodeCandidate(
-    onBranch(loadApprovedEpisodeCandidates(db, conv)),
+    onBranch(opts?.branchScoped
+      ? many<SummaryRow>(db, `${episodeRelationInjectParts(conv.persona_id).unionSql} ORDER BY created_at DESC`, ...episodeRelationInjectBinds(conv))
+      : loadApprovedEpisodeCandidates(db, conv)).slice(0, 5),
     pathIds,
     conv.id,
   );
@@ -206,6 +217,7 @@ export function selectContext(db: DB, conv: ConversationRow, history: MessageRow
   const wholeEstOnly = summaryText ? estimateTokens(summaryText, cal) : 0;
   let sceneBudget = Math.max(0, sumBudget - stateEst - episodeEst - wholeEstOnly);
   const sceneParts: string[] = [];
+  const sceneRows: SummaryRow[] = [];
   let sceneEst = 0;
   if (sceneBudget > 0) {
     const scenes = many<SummaryRow>(db,
@@ -235,6 +247,7 @@ export function selectContext(db: DB, conv: ConversationRow, history: MessageRow
       const sc = byId.get(used.id);
       if (!sc) continue;
       sceneParts.push(sc.content);
+      sceneRows.push(sc);
       sceneEst += used.tokens;
     }
   }
@@ -271,6 +284,12 @@ export function selectContext(db: DB, conv: ConversationRow, history: MessageRow
     memoryParts, loreText,
     parts: [...memoryParts, loreText],
     activeLore, droppedLore, memItems, droppedMemItems, summaryText,
+    compactionSummaries: [
+      ...(stateRow && stateText && stateCore === stateRendered ? [stateRow] : []),
+      ...(summaryRow && summaryText && summaryText === summaryRow.content ? [summaryRow] : []),
+      ...(episodeRow && episodeText && episodeText === renderEpisode(episodeRow.content) ? [episodeRow] : []),
+      ...sceneRows,
+    ],
     diagnostics: { lore: loreDiag, memories: memDiag, summaries },
   };
 }

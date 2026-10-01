@@ -222,9 +222,105 @@ async function main() {
       db.prepare(`INSERT INTO summaries (id, conversation_id, tier, content, status, covers_until_message_id, rel_character_id, rel_persona_id, created_at)
         VALUES (?, ?, 'episode', ?, 'approved', ?, ?, ?, ?)`).run(id, source.id, body, until, nari.id, persona.id, 'z' + id);
     }
+    for (let i = 0; i < 4; i++) db.prepare(`INSERT INTO summaries (id, conversation_id, tier, content, status, covers_until_message_id, rel_character_id, rel_persona_id, created_at)
+      VALUES (?, ?, 'episode', 'RELATED_SIBLING', 'approved', ?, ?, ?, ?)`).run(`related-zbad-${i}`, source.id, abandoned.id, nari.id, persona.id, `zz-related-${i}`);
     const p = await preview(roomId, { draft: '나리, 열쇠 RELATED_USER' });
     assert.ok(text(p).includes('RELATED_APPROVED'));
     assert.ok(!text(p).includes('RELATED_SIBLING'));
+    checkedBudget(p);
+  });
+
+  await t('newer sibling summaries cannot remove both active summary and covered source text', async () => {
+    const c = (await api('POST', '/api/conversations', { characterId: nari.id, storyId: story.id, mode: 'story', scene: { format: 'dialog' } })).json();
+    const rows = [];
+    let parent: string | null = null;
+    for (let i = 0; i < 40; i++) {
+      const row = insertMessage(db, c.id, parent, i % 2 ? 'assistant' : 'user', `COVERAGE_RAW_${i}`, 'complete');
+      rows.push(row); parent = row.id;
+    }
+    setHead(db, c.id, parent);
+    summary('coverage-active', c.id, 'COVERAGE_ACTIVE_SUMMARY', 'approved', rows[10].id);
+    const abandoned = insertMessage(db, c.id, rows[0].id, 'assistant', 'COVERAGE_SIBLING_RAW', 'complete');
+    for (let i = 0; i < 5; i++) summary(`z-coverage-sibling-${i}`, c.id, `COVERAGE_SIBLING_SUMMARY_${i}`, 'approved', abandoned.id);
+    for (const tier of ['state', 'episode']) {
+      const content = `COVERAGE_ACTIVE_${tier.toUpperCase()} ` + (tier === 'episode' ? '지난 사건을 승인한 내용. '.repeat(8) : '현재 승인 상태');
+      db.prepare(`INSERT INTO summaries (id, conversation_id, tier, content, status, covers_until_message_id, created_at)
+        VALUES (?, ?, ?, ?, 'approved', ?, 'a-coverage')`).run(`coverage-${tier}`, c.id, tier, content, rows[10].id);
+      for (let i = 0; i < 5; i++) db.prepare(`INSERT INTO summaries (id, conversation_id, tier, content, status, covers_until_message_id, created_at)
+        VALUES (?, ?, ?, 'COVERAGE_SIBLING', 'approved', ?, 'z-coverage')`).run(`coverage-${tier}-bad-${i}`, c.id, tier, abandoned.id);
+    }
+    const p = await preview(c.id, { draft: '나리, COVERAGE_CURRENT' });
+    await send(c.id, '나리, COVERAGE_CURRENT');
+    const actual = text(request());
+    assert.deepEqual(comparable(request().messages), comparable(p.messages));
+    assert.ok(actual.includes('COVERAGE_ACTIVE_SUMMARY') || actual.includes('COVERAGE_RAW_0'), 'active summary or its covered source must survive selection');
+    for (const marker of ['COVERAGE_ACTIVE_SUMMARY', 'COVERAGE_ACTIVE_STATE', 'COVERAGE_ACTIVE_EPISODE']) assert.ok(actual.includes(marker), marker);
+    assert.ok(!actual.includes('COVERAGE_RAW_0'), 'complete included summary can compact covered text');
+    assert.ok(!actual.includes('COVERAGE_SIBLING'), 'sibling context must stay out');
+    checkedBudget(p);
+  });
+
+  await t('excluded recent-guard episode leaves its older covered source in the adapter request', async () => {
+    const c = (await api('POST', '/api/conversations', { characterId: nari.id, storyId: story.id, mode: 'story', scene: { format: 'dialog' } })).json();
+    let parent: string | null = null;
+    for (let i = 0; i < 40; i++) parent = insertMessage(db, c.id, parent, i % 2 ? 'assistant' : 'user', `GUARDED_RAW_${i}`, 'complete').id;
+    setHead(db, c.id, parent);
+    db.prepare(`INSERT INTO summaries (id, conversation_id, tier, content, status, covers_until_message_id, created_at)
+      VALUES ('guarded-episode', ?, 'episode', ?, 'approved', ?, '2026')`).run(c.id, 'GUARDED_EPISODE ' + '최근 사건의 승인 요약. '.repeat(8), parent);
+    const p = await preview(c.id, { draft: '나리, GUARDED_CURRENT' });
+    await send(c.id, '나리, GUARDED_CURRENT');
+    assert.deepEqual(comparable(request().messages), comparable(p.messages));
+    assert.ok(!text(request()).includes('GUARDED_EPISODE'));
+    assert.ok(text(request()).includes('GUARDED_RAW_0'), 'excluded summary cannot compact source');
+    checkedBudget(p);
+  });
+
+  await t('budget-truncated or removed summary bodies cannot compact their covered source', async () => {
+    const { buildDialogPrompt } = await import('../apps/server/src/prompt/dialogPrompt.js');
+    const c = (await api('POST', '/api/conversations', { characterId: sera.id })).json();
+    let parent: string | null = null;
+    const rows = [];
+    for (let i = 0; i < 30; i++) {
+      const row = insertMessage(db, c.id, parent, i % 2 ? 'assistant' : 'user', i === 0 ? 'BUDGET_COVERED_RAW' : 'x', 'complete');
+      rows.push(row); parent = row.id;
+    }
+    setHead(db, c.id, parent);
+    summary('budget-whole', c.id, 'BUDGET_SUMMARY_START ' + '승인된 사건. '.repeat(20) + '\n' + '추가설명'.repeat(1000) + ' BUDGET_SUMMARY_END', 'approved', rows[5].id);
+    const history = getPath(db, conv(c.id));
+    history.push({ ...rows[0], id: 'budget-draft', parent_id: parent, content: 'BUDGET_CURRENT' });
+    const assemble = (context: number) => buildDialogPrompt(db, conv(c.id), history, '## 규칙\nP2_RULES', 'BUDGET_CURRENT', context, 'mock-model');
+    const truncated = assemble(2000);
+    assert.equal(truncated.budget.summary_used, true);
+    assert.ok(text(truncated).includes('BUDGET_SUMMARY_START'));
+    assert.ok(!text(truncated).includes('BUDGET_SUMMARY_END'));
+    assert.ok(text(truncated).includes('BUDGET_COVERED_RAW'), 'partial summary cannot replace full coverage');
+    checkedBudget(truncated);
+    db.prepare(`INSERT INTO summaries (id, conversation_id, tier, content, status, covers_until_message_id, created_at)
+      VALUES ('budget-state', ?, 'state', ?, 'approved', ?, '2026')`).run(c.id, '긴 상태 기록. '.repeat(200), rows[5].id);
+    const removed = assemble(1400);
+    assert.equal(removed.budget.summary_used, false, 'whole summary is removed after rendered-budget retry');
+    assert.ok(!text(removed).includes('BUDGET_SUMMARY_START'));
+    assert.ok(text(removed).includes('BUDGET_COVERED_RAW'), 'removed summary cannot replace coverage');
+    assert.deepEqual(removed, assemble(1400));
+    checkedBudget(removed);
+  });
+
+  await t('included summary compacts only its covered interval and keeps the earlier gap', async () => {
+    const c = (await api('POST', '/api/conversations', { characterId: nari.id, storyId: story.id, mode: 'story', scene: { format: 'dialog' } })).json();
+    const rows = [];
+    let parent: string | null = null;
+    for (let i = 0; i < 40; i++) {
+      const row = insertMessage(db, c.id, parent, i % 2 ? 'assistant' : 'user', `INTERVAL_RAW_${i}`, 'complete');
+      rows.push(row); parent = row.id;
+    }
+    setHead(db, c.id, parent);
+    summary('interval-whole', c.id, 'INTERVAL_SUMMARY', 'approved', rows[10].id);
+    db.prepare("UPDATE summaries SET covers_from_message_id = ? WHERE id = 'interval-whole'").run(rows[8].id);
+    const p = await preview(c.id, { draft: '나리, INTERVAL_CURRENT' });
+    await send(c.id, '나리, INTERVAL_CURRENT');
+    assert.deepEqual(comparable(request().messages), comparable(p.messages));
+    for (const marker of ['INTERVAL_SUMMARY', 'INTERVAL_RAW_0', 'INTERVAL_RAW_7', 'INTERVAL_RAW_11']) assert.ok(text(request()).includes(marker), marker);
+    for (const marker of ['INTERVAL_RAW_8', 'INTERVAL_RAW_9', 'INTERVAL_RAW_10']) assert.ok(!text(request()).includes(marker), marker);
     checkedBudget(p);
   });
 

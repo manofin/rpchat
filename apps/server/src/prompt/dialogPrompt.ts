@@ -1,9 +1,9 @@
 import { type DB, many } from '../db/index.js';
 import { parseMessageMeta } from '../db/messageMeta.js';
-import type { BudgetReport, ChatMessage, ConversationRow, MessageRow, SummaryRow } from '../types.js';
+import type { BudgetReport, ChatMessage, ConversationRow, MessageRow } from '../types.js';
 import { computeStoryInjection, isOocMessage, loadProfile, mergeConsecutive, resolvePersona } from './builder.js';
 import { selectContext } from './contextSelection.js';
-import { effectiveCompactionEndIndex, resolveWatermarkIndex } from './compaction.js';
+import { SCENE_RECENT_GUARD } from './summaryBudget.js';
 import { attachInjectToIcPass, type InjectContext } from './injectContext.js';
 import { profileInstructionText } from './promptPolicy.js';
 import { resolveStory } from './resolveStory.js';
@@ -91,9 +91,18 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
     { pathIds: new Set(history.map((m) => m.id)), branchScoped: true, strictBudget: true });
   sections.push(...selected.sections.map((s) => ({ ...s, budget: s.kind === 'lore' ? loreCap : memoryCap })));
   const system = [mandatory, staticText, ...selected.parts].filter(Boolean).join('\n\n');
-  const compactEnd = effectiveCompactionEndIndex(resolveWatermarkIndex(history,
-    many<SummaryRow>(db, 'SELECT * FROM summaries WHERE conversation_id = ?', conv.id), conv.id), history.length);
-  const compactIds = new Set(compactEnd == null ? [] : history.slice(0, compactEnd + 1).map((m) => m.id));
+  // Only complete bodies retained in the final system prompt can replace their source coverage.
+  // A coverage starting later in the path must not erase an uncovered earlier prefix.
+  const indexById = new Map(history.map((m, i) => [m.id, i]));
+  const compactIds = new Set<string>();
+  const lastCompactable = history.length - SCENE_RECENT_GUARD - 1;
+  for (const s of selected.compactionSummaries) {
+    if (s.conversation_id !== conv.id || !s.covers_until_message_id) continue;
+    const until = indexById.get(s.covers_until_message_id);
+    const from = s.covers_from_message_id ? indexById.get(s.covers_from_message_id) : 0;
+    if (from == null || until == null || from > until) continue;
+    for (let i = from; i <= Math.min(until, lastCompactable); i++) compactIds.add(history[i].id);
+  }
   const candidates = filtered.filter((m) => !compactIds.has(m.id));
   const recentBudget = Math.max(0, available - estimateMessageTokens(system, cal) - estimateMessageTokens(current.content, cal));
   const recent: MessageRow[] = [];
