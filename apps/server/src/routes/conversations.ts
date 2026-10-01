@@ -20,6 +20,7 @@ import type { CharacterRow, ConversationRow, MessageRow, PersonaRow, Scene, Stor
 import { characterOut, personaOut } from './characters.js';
 import { parseEndings, parseOpeningsExtra } from './stories.js';
 import { evalRoomEnding, suggestEndings } from '../endingEval.js';
+import { materializeSceneAtHead } from '../db/sceneBase.js';
 
 const sceneSchema = z.object({
   place: z.string().max(300).optional(),
@@ -158,6 +159,15 @@ export function loadConversation(ctx: Ctx, id: string): ConversationRow | undefi
 
 export function conversationRoutes(ctx: Ctx) {
   const { db } = ctx;
+
+  function persistMaterializedScene(convId: string, headId: string | null, fallbackJson: string): void {
+    const scene = materializeSceneAtHead(db, {
+      headId,
+      fallback: parseJson<Scene>(fallbackJson, {}),
+    });
+    run(db, 'UPDATE conversations SET scene_json = ? WHERE id = ?', JSON.stringify(scene), convId);
+  }
+
   return async function plugin(app: FastifyInstance) {
     app.get<{ Querystring: { characterId?: string; storyId?: string; limit?: string; offset?: string } }>('/api/conversations', async (req) => {
       const limit = Math.min(200, Math.max(1, Number(req.query.limit ?? 50) || 50));
@@ -535,14 +545,24 @@ export function conversationRoutes(ctx: Ctx) {
       return messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', m.id)!);
     });
 
-    // 형제(swipe) 선택: 해당 분기의 가장 최근 잎으로 head 이동
+    // 형제(swipe) 선택: 해당 분기의 가장 최근 잎으로 head를 옮기고,
+    // 그 잎의 커밋 장면으로 scene_json을 다시 만든다. pending_edit는 분기에 남지 않는다.
     app.post<{ Params: { id: string } }>('/api/messages/:id/select', async (req, reply) => {
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', req.params.id);
       if (!m) return reply.code(404).send({ error: 'not found' });
-      const conv = loadConversation(ctx, m.conversation_id)!;
+      const conv = loadConversation(ctx, m.conversation_id);
+      if (!conv) return reply.code(404).send({ error: 'not found' });
       if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '생성 중에는 분기를 바꿀 수 없음' });
-      setHead(db, conv.id, deepestLeaf(db, m.id));
-      return { messages: getPath(db, loadConversation(ctx, conv.id)!).map((x) => messageOut(db, x)) };
+      const leaf = deepestLeaf(db, m.id);
+      db.transaction(() => {
+        setHead(db, conv.id, leaf);
+        persistMaterializedScene(conv.id, leaf, conv.scene_json);
+      })();
+      const reloaded = loadConversation(ctx, conv.id)!;
+      return {
+        messages: getPath(db, reloaded).map((x) => messageOut(db, x)),
+        conversation: conversationOut(reloaded),
+      };
     });
 
     // 잎 메시지 삭제 (중단된 응답 버리기 등). head 는 부모로.
@@ -564,7 +584,9 @@ export function conversationRoutes(ctx: Ctx) {
         if (conv.head_message_id === m.id || !one(db, 'SELECT 1 FROM messages WHERE id = ?', conv.head_message_id)) {
           // 같은 부모의 남은 형제가 있으면 그쪽 잎으로, 없으면 부모로
           const sib = one<{ id: string }>(db, 'SELECT id FROM messages WHERE conversation_id = ? AND parent_id IS ? ORDER BY created_at DESC LIMIT 1', conv.id, m.parent_id);
-          setHead(db, conv.id, sib ? deepestLeaf(db, sib.id) : m.parent_id);
+          const headId = sib ? deepestLeaf(db, sib.id) : m.parent_id;
+          setHead(db, conv.id, headId);
+          persistMaterializedScene(conv.id, headId, conv.scene_json);
         }
       })();
       return { messages: getPath(db, loadConversation(ctx, conv.id)!).map((x) => messageOut(db, x)) };
