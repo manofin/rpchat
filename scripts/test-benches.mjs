@@ -26,15 +26,24 @@ let outputDir;
 let timeoutMs = 180_000;
 let listOnly = false;
 let allowSourceMutation = false;
+let manifestPath;
+let manifestMode = false;
+let resolvedManifest;
 const selected = new Set();
+const entryTimeoutMs = new Map();
+const entryGroups = new Map();
+const manifestExcludeReasons = new Map();
+const MANIFEST_PIN_REASON = 'Not in LOCK-CoreRegressionCI pin list (CI gate scope).';
 
 function usage() {
-  console.log(`Usage: npm run test:benches -- [name ...] [--output-dir /tmp/evidence] [--timeout-ms 180000] [--list]
+  console.log(`Usage: npm run test:benches -- [name ...] [--output-dir /tmp/evidence] [--timeout-ms 180000] [--list] [--manifest path.json]
 Discovers only top-level bench/*.test.ts. Runs sequentially with temporary DB defaults and no real model.
 Default exclusions: settingsViewport, partyTurnLiveRo, characterAssetsWrite.
 fixMobileClip and shortcutHub always use --no-browser; their browser portions are not run.
 WARNING: characterAssetsWrite requires a temporary isolated checkout. Select its exact name alone with
 --allow-source-mutation; it temporarily rewrites product source and interruption can prevent restoration.
+--manifest selects run[] only. Unknown names fail before execute. Other benches are excluded and never count as passes.
+Per-entry timeoutMs overrides manifest defaultTimeoutMs, which overrides --timeout-ms.
 JSON results and individual logs are retained outside the checkout. reportedChecks counts emitted test/group
 success lines ("ok N" or "ok - N"), not individual assert calls; excluded tests never count as passes.`);
 }
@@ -44,11 +53,12 @@ for (let i = 0; i < args.length; i++) {
   if (arg === '--help') { usage(); process.exit(0); }
   if (arg === '--list') { listOnly = true; continue; }
   if (arg === '--allow-source-mutation') { allowSourceMutation = true; continue; }
-  if (arg === '--output-dir' || arg === '--timeout-ms') {
+  if (arg === '--output-dir' || arg === '--timeout-ms' || arg === '--manifest') {
     const value = args[++i];
     if (!value || value.startsWith('--')) throw new Error(`${arg} requires a value`);
     if (arg === '--output-dir') outputDir = path.resolve(value);
-    else timeoutMs = Number(value);
+    else if (arg === '--timeout-ms') timeoutMs = Number(value);
+    else manifestPath = value;
     continue;
   }
   const name = arg.replace(/^bench\//, '').replace(/\.test\.ts$/, '') + '.test.ts';
@@ -58,6 +68,80 @@ for (let i = 0; i < args.length; i++) {
 if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 3_600_000) {
   throw new Error('--timeout-ms must be an integer between 1 and 3600000');
 }
+
+function assertTimeout(value, label) {
+  if (!Number.isSafeInteger(value) || value < 1 || value > 3_600_000) {
+    throw new Error(`${label} must be an integer between 1 and 3600000`);
+  }
+}
+
+function benchFileName(raw) {
+  const name = String(raw).replace(/^bench\//, '').replace(/\.test\.ts$/, '') + '.test.ts';
+  if (!files.includes(name)) throw new Error(`Unknown top-level bench: ${raw}`);
+  return name;
+}
+
+if (manifestPath) {
+  manifestMode = true;
+  resolvedManifest = path.resolve(manifestPath);
+  let manifest;
+  try {
+    manifest = JSON.parse(fs.readFileSync(resolvedManifest, 'utf8'));
+  } catch (error) {
+    throw new Error(`Cannot read manifest ${resolvedManifest}: ${error.message}`);
+  }
+  if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
+    throw new Error(`Manifest must be a JSON object: ${resolvedManifest}`);
+  }
+  if (!Array.isArray(manifest.run) || manifest.run.length < 1) {
+    throw new Error('Manifest run must be a non-empty array');
+  }
+  if (manifest.defaultTimeoutMs !== undefined) {
+    assertTimeout(manifest.defaultTimeoutMs, 'defaultTimeoutMs');
+    timeoutMs = manifest.defaultTimeoutMs;
+  }
+  if (manifest.jobTimeoutMinutes !== undefined) {
+    if (!Number.isSafeInteger(manifest.jobTimeoutMinutes) || manifest.jobTimeoutMinutes < 1 || manifest.jobTimeoutMinutes > 360) {
+      throw new Error('jobTimeoutMinutes must be an integer between 1 and 360');
+    }
+  }
+  if (manifest.exclude !== undefined) {
+    if (!Array.isArray(manifest.exclude)) throw new Error('Manifest exclude must be an array');
+    for (const entry of manifest.exclude) {
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry) || typeof entry.name !== 'string' || !entry.name) {
+        throw new Error('Manifest exclude entries require a name');
+      }
+      if (typeof entry.reason !== 'string' || !entry.reason) {
+        throw new Error(`Manifest exclude entry ${entry.name} requires a reason`);
+      }
+      const name = benchFileName(entry.name);
+      if (manifestExcludeReasons.has(name)) throw new Error(`Duplicate manifest exclude name: ${entry.name}`);
+      manifestExcludeReasons.set(name, entry.reason);
+    }
+  }
+  for (const name of manifestExcludeReasons.keys()) {
+    if (selected.has(name)) throw new Error(`Cannot run ${name}: ${manifestExcludeReasons.get(name)}`);
+  }
+  const seen = new Set();
+  for (const entry of manifest.run) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry) || typeof entry.name !== 'string' || !entry.name) {
+      throw new Error('Manifest run entries require a name');
+    }
+    if (typeof entry.group !== 'string' || !entry.group) {
+      throw new Error(`Manifest run entry ${entry.name} requires a group`);
+    }
+    const name = benchFileName(entry.name);
+    if (seen.has(name)) throw new Error(`Duplicate manifest run name: ${entry.name}`);
+    seen.add(name);
+    if (manifestExcludeReasons.has(name)) throw new Error(`Manifest run name is also excluded: ${entry.name}`);
+    if (exclusions[name]) throw new Error(`Cannot run ${name}: ${exclusions[name]}`);
+    if (entry.timeoutMs !== undefined) assertTimeout(entry.timeoutMs, `timeoutMs for ${entry.name}`);
+    selected.add(name);
+    entryTimeoutMs.set(name, entry.timeoutMs ?? timeoutMs);
+    entryGroups.set(name, entry.group);
+  }
+}
+
 if (selected.has('characterAssetsWrite.test.ts') && selected.size !== 1) {
   throw new Error('Select characterAssetsWrite alone with --allow-source-mutation in a temporary isolated checkout.');
 }
@@ -72,10 +156,17 @@ if (!listOnly) {
 }
 
 const results = files.map((name) => {
-  let reason = selected.size && !selected.has(name) ? 'Not selected by this invocation.' : exclusions[name];
-  if (name === 'characterAssetsWrite.test.ts' && selected.has(name) && allowSourceMutation) reason = undefined;
+  const mutationOverride = name === 'characterAssetsWrite.test.ts' && selected.has(name) && allowSourceMutation;
+  let reason;
+  if (mutationOverride) reason = undefined;
+  else if (exclusions[name]) reason = exclusions[name];
+  else if (manifestExcludeReasons.has(name)) reason = manifestExcludeReasons.get(name);
+  else if (manifestMode && !selected.has(name)) reason = MANIFEST_PIN_REASON;
+  else if (selected.size && !selected.has(name)) reason = 'Not selected by this invocation.';
   return {
     file: `bench/${name}`, status: reason ? 'excluded' : 'pending', ...(reason ? { reason } : {}),
+    ...(!reason && entryTimeoutMs.has(name) ? { timeoutMs: entryTimeoutMs.get(name) } : {}),
+    ...(entryGroups.has(name) ? { group: entryGroups.get(name) } : {}),
     ...(headlessFlags.has(name) ? { note: 'Optional browser portion excluded (--no-browser).' } : {}),
   };
 });
@@ -98,6 +189,7 @@ const report = {
   startedAt: new Date().toISOString(),
   gitHead: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
   node: process.version, executable: process.execPath, cwd: root, timeoutMs,
+  ...(resolvedManifest ? { manifest: resolvedManifest } : {}),
   invocation: process.argv.slice(1),
   coverage: 'Top-level tests only; explicit exclusions and optional browser omissions are listed per file.',
   checkCountMeaning: 'Number of emitted test/group success lines (ok N or ok - N), not individual assertion calls.',
@@ -136,6 +228,7 @@ function saveReport() {
 
 async function run(result) {
   const name = path.basename(result.file, '.test.ts');
+  const benchTimeoutMs = result.timeoutMs ?? timeoutMs;
   const mutationFile = name === 'characterAssetsWrite' ? path.join(root, 'apps/server/src/media/assets.ts') : null;
   const mutationHash = () => fs.existsSync(mutationFile)
     ? createHash('sha256').update(fs.readFileSync(mutationFile)).digest('hex') : null;
@@ -176,13 +269,14 @@ async function run(result) {
         timedOut = true;
         killGroup(child, 'SIGTERM');
         killTimer = setTimeout(() => killGroup(child, 'SIGKILL'), 1000);
-      }, timeoutMs);
+      }, benchTimeoutMs);
       child.once('error', (error) => resolve({ exitCode: null, signal: null, error: error.message }));
       child.once('close', (exitCode, signal) => resolve({ exitCode, signal }));
     });
     Object.assign(result, outcome, {
       status: timedOut ? 'timeout' : interrupted ? 'failed' : outcome.exitCode === 0 ? 'passed' : 'failed',
       durationMs: Date.now() - started, log, command: [process.execPath, ...childArgs],
+      timeoutMs: benchTimeoutMs,
     });
   } finally {
     clearTimeout(timer);

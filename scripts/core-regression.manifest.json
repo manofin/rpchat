@@ -1,0 +1,19 @@
+{
+  "jobTimeoutMinutes": 20,
+  "defaultTimeoutMs": 180000,
+  "run": [
+    { "name": "composerRecovery", "group": "DraftPreservation" },
+    { "name": "chatEventStream", "group": "DraftPreservation" },
+    { "name": "characterChatWebGuards", "group": "DraftPreservation" },
+    { "name": "failSendUserPersist", "group": "DraftPreservation" },
+    { "name": "sceneBranchSnapshot", "group": "BranchScene" },
+    { "name": "sceneCommitOnSuccess", "group": "BranchScene" },
+    { "name": "branchFailureHeadRestore", "group": "BranchScene" },
+    { "name": "authConnectionState", "group": "AuthConnection" },
+    { "name": "authHealthSurface", "group": "AuthConnection" },
+    { "name": "chatEventContract", "group": "CoreGate" },
+    { "name": "chatEventReconnect", "group": "CoreGate" },
+    { "name": "dependencyAllowlist", "group": "CoreGate" }
+  ],
+  "exclude": []
+}
