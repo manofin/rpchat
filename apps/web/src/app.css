@@ -1900,6 +1900,10 @@ textarea { resize: none; }
 .story-conversations-title { font-size: 14px; margin: 24px 0 12px; }
 .story-notice { padding: 12px 0; }
 .story-orphan-actions { display: grid; gap: 8px; margin-top: 8px; }
+.story-restore-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
+.story-restore-list label { display: flex; align-items: center; gap: 8px; }
+.story-restore-marker { margin-left: 4px; opacity: 0.7; }
+
 .story-start-cast { padding: 0 0 18px; }
 .story-start-cast h3 { font-size: 14px; margin: 0 0 8px; }
 .story-start-cast p { color: var(--fg-2); font-size: 14px; overflow-wrap: anywhere; margin: 0 0 8px; }

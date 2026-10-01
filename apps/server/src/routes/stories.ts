@@ -16,6 +16,7 @@ import {
   publicCoverPath,
 } from '../media/avatar.js';
 import { loreOut, loreSchema } from './characters.js';
+import { parseParticipantSnapshot } from '../prompt/resolveFocus.js';
 import type { CharacterRow, ConversationRow, LoreEntryRow, StoryCharacterRow, StoryRow } from '../types.js';
 
 export type StoryOpeningExtra = { id: string; label: string; opening_json: string };
@@ -485,6 +486,59 @@ function lorebookForStory(db: Ctx['db'], storyId: string): string {
   return id;
 }
 
+
+type RestoreCandidateStatus = 'active' | 'archived' | 'missing';
+
+export type RestoreCandidate = {
+  character_id: string;
+  name: string | null;
+  status: RestoreCandidateStatus;
+  selectable: boolean;
+};
+
+/** Orphan restore: union host + participant snapshot IDs from non-archived rooms. Read-only extract. */
+export function restoreCandidatesForStory(db: Ctx['db'], storyId: string): { room_n: number; candidates: RestoreCandidate[] } {
+  const rooms = many<{ character_id: string; story_participant_ids_snapshot: string | null }>(
+    db,
+    `SELECT character_id, story_participant_ids_snapshot FROM conversations
+     WHERE story_id = ? AND archived = 0`,
+    storyId,
+  );
+  const idSet = new Set<string>();
+  for (const room of rooms) {
+    if (room.character_id) idSet.add(room.character_id);
+    const snap = parseParticipantSnapshot(room.story_participant_ids_snapshot);
+    if (snap) for (const id of snap) if (id) idSet.add(id);
+  }
+  const candidates: RestoreCandidate[] = [];
+  for (const characterId of idSet) {
+    const row = one<{ name: string; archived: number }>(
+      db,
+      'SELECT name, archived FROM characters WHERE id = ?',
+      characterId,
+    );
+    if (!row) {
+      candidates.push({ character_id: characterId, name: null, status: 'missing', selectable: false });
+    } else if (row.archived) {
+      candidates.push({ character_id: characterId, name: row.name, status: 'archived', selectable: true });
+    } else {
+      candidates.push({ character_id: characterId, name: row.name, status: 'active', selectable: true });
+    }
+  }
+  const rank = (s: RestoreCandidateStatus) => (s === 'active' ? 0 : s === 'archived' ? 1 : 2);
+  candidates.sort((a, b) => {
+    const r = rank(a.status) - rank(b.status);
+    if (r !== 0) return r;
+    const an = (a.name ?? a.character_id).localeCompare(b.name ?? b.character_id, 'ko');
+    return an;
+  });
+  return { room_n: rooms.length, candidates };
+}
+
+const restoreApplySchema = z.object({
+  characterIds: z.array(z.string().min(1)).max(200),
+});
+
 export function storyRoutes(ctx: Ctx) {
   const { db } = ctx;
   return async function plugin(app: FastifyInstance) {
@@ -736,6 +790,71 @@ export function storyRoutes(ctx: Ctx) {
         return { ok: true };
       },
     );
+
+
+    app.get<{ Params: { id: string } }>('/api/stories/:id/restore-candidates', async (req, reply) => {
+      const s = one<StoryRow>(db, 'SELECT * FROM stories WHERE id = ?', req.params.id);
+      if (!s) return reply.code(404).send({ error: 'not found' });
+      const { room_n, candidates } = restoreCandidatesForStory(db, s.id);
+      return { story_id: s.id, room_n, candidates };
+    });
+
+    app.post<{ Params: { id: string } }>('/api/stories/:id/restore-characters', async (req, reply) => {
+      const s = one<StoryRow>(db, 'SELECT * FROM stories WHERE id = ?', req.params.id);
+      if (!s) return reply.code(404).send({ error: 'not found' });
+      const p = restoreApplySchema.safeParse(req.body);
+      if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
+      const { candidates } = restoreCandidatesForStory(db, s.id);
+      const candidateIds = new Set(candidates.map((c) => c.character_id));
+      const inserted: string[] = [];
+      const already: string[] = [];
+      const skipped: string[] = [];
+      let sortBase = one<{ m: number | null }>(
+        db,
+        'SELECT MAX(sort_order) AS m FROM story_characters WHERE story_id = ?',
+        s.id,
+      )?.m;
+      let nextSort = (sortBase ?? -1) + 1;
+      for (const characterId of p.data.characterIds) {
+        if (!candidateIds.has(characterId)) {
+          return reply.code(400).send({ error: 'not a restore candidate', characterId });
+        }
+        const c = one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', characterId);
+        if (!c) {
+          skipped.push(characterId);
+          continue;
+        }
+        const existing = one<StoryCharacterRow>(
+          db,
+          'SELECT * FROM story_characters WHERE story_id = ? AND character_id = ?',
+          s.id,
+          characterId,
+        );
+        if (existing) {
+          already.push(characterId);
+          continue;
+        }
+        run(
+          db,
+          `INSERT INTO story_characters (story_id, character_id, role, sort_order) VALUES (?, ?, ?, ?)`,
+          s.id,
+          characterId,
+          'main',
+          nextSort,
+        );
+        nextSort += 1;
+        inserted.push(characterId);
+      }
+      if (inserted.length) {
+        run(db, 'UPDATE stories SET updated_at = ? WHERE id = ?', nowIso(), s.id);
+      }
+      return {
+        inserted,
+        already,
+        skipped,
+        characters: hostedCharacters(db, s.id),
+      };
+    });
 
     // ---- 주입 미리보기 (대화 시작 전 pre-flight, 모델 호출 없음, 스냅샷/대화 생성 없음) ----
     app.get<{ Params: { id: string }; Querystring: { characterId?: string } }>(
