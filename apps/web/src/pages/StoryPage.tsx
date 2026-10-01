@@ -30,6 +30,7 @@ export function StoryDetailPage({ id }: { id: string }) {
   const [retry, setRetry] = useState(0);
   const [editor, setEditor] = useState<'profile' | 'opening' | null>(null);
   const [starter, setStarter] = useState<'choose' | 'new' | null>(null);
+  const [roomCount, setRoomCount] = useState(0);
   useEffect(() => {
     let active = true;
     setError(false);
@@ -40,6 +41,14 @@ export function StoryDetailPage({ id }: { id: string }) {
   useEffect(() => {
     let active = true;
     get<Character[]>('/api/characters').then((cs) => { if (active) setCharacters(cs); }).catch(() => {});
+    return () => { active = false; };
+  }, [id, retry]);
+  useEffect(() => {
+    let active = true;
+    // P0: N is the first page length (limit 50, offset 0). Do not paginate for the notice.
+    get<Conversation[]>(`/api/conversations?storyId=${encodeURIComponent(id)}&limit=50&offset=0`).then((rows) => {
+      if (active) setRoomCount(Array.isArray(rows) ? rows.length : 0);
+    }).catch(() => { if (active) setRoomCount(0); });
     return () => { active = false; };
   }, [id, retry]);
 
@@ -60,7 +69,7 @@ export function StoryDetailPage({ id }: { id: string }) {
     <div className="content story-detail-content">
       {error && <div className="story-notice" role="alert"><p>스토리를 불러오지 못했습니다.</p><button className="btn sm" onClick={() => setRetry((n) => n + 1)}>다시 시도</button></div>}
       {!story && !error && <Spinner />}
-      {story && <StoryDetailView story={story} characters={characters} />}
+      {story && <StoryDetailView story={story} characters={characters} roomCount={roomCount} onViewRooms={() => setStarter('choose')} onAddCast={editCast} />}
       {story && !story.archived && <details className="story-manage"><summary>스토리 관리</summary><button className="btn danger sm" onClick={() => void archiveStory()}>스토리 보관</button></details>}
     </div>
     {story && <footer className="story-detail-footer"><button className="btn primary block" onClick={() => setStarter('choose')}>대화 시작</button></footer>}
@@ -70,7 +79,19 @@ export function StoryDetailPage({ id }: { id: string }) {
   </div>;
 }
 
-export function StoryDetailView({ story, characters = [] }: { story: Story; characters?: Character[] }) {
+export function StoryDetailView({
+  story,
+  characters = [],
+  roomCount = 0,
+  onViewRooms,
+  onAddCast,
+}: {
+  story: Story;
+  characters?: Character[];
+  roomCount?: number;
+  onViewRooms?: () => void;
+  onAddCast?: () => void;
+}) {
   const hosted = story.characters ?? [];
   return <>
     <header className="story-hero">
@@ -85,7 +106,14 @@ export function StoryDetailView({ story, characters = [] }: { story: Story; char
       {hosted.length ? <div className="story-cast-grid">{hosted.map((c) => {
         const card = characters.find((item) => item.id === c.character_id);
         return <button key={c.character_id} className="story-cast-card" onClick={() => navigate(`/character/${c.character_id}`)}><Avatar name={c.name} avatar={card?.avatar} size="lg" /><span>{c.name}</span>{card?.tagline && <small>{card.tagline}</small>}</button>;
-      })}</div> : <p>아직 등록된 등장 캐릭터가 없습니다.</p>}
+      })}</div> : roomCount > 0 ? <div className="story-notice story-orphan-notice">
+        <p>현재 등장인물은 없지만 기존 대화 {roomCount}개가 있습니다.</p>
+        <div className="story-orphan-actions">
+          <button className="btn" onClick={onViewRooms}>기존 대화 보기</button>
+          <button className="btn" disabled aria-disabled="true" title="등장인물 복원은 아직 준비 중입니다" aria-label="등장인물 복원은 아직 준비 중입니다">등장인물 복원</button>
+          <button className="btn" onClick={onAddCast}>등장인물 추가</button>
+        </div>
+      </div> : <p>아직 등록된 등장 캐릭터가 없습니다.</p>}
       {story.minor_cast.length > 0 && <div className="story-minor-cast">{story.minor_cast.map((c, i) => <div key={`${c.name}-${i}`}><h3>{c.name}</h3>{c.note && <p>{c.note}</p>}</div>)}</div>}
     </section>
     {story.opening?.scenario.trim() && <section className="story-section" aria-labelledby="story-opening"><h2 id="story-opening">이야기의 시작</h2><p>{story.opening.scenario}</p></section>}

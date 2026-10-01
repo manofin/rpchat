@@ -56,13 +56,15 @@ test('detail shows world, cast and starting scene while hiding editing controls,
   assert.doesNotMatch(empty, /이야기의 시작|엔딩.*개 수록/);
 });
 
-test('entry defers conversation reads; chooser, fresh new sheet and editor transitions are mutually exclusive', async () => {
+test('entry reads first-page room count without opening the chooser; chooser, new sheet and editor stay mutually exclusive', async () => {
   const requests: string[] = [];
   const h = storyHarness('StoryDetailPage', { id: story.id }, { api: { get: async (url: string) => { requests.push(url); return url === '/api/characters' ? characters : story; } } });
   h.render(); h.runEffects(); await tick();
   let tree = h.render();
-  assert.equal(requests.length, 2);
-  assert.equal(requests.filter((url) => url.includes('conversations')).length, 0);
+  // Approved contract: detail GETs the first conversation page for the orphan notice.
+  // The chooser stays unmounted, so this read is not the chooser and must not be a second page.
+  assert.equal(requests.length, 3);
+  assert.deepEqual(requests.filter((url) => url.includes('conversations')), [`/api/conversations?storyId=${encodeURIComponent(story.id)}&limit=50&offset=0`]);
   assert.equal(nodes(tree).filter(named('StoryConversationChooser')).length, 0);
   assert.equal(one(tree, named('StoryEditor')).props.open, false);
   one(tree, button('대화 시작')).props.onClick();
