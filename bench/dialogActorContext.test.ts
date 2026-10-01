@@ -28,7 +28,7 @@ const app = Fastify();
 for (const route of [characterRoutes, storyRoutes, conversationRoutes, memoryRoutes, chatRoutes]) app.register(route(ctx));
 let passed = 0;
 async function t(name: string, fn: () => Promise<void>) { await fn(); console.log(`ok ${++passed} ${name}`); }
-async function api(method: 'GET' | 'POST' | 'PATCH', url: string, payload?: object) {
+async function api(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', url: string, payload?: object) {
   const r = await app.inject({ method, url, payload });
   assert.ok(r.statusCode < 400, `${r.statusCode} ${r.body}`);
   if (String(r.headers['content-type']).includes('text/event-stream')) { assert.ok(r.body.includes('"type":"done"'), r.body); return null; }
@@ -186,6 +186,56 @@ async function main() {
     const malformed = buildDialogPrompt(db, c, history, '## 규칙\nrules', 'CURRENT', 4096, 'mock', { instruction: null }, { dialog_context: { version: 2, entries: metadata.entries } } as any);
     assert.ok(!malformed.messages.map(m => m.content).join('\n').includes('PRIVATE_FACT'));
     assert.ok(malformed.actor_context!.excluded.some(e => e.reason === 'invalid-contract'));
+  });
+
+  await t('active-resolved transitions and memory deletion or approval removal take effect on each request', async () => {
+    const promise = await memory('LIFECYCLE_PROMISE');
+    const definition = entry(promise, 'promise', [a.id], { subject_id: a.id, target_id: 'user' });
+    const check = async (included: boolean) => {
+      const p = await preview(); const actual = await send(); assert.deepEqual(actual.messages, p.messages);
+      assert.equal(actor(p, a.id).facts.some((f: any) => f.memory_id === promise.id), included);
+      assert.equal(actual.messages.some(m => m.content.includes(promise.content)), included);
+      budget(p); return p;
+    };
+    await spec([...metadata.entries, definition]); await check(true);
+    await spec([...metadata.entries, { ...definition, status: 'resolved' }]);
+    const resolved = await check(false);
+    assert.ok(resolved.actor_context.excluded.some((e: any) => e.memory_id === promise.id && e.reason === 'resolved'));
+    assert.equal((db.prepare('SELECT status FROM memories WHERE id = ?').get(promise.id) as any).status, 'pinned', 'validity never mutates approval');
+    await spec([...metadata.entries, definition]); await check(true);
+    for (const status of ['candidate', 'rejected', 'superseded']) {
+      await api('PATCH', `/api/memories/${promise.id}`, { status });
+      const p = await check(false);
+      assert.ok(p.actor_context.excluded.some((e: any) => e.memory_id === promise.id && e.reason === 'not-approved'));
+      await api('PATCH', `/api/memories/${promise.id}?confirm=1`, { status: 'pinned' }); await check(true);
+    }
+    await api('DELETE', `/api/memories/${promise.id}`);
+    const deleted = await check(false);
+    assert.ok(deleted.actor_context.excluded.some((e: any) => e.memory_id === promise.id && e.reason === 'not-approved'));
+  });
+
+  await t('version, field, ID, recipient and entry limits reject invalid writes without changing the scene', async () => {
+    const sceneJson = () => (db.prepare('SELECT scene_json FROM conversations WHERE id = ?').get(room.id) as any).scene_json;
+    const before = sceneJson();
+    const invalid = [
+      { version: 2, entries: metadata.entries },
+      { version: 1, entries: [{ ...metadata.entries[0], invented_field: true }] },
+      { version: 1, entries: [{ ...metadata.entries[0], memory_id: 'x'.repeat(101) }] },
+      { version: 1, entries: [{ ...metadata.entries[0], anchor_message_id: '' }] },
+      { version: 1, entries: [{ ...metadata.entries[0], anchor_message_id: undefined }] },
+      { version: 1, entries: [{ ...metadata.entries[0], known_by: Array.from({ length: 13 }, (_, i) => `id-${i}`) }] },
+      { version: 1, entries: [{ ...metadata.entries[0], known_by: [a.id, a.id] }] },
+      { version: 1, entries: Array.from({ length: 65 }, (_, i) => ({ ...metadata.entries[0], memory_id: `id-${i}` })) },
+    ];
+    for (const dialog_context of invalid) {
+      const r = await app.inject({ method: 'PATCH', url: `/api/conversations/${room.id}`, payload: { scene: { dialog_context } } });
+      assert.equal(r.statusCode, 400, r.body); assert.equal(sceneJson(), before);
+    }
+    await spec([...metadata.entries, { ...metadata.entries[0], memory_id: 'missing-memory' }]);
+    const p = await preview(); const actual = await send(); assert.deepEqual(actual.messages, p.messages);
+    assert.ok(p.actor_context.excluded.some((e: any) => e.memory_id === 'missing-memory' && e.reason === 'not-approved'));
+    assert.ok(!JSON.stringify(p.actor_context.public_facts).includes('missing-memory'));
+    assert.ok(!actual.messages.some(m => m.content.includes('missing-memory'))); budget(p);
   });
 }
 main().then(() => console.log(`PASS=${passed}`)).catch(e => { console.error(e); process.exitCode = 1; }).finally(async () => { await app.close(); db.close(); fs.rmSync(tmp, { recursive: true, force: true }); });
