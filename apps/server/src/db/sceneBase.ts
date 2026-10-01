@@ -158,3 +158,41 @@ export function resolveSceneBase(db: DB, args: {
   }
   return fallback(hops);
 }
+
+function withoutPending(scene: Scene): Scene {
+  const copy = freezeCopy(scene);
+  delete copy.pending_edit;
+  return copy;
+}
+
+/**
+ * Scene the active head should show. Same ancestor bound as resolveSceneBase:
+ * stop at the first turn start rather than reaching past a start that has no
+ * snapshot. A valid snapshot's after_delta is that branch's committed scene.
+ * pending_edit is a conversation-row marker, not branch state, so it is never
+ * copied. No snapshot → a copy of fallback with pending_edit removed.
+ */
+export function materializeSceneAtHead(
+  db: DB,
+  opts: { headId: string | null; fallback: Scene },
+): Scene {
+  const strippedFallback = withoutPending(opts.fallback);
+  if (!opts.headId) return strippedFallback;
+  const seen = new Set<string>();
+  let cur: string | null = opts.headId;
+  for (let hops = 0; hops < BASE_WALK_LIMIT && cur; hops++) {
+    if (seen.has(cur)) return strippedFallback;
+    seen.add(cur);
+    const row: MessageRow | undefined = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', cur);
+    if (!row) return strippedFallback;
+    if (row.role === 'assistant') {
+      const meta = parseMessageMeta(row.meta_json);
+      if (meta.beat_seq === 0) {
+        const snap = readSceneSnapshot(meta);
+        return snap ? withoutPending(snap.after_delta) : strippedFallback;
+      }
+    }
+    cur = row.parent_id;
+  }
+  return strippedFallback;
+}

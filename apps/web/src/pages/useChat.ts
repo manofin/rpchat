@@ -181,10 +181,18 @@ export function useChat(conversationId: string) {
   }, [reload, conversationId, scope]);
 
   const selectSibling = useCallback(async (messageId: string) => {
-    const r = await post<{ messages: Message[] }>(`/api/messages/${messageId}/select`, {});
+    const r = await post<{ messages: Message[]; conversation?: ConversationDetail['conversation'] }>(
+      `/api/messages/${messageId}/select`,
+      {},
+    );
+    if (scopeRef.current !== scope) return;
     scope.revision++;
-    patchState({ messages: r.messages });
-  }, [patchState, scope]);
+    setState((s) => ({
+      ...s,
+      messages: r.messages,
+      detail: s.detail && r.conversation ? { ...s.detail, conversation: r.conversation } : s.detail,
+    }));
+  }, [scope]);
 
   const editMessage = useCallback(async (messageId: string, content: string) => {
     const updated = await patch<Message>(`/api/messages/${messageId}`, { content });

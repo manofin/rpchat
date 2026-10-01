@@ -22,6 +22,7 @@ import {
   buildSceneSnapshot,
   readSceneSnapshot,
   resolveSceneBase,
+  materializeSceneAtHead,
 } from '../apps/server/src/db/sceneBase.js';
 import { getPath } from '../apps/server/src/db/tree.js';
 import { GenerationQueue } from '../apps/server/src/model/queue.js';
@@ -225,6 +226,35 @@ async function main() {
     assert.equal(regen.source, 'regen_before');
     assert.equal(regen.scene.clock_minutes, 11);
     assert.equal(JSON.stringify(edited), before);
+  });
+
+  await t('materializeSceneAtHead copies the selected branch after_delta and strips pending_edit', () => {
+    const row = unitDb.prepare('SELECT meta_json FROM messages WHERE id = ?').get('t2bs') as { meta_json: string };
+    const meta = JSON.parse(row.meta_json) as { scene_state: { after_delta: Scene } };
+    meta.scene_state.after_delta = {
+      ...meta.scene_state.after_delta,
+      place: 'yard-b',
+      flags: [{ key: 'met_b' }],
+      stats: { hp: 40 },
+      pending_edit: { head_message_id: 't2be' },
+    };
+    unitDb.prepare('UPDATE messages SET meta_json = ? WHERE id = ?').run(JSON.stringify(meta), 't2bs');
+    const fallback: Scene = { place: 'fallback', clock_minutes: 1, pending_edit: { head_message_id: 'nope' } };
+    const before = JSON.stringify(fallback);
+    const fromB = materializeSceneAtHead(unitDb, { headId: 't2be', fallback });
+    assert.equal(fromB.place, 'yard-b');
+    assert.equal(fromB.clock_minutes, 99);
+    assert.deepEqual(fromB.flags, [{ key: 'met_b' }]);
+    assert.deepEqual(fromB.stats, { hp: 40 });
+    assert.equal(fromB.pending_edit, undefined);
+    assert.equal(JSON.stringify(fallback), before, 'fallback is not mutated');
+    const fromA = materializeSceneAtHead(unitDb, { headId: 't2ae', fallback });
+    assert.equal(fromA.clock_minutes, 21);
+    assert.equal(fromA.place, undefined);
+    const missing = materializeSceneAtHead(unitDb, { headId: 'legacy-e', fallback });
+    assert.equal(missing.place, 'fallback', 'a turn start with no snapshot does not reach an older turn');
+    assert.equal(missing.pending_edit, undefined);
+    assert.equal(materializeSceneAtHead(unitDb, { headId: null, fallback }).pending_edit, undefined);
   });
 
   unitDb.close();
@@ -677,6 +707,133 @@ async function main() {
     `SELECT length(meta_json) AS n FROM messages WHERE json_extract(meta_json,'$.block_kind') = 'narration' LIMIT 1`,
   ).get() as { n: number } | undefined;
   console.log(`perf header_meta_bytes=${sampleStart?.n ?? 'n/a'} narration_meta_bytes=${sampleBare?.n ?? 'n/a'} extra_writes_per_turn=1 (finish stamp)`);
+
+  const stripPending = (scene: Scene): Scene => {
+    const copy = { ...scene };
+    delete copy.pending_edit;
+    return copy;
+  };
+  const stampAfter = (id: string, after: Scene) => {
+    const row = db.prepare('SELECT meta_json FROM messages WHERE id = ?').get(id) as { meta_json: string };
+    const meta = JSON.parse(row.meta_json) as { scene_state?: { schema_version?: number; after_delta?: Scene } };
+    assert.equal(meta.scene_state?.schema_version, SCENE_SNAPSHOT_VERSION, `${id} snapshot`);
+    meta.scene_state!.after_delta = after;
+    db.prepare('UPDATE messages SET meta_json = ? WHERE id = ?').run(JSON.stringify(meta), id);
+  };
+  const regenPair = async () => {
+    const savedAdvance = advance;
+    const savedWeather = deltaWeather;
+    advance = 10;
+    deltaWeather = '맑음';
+    try {
+      const conv = await newConv();
+      await twoTurns(conv);
+      const turnA = lastTurn(await messagesOf(conv));
+      const startA = startOf(turnA);
+      deltaWeather = '흐림';
+      const regenRes = await regen(conv, turnA[turnA.length - 1]!.id);
+      assert.equal(regenRes.status, 200, regenRes.body);
+      const turnB = lastTurn(await messagesOf(conv));
+      const startB = startOf(turnB);
+      assert.notEqual(startA.id, startB.id);
+      const afterA: Scene = {
+        place: 'hall-a',
+        flags: [{ key: 'met_a' }],
+        stats: { hp: 10 },
+        user_sheet: { hp: 10, money: 3 },
+        weather: '맑음',
+        pending_edit: { head_message_id: 'stale-a' },
+      };
+      const afterB: Scene = {
+        place: 'yard-b',
+        flags: [{ key: 'met_b' }],
+        stats: { hp: 40 },
+        user_sheet: { hp: 40, money: 9 },
+        weather: '흐림',
+        pending_edit: { head_message_id: 'stale-b' },
+      };
+      stampAfter(startA.id, afterA);
+      stampAfter(startB.id, afterB);
+      db.prepare('UPDATE conversations SET scene_json = ? WHERE id = ?').run(JSON.stringify(afterB), conv);
+      return {
+        conv,
+        startA,
+        startB,
+        turnA,
+        expectedA: stripPending(afterA),
+        expectedB: stripPending(afterB),
+      };
+    } finally {
+      advance = savedAdvance;
+      deltaWeather = savedWeather;
+    }
+  };
+
+  await t('select rematerializes conversation.scene_json to the chosen sibling after_delta', async () => {
+    const pair = await regenPair();
+    const sel = await api('POST', `/api/messages/${pair.startA.id}/select`);
+    assert.equal(sel.status, 200, sel.text);
+    const body = sel.json as {
+      messages: { id: string }[];
+      conversation: { scene: Scene; head_message_id: string | null };
+    };
+    assert.ok(body.conversation, 'select returns the reloaded conversation');
+    assert.deepEqual(body.conversation.scene, pair.expectedA);
+    assert.deepEqual(sceneOf(pair.conv), pair.expectedA);
+    assert.equal(body.conversation.scene.pending_edit, undefined);
+    assert.equal(pair.turnA.some((m) => m.id === body.conversation.head_message_id), true);
+    assert.equal(body.messages.some((m) => m.id === pair.startB.id), false);
+  });
+
+  await t('HP-only PATCH after select A does not corrupt B', async () => {
+    const pair = await regenPair();
+    const selA = await api('POST', `/api/messages/${pair.startA.id}/select`);
+    assert.equal(selA.status, 200, selA.text);
+    const headA = (selA.json as { conversation: { head_message_id: string } }).conversation.head_message_id;
+    const patch = await api('PATCH', `/api/conversations/${pair.conv}`, { scene: { user_sheet: { hp: 77 } } });
+    assert.equal(patch.status, 200, patch.text);
+    const patched = sceneOf(pair.conv);
+    assert.equal(patched.user_sheet?.hp, 77);
+    assert.equal(patched.pending_edit?.head_message_id, headA);
+    assert.equal(patched.place, 'hall-a');
+    const selB = await api('POST', `/api/messages/${pair.startB.id}/select`);
+    assert.equal(selB.status, 200, selB.text);
+    const restored = sceneOf(pair.conv);
+    assert.equal(restored.place, 'yard-b');
+    assert.deepEqual(restored.flags, [{ key: 'met_b' }]);
+    assert.deepEqual(restored.stats, { hp: 40 });
+    assert.equal(restored.user_sheet?.hp, 40);
+    assert.equal(restored.user_sheet?.money, 9);
+    assert.equal(restored.pending_edit, undefined);
+    const body = selB.json as { conversation: { scene: Scene } };
+    assert.deepEqual(body.conversation.scene, pair.expectedB);
+    assert.equal(body.conversation.scene.pending_edit, undefined);
+  });
+
+  await t('ending-suggestions scene source is the selected head scene after rematerialize', async () => {
+    const pair = await regenPair();
+    db.prepare('UPDATE conversations SET story_endings_snapshot = ? WHERE id = ?').run(JSON.stringify([{
+      id: 'end-a',
+      title: 'A엔딩',
+      description: '',
+      badge_label: '',
+      conditions: { required_flags: ['met_a'] },
+    }]), pair.conv);
+    const before = await api('GET', `/api/conversations/${pair.conv}/ending-suggestions`);
+    assert.equal(before.status, 200, before.text);
+    assert.deepEqual((before.json as { suggestions: unknown[] }).suggestions, [], 'B scene must not satisfy met_a');
+    const sel = await api('POST', `/api/messages/${pair.startA.id}/select`);
+    assert.equal(sel.status, 200, sel.text);
+    const headA = (sel.json as { conversation: { head_message_id: string; scene: Scene } }).conversation;
+    assert.deepEqual(headA.scene, pair.expectedA);
+    const after = await api('GET', `/api/conversations/${pair.conv}/ending-suggestions`);
+    assert.equal(after.status, 200, after.text);
+    const sug = after.json as { turn_id: string | null; suggestions: { ending_id: string }[] };
+    assert.equal(sug.suggestions.length, 1);
+    assert.equal(sug.suggestions[0]!.ending_id, 'end-a');
+    assert.equal(sug.turn_id, headA.head_message_id);
+    assert.deepEqual(sceneOf(pair.conv), pair.expectedA);
+  });
 
   await app.close();
   db.close();
