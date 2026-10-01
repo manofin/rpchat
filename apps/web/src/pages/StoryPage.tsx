@@ -31,6 +31,7 @@ export function StoryDetailPage({ id }: { id: string }) {
   const [editor, setEditor] = useState<'profile' | 'opening' | null>(null);
   const [starter, setStarter] = useState<'choose' | 'new' | null>(null);
   const [roomCount, setRoomCount] = useState(0);
+  const [restoreOpen, setRestoreOpen] = useState(false);
   useEffect(() => {
     let active = true;
     setError(false);
@@ -69,13 +70,14 @@ export function StoryDetailPage({ id }: { id: string }) {
     <div className="content story-detail-content">
       {error && <div className="story-notice" role="alert"><p>스토리를 불러오지 못했습니다.</p><button className="btn sm" onClick={() => setRetry((n) => n + 1)}>다시 시도</button></div>}
       {!story && !error && <Spinner />}
-      {story && <StoryDetailView story={story} characters={characters} roomCount={roomCount} onViewRooms={() => setStarter('choose')} onAddCast={editCast} />}
+      {story && <StoryDetailView story={story} characters={characters} roomCount={roomCount} onViewRooms={() => setStarter('choose')} onRestoreCast={() => setRestoreOpen(true)} onAddCast={editCast} />}
       {story && !story.archived && <details className="story-manage"><summary>스토리 관리</summary><button className="btn danger sm" onClick={() => void archiveStory()}>스토리 보관</button></details>}
     </div>
     {story && <footer className="story-detail-footer"><button className="btn primary block" onClick={() => setStarter('choose')}>대화 시작</button></footer>}
     {story && <StoryEditor open={editor !== null} initialTab={editor ?? 'profile'} story={story} hosted={story.characters ?? []} onClose={closeEditor} onSaved={closeEditor} />}
     {story && starter === 'choose' && <StoryConversationChooser story={story} onClose={() => setStarter(null)} onNew={() => setStarter('new')} />}
     {story && starter === 'new' && <NewStoryConversationSheet id={id} onClose={() => setStarter(null)} onBack={() => setStarter('choose')} onEdit={editCast} onArchived={() => setRetry((n) => n + 1)} />}
+    {story && restoreOpen && <StoryRestoreCastSheet storyId={story.id} storyName={story.name} onClose={() => setRestoreOpen(false)} onApplied={() => { setRestoreOpen(false); setRetry((n) => n + 1); }} />}
   </div>;
 }
 
@@ -84,12 +86,14 @@ export function StoryDetailView({
   characters = [],
   roomCount = 0,
   onViewRooms,
+  onRestoreCast,
   onAddCast,
 }: {
   story: Story;
   characters?: Character[];
   roomCount?: number;
   onViewRooms?: () => void;
+  onRestoreCast?: () => void;
   onAddCast?: () => void;
 }) {
   const hosted = story.characters ?? [];
@@ -110,7 +114,7 @@ export function StoryDetailView({
         <p>현재 등장인물은 없지만 기존 대화 {roomCount}개가 있습니다.</p>
         <div className="story-orphan-actions">
           <button className="btn" onClick={onViewRooms}>기존 대화 보기</button>
-          <button className="btn" disabled aria-disabled="true" title="등장인물 복원은 아직 준비 중입니다" aria-label="등장인물 복원은 아직 준비 중입니다">등장인물 복원</button>
+          <button className="btn" onClick={onRestoreCast}>등장인물 복원</button>
           <button className="btn" onClick={onAddCast}>등장인물 추가</button>
         </div>
       </div> : <p>아직 등록된 등장 캐릭터가 없습니다.</p>}
@@ -119,6 +123,104 @@ export function StoryDetailView({
     {story.opening?.scenario.trim() && <section className="story-section" aria-labelledby="story-opening"><h2 id="story-opening">이야기의 시작</h2><p>{story.opening.scenario}</p></section>}
     {(story.scene_catalog?.places ?? []).length > 0 && <section className="story-section" aria-labelledby="story-places"><h2 id="story-places">이야기 속 장소</h2><div className="story-place-list">{story.scene_catalog.places.map((place) => <span key={place.id}>{place.name || place.id}</span>)}</div></section>}
   </>;
+}
+
+
+type RestoreCandidate = {
+  character_id: string;
+  name: string | null;
+  status: 'active' | 'archived' | 'missing';
+  selectable: boolean;
+};
+
+type RestoreCandidatesResponse = {
+  story_id: string;
+  room_n: number;
+  candidates: RestoreCandidate[];
+};
+
+export function StoryRestoreCastSheet({
+  storyId,
+  storyName,
+  onClose,
+  onApplied,
+}: {
+  storyId: string;
+  storyName: string;
+  onClose: () => void;
+  onApplied: () => void;
+}) {
+  const ui = useUi();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const [candidates, setCandidates] = useState<RestoreCandidate[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [applying, setApplying] = useState(false);
+  useEffect(() => {
+    let active = true;
+    setLoading(true); setError(false);
+    get<RestoreCandidatesResponse>(`/api/stories/${encodeURIComponent(storyId)}/restore-candidates`).then((data) => {
+      if (!active) return;
+      const list = Array.isArray(data?.candidates) ? data.candidates : [];
+      setCandidates(list);
+      setSelected(new Set(list.filter((c) => c.status === 'active' && c.selectable).map((c) => c.character_id)));
+    }).catch(() => { if (active) setError(true); }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [storyId, retry]);
+
+  function toggle(id: string, selectable: boolean) {
+    if (!selectable || applying) return;
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  async function apply() {
+    if (applying || selected.size === 0) return;
+    const ok = await ui.confirm(`선택한 등장인물 ${selected.size}명을 이 스토리 등장 목록에 추가할까요?`, { okLabel: '복원' });
+    if (!ok) return;
+    setApplying(true);
+    try {
+      await post(`/api/stories/${encodeURIComponent(storyId)}/restore-characters`, { characterIds: [...selected] });
+      ui.toast('등장인물을 복원했습니다.');
+      onApplied();
+    } catch (e) {
+      ui.toast((e as Error).message, 'err');
+    } finally {
+      setApplying(false);
+    }
+  }
+
+  const canApply = !loading && !error && selected.size > 0 && !applying;
+
+  return <div className="story-conversation-sheet story-restore-sheet"><BottomSheet open onClose={() => { if (!applying) onClose(); }}>
+    <div className="story-sheet-heading"><div><strong>등장인물 복원</strong><p>{storyName}</p></div><button className="btn ghost icon" disabled={applying} onClick={onClose} aria-label="복원 닫기">✕</button></div>
+    <div className="sheet-body">
+      {loading && <Spinner />}
+      {error && <div className="story-notice" role="alert"><p>후보를 불러오지 못했습니다.</p><button className="btn sm" onClick={() => setRetry((n) => n + 1)}>다시 시도</button></div>}
+      {!loading && !error && candidates.length === 0 && <div className="story-notice"><p>복원할 등장인물 후보를 찾지 못했습니다.</p><button className="btn" onClick={onClose}>닫기</button></div>}
+      {!loading && !error && candidates.length > 0 && <>
+        <p className="muted small">기존 대화에 남은 등장인물입니다. 복원할 인물을 선택한 뒤 확인하세요.</p>
+        <ul className="story-restore-list">
+          {candidates.map((c) => {
+            const label = c.name ?? c.character_id;
+            const marker = c.status === 'archived' ? '보관됨' : c.status === 'missing' ? '찾을 수 없음' : null;
+            return <li key={c.character_id}>
+              <label className={c.selectable ? undefined : 'muted'}>
+                <input type="checkbox" checked={selected.has(c.character_id)} disabled={!c.selectable || applying} onChange={() => toggle(c.character_id, c.selectable)} />
+                <span>{label}</span>
+                {marker && <small className="story-restore-marker">{marker}</small>}
+              </label>
+            </li>;
+          })}
+        </ul>
+        <button className="btn primary block" disabled={!canApply} onClick={() => void apply()}>{applying ? '복원 중…' : `선택한 등장인물 복원${selected.size ? ` (${selected.size})` : ''}`}</button>
+      </>}
+    </div>
+  </BottomSheet></div>;
 }
 
 export function StoryConversationChooser({ story, onClose, onNew }: { story: Story; onClose: () => void; onNew: () => void }) {

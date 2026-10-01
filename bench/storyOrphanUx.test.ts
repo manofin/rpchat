@@ -1,5 +1,5 @@
 /** TSX_TSCONFIG_PATH=apps/web/tsconfig.json npx tsx bench/storyOrphanUx.test.ts
- * LOCK-StoryOrphanUX P0 — empty roster + existing rooms shows a notice, not a restore write.
+ * LOCK-StoryOrphanUX P0 + P1 wire — orphan notice; CTA2 opens restore flow (no auto wording).
  * No live HTTP / systemd / DB / commit / deploy / restart.
  */
 import assert from 'node:assert/strict';
@@ -47,20 +47,21 @@ async function main() {
       assert.ok(at > cursor, `${label} follows the previous CTA`);
       cursor = at;
     }
-    assert.match(actions, /<button[^>]*disabled[^>]*>등장인물 복원<\/button>/);
-    assert.match(actions, /title="등장인물 복원은 아직 준비 중입니다"/);
-    assert.match(actions, /aria-label="등장인물 복원은 아직 준비 중입니다"/);
-    assert.match(actions, /aria-disabled="true"/);
     assert.equal(actions.includes('자동'), false);
+    assert.doesNotMatch(actions, /아직 준비 중/);
+    let restoreClicked = false;
     const view = StoryDetailView({
       story: storyFixture({ characters: [] }),
       roomCount: n,
       onViewRooms() {},
+      onRestoreCast() { restoreClicked = true; },
       onAddCast() {},
     });
     const restore = one(view, button('등장인물 복원'));
-    assert.equal(restore.props.disabled, true);
-    assert.equal(restore.props.onClick, undefined);
+    assert.equal(restore.props.disabled, undefined);
+    assert.equal(typeof restore.props.onClick, 'function');
+    restore.props.onClick();
+    assert.equal(restoreClicked, true);
     assert.equal(typeof one(view, button('기존 대화 보기')).props.onClick, 'function');
     assert.equal(typeof one(view, button('등장인물 추가')).props.onClick, 'function');
   });
@@ -115,7 +116,9 @@ async function main() {
     assert.deepEqual(gets.filter((url) => url.includes('/api/conversations')), [`/api/conversations?storyId=${encodeURIComponent(story.id)}&limit=50&offset=0`]);
     detail.props.onViewRooms();
     assert.equal(h.state.starter, 'choose');
-    assert.match(html, /disabled[^>]*>등장인물 복원</);
+    assert.doesNotMatch(html, /disabled[^>]*>등장인물 복원</);
+    assert.equal(typeof detail.props.onRestoreCast, 'function');
+    assert.equal(html.includes('자동'), false);
     detail.props.onAddCast();
     assert.equal(h.state.editor, 'opening');
     assert.equal(h.state.starter, null);
@@ -130,12 +133,15 @@ async function main() {
     assert.equal(/\b(post|put|del|fetch)\s*\(/.test(notice), false);
     assert.equal(notice.includes('onClick={onViewRooms}'), true);
     assert.equal(notice.includes('onClick={onAddCast}'), true);
+    assert.equal(notice.includes('onClick={onRestoreCast}'), true);
     assert.equal(notice.includes('등장인물 복원'), true);
     const restoreBtn = notice.match(/<button[^>]*>등장인물 복원<\/button>/);
     assert.ok(restoreBtn, 'restore CTA is a button');
-    assert.match(restoreBtn[0], /\bdisabled\b/);
-    assert.equal(restoreBtn[0].includes('onClick'), false);
-    assert.equal(pageSrc.includes('story_characters'), false);
+    assert.equal(/\bdisabled\b/.test(restoreBtn[0]), false);
+    assert.equal(restoreBtn[0].includes('onClick'), true);
+    assert.equal(pageSrc.includes('자동'), false);
+    assert.equal(pageSrc.includes('/restore-candidates'), true);
+    assert.equal(pageSrc.includes('/restore-characters'), true);
     assert.equal(pageSrc.includes("del('/api/conversations"), false);
     assert.equal(pageSrc.includes('del(`/api/conversations'), false);
     assert.equal(pageSrc.includes('snapshot'), false);
