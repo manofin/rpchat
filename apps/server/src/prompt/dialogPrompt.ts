@@ -1,6 +1,8 @@
 import { type DB, many } from '../db/index.js';
 import { parseMessageMeta } from '../db/messageMeta.js';
-import type { BudgetReport, ChatMessage, ConversationRow, MessageRow } from '../types.js';
+import type { BudgetReport, ChatMessage, ConversationRow, MessageRow, Scene } from '../types.js';
+import { ACTOR_CONTEXT_RULES, buildActorContext } from './dialogActorContext.js';
+import { loadStoryRoster } from './dialogContext.js';
 import { computeStoryInjection, isOocMessage, loadProfile, mergeConsecutive, resolvePersona } from './builder.js';
 import { selectContext } from './contextSelection.js';
 import { SCENE_RECENT_GUARD } from './summaryBudget.js';
@@ -47,7 +49,7 @@ export function dialogHistory(db: DB, history: MessageRow[]): MessageRow[] {
 
 /** Pass S owns its output contract; only selection policy is shared with 1:1. */
 export function buildDialogPrompt(db: DB, conv: ConversationRow, history: MessageRow[], passS: string, userText: string,
-  contextTokens: number, model: string, inject: InjectContext = { instruction: null }) {
+  contextTokens: number, model: string, inject: InjectContext = { instruction: null }, scene?: Scene) {
   const profile = loadProfile(db, conv.profile_name);
   const cal = getCalibration(db);
   const persona = resolvePersona(db, conv);
@@ -55,7 +57,8 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
   const instruction = profileInstructionText(profile);
   const profileBlock = instruction ? renderProfileInstruction(instruction, '## 서술 지침', '', userName) : null;
   // Attach uses the existing party hook; final role/message overhead is counted below.
-  const mandatory = attachInjectToIcPass(passS, inject.instruction, {
+  const scoped = scene?.dialog_context !== undefined;
+  const mandatory = attachInjectToIcPass(scoped ? `${passS}\n\n${ACTOR_CONTEXT_RULES}` : passS, inject.instruction, {
     promptTokenBudget: Number.MAX_SAFE_INTEGER, calibration: cal, profileInstruction: profileBlock,
   }).prompt;
   const current: ChatMessage = { role: 'user', content: userText.trim() ? userText : '(장면을 이어서 진행한다.)' };
@@ -87,10 +90,16 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
   const filtered = dialogHistory(db, currentRow ? history.slice(0, -1) : history);
   // Current input also participates in lore matching, including OOC (party IC policy unchanged).
   const scanHistory = currentRow ? [...filtered, { ...currentRow, content: userText }] : filtered;
-  const selected = selectContext(db, conv, scanHistory, { lore: loreCap, memory: memoryCap }, cal,
-    { pathIds: new Set(history.map((m) => m.id)), branchScoped: true, strictBudget: true });
-  sections.push(...selected.sections.map((s) => ({ ...s, budget: s.kind === 'lore' ? loreCap : memoryCap })));
-  const system = [mandatory, staticText, ...selected.parts].filter(Boolean).join('\n\n');
+  const pathIds = new Set(history.map(m => m.id));
+  const actorCap = scoped ? Math.floor(memoryCap / 2) : 0;
+  const actors = scoped ? loadStoryRoster(db, conv).map(({ id, name }) => ({ id, name })) : [];
+  const assigned = scoped ? buildActorContext(db, conv, pathIds, scene!.dialog_context, actors, actorCap, cal) : null;
+  const generalMemoryCap = memoryCap - actorCap;
+  const selected = selectContext(db, conv, scanHistory, { lore: loreCap, memory: generalMemoryCap }, cal,
+    { pathIds, branchScoped: true, strictBudget: true, excludeMemoryIds: assigned?.reservedIds });
+  sections.push(...selected.sections.map((s) => ({ ...s, budget: s.kind === 'lore' ? loreCap : generalMemoryCap })));
+  if (assigned) sections.push({ name: '명시적 공개/인물별 승인 기억', kind: 'memory', est_tokens: assigned.tokens, budget: actorCap });
+  const system = [mandatory, staticText, ...selected.parts, assigned?.text].filter(Boolean).join('\n\n');
   // Only complete bodies retained in the final system prompt can replace their source coverage.
   // A coverage starting later in the path must not erase an uncovered earlier prefix.
   const indexById = new Map(history.map((m, i) => [m.id, i]));
@@ -141,5 +150,5 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
   if (estTotal > available) budget.instruction_overflow = {
     profile: profile.name, instruction_tokens: profileBlock ? estimateTokens(profileBlock, cal) : 0, required: estTotal, available,
   };
-  return { messages, budget, profile, model, stop: [], isOoc: false as const };
+  return { messages, budget, profile, model, stop: [], isOoc: false as const, ...(assigned ? { actor_context: assigned.packet } : {}) };
 }

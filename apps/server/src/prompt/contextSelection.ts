@@ -57,7 +57,16 @@ export interface SelectedContext {
   compactionSummaries: SummaryRow[];
 }
 
-export function selectContext(db: DB, conv: ConversationRow, history: MessageRow[], budgets: { lore: number; memory: number }, cal: number, opts?: { pathIds?: Set<string>; branchScoped?: boolean; strictBudget?: boolean }): SelectedContext {
+export function memoryEvidenceAllowed(db: DB, m: MemoryRow, sourcePath: (id: string) => Set<string>): boolean {
+  const evidence = parseJson<unknown>(m.evidence_message_ids_json, []);
+  return Array.isArray(evidence) && evidence.every(id => {
+    if (typeof id !== 'string') return false;
+    const source = one<{ conversation_id: string }>(db, 'SELECT conversation_id FROM messages WHERE id = ?', id);
+    return !!source && sourcePath(source.conversation_id).has(id);
+  });
+}
+
+export function selectContext(db: DB, conv: ConversationRow, history: MessageRow[], budgets: { lore: number; memory: number }, cal: number, opts?: { pathIds?: Set<string>; branchScoped?: boolean; strictBudget?: boolean; excludeMemoryIds?: ReadonlySet<string> }): SelectedContext {
   const pathIds = opts?.pathIds ?? new Set(history.map((m) => m.id));
   const sections: BudgetReport['sections'] = [];
   const sourcePaths = new Map<string, Set<string>>([[conv.id, pathIds]]);
@@ -148,14 +157,8 @@ export function selectContext(db: DB, conv: ConversationRow, history: MessageRow
   let memEst = 0;
   const memCap = Math.floor(budgets.memory * 0.5);
   for (const m of pinned) {
-    if (opts?.branchScoped) {
-      const evidence = parseJson<unknown>(m.evidence_message_ids_json, []);
-      if (!Array.isArray(evidence) || evidence.some((id) => typeof id !== 'string')) continue;
-      if (evidence.some((id) => {
-        const source = one<{ conversation_id: string }>(db, 'SELECT conversation_id FROM messages WHERE id = ?', id);
-        return !source || !sourcePath(source.conversation_id).has(id);
-      })) continue;
-    }
+    if (opts?.excludeMemoryIds?.has(m.id)) continue;
+    if (opts?.branchScoped && !memoryEvidenceAllowed(db, m, sourcePath)) continue;
     const t = estimateTokens(`- ${m.content}`, cal);
     if (memEst + t > memCap) {
       droppedMemItems.push(m.content);

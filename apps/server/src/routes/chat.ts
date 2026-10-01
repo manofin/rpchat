@@ -989,7 +989,7 @@ export function chatRoutes(ctx: Ctx) {
     const initialInput = dialogPlanInput(db, convNow, scene, userText, seed)!;
     const catalog = initialInput.catalog;
     const preflight = buildDialogPrompt(db, convNow, history, planDialogBeat(initialInput).pass_s, userText,
-      config.model.contextTokens, model, inject);
+      config.model.contextTokens, model, inject, scene);
     if (preflight.budget.instruction_overflow) {
       refuseBeforeGeneration(userMessage, conv);
       return reply.code(422).send({ error: formatInstructionOverflow(preflight.budget.instruction_overflow) });
@@ -1035,7 +1035,7 @@ export function chatRoutes(ctx: Ctx) {
 
     const planInput = { ...initialInput, patch: patch ?? undefined };
     const plan = planDialogBeat(planInput);
-    const built = buildDialogPrompt(db, convNow, history, plan.pass_s, userText, config.model.contextTokens, model, inject);
+    const built = buildDialogPrompt(db, convNow, history, plan.pass_s, userText, config.model.contextTokens, model, inject, plan.applied.state);
     if (built.budget.instruction_overflow) {
       refuseBeforeGeneration(userMessage, conv);
       return reply.code(422).send({ error: formatInstructionOverflow(built.budget.instruction_overflow) });

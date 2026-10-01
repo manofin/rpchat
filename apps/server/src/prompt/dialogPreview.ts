@@ -39,7 +39,7 @@ export function previewDialog(db: DB, conv: ConversationRow, contextTokens: numb
   const input = dialogPlanInput(db, conv, scene, userText, seed);
   if (!input) return null;
   const plan = planDialogBeat(input);
-  const built = buildDialogPrompt(db, conv, history, plan.pass_s, userText, contextTokens, model, opts.inject);
+  const built = buildDialogPrompt(db, conv, history, plan.pass_s, userText, contextTokens, model, opts.inject, plan.applied.state);
   return {
     ...built, path: 'dialog',
     // Preview is read-only: the model's scene proposal has not run. Script assembly uses the unchanged branch scene.

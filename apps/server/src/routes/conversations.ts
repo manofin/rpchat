@@ -12,6 +12,7 @@ import {
 import { deepestLeaf, getPath, insertMessage, messageOut, readablePreview, setHead, updateMessage } from '../db/tree.js';
 import { buildPrompt, resolvePersona } from '../prompt/builder.js';
 import { previewDialog } from '../prompt/dialogPreview.js';
+import { dialogContextSchema } from '../prompt/dialogActorContext.js';
 import { parseInjectInstruction } from '../prompt/injectContext.js';
 import { substitute } from '../prompt/templates.js';
 import { catalogFromStory } from '../prompt/sceneCatalog.js';
@@ -25,6 +26,7 @@ import { evalRoomEnding, suggestEndings } from '../endingEval.js';
 import { materializeSceneAtHead } from '../db/sceneBase.js';
 
 const sceneSchema = z.object({
+  dialog_context: dialogContextSchema.optional(),
   place: z.string().max(300).optional(),
   time: z.string().max(300).optional(),
   goal: z.string().max(500).optional(),

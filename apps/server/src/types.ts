@@ -111,6 +111,8 @@ export interface LoreEntryRow {
 }
 
 export interface Scene {
+  /** Optional user-owned approved-memory assignments. Models cannot write this. */
+  dialog_context?: import('./prompt/dialogActorContext.js').DialogKnowledgeSpec;
   place?: string;
   time?: string;
   goal?: string;
