@@ -1,4 +1,4 @@
-import { type DB, nowIso, one } from '../db/index.js';
+import { type DB, one } from '../db/index.js';
 import { getPath, resolveTurnStart } from '../db/tree.js';
 import { resolveSceneBase } from '../db/sceneBase.js';
 import type { ConversationRow, MessageRow, Scene } from '../types.js';
@@ -7,6 +7,7 @@ import { buildDialogPrompt } from './dialogPrompt.js';
 import { planDialogBeat } from './composeDialog.js';
 import { renderSceneDeltaPrompt } from './sceneDeltaPrompt.js';
 import type { InjectContext } from './injectContext.js';
+import { previewDraftMessage } from './promptHistory.js';
 
 export function previewDialog(db: DB, conv: ConversationRow, contextTokens: number, model: string,
   opts: { draft?: string; regenerate?: string; branch?: string; inject?: InjectContext }) {
@@ -30,11 +31,7 @@ export function previewDialog(db: DB, conv: ConversationRow, contextTokens: numb
     conversationScene: JSON.parse(conv.scene_json || '{}') as Scene, parentId, regenTurnStartId,
   }).scene;
   if (opts.draft !== undefined) {
-    const draft: MessageRow & { prompt_preview_draft: true } = {
-      id: 'draft', conversation_id: conv.id, parent_id: parentId, role: 'user', content: opts.draft.trim(),
-      status: 'complete', meta_json: '{}', bookmarked: 0, created_at: nowIso(), prompt_preview_draft: true,
-    };
-    history.push(draft);
+    history.push(previewDraftMessage(conv.id, parentId, opts.draft.trim()));
   }
   const last = history.at(-1);
   const userText = last?.role === 'user' ? last.content : '';

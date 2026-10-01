@@ -5,6 +5,7 @@ import { estimateTokens, truncateToTokens } from './tokens.js';
 import { loreEntryMatch } from './loreMatch.js';
 import { MIN_EPISODE_TOKENS, SCENE_RECENT_GUARD, allocateSummaryBudget } from './summaryBudget.js';
 import { renderEpisode, renderLore, renderMemories, renderState, renderSummary } from './templates.js';
+import { promptPathIds, promptRecentIds } from './promptHistory.js';
 const LORE_SCAN_MESSAGES = 6;
 /**
  * ADR §5 OR-by-union episode candidate SQL (prod path — never a single naive OR).
@@ -67,7 +68,7 @@ export function memoryEvidenceAllowed(db: DB, m: MemoryRow, sourcePath: (id: str
 }
 
 export function selectContext(db: DB, conv: ConversationRow, history: MessageRow[], budgets: { lore: number; memory: number }, cal: number, opts?: { pathIds?: Set<string>; branchScoped?: boolean; strictBudget?: boolean; excludeMemoryIds?: ReadonlySet<string> }): SelectedContext {
-  const pathIds = opts?.pathIds ?? new Set(history.map((m) => m.id));
+  const pathIds = opts?.pathIds ?? promptPathIds(history);
   const sections: BudgetReport['sections'] = [];
   const sourcePaths = new Map<string, Set<string>>([[conv.id, pathIds]]);
   const sourcePath = (id: string) => {
@@ -185,7 +186,7 @@ export function selectContext(db: DB, conv: ConversationRow, history: MessageRow
   const stateText = stateCore ? `${stateCore}\n\n${stateUnknownConstraint}` : null;
   const stateEst = stateText ? estimateTokens(stateText, cal) : 0;
   // recentGuard 를 episode/scene 공용으로 먼저 정의 (상수는 summaryBudget.ts에서)
-  const recentGuardIds = new Set(history.slice(-SCENE_RECENT_GUARD).map((m) => m.id));
+  const recentGuardIds = promptRecentIds(history, SCENE_RECENT_GUARD);
   // episode: 최신 approved 1건, 예약(상태 후 잔여의 35%), recentGuard 적용
   const episodeRow = pickEpisodeCandidate(
     onBranch(opts?.branchScoped

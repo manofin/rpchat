@@ -12,6 +12,7 @@ import {
 import { deepestLeaf, getPath, insertMessage, messageOut, readablePreview, setHead, updateMessage } from '../db/tree.js';
 import { buildPrompt, resolvePersona } from '../prompt/builder.js';
 import { previewDialog } from '../prompt/dialogPreview.js';
+import { previewDraftMessage } from '../prompt/promptHistory.js';
 import { dialogContextSchema, invalidAssignmentAnchor } from '../prompt/dialogActorContext.js';
 import { parseInjectInstruction } from '../prompt/injectContext.js';
 import { substitute } from '../prompt/templates.js';
@@ -537,9 +538,7 @@ export function conversationRoutes(ctx: Ctx) {
       }
       const history = getPath(db, conv);
       if (req.query.draft !== undefined) {
-        history.push({
-          id: 'draft', conversation_id: conv.id, parent_id: conv.head_message_id, role: 'user', content: req.query.draft, status: 'complete', meta_json: '{}', bookmarked: 0, created_at: nowIso(),
-        });
+        history.push(previewDraftMessage(conv.id, conv.head_message_id, req.query.draft));
       }
       const built = buildPrompt(db, conv, history, config.model.contextTokens, ctx.resolvedModel(), undefined, { diagnostics: true, inject: inject.ctx });
       return { messages: built.messages, budget: built.budget, model: built.model, profile: built.profile, stop: built.stop, isOoc: built.isOoc };

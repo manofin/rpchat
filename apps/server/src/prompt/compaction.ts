@@ -3,6 +3,7 @@
  * 경로 순서는 메시지 id / created_at 이 아니라 호출자가 넘긴 getPath 인덱스를 쓴다.
  */
 import { SCENE_RECENT_GUARD } from './summaryBudget.js';
+import { isVirtualPromptMessage } from './promptHistory.js';
 
 export interface CompactionPathMessage {
   id: string;
@@ -28,7 +29,7 @@ export function resolveWatermarkIndex(
   const indexById = new Map<string, number>();
   for (let i = 0; i < path.length; i++) {
     const m = path[i];
-    if (m.conversation_id !== conversationId) continue;
+    if (m.conversation_id !== conversationId || isVirtualPromptMessage(m)) continue;
     indexById.set(m.id, i);
   }
 

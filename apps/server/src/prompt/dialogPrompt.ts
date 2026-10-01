@@ -5,6 +5,7 @@ import { ACTOR_CONTEXT_RULES, buildActorContext } from './dialogActorContext.js'
 import { loadStoryRoster } from './dialogContext.js';
 import { computeStoryInjection, isOocMessage, loadProfile, mergeConsecutive, resolvePersona } from './builder.js';
 import { selectContext } from './contextSelection.js';
+import { promptIndexById, promptPathIds } from './promptHistory.js';
 import { SCENE_RECENT_GUARD } from './summaryBudget.js';
 import { attachInjectToIcPass, type InjectContext } from './injectContext.js';
 import { profileInstructionText } from './promptPolicy.js';
@@ -92,9 +93,7 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
   // Current input also participates in lore matching, including OOC (party IC policy unchanged).
   const scanHistory = currentRow ? [...filtered, { ...currentRow, content: userText }] : filtered;
   // The preview's synthetic row can match an old DB id; it is never branch provenance.
-  const indexedHistory = history.map((message, index) => ({ message, index }))
-    .filter(({ message }) => !(message as MessageRow & { prompt_preview_draft?: true }).prompt_preview_draft);
-  const pathIds = new Set(indexedHistory.map(({ message }) => message.id));
+  const pathIds = promptPathIds(history);
   const actorCap = scoped ? Math.floor(memoryCap / 2) : 0;
   const actors = scoped ? loadStoryRoster(db, conv).map(({ id, name }) => ({ id, name })) : [];
   const assigned = scoped ? buildActorContext(db, conv, pathIds, scene!.dialog_context, actors, actorCap, cal) : null;
@@ -106,7 +105,7 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
   const system = [mandatory, staticText, ...selected.parts, assigned?.text].filter(Boolean).join('\n\n');
   // Only complete bodies retained in the final system prompt can replace their source coverage.
   // A coverage starting later in the path must not erase an uncovered earlier prefix.
-  const indexById = new Map(indexedHistory.map(({ message, index }) => [message.id, index]));
+  const indexById = promptIndexById(history);
   const compactIds = new Set<string>();
   const lastCompactable = history.length - SCENE_RECENT_GUARD - 1;
   for (const s of selected.compactionSummaries) {
