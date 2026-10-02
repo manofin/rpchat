@@ -29,6 +29,7 @@ import { evalRoomEnding, suggestEndings } from '../endingEval.js';
 import { materializeSceneAtHead } from '../db/sceneBase.js';
 
 const sceneSchema = z.object({
+  response_length: z.enum(['short', 'normal', 'long']).optional(),
   observation_filter: z.boolean().optional(),
   dialog_context: dialogContextSchema.optional(),
   place: z.string().max(300).optional(),

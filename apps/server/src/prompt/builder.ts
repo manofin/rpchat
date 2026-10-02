@@ -1,3 +1,4 @@
+import { responseLengthHint, responseMaxTokens } from './responseLength.js';
 import { createHash } from 'node:crypto';
 import { type DB, many, one, parseJson, getSetting } from '../db/index.js';
 import { parseMessageMeta } from '../db/messageMeta.js';
@@ -201,7 +202,9 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   const character = one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', conv.character_id);
   if (!character) throw new Error('캐릭터를 찾을 수 없음');
   const persona = resolvePersona(db, conv);
-  const profile = loadProfile(db, profileName ?? conv.profile_name);
+  const storedProfile = loadProfile(db, profileName ?? conv.profile_name);
+  const responseScene = parseJson<Scene>(conv.scene_json, {});
+  const profile = { ...storedProfile, max_tokens: responseMaxTokens(responseScene, storedProfile.max_tokens) };
   const cal = getCalibration(db);
   const contentPolicy = getSetting(db, 'content_policy', '');
   const charName = character.name;
@@ -221,7 +224,8 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   let used = 0;
 
   // 1) 고정 블록: 규칙 + 캐릭터 + 페르소나 + 장면 + 유저노트
-  const rules = renderRules(contentPolicy, charName, userName, DEFAULT_HEADER_POLICY, policy);
+  const lengthHint = isOoc ? '' : responseLengthHint(responseScene);
+  const rules = renderRules(contentPolicy, charName, userName, DEFAULT_HEADER_POLICY, lengthHint ? { ...policy, includeLengthHint: false } : policy) + lengthHint;
   const personaText = renderPersona(persona, charName, userName);
   const sceneText = renderScene(parseJson<Scene>(conv.scene_json, {}));
   // user_note: persona 다음 순위. 고정 블록 잔여분만 주입 (userContextBudget 정책, whole-or-nothing).

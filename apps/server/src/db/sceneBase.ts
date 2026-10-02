@@ -189,7 +189,7 @@ export function materializeSceneAtHead(
       const meta = parseMessageMeta(row.meta_json);
       if (meta.beat_seq === 0) {
         const snap = readSceneSnapshot(meta);
-        return snap ? { ...withoutPending(snap.after_delta), ...(opts.fallback.observation_filter !== undefined ? { observation_filter: opts.fallback.observation_filter } : {}), ...(opts.fallback.observation_legacy_classified !== undefined ? { observation_legacy_classified: opts.fallback.observation_legacy_classified } : {}) } : strippedFallback;
+        return snap ? { ...withoutPending(snap.after_delta), ...(opts.fallback.response_length !== undefined ? { response_length: opts.fallback.response_length } : {}), ...(opts.fallback.observation_filter !== undefined ? { observation_filter: opts.fallback.observation_filter } : {}), ...(opts.fallback.observation_legacy_classified !== undefined ? { observation_legacy_classified: opts.fallback.observation_legacy_classified } : {}) } : strippedFallback;
       }
     }
     cur = row.parent_id;

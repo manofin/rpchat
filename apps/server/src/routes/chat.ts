@@ -1,3 +1,4 @@
+import { responseLengthHint, responseMaxTokens } from '../prompt/responseLength.js';
 import { actorAudience } from '../prompt/composeBeat.js';
 import { choiceContext, audienceSchema, authorizeAudience, audienceOf, project, PUBLIC, GM, successfulObservationRows, speechObservation, observationText } from '../prompt/observation.js';
 import { createHash } from 'node:crypto';
@@ -34,7 +35,7 @@ import type { PassCard } from '../prompt/passes.js';
 import type { CharacterRow } from '../types.js';
 import { buildPrompt } from '../prompt/builder.js';
 import { loadStoryRoster, dialogPlanInput } from '../prompt/dialogContext.js';
-import { buildDialogPrompt, DIALOG_MAX_TOKENS } from '../prompt/dialogPrompt.js';
+import { buildDialogPrompt } from '../prompt/dialogPrompt.js';
 import { parseInjectInstruction, attachInjectToIcPass, type InjectContext } from '../prompt/injectContext.js';
 import { formatInstructionOverflow, profileInstructionText } from '../prompt/promptPolicy.js';
 import { dumpGenerationPrompt } from '../prompt/dump.js';
@@ -120,13 +121,6 @@ const PASS_C_MAX_TOKENS = 160;
  * not worth the wait, and the reader is already looking at a finished beat.
  */
 const PASS_C_TIMEOUT_MS = 20_000;
-/**
- * dialog-format: Pass S writes the whole turn — narration and every line — so it
- * needs the room the beat path splits across N + F + E. It is also the only call
- * that turn, which is why one budget this size still costs less than the mix.
- */
-const PASS_S_MAX_TOKENS = DIALOG_MAX_TOKENS;
-
 /** User abort, including the window before a focus/script row exists. */
 function wasAborted(controller: AbortController, err: unknown): boolean {
   if (controller.signal.aborted) return true;
@@ -501,6 +495,8 @@ export function chatRoutes(ctx: Ctx) {
     regenTurnStartId: string | null,
     inject: InjectContext = { instruction: null },
   ) {
+    const responseScene = JSON.parse(convNow.scene_json || '{}') as Scene;
+    const focusMaxTokens = responseMaxTokens(responseScene, PASS_F_MAX_TOKENS);
     // Party IC passes apply inject regardless of 1:1 isOoc (party has no isOoc gate today).
     // attachInjectToIcPass → prependInjectToRules is the single attach family; MAX 800 is
     // validation-only — full instruction each pass; recent narrations shrink under pressure.
@@ -518,7 +514,7 @@ export function chatRoutes(ctx: Ctx) {
     // 작은 IC 호출 예산을 넘으면 장면 판정·생성 전에 거부한다. 그 밖의 호출별 초과는
     // attachInjectToIcPass 가 fail-closed(지침·inject 를 자르지 않고 오래된 서술부터 줄인 뒤 throw).
     const icInstruction = partyProfileInstruction(db, convNow, resolvePersona(db, convNow)?.name || '나');
-    const icOverflow = icInstruction.overflow(icPromptBudget(Math.max(PASS_N_MAX_TOKENS, PASS_F_MAX_TOKENS, AUX_MAX_TOKENS)), injectCal);
+    const icOverflow = icInstruction.overflow(icPromptBudget(Math.max(PASS_N_MAX_TOKENS, focusMaxTokens, AUX_MAX_TOKENS)), injectCal);
     if (icOverflow) {
       refuseBeforeGeneration(userMessage, conv);
       return reply.code(422).send({ error: formatInstructionOverflow(icOverflow) });
@@ -533,7 +529,7 @@ export function chatRoutes(ctx: Ctx) {
       regenTurnStartId,
     });
     const roomPolicy = JSON.parse(convNow.scene_json || '{}') as Scene;
-    const scene = { ...sceneBase.scene, observation_filter: roomPolicy.observation_filter, observation_legacy_classified: roomPolicy.observation_legacy_classified };
+    const scene = { ...sceneBase.scene, observation_filter: roomPolicy.observation_filter, observation_legacy_classified: roomPolicy.observation_legacy_classified, response_length: roomPolicy.response_length };
     // f9-place-catalog: places/arcs/stages come from the Story layer, so the GM can
     // move the scene somewhere no cast member currently stands. Read live because
     // this is a server-side validation allow-list, not narrative text.
@@ -749,7 +745,7 @@ export function chatRoutes(ctx: Ctx) {
       // IC Pass F: one shared attachInjectToIcPass hook (not format-local attach)
       const passFRaw = observationEnabled ? plan.pass_f : passFWith(planInput, plan, narration);
       const passF = passFRaw
-        ? fitObservationPass(input => passFWith(input, plan, narration)!, PASS_F_MAX_TOKENS, cast.find((c) => c.id === plan.focus.focus_id)?.name ?? '', plan.focus.focus_id!)
+        ? fitObservationPass(input => passFWith(input, plan, narration)! + responseLengthHint(responseScene), focusMaxTokens, cast.find((c) => c.id === plan.focus.focus_id)?.name ?? '', plan.focus.focus_id!)
         : null;
       if (passF && plan.focus.focus_id) {
         const focusName = cast.find((c) => c.id === plan.focus.focus_id)?.name ?? '';
@@ -775,7 +771,7 @@ export function chatRoutes(ctx: Ctx) {
         const result = await ctx.queue.run(() => ctx.model.stream(
           {
             model, messages: [{ role: 'user', content: passF }],
-            temperature: 0.9, top_p: 0.95, max_tokens: PASS_F_MAX_TOKENS, stop: [], signal: controller.signal,
+            temperature: 0.9, top_p: 0.95, max_tokens: focusMaxTokens, stop: [], signal: controller.signal,
           },
           (delta) => {
             buffer += delta;
@@ -1041,7 +1037,7 @@ export function chatRoutes(ctx: Ctx) {
       regenTurnStartId,
     });
     const roomPolicy = JSON.parse(convNow.scene_json || '{}') as Scene;
-    const scene: Scene = { ...sceneBase.scene, observation_filter: roomPolicy.observation_filter, observation_legacy_classified: roomPolicy.observation_legacy_classified };
+    const scene: Scene = { ...sceneBase.scene, observation_filter: roomPolicy.observation_filter, observation_legacy_classified: roomPolicy.observation_legacy_classified, response_length: roomPolicy.response_length };
     const userText = userTextFrom(db, parentId, userMessage);
     const history = getPath(db, convNow);
     const lastUser = history.at(-1)?.role === 'user' ? history.at(-1)! : null;
@@ -1167,7 +1163,7 @@ export function chatRoutes(ctx: Ctx) {
       const result = await ctx.queue.run(() => ctx.model.stream(
         {
           model, messages: built.messages,
-          temperature: 0.9, top_p: 0.95, max_tokens: PASS_S_MAX_TOKENS, stop: [], signal: controller.signal,
+          temperature: 0.9, top_p: 0.95, max_tokens: built.maxTokens, stop: [], signal: controller.signal,
         },
         (delta) => {
           buffer += delta;
@@ -1199,6 +1195,7 @@ export function chatRoutes(ctx: Ctx) {
         status: 'complete',
         meta: {
           block_kind: first.kind, beat_seq: scriptSeq,
+          finish_reason: result.finishReason,
           speaker_character_id: first.speaker_character_id ?? undefined,
           speaker_name: first.speaker_name ?? undefined,
           image_url: first.asset_path ?? undefined,
@@ -1210,7 +1207,7 @@ export function chatRoutes(ctx: Ctx) {
           speaker_character_id: block.speaker_character_id ?? undefined,
           speaker_name: block.speaker_name ?? undefined,
           image_url: block.asset_path ?? undefined,
-          ...(i === rest.length - 1 ? { choices } : {}),
+          ...(i === rest.length - 1 ? { choices, finish_reason: result.finishReason } : {}),
         }));
       });
 

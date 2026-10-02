@@ -111,6 +111,7 @@ export interface LoreEntryRow {
 }
 
 export interface Scene {
+  response_length?: import('./prompt/responseLength.js').ResponseLength;
   observation_filter?: boolean;
   observation_legacy_classified?: boolean;
   /** Optional user-owned approved-memory assignments. Models cannot write this. */

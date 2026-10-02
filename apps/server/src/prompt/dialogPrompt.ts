@@ -1,3 +1,4 @@
+import { responseLengthHint, responseMaxTokens } from './responseLength.js';
 import { type DB, many } from '../db/index.js';
 import { parseMessageMeta } from '../db/messageMeta.js';
 import type { BudgetReport, ChatMessage, ConversationRow, MessageRow, Scene } from '../types.js';
@@ -52,6 +53,9 @@ export function dialogHistory(db: DB, history: MessageRow[]): MessageRow[] {
 export function buildDialogPrompt(db: DB, conv: ConversationRow, history: MessageRow[], passS: string, userText: string,
   contextTokens: number, model: string, inject: InjectContext = { instruction: null }, scene?: Scene) {
   const profile = loadProfile(db, conv.profile_name);
+  const responseScene = JSON.parse(conv.scene_json || '{}') as Scene;
+  const maxTokens = responseMaxTokens(responseScene, DIALOG_MAX_TOKENS);
+  passS += responseLengthHint(responseScene);
   const cal = getCalibration(db);
   const persona = resolvePersona(db, conv);
   const userName = persona?.name || '나';
@@ -64,7 +68,7 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
     promptTokenBudget: Number.MAX_SAFE_INTEGER, calibration: cal, profileInstruction: profileBlock,
   }).prompt;
   const current: ChatMessage = { role: 'user', content: userText.trim() ? userText : '(장면을 이어서 진행한다.)' };
-  const available = Math.max(0, contextTokens - DIALOG_MAX_TOKENS - REPLY_MARGIN);
+  const available = Math.max(0, contextTokens - maxTokens - REPLY_MARGIN);
   const mandatoryEst = estimateMessageTokens(mandatory, cal) + estimateMessageTokens(current.content, cal);
   const room = Math.max(0, available - mandatoryEst - 16);
   const fixedCap = Math.floor(room * SHARE.fixed);
@@ -143,7 +147,7 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
   sections.push({ name: '최근 대화', kind: 'recent', est_tokens: recentEst, budget: recentBudget, note: dropped ? `메시지 ${dropped}건 예산 초과로 제외` : undefined });
   const estTotal = cost();
   const budget: BudgetReport = {
-    context_tokens: contextTokens, reply_reserve: DIALOG_MAX_TOKENS + REPLY_MARGIN, available, calibration: cal,
+    context_tokens: contextTokens, reply_reserve: maxTokens + REPLY_MARGIN, available, calibration: cal,
     sections, est_total: estTotal, included_messages: recent.length + (currentRow ? 1 : 0), dropped_messages: dropped,
     active_lore: selected.activeLore.map((r) => r.title), dropped_lore: selected.droppedLore,
     included_memories: selected.memItems, dropped_memories: selected.droppedMemItems, summary_used: !!selected.summaryText,
@@ -153,5 +157,5 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
   if (estTotal > available) budget.instruction_overflow = {
     profile: profile.name, instruction_tokens: profileBlock ? estimateTokens(profileBlock, cal) : 0, required: estTotal, available,
   };
-  return { messages, budget, profile, model, stop: [], isOoc: false as const, ...(assigned ? { actor_context: assigned.packet } : {}) };
+  return { messages, budget, profile, model, maxTokens, stop: [], isOoc: false as const, ...(assigned ? { actor_context: assigned.packet } : {}) };
 }
