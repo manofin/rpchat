@@ -314,6 +314,7 @@ export interface Message {
     usage?: { prompt_tokens?: number; completion_tokens?: number } | null;
     finish_reason?: string | null;
     choices?: string[];
+    choices_context?: { private_context: true; recipient_ids: string[] };
     ooc?: boolean;
     error?: string;
     speaker_character_id?: string;

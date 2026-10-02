@@ -274,6 +274,7 @@ export interface MessageMeta {
   usage?: { prompt_tokens?: number; completion_tokens?: number } | null;
   finish_reason?: string | null;
   choices?: string[];
+  choices_context?: { private_context: true; recipient_ids: string[] };
   ooc?: boolean;
   profile?: string;
   prompt_version?: string;

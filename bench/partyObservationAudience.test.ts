@@ -94,6 +94,49 @@ async function main() {
     assert.ok(calls.filter(x=>x.pass==='e').some(x=>x.text.includes('[비공개 대화가 있었다.]')));
     console.log('WHISPER_ADAPTER_REQUESTS='+JSON.stringify(calls.map(x=>({pass:x.pass,messages:x.p.messages}))));
   });
+  await t('private C exposure is persisted with server-owned recipients', async () => {
+    const host = privateTurn.detail.messages.findLast((m:any)=>m.meta.choices?.length);
+    assert.ok(host); assert.deepEqual(host.meta.choices_context,{private_context:true,recipient_ids:[a.id]});
+    const reload = await api('GET', `/api/conversations/${conv.id}`);
+    assert.deepEqual(reload.messages.find((m:any)=>m.id===host.id).meta.choices_context,host.meta.choices_context);
+  });
+  await t('saved private-context choice can be confirmed public or to the same recipients', async () => {
+    const host = privateTurn.detail.messages.findLast((m:any)=>m.meta.choices?.length);
+    for (const visibility of ['public','private']) {
+      const sent = await send({content:visibility==='public'?'USER_CONFIRMED_PUBLIC':host.meta.choices[0],choice:{message_id:host.id,index:0,visibility}});
+      const user = sent.detail.messages.findLast((m:any)=>m.role==='user');
+      assert.deepEqual(user.meta.observation,visibility==='public'?{visibility:'public'}:{visibility:'private',recipient_ids:['user',a.id],observer_ids:[]});
+    }
+  });
+  await t('invalid source, index and recipient override fail before writing or model calls', async () => {
+    const host = privateTurn.detail.messages.findLast((m:any)=>m.meta.choices?.length);
+    for (const payload of [
+      {choice:{message_id:'missing',index:0,visibility:'private'}},
+      {choice:{message_id:host.id,index:99,visibility:'private'}},
+      {choice:{message_id:host.id,index:0,visibility:'private'},observation:{visibility:'private',recipient_ids:[b.id]}},
+    ]) {
+      const before = (db.prepare('SELECT count(*) n FROM messages').get() as any).n;
+      calls.length=0;
+      const res=await app.inject({method:'POST',url:`/api/conversations/${conv.id}/messages`,payload:{content:'CHOICE',...payload}});
+      assert.equal(res.statusCode,400,res.body);assert.equal(calls.length,0);
+      assert.equal((db.prepare('SELECT count(*) n FROM messages').get() as any).n,before);
+    }
+  });
+  await t('missing original recipients and off-branch choices fail before generation', async () => {
+    const host = privateTurn.detail.messages.findLast((m:any)=>m.meta.choices?.length);
+    const original = db.prepare('SELECT meta_json FROM messages WHERE id=?').get(host.id) as any;
+    for (const context of [{private_context:true,recipient_ids:[]},{private_context:true,recipient_ids:['deleted-npc']},undefined]) {
+      db.prepare('UPDATE messages SET meta_json=? WHERE id=?').run(JSON.stringify({...JSON.parse(original.meta_json),choices_context:context}),host.id);
+      calls.length=0; const before=(db.prepare('SELECT count(*) n FROM messages').get() as any).n;
+      const res=await app.inject({method:'POST',url:`/api/conversations/${conv.id}/messages`,payload:{content:'SAVED',choice:{message_id:host.id,index:0,visibility:'private'}}});
+      assert.equal(res.statusCode,400); assert.equal(calls.length,0);assert.equal((db.prepare('SELECT count(*) n FROM messages').get() as any).n,before);
+    }
+    db.prepare('UPDATE messages SET meta_json=? WHERE id=?').run(original.meta_json,host.id);
+    const head=(db.prepare('SELECT head_message_id FROM conversations WHERE id=?').get(conv.id) as any).head_message_id;
+    setHead(db,conv.id,null); calls.length=0;
+    const res=await app.inject({method:'POST',url:`/api/conversations/${conv.id}/messages`,payload:{content:'SAVED',choice:{message_id:host.id,index:0,visibility:'public'}}});
+    assert.equal(res.statusCode,400);assert.equal(calls.length,0);setHead(db,conv.id,head);
+  });
   await t('background GM judge excludes private body by default', async () => {
     db.prepare('UPDATE conversations SET story_endings_snapshot=? WHERE id=?').run(JSON.stringify([{id:'e',title:'fixture',conditions:{min_turns:1,narrative_hint:'PUBLIC_HINT'}}]),conv.id);
     let actual='';

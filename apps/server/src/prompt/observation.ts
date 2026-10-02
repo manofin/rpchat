@@ -68,3 +68,12 @@ export function observationText(row: MessageRow, enabled: boolean): string {
   return enabled && row.role === 'assistant' && meta.block_kind === 'line'
     ? speechObservation(text, audienceOf(row), true) : text;
 }
+
+export type ChoiceContext = { private_context: true; recipient_ids: string[] };
+/** C's exposure is known from input audiences, never inferred from its prose. */
+export function choiceContext(audiences: Array<Audience | undefined>): ChoiceContext | null {
+  const privateInputs = audiences.filter((a): a is Extract<Audience, { visibility: 'private' }> => a?.visibility === 'private');
+  if (!privateInputs.length) return null;
+  const recipients = privateInputs[0].recipient_ids.filter(id => id !== USER && id !== GM && privateInputs.every(a => a.recipient_ids.includes(id)));
+  return { private_context: true, recipient_ids: [...new Set(recipients)] };
+}

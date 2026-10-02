@@ -199,6 +199,8 @@ export function ChatPage({ id }: { id: string }) {
   const hasDraft = summaryRows?.some((s) => s.status !== 'approved') ?? false;
 
   const [whisperIds, setWhisperIds] = useState('');
+  const [choiceDraft, setChoiceDraft] = useState<{ message_id: string; index: number; recipient_ids: string[]; visibility: 'public' | 'private' } | null>(null);
+  useEffect(() => { setChoiceDraft(null); setWhisperIds(''); }, [id]);
   async function submit() {
     const original = draft;
     const resolved = resolveShortcutSubmit(draft, readShortcuts());
@@ -206,12 +208,15 @@ export function ChatPage({ id }: { id: string }) {
     const inject = resolved.inject_instruction;
     // Inject-alone may have empty content; must not fall back to putting command body into content.
     if ((!text && !inject) || chat.generating || chat.detail?.conversation.ended_at) return;
+    if (choiceDraft?.visibility === 'private' && !choiceDraft.recipient_ids.length) return;
     setDraft('');
     requestAnimationFrame(grow);
     stickyRef.current = true;
-    const ok = await chat.send(text, chat.detail?.conversation.scene?.observation_filter && whisperIds.trim()
+    const choice = choiceDraft ? { message_id: choiceDraft.message_id, index: choiceDraft.index, visibility: choiceDraft.visibility } : undefined;
+    const ok = await chat.send(text, choice ? { choice, ...(inject ? { inject_instruction: inject } : {}) } : chat.detail?.conversation.scene?.observation_filter && whisperIds.trim()
       ? { ...(inject ? { inject_instruction: inject } : {}), observation: { visibility: 'private' as const, recipient_ids: whisperIds.split(',').map(x => x.trim()).filter(Boolean) } }
       : inject ? { inject_instruction: inject } : undefined);
+    if (ok !== false) setChoiceDraft(null);
     if (ok === false) {
       setDraft((cur) => (cur === '' ? original : cur));
       requestAnimationFrame(grow);
@@ -258,12 +263,19 @@ export function ChatPage({ id }: { id: string }) {
   const onChoice = (c: string) => {
     const text = c.trim();
     if (!text || chat.generating || chat.detail?.conversation.ended_at) return;
+    const host = [...(chat.messages ?? [])].reverse().find(m => m.meta.choices?.some(raw => raw.trim() === text));
+    if (host?.meta.choices_context?.private_context) {
+      setChoiceDraft({ message_id: host.id, index: host.meta.choices!.findIndex(raw => raw.trim() === text), recipient_ids: host.meta.choices_context.recipient_ids, visibility: 'public' });
+      setDraft(text);
+      requestAnimationFrame(grow);
+      return;
+    }
     setDraft('');
     requestAnimationFrame(grow);
     stickyRef.current = true;
-    void chat.send(text, chat.detail?.conversation.scene?.observation_filter && whisperIds.trim()
-      ? { observation: { visibility: 'private' as const, recipient_ids: whisperIds.split(',').map(x => x.trim()).filter(Boolean) } }
-      : undefined).then((ok) => {
+    setChoiceDraft(null);
+    setWhisperIds('');
+    void chat.send(text).then((ok) => {
       if (ok === false) {
         setDraft((cur) => (cur === '' ? text : cur));
         requestAnimationFrame(grow);
@@ -272,6 +284,9 @@ export function ChatPage({ id }: { id: string }) {
   };
   /** Pencil → fill composer only; user edits then sends. */
   const onEditChoice = (c: string) => {
+    const host = [...(chat.messages ?? [])].reverse().find(m => m.meta.choices?.some(raw => raw.trim() === c.trim()));
+    setChoiceDraft(host?.meta.choices_context?.private_context ? { message_id: host.id, index: host.meta.choices!.findIndex(raw => raw.trim() === c.trim()), recipient_ids: host.meta.choices_context.recipient_ids, visibility: 'public' } : null);
+    setWhisperIds('');
     setDraft(c);
     requestAnimationFrame(grow);
     taRef.current?.focus();
@@ -500,8 +515,15 @@ export function ChatPage({ id }: { id: string }) {
       )}
 
       {conv.scene.observation_filter && conv.scene.format !== 'dialog' ? <label>귓속말 수신자 ID (쉼표로 구분, 비우면 공개)
-        <input aria-label="귓속말 수신자" value={whisperIds} onChange={e => setWhisperIds(e.target.value)} disabled={chat.generating} />
+        <input aria-label="귓속말 수신자" value={whisperIds} onChange={e => setWhisperIds(e.target.value)} disabled={chat.generating || !!choiceDraft} />
       </label> : null}
+      {choiceDraft && <div className="banner warn" aria-label="선택지 공개 범위">
+        <span>비공개 맥락 기반 · 전송 범위를 확인하세요</span>
+        <button type="button" className="btn sm" aria-pressed={choiceDraft.visibility === 'public'} disabled={chat.generating} onClick={() => setChoiceDraft({ ...choiceDraft, visibility: 'public' })}>공개</button>
+        <button type="button" className="btn sm" aria-pressed={choiceDraft.visibility === 'private'} disabled={chat.generating || !choiceDraft.recipient_ids.length || !conv.scene.observation_filter || conv.scene.format === 'dialog'} onClick={() => setChoiceDraft({ ...choiceDraft, visibility: 'private' })}>귓속말(같은 수신자)</button>
+        {!choiceDraft.recipient_ids.length && <span>원래 수신자를 복원할 수 없어 귓속말을 보낼 수 없습니다.</span>}
+        <button type="button" className="btn sm ghost" disabled={chat.generating} onClick={() => { setChoiceDraft(null); setWhisperIds(''); }}>공개 일반 입력으로 전환</button>
+      </div>}
       <div className={`composer${chat.generating ? ' is-generating' : ''}`}>
         {chat.generating && (
           <div className="gen-status" aria-live="polite">

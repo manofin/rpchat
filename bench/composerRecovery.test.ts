@@ -52,7 +52,7 @@ function composer(input: string, generating = false, ended_at: string | null = n
     },
     submit() {
       const deps = {
-        ...common, draft, stickyRef, grow: () => {},
+        ...common, draft, choiceDraft: null, setChoiceDraft: () => {}, stickyRef, grow: () => {},
         requestAnimationFrame: () => { frames++; },
         chat: { generating, detail: { conversation: { ended_at } }, send: (...args: Request) => {
           requests.push(args);

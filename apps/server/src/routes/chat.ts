@@ -1,5 +1,5 @@
 import { actorAudience } from '../prompt/composeBeat.js';
-import { audienceSchema, authorizeAudience, audienceOf, project, PUBLIC, GM, successfulObservationRows, speechObservation, observationText } from '../prompt/observation.js';
+import { choiceContext, audienceSchema, authorizeAudience, audienceOf, project, PUBLIC, GM, successfulObservationRows, speechObservation, observationText } from '../prompt/observation.js';
 import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -873,7 +873,13 @@ export function chatRoutes(ctx: Ctx) {
       // The chips ride on the UI block because it is the turn's last assistant row,
       // which is exactly what the client already reads them off (`isLastAssistant`).
       // No web change: the existing ChoiceChips contract is met as-is.
-      const uiRow = addBlock('ui', JSON.stringify(plan.ui), choices ? { choices } : {});
+      const context = observationEnabled ? choiceContext([
+        ...(userText.trim() ? [userAudience] : []),
+        ...finished.blocks.filter(b => (b.kind === 'narration' || b.kind === 'line') && sanitizeGeneratedContent(b.text).trim())
+          .map(b => b.kind === 'narration' ? planInput.narration_audience
+            : b.speaker_character_id ? actorAudience(planInput, b.speaker_character_id) : PUBLIC),
+      ]) : null;
+      const uiRow = addBlock('ui', JSON.stringify(plan.ui), choices ? { choices, ...(context ? { choices_context: context } : {}) } : {});
 
       // Order is fixed by bench/sceneCommitOnSuccess.test.ts: the snapshot is written
       // first because it is the authoritative record and the conversation row is a
@@ -1324,6 +1330,7 @@ export function chatRoutes(ctx: Ctx) {
       content: z.string().max(8000),
       inject_instruction: z.string().optional(),
       observation: audienceSchema.optional(),
+      choice: z.object({ message_id: z.string().min(1), index: z.number().int().nonnegative(), visibility: z.enum(['public', 'private']) }).strict().optional(),
     });
     app.post<{ Params: { id: string } }>('/api/conversations/:id/messages', async (req, reply) => {
       const conv = loadConversation(ctx, req.params.id);
@@ -1339,7 +1346,24 @@ export function chatRoutes(ctx: Ctx) {
       }
       if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
       let observation;
-      try { observation = validatedAudience(conv, p.data.observation); }
+      try {
+        let requested = p.data.observation;
+        if (p.data.choice) {
+          if (requested) throw new Error('선택지 공개 범위와 별도 수신자를 함께 지정할 수 없음');
+          const source = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ? AND conversation_id = ?', p.data.choice.message_id, conv.id);
+          if (!source || source.role !== 'assistant' || source.status !== 'complete' || !getPath(db, conv).some(m => m.id === source.id)) throw new Error('현재 분기의 저장된 선택지가 아님');
+          const meta = parseMessageMeta(source.meta_json);
+          if (!Array.isArray(meta.choices) || typeof meta.choices[p.data.choice.index] !== 'string') throw new Error('선택지를 찾을 수 없음');
+          if (p.data.choice.visibility === 'private') {
+            const context = meta.choices_context as { private_context?: boolean; recipient_ids?: unknown } | undefined;
+            if (!context?.private_context || !Array.isArray(context.recipient_ids) || !context.recipient_ids.length || !context.recipient_ids.every(id => typeof id === 'string')) throw new Error('원래 귓속말 수신자를 복원할 수 없음');
+            const roster = new Set(loadStoryRoster(db, conv).map(row => row.id));
+            if (context.recipient_ids.some(id => !roster.has(id))) throw new Error('원래 귓속말 수신자가 현재 참여자가 아님');
+            requested = { visibility: 'private', recipient_ids: context.recipient_ids, observer_ids: [] };
+          } else requested = PUBLIC;
+        }
+        observation = validatedAudience(conv, requested);
+      }
       catch (err) { return reply.code(400).send({ error: (err as Error).message }); }
       const user = insertMessage(db, conv.id, conv.head_message_id, 'user', content, 'complete', { observation });
       try {

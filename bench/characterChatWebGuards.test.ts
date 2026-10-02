@@ -171,7 +171,7 @@ t('8 composer and choice send use the message endpoint and preserve optional inj
   const current = streamHarness(async () => {});
   const pending: Array<Promise<boolean | undefined>> = [];
   const dependencies = {
-    draft: 'typed text', resolveShortcutSubmit, readShortcuts: () => [],
+    choiceDraft: null, setWhisperIds: () => {}, setChoiceDraft: () => {}, draft: 'typed text', resolveShortcutSubmit, readShortcuts: () => [],
     chat: { generating: false, detail: { conversation: { ended_at: null } },
       send: (text: string, options?: { inject_instruction?: string }) => {
         const promise = current.send(text, options);
