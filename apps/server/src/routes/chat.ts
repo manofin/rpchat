@@ -1,5 +1,5 @@
 import { actorAudience } from '../prompt/composeBeat.js';
-import { audienceSchema, authorizeAudience, audienceOf, project, PUBLIC, GM, successfulObservationRows, speechObservation } from '../prompt/observation.js';
+import { audienceSchema, authorizeAudience, audienceOf, project, PUBLIC, GM, successfulObservationRows, speechObservation, observationText } from '../prompt/observation.js';
 import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -39,7 +39,7 @@ import { parseInjectInstruction, attachInjectToIcPass, type InjectContext } from
 import { formatInstructionOverflow, profileInstructionText } from '../prompt/promptPolicy.js';
 import { dumpGenerationPrompt } from '../prompt/dump.js';
 import { extractChoices, renderProfileInstruction, sanitizeAssistantContent } from '../prompt/templates.js';
-import { estimateTokens, getCalibration, updateCalibration } from '../prompt/tokens.js';
+import { estimateTokens, estimateMessageTokens, getCalibration, updateCalibration } from '../prompt/tokens.js';
 import type { ConversationRow, InstructionOverflow, MessageRow, Scene } from '../types.js';
 import { loadConversation } from './conversations.js';
 import { fireEndingEvalJob } from '../endingJudge.js';
@@ -550,7 +550,7 @@ export function chatRoutes(ctx: Ctx) {
     const committedPath = successfulObservationRows(activePath);
     const observations = committedPath.filter(m => m.id !== sourceUser?.id &&
       !['ui','header','panel','thought'].includes(parseMessageMeta(m.meta_json).block_kind ?? ''))
-      .map(m => ({ text: parseMessageMeta(m.meta_json).observation_text ?? m.content, audience: audienceOf(m) }));
+      .map(m => ({ text: observationText(m, observationEnabled), audience: audienceOf(m) }));
 
     // Lock the conversation before the first await (scene-delta). /messages 409
     // and abort both read this registry; a later register left the wait uncancelable.
@@ -649,6 +649,41 @@ export function chatRoutes(ctx: Ctx) {
     // first — the passes receive the scene through `planInput` in memory, and no code
     // between here and the finish below reads `scene_json` back.
 
+    const fitObservationPass = (render: (input: BeatPlanInput) => string, completionMax: number, speakerName: string): string => {
+      const budget = icPromptBudget(completionMax);
+      const observer = speakerName ? cast.find(c => c.name === speakerName)?.id ?? '' : GM;
+      const selected: typeof observations = [];
+      let selectedTokens = 0;
+      if (observationEnabled) {
+        for (let i = observations.length - 1; i >= 0; i--) {
+          const text = project(observations[i].text, observations[i].audience, observer, true);
+          if (!text) continue;
+          const cost = estimateMessageTokens(text, injectCal);
+          if (cost > budget) continue;
+          if (selectedTokens + cost > budget) break;
+          selected.unshift(observations[i]);
+          selectedTokens += cost;
+        }
+      }
+      const candidate = { ...planInput, observations: observationEnabled ? selected : observations, recent_narrations: [...recentNarrations] };
+      for (;;) {
+        let failure: unknown;
+        try {
+          const prompt = attachInjectToIcPass(render(candidate), injectInstr, {
+            promptTokenBudget: budget - (observationEnabled ? 5 : 0), calibration: injectCal,
+            profileInstruction: icInstruction.forCall(speakerName),
+          }).prompt;
+          if (!observationEnabled || estimateMessageTokens(prompt, injectCal) <= budget) return prompt;
+          failure = new Error('관찰 맥락을 제외해도 현재 입력이 프롬프트 예산을 초과합니다');
+        } catch (err) { failure = err; }
+        if (!observationEnabled) throw failure;
+        // Drop whole oldest observations; mandatory input/inject/profile stay intact.
+        if (candidate.observations.length) candidate.observations.shift();
+        else if (candidate.recent_narrations.length) candidate.recent_narrations.shift();
+        else throw failure;
+      }
+    };
+
     const profileName = convNow.profile_name;
     const sse = openSse(reply);
 
@@ -694,7 +729,7 @@ export function chatRoutes(ctx: Ctx) {
       const nDeadline = withDeadline(PASS_N_TIMEOUT_MS, controller.signal);
       try {
         const out = await ctx.queue.run(() => ctx.model.complete({
-          model, messages: [{ role: 'user', content: attachInjectToIcPass(plan.pass_n, injectInstr, { promptTokenBudget: icPromptBudget(PASS_N_MAX_TOKENS), calibration: injectCal, profileInstruction: icInstruction.forCall('') }).prompt }],
+          model, messages: [{ role: 'user', content: fitObservationPass(input => planBeat(input).pass_n, PASS_N_MAX_TOKENS, '') }],
           temperature: 0.8, top_p: 0.95, max_tokens: PASS_N_MAX_TOKENS, stop: [],
           signal: nDeadline.signal,
         }), controller.signal);
@@ -714,7 +749,7 @@ export function chatRoutes(ctx: Ctx) {
       // IC Pass F: one shared attachInjectToIcPass hook (not format-local attach)
       const passFRaw = passFWith(planInput, plan, narration);
       const passF = passFRaw
-        ? attachInjectToIcPass(passFRaw, injectInstr, { promptTokenBudget: icPromptBudget(PASS_F_MAX_TOKENS), calibration: injectCal, profileInstruction: icInstruction.forCall(cast.find((c) => c.id === plan.focus.focus_id)?.name ?? '') }).prompt
+        ? fitObservationPass(input => passFWith(input, plan, narration)!, PASS_F_MAX_TOKENS, cast.find((c) => c.id === plan.focus.focus_id)?.name ?? '')
         : null;
       if (passF && plan.focus.focus_id) {
         const focusName = cast.find((c) => c.id === plan.focus.focus_id)?.name ?? '';
@@ -762,7 +797,7 @@ export function chatRoutes(ctx: Ctx) {
         const eDeadline = withDeadline(PASS_E_TIMEOUT_MS, controller.signal);
         try {
           const out = await ctx.queue.run(() => ctx.model.complete({
-            model, messages: [{ role: 'user', content: attachInjectToIcPass(e.prompt, injectInstr, { promptTokenBudget: icPromptBudget(AUX_MAX_TOKENS), calibration: injectCal, profileInstruction: icInstruction.forCall(e.name) }).prompt }],
+            model, messages: [{ role: 'user', content: fitObservationPass(input => planPassE(input, plan, narration, speechObservation(focusText, input.focus_audience, observationEnabled)).find(item => item.character_id === e.character_id)!.prompt, AUX_MAX_TOKENS, e.name) }],
             temperature: 0.85, top_p: 0.95, max_tokens: AUX_MAX_TOKENS, stop: [],
             signal: eDeadline.signal,
           }), controller.signal);

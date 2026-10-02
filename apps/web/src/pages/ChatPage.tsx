@@ -261,7 +261,9 @@ export function ChatPage({ id }: { id: string }) {
     setDraft('');
     requestAnimationFrame(grow);
     stickyRef.current = true;
-    void chat.send(text).then((ok) => {
+    void chat.send(text, chat.detail?.conversation.scene?.observation_filter && whisperIds.trim()
+      ? { observation: { visibility: 'private' as const, recipient_ids: whisperIds.split(',').map(x => x.trim()).filter(Boolean) } }
+      : undefined).then((ok) => {
       if (ok === false) {
         setDraft((cur) => (cur === '' ? text : cur));
         requestAnimationFrame(grow);

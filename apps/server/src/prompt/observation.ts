@@ -60,3 +60,11 @@ export function speechObservation(text: string, audience: Audience | undefined, 
   if (!enabled || audience?.visibility === 'private') return clean;
   return clean.split('\n').map(x => x.trim()).filter(x => /^(?:"[^"\n]+"|“[^”\n]+”|「[^」\n]+」|『[^』\n]+』)$/.test(x)).join('\n');
 }
+
+export function observationText(row: MessageRow, enabled: boolean): string {
+  const meta = parseMessageMeta(row.meta_json);
+  const text = meta.observation_text ?? row.content;
+  // OFF-era observation_text is a cache of raw output, not a public speech proof.
+  return enabled && row.role === 'assistant' && meta.block_kind === 'line'
+    ? speechObservation(text, audienceOf(row), true) : text;
+}
