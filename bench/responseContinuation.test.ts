@@ -92,6 +92,38 @@ async function main() {
       assert.ok(calls.at(-1)!.messages.every(m=>!m.content.includes('SECRET_ORCHID_825')));
       assert.deepEqual(parseMessageMeta(row(conv(f.id).head_message_id!).meta_json).observation,{visibility:'public'});
     });
+    await test('continuation reprojects OFF-era public lines and never declassifies saved whispers after filter OFF', async()=>{
+      const publicRoom = await fixture('beat');
+      run(db,'UPDATE conversations SET scene_json=? WHERE id=?',JSON.stringify({...publicRoom.scene,observation_filter:true}),publicRoom.id);
+      run(db,'UPDATE messages SET content=? WHERE id=?','"VISIBLE_SPEECH"\nprivate: OFF_ERA_CONTINUATION_SECRET',publicRoom.base.id);
+      output='"VISIBLE_CONTINUATION"';
+      const publicResponse=await send(publicRoom.id);
+      const publicRequest=calls.at(-1)!;
+      const whisperRoom=await fixture('beat',true);
+      run(db,'UPDATE conversations SET scene_json=? WHERE id=?',JSON.stringify({...whisperRoom.scene,observation_filter:false}),whisperRoom.id);
+      const whisperResponse=await send(whisperRoom.id);
+      const whisperAudience=parseMessageMeta(row(conv(whisperRoom.id).head_message_id!).meta_json).observation;
+      assert.match(publicResponse.body,/"type":"done"/);
+      assert.match(whisperResponse.body,/"type":"done"/);
+      assert.ok(publicRequest.messages.some(m=>m.content.includes('VISIBLE_SPEECH')));
+      assert.deepEqual({
+        rawPrivateReachedModel:publicRequest.messages.some(m=>m.content.includes('OFF_ERA_CONTINUATION_SECRET')),
+        savedWhisperAudience:whisperAudience,
+      },{
+        rawPrivateReachedModel:false,
+        savedWhisperAudience:{visibility:'private',recipient_ids:[a.id,'user'],observer_ids:[]},
+      });
+    });
+    await test('dialog continuation fails closed when a former beat branch contains saved private input', async()=>{
+      const f=await fixture('beat',true);
+      run(db,'UPDATE conversations SET scene_json=? WHERE id=?',JSON.stringify({...f.scene,format:'dialog',observation_filter:false}),f.id);
+      const before=db.prepare('SELECT * FROM messages WHERE conversation_id=?').all(f.id);
+      const count=calls.length;
+      const response=await send(f.id);
+      assert.equal(response.statusCode,422);
+      assert.equal(calls.length,count);
+      assert.deepEqual(db.prepare('SELECT * FROM messages WHERE conversation_id=?').all(f.id),before);
+    });
     await test('stale head, ended, active job, missing model and invalid payload refuse without writes or model calls',async()=>{
       const f=await fixture();const before=db.prepare('SELECT * FROM messages WHERE conversation_id=?').all(f.id);const count=calls.length;
       assert.equal((await send(f.id,f.user.id)).statusCode,409);
