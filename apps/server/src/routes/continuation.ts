@@ -3,7 +3,8 @@ import { z } from 'zod';
 import type { Ctx } from '../ctx.js';
 import { config, PROMPT_VERSION } from '../config.js';
 import { getSetting, nowIso, one, parseJson, run, uid } from '../db/index.js';
-import { getPath, insertMessage, messageOut, parseMessageMeta, setHead, updateMessage } from '../db/tree.js';
+import { readSceneSnapshot } from '../db/sceneBase.js';
+import { getPath, insertMessage, messageOut, parseMessageMeta, resolveTurnStart, setHead, updateMessage } from '../db/tree.js';
 import type { ChatMessage, ConversationRow, MessageMeta, MessageRow, Scene } from '../types.js';
 import { createChatEventStream, sanitizeGeneratedContent } from '../contracts/chatEventAdapter.js';
 import { buildPrompt, loadProfile, resolvePersona } from '../prompt/builder.js';
@@ -33,10 +34,15 @@ export function buildContinuation(ctx: Ctx, conv: ConversationRow, history: Mess
   const profile = loadProfile(db, conv.profile_name);
   const roster = loadStoryRoster(db, conv);
   const cast = storyCastForGenerate(conv, roster);
+  // Only the beat runtime has a per-speaker observation boundary. A format switch
+  // must not turn an existing whisper into a narrator/ordinary prompt.
+  if ((!cast?.length || scene.format === 'dialog') && history.some(row => audienceOf(row)?.visibility === 'private')) {
+    throw new Error('비공개 대화가 있는 분기는 비트 형식에서만 이어 쓸 수 있습니다.');
+  }
   const sourceMeta = parseMessageMeta(target.meta_json);
   const headMeta = parseMessageMeta(history.at(-1)!.meta_json);
   if (headMeta.generation_id && sourceMeta.generation_id !== headMeta.generation_id) throw new Error('현재 턴에 이어 쓸 본문이 없습니다.');
-  const continuationInput = `${CONTINUE}\n\n## 이어 쓸 직전 응답 (이미 표시한 본문)\n${sanitizeGeneratedContent(target.content)}`;
+  let continuationInput = `${CONTINUE}\n\n## 이어 쓸 직전 응답 (이미 표시한 본문)\n${sanitizeGeneratedContent(target.content)}`;
   const virtualHistory = [...history, previewDraftMessage(conv.id, conv.head_message_id, continuationInput)];
   if (!cast?.length) {
     let built = buildPrompt(db, conv, virtualHistory, config.model.contextTokens, ctx.resolvedModel());
@@ -73,11 +79,13 @@ export function buildContinuation(ctx: Ctx, conv: ConversationRow, history: Mess
   if (actor && !speaker) throw new Error('직전 화자를 복원할 수 없습니다.');
   const card = speaker ? one<import('../types.js').CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', speaker.id) : undefined;
   if (speaker && !card) throw new Error('직전 화자 카드를 복원할 수 없습니다.');
-  const enabled = scene.observation_filter === true;
+  const enabled = scene.observation_filter === true || history.some(row => audienceOf(row)?.visibility === 'private');
   const observer = actor ?? GM;
   const scope = audienceOf(target);
   // Unknown/private provenance must not become a public continuation.
-  if (enabled && !project(target.content, scope, observer, true)) throw new Error('직전 응답의 공개 범위를 복원할 수 없습니다.');
+  const targetText = project(observationText(target, enabled), scope, observer, enabled);
+  if (!targetText.trim()) throw new Error('직전 응답의 공개 범위를 복원할 수 없습니다.');
+  continuationInput = `${CONTINUE}\n\n## 이어 쓸 직전 응답 (이미 표시한 본문)\n${targetText}`;
   const cal = getCalibration(db);
   const maxTokens = responseMaxTokens(scene, 500);
   const available = config.model.contextTokens - maxTokens - 64;
@@ -125,6 +133,14 @@ export function continuationRoutes(ctx: Ctx) {
       const head = history.at(-1);
       if (!head || head.id !== input.data.messageId || head.role !== 'assistant' || !['complete', 'interrupted'].includes(head.status)) {
         return reply.code(409).send({ error: '현재 마지막 응답에서만 이어 쓸 수 있습니다.' });
+      }
+      const headMeta = parseMessageMeta(head.meta_json);
+      if (headMeta.beat_seq !== undefined || headMeta.chat_event_script) {
+        const turn = resolveTurnStart(db, head);
+        const start = turn.kind === 'multi' ? one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', turn.startId) : undefined;
+        if (!start || start.status !== 'complete' || !readSceneSnapshot(parseMessageMeta(start.meta_json))) {
+          return reply.code(409).send({ error: '중단된 새 턴은 재생성으로 복구해 주세요. 이어쓰기는 완료된 턴에만 덧붙일 수 있습니다.' });
+        }
       }
       let built: ReturnType<typeof buildContinuation>;
       try { built = buildContinuation(ctx, conv, history); }

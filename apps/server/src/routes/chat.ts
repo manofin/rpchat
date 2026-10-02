@@ -1,3 +1,4 @@
+import { sideModeRoutes } from './sideModes.js';
 import { continuationRoutes } from './continuation.js';
 import { responseLengthHint, responseMaxTokens } from '../prompt/responseLength.js';
 import { actorAudience } from '../prompt/composeBeat.js';
@@ -1315,6 +1316,7 @@ export function chatRoutes(ctx: Ctx) {
   }
   return async function plugin(app: FastifyInstance) {
     await app.register(continuationRoutes(ctx));
+    await app.register(sideModeRoutes(ctx));
     // inject-macro-client: allow empty/whitespace content when inject_instruction
     // parses to a real instruction (inject-alone). Still reject empty when no inject.
     // Attach/budget untouched. DB insertMessage already allows '' (assistant streaming).
