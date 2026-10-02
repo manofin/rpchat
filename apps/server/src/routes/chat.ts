@@ -1,5 +1,5 @@
 import { actorAudience } from '../prompt/composeBeat.js';
-import { audienceSchema, authorizeAudience, audienceOf, project, PUBLIC, GM } from '../prompt/observation.js';
+import { audienceSchema, authorizeAudience, audienceOf, project, PUBLIC, GM, successfulObservationRows } from '../prompt/observation.js';
 import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -547,9 +547,8 @@ export function chatRoutes(ctx: Ctx) {
     const userAudience = audienceOf(sourceUser);
     const observationEnabled = scene.observation_filter === true;
     const activePath = getPath(db, convNow);
-    const successful = new Set(activePath.filter(m => !!parseMessageMeta(m.meta_json).scene_state).map(m => parseMessageMeta(m.meta_json).generation_id));
-    const observations = activePath.filter(m => m.id !== sourceUser?.id && m.status === 'complete' &&
-      (m.role === 'user' || successful.has(parseMessageMeta(m.meta_json).generation_id)) &&
+    const committedPath = successfulObservationRows(activePath);
+    const observations = committedPath.filter(m => m.id !== sourceUser?.id &&
       !['ui','header','panel','thought'].includes(parseMessageMeta(m.meta_json).block_kind ?? ''))
       .map(m => ({ text: m.content, audience: audienceOf(m) }));
 
@@ -617,8 +616,8 @@ export function chatRoutes(ctx: Ctx) {
     // reason — after a regenerate or a swipe the abandoned sibling is still in the
     // table, and feeding Pass N a narration the user never saw would make it avoid
     // repeating something that is not there.
-    const recentNarrations = getPath(db, convNow)
-      .filter((m) => m.role === 'assistant' && parseMessageMeta(m.meta_json).block_kind === 'narration' && (!observationEnabled || (m.status === 'complete' && successful.has(parseMessageMeta(m.meta_json).generation_id))))
+    const recentNarrations = (observationEnabled ? committedPath : activePath)
+      .filter((m) => m.role === 'assistant' && parseMessageMeta(m.meta_json).block_kind === 'narration')
       .slice(-PASS_N_RECENT_NARRATIONS)
       .map((m) => project(m.content, audienceOf(m), GM, observationEnabled))
       .filter(Boolean);

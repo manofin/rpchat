@@ -1,3 +1,4 @@
+import { readSceneSnapshot } from '../db/sceneBase.js';
 import { z } from 'zod';
 import { parseMessageMeta } from '../db/messageMeta.js';
 import type { MessageRow } from '../types.js';
@@ -37,4 +38,16 @@ export function inheritedAudience(audiences: Array<Audience | undefined>, actor:
   if (!privateInputs.length) return PUBLIC;
   // A model exposed to secrets cannot declare its answer public, even via visible_action.
   return { visibility: 'private', recipient_ids: [actor, USER], observer_ids: [] };
+}
+
+export function successfulObservationRows(rows: MessageRow[]): MessageRow[] {
+  const successful = new Set(rows.filter(m => m.status === 'complete' && readSceneSnapshot(parseMessageMeta(m.meta_json)))
+    .map(m => parseMessageMeta(m.meta_json).generation_id).filter((id): id is string => typeof id === 'string'));
+  const users = new Set<string>();
+  let userId: string | undefined;
+  for (const row of rows) {
+    if (row.role === 'user') userId = row.id;
+    else if (userId && successful.has(parseMessageMeta(row.meta_json).generation_id ?? '')) users.add(userId);
+  }
+  return rows.filter(m => m.status === 'complete' && (m.role === 'user' ? users.has(m.id) : successful.has(parseMessageMeta(m.meta_json).generation_id ?? '')));
 }

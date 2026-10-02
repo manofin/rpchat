@@ -212,6 +212,7 @@ export interface Persona {
 
 export interface Scene {
   observation_filter?: boolean;
+  observation_legacy_classified?: boolean;
   place?: string;
   time?: string;
   goal?: string;

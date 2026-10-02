@@ -100,6 +100,10 @@ async function main() {
   });
   const legacy = 'UNCLASSIFIED_SECRET_9485';
   await t('ON contaminated historical row is fail-closed, OFF keeps legacy context', async () => {
+    const detail = await api('GET', `/api/conversations/${conv.id}`);
+    const committed = detail.messages.findLast((m:any)=>m.meta?.block_kind==='narration');
+    db.prepare('UPDATE messages SET content=?,meta_json=? WHERE id=?').run(legacy,JSON.stringify({...committed.meta,observation:undefined}),committed.id);
+    assert.ok((db.prepare('SELECT content FROM messages WHERE id=?').get(committed.id) as any).content.includes(legacy));
     const head=(db.prepare('SELECT head_message_id FROM conversations WHERE id=?').get(conv.id) as any).head_message_id;
     const row=insertMessage(db,conv.id,head,'assistant',legacy,'complete',{block_kind:'narration'});
     db.prepare('UPDATE messages SET meta_json=? WHERE id=?').run(JSON.stringify({block_kind:'narration'}),row.id);
@@ -122,6 +126,21 @@ async function main() {
     const r=await app.inject({method:'PATCH',url:`/api/conversations/${conv.id}`,payload:{scene:{observation_filter:true},classify_legacy_public:true}});
     assert.equal(r.statusCode,400);
     await patch({scene:{observation_filter:true}});
+  });
+  await t('unsuccessful-turn observations never enter subsequent prompts', async () => {
+    const head=(db.prepare('SELECT head_message_id FROM conversations WHERE id=?').get(conv.id) as any).head_message_id;
+    const u=insertMessage(db,conv.id,head,'user','FAILED_USER_9731','complete',{observation:{visibility:'public'}});
+    const row=insertMessage(db,conv.id,u.id,'assistant','FAILED_ASSISTANT_9731','complete',{block_kind:'narration',generation_id:'failed-generation',beat_seq:0,observation:{visibility:'public'}});
+    setHead(db,conv.id,row.id);
+    await send({content:'세라, 다음.'});
+    for(const x of calls) { assert.ok(!x.text.includes('FAILED_USER_9731')); assert.ok(!x.text.includes('FAILED_ASSISTANT_9731')); }
+  });
+  await t('room opt-in and one-time classification survive branch selection; dialog refuses unsupported boundary', async () => {
+    const r=await api('POST', `/api/messages/${privateTurn.detail.messages.at(-1).id}/select`);
+    assert.equal(r.conversation.scene.observation_filter,true);
+    assert.equal(r.conversation.scene.observation_legacy_classified,true);
+    const invalid=await app.inject({method:'PATCH',url:`/api/conversations/${conv.id}`,payload:{scene:{format:'dialog'}}});
+    assert.equal(invalid.statusCode,400);
   });
   await t('regenerate and branch do not restore abandoned private turn knowledge', async () => {
     focusOutput = `"ABANDONED_PRIVATE_4932"`;
