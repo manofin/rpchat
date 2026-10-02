@@ -1,5 +1,5 @@
 import { actorAudience } from '../prompt/composeBeat.js';
-import { audienceSchema, authorizeAudience, audienceOf, project, PUBLIC, GM, successfulObservationRows } from '../prompt/observation.js';
+import { audienceSchema, authorizeAudience, audienceOf, project, PUBLIC, GM, successfulObservationRows, speechObservation } from '../prompt/observation.js';
 import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -550,7 +550,7 @@ export function chatRoutes(ctx: Ctx) {
     const committedPath = successfulObservationRows(activePath);
     const observations = committedPath.filter(m => m.id !== sourceUser?.id &&
       !['ui','header','panel','thought'].includes(parseMessageMeta(m.meta_json).block_kind ?? ''))
-      .map(m => ({ text: m.content, audience: audienceOf(m) }));
+      .map(m => ({ text: parseMessageMeta(m.meta_json).observation_text ?? m.content, audience: audienceOf(m) }));
 
     // Lock the conversation before the first await (scene-delta). /messages 409
     // and abort both read this registry; a later register left the wait uncancelable.
@@ -757,7 +757,7 @@ export function chatRoutes(ctx: Ctx) {
 
       // Pass E — each approved extra, serially (queue concurrency is 1 anyway).
       const extraTexts: Record<string, string> = {};
-      for (const e of planPassE(planInput, plan, narration, focusText)) {
+      for (const e of planPassE(planInput, plan, narration, speechObservation(focusText, planInput.focus_audience, observationEnabled))) {
         const tE = Date.now();
         const eDeadline = withDeadline(PASS_E_TIMEOUT_MS, controller.signal);
         try {
@@ -788,6 +788,7 @@ export function chatRoutes(ctx: Ctx) {
           status: 'complete',
           meta: {
             block_kind: 'line', beat_seq: focusSeq, observation: planInput.focus_audience,
+            observation_text: speechObservation(block?.text ?? focusText, planInput.focus_audience, observationEnabled),
             speaker_character_id: plan.focus.focus_id ?? undefined,
             speaker_name: cast.find((c) => c.id === plan.focus.focus_id)?.name ?? undefined,
             image_url: block?.asset_path ?? undefined,
@@ -800,6 +801,7 @@ export function chatRoutes(ctx: Ctx) {
         if (!block) continue;
         send(addBlock('line', block.text, {
           observation: observationEnabled ? actorAudience(planInput, extra.character_id) : PUBLIC,
+          observation_text: speechObservation(block.text, observationEnabled ? actorAudience(planInput, extra.character_id) : PUBLIC, observationEnabled),
           speaker_character_id: extra.character_id, speaker_name: extra.name,
           image_url: block.asset_path ?? undefined,
         }));

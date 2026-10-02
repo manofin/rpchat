@@ -1,3 +1,4 @@
+import { runEndingEvalJob } from '../apps/server/src/endingJudge.js';
 import { audienceOf } from '../apps/server/src/prompt/observation.js';
 /** Fixed synthetic counterexamples on the shipped beat route. Temp DB, mock adapter only.
  * This protects explicit thought syntax, not whisper recipients or arbitrary action semantics.
@@ -88,6 +89,13 @@ async function main() {
     assert.ok(calls.filter(x=>x.pass==='e').some(x=>x.text.includes('[비공개 대화가 있었다.]')));
     console.log('WHISPER_ADAPTER_REQUESTS='+JSON.stringify(calls.map(x=>({pass:x.pass,messages:x.p.messages}))));
   });
+  await t('background GM judge excludes private body by default', async () => {
+    db.prepare('UPDATE conversations SET story_endings_snapshot=? WHERE id=?').run(JSON.stringify([{id:'e',title:'fixture',conditions:{min_turns:1,narrative_hint:'PUBLIC_HINT'}}]),conv.id);
+    let actual='';
+    await runEndingEvalJob({db,modelName:'mock',complete:async p=>{actual=textOf(p);return result('{}');},log:()=>{}},conv.id);
+    assert.ok(actual.includes('PUBLIC_HINT')); assert.ok(!actual.includes(SECRET));
+    db.prepare('UPDATE conversations SET story_endings_snapshot=? WHERE id=?').run('[]',conv.id);
+  });
   await t('model secret/free visible_action cannot be promoted through extras or later narration', async () => {
     focusOutput = `"${SECRET}" visible_action: ${SECRET}`;
     const sent = await send({content:`나리, ${SECRET}`,observation:{visibility:'private',recipient_ids:[a.id]}});
@@ -97,6 +105,15 @@ async function main() {
     focusOutput='"SAFE"';
     await send({content:'세라, 계속해.'});
     for(const x of calls.filter(x=>['delta','n','f'].includes(x.pass))) assert.ok(!x.text.includes(SECRET));
+  });
+  await t('public model speech does not promote free visible_action/private fields', async () => {
+    const freeCode = 'FREE_MODEL_PRIVATE_5189';
+    focusOutput=`"PUBLIC_QUOTED_SPEECH"\nvisible_action: ${freeCode}\nprivate: ${freeCode}`;
+    await send({content:'하연, 모두에게 인사해.'});
+    for(const x of calls.filter(x=>x.pass==='e')) { assert.ok(!x.text.includes(freeCode)); assert.ok(x.text.includes('PUBLIC_QUOTED_SPEECH')); }
+    focusOutput='"SAFE"';
+    await send({content:'세라, 다음.'});
+    for(const x of calls.filter(x=>['n','f','e'].includes(x.pass))) assert.ok(!x.text.includes(freeCode));
   });
   const legacy = 'UNCLASSIFIED_SECRET_9485';
   await t('ON contaminated historical row is fail-closed, OFF keeps legacy context', async () => {

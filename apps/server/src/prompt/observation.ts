@@ -51,3 +51,12 @@ export function successfulObservationRows(rows: MessageRow[]): MessageRow[] {
   }
   return rows.filter(m => m.status === 'complete' && (m.role === 'user' ? users.has(m.id) : successful.has(parseMessageMeta(m.meta_json).generation_id ?? '')));
 }
+
+// Only complete, explicitly quoted speech is a public observation from F/E.
+// Free action prose and model-written private/visible_action fields stay on screen,
+// but have no public observation contract. Pass N has its own public narration slot.
+export function speechObservation(text: string, audience: Audience | undefined, enabled: boolean): string {
+  const clean = sanitizeGeneratedContent(text).trim();
+  if (!enabled || audience?.visibility === 'private') return clean;
+  return clean.split('\n').map(x => x.trim()).filter(x => /^(?:"[^"\n]+"|“[^”\n]+”|「[^」\n]+」|『[^』\n]+』)$/.test(x)).join('\n');
+}

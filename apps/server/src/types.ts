@@ -264,6 +264,7 @@ export interface ConversationRow {
 export type MessageStatus = 'streaming' | 'complete' | 'interrupted' | 'error';
 
 export interface MessageMeta {
+  observation_text?: string;
   observation?: import('./prompt/observation.js').Audience;
   chat_event_version?: 1;
   events?: ChatEvent[];

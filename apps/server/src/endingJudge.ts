@@ -1,3 +1,5 @@
+import { audienceOf, project, GM, successfulObservationRows } from './prompt/observation.js';
+import { parseMessageMeta } from './db/messageMeta.js';
 /**
  * ADR-F8h Slice 3 (story-ending-eval-llm): narrative_hint LLM 보조 판정.
  *
@@ -206,7 +208,9 @@ async function runEndingEvalInner(exec: EvalJobCtx, conversationId: string): Pro
   const hintOf = (id: string) => endings.find((e) => e.id === id)?.conditions?.narrative_hint;
   const targets = selectNarrativeCandidates(ranked.suggestions, hintOf);
   if (!targets.length) return; // rule 통과 0 또는 hint 0 → LLM 호출 0 보장.
-  const path = getPath(db, conv);
+  const rawPath = getPath(db, conv);
+  const enabled = JSON.parse(conv.scene_json || '{}').observation_filter === true;
+  const path = enabled ? successfulObservationRows(rawPath).map(m => ({ ...m, content: project(parseMessageMeta(m.meta_json).observation_text ?? m.content, audienceOf(m), GM, true) })).filter(m => m.content) : rawPath;
   const turns = buildJudgeContext(path);
   const { verdicts, llmCalled, latencyMs } = await judgeNarratives(
     { complete: exec.complete, model: exec.modelName, schedule: exec.schedule, signal: exec.signal },
