@@ -640,7 +640,7 @@ export function chatRoutes(ctx: Ctx) {
       ...storyFocusPlanFields(convNow),
     };
     planInput.narration_audience = observationEnabled ? actorAudience(planInput, GM) : PUBLIC;
-    const plan = planBeat(planInput);
+    const plan = planBeat(observationEnabled ? { ...planInput, observations: [] } : planInput);
     planInput.focus_audience = observationEnabled && plan.focus.focus_id ? actorAudience(planInput, plan.focus.focus_id) : PUBLIC;
 
     // scene-commit-on-success (ADR-F9c §2): the applied scene is NOT written here.
@@ -649,9 +649,8 @@ export function chatRoutes(ctx: Ctx) {
     // first — the passes receive the scene through `planInput` in memory, and no code
     // between here and the finish below reads `scene_json` back.
 
-    const fitObservationPass = (render: (input: BeatPlanInput) => string, completionMax: number, speakerName: string): string => {
+    const fitObservationPass = (render: (input: BeatPlanInput) => string, completionMax: number, speakerName: string, observer: string = GM): string => {
       const budget = icPromptBudget(completionMax);
-      const observer = speakerName ? cast.find(c => c.name === speakerName)?.id ?? '' : GM;
       const selected: typeof observations = [];
       let selectedTokens = 0;
       if (observationEnabled) {
@@ -747,9 +746,9 @@ export function chatRoutes(ctx: Ctx) {
       // failure is a turn failure.
       let focusText = '';
       // IC Pass F: one shared attachInjectToIcPass hook (not format-local attach)
-      const passFRaw = passFWith(planInput, plan, narration);
+      const passFRaw = observationEnabled ? plan.pass_f : passFWith(planInput, plan, narration);
       const passF = passFRaw
-        ? fitObservationPass(input => passFWith(input, plan, narration)!, PASS_F_MAX_TOKENS, cast.find((c) => c.id === plan.focus.focus_id)?.name ?? '')
+        ? fitObservationPass(input => passFWith(input, plan, narration)!, PASS_F_MAX_TOKENS, cast.find((c) => c.id === plan.focus.focus_id)?.name ?? '', plan.focus.focus_id!)
         : null;
       if (passF && plan.focus.focus_id) {
         const focusName = cast.find((c) => c.id === plan.focus.focus_id)?.name ?? '';
@@ -792,12 +791,12 @@ export function chatRoutes(ctx: Ctx) {
 
       // Pass E — each approved extra, serially (queue concurrency is 1 anyway).
       const extraTexts: Record<string, string> = {};
-      for (const e of planPassE(planInput, plan, narration, speechObservation(focusText, planInput.focus_audience, observationEnabled))) {
+      for (const e of planPassE(observationEnabled ? { ...planInput, observations: [] } : planInput, plan, narration, speechObservation(focusText, planInput.focus_audience, observationEnabled))) {
         const tE = Date.now();
         const eDeadline = withDeadline(PASS_E_TIMEOUT_MS, controller.signal);
         try {
           const out = await ctx.queue.run(() => ctx.model.complete({
-            model, messages: [{ role: 'user', content: fitObservationPass(input => planPassE(input, plan, narration, speechObservation(focusText, input.focus_audience, observationEnabled)).find(item => item.character_id === e.character_id)!.prompt, AUX_MAX_TOKENS, e.name) }],
+            model, messages: [{ role: 'user', content: fitObservationPass(input => planPassE(input, plan, narration, speechObservation(focusText, input.focus_audience, observationEnabled)).find(item => item.character_id === e.character_id)!.prompt, AUX_MAX_TOKENS, e.name, e.character_id) }],
             temperature: 0.85, top_p: 0.95, max_tokens: AUX_MAX_TOKENS, stop: [],
             signal: eDeadline.signal,
           }), controller.signal);
