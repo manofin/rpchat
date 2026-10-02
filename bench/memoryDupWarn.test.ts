@@ -38,7 +38,9 @@ async function main() {
   });
 
   await t('builder inject path untouched (pinned-only SELECT present; no dup-warn)', () => {
-    const src = fs.readFileSync('apps/server/src/prompt/builder.ts', 'utf8');
+    const builder = fs.readFileSync('apps/server/src/prompt/builder.ts', 'utf8');
+    assert.match(builder, /selectContext\(db, conv, history, budgets, cal\)/);
+    const src = builder + fs.readFileSync('apps/server/src/prompt/contextSelection.ts', 'utf8');
     assert.match(
       src,
       /SELECT \* FROM memories WHERE status = 'pinned'[\s\S]*scope = 'conversation'[\s\S]*scope = 'character'/,

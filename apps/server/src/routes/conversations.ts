@@ -11,6 +11,10 @@ import {
 } from '../db/generation.js';
 import { deepestLeaf, getPath, insertMessage, messageOut, readablePreview, setHead, updateMessage } from '../db/tree.js';
 import { buildPrompt, resolvePersona } from '../prompt/builder.js';
+import { previewDialog } from '../prompt/dialogPreview.js';
+import { previewDraftMessage } from '../prompt/promptHistory.js';
+import { dialogContextSchema, invalidAssignmentAnchor } from '../prompt/dialogActorContext.js';
+import { parseInjectInstruction } from '../prompt/injectContext.js';
 import { substitute } from '../prompt/templates.js';
 import { catalogFromStory } from '../prompt/sceneCatalog.js';
 import { castFromCharacters, castFromParticipants, withConversationStarter, type PartyTagRow } from '../prompt/tagsCatalog.js';
@@ -23,6 +27,7 @@ import { evalRoomEnding, suggestEndings } from '../endingEval.js';
 import { materializeSceneAtHead } from '../db/sceneBase.js';
 
 const sceneSchema = z.object({
+  dialog_context: dialogContextSchema.optional(),
   place: z.string().max(300).optional(),
   time: z.string().max(300).optional(),
   goal: z.string().max(500).optional(),
@@ -200,6 +205,7 @@ export function conversationRoutes(ctx: Ctx) {
       const p = createSchema.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
       const d = p.data;
+      if (d.scene?.dialog_context?.entries.length) return reply.code(400).send({ error: 'dialog_context anchor는 대화 생성 후 저장된 현재 분기 메시지를 지정해야 함' });
       const character = one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ? AND archived = 0', d.characterId);
       if (!character) return reply.code(404).send({ error: 'character not found' });
       if (d.personaId && !one(db, 'SELECT 1 FROM personas WHERE id = ?', d.personaId)) return reply.code(404).send({ error: 'persona not found' });
@@ -408,6 +414,9 @@ export function conversationRoutes(ctx: Ctx) {
       if (d.scene && ctx.queue.activeList.some((g) => g.conversationId === conv.id)) {
         return reply.code(409).send({ error: '생성 중에는 장면 상태를 수정할 수 없음' });
       }
+      if (d.scene?.dialog_context && invalidAssignmentAnchor(db, conv.id, new Set(getPath(db, conv).map(m => m.id)), d.scene.dialog_context)) {
+        return reply.code(400).send({ error: 'dialog_context anchor는 저장된 현재 대화의 활성 분기 메시지여야 함' });
+      }
       if (d.personaId && !one(db, 'SELECT 1 FROM personas WHERE id = ?', d.personaId)) return reply.code(404).send({ error: 'persona not found' });
       // snapshot lock: personaId set → copy live row into snapshot columns in the same statement.
       // Reapply = PATCH the same personaId again.
@@ -514,16 +523,24 @@ export function conversationRoutes(ctx: Ctx) {
     });
 
     // ---- 프롬프트 미리보기 (모델 호출 없음) ----
-    app.get<{ Params: { id: string }; Querystring: { draft?: string } }>('/api/conversations/:id/prompt-preview', async (req, reply) => {
+    app.get<{ Params: { id: string }; Querystring: { draft?: string; regenerate?: string; branch?: string; inject_instruction?: string } }>('/api/conversations/:id/prompt-preview', async (req, reply) => {
       const conv = loadConversation(ctx, req.params.id);
       if (!conv) return reply.code(404).send({ error: 'not found' });
-      const history = getPath(db, conv);
-      if (req.query.draft) {
-        history.push({
-          id: 'draft', conversation_id: conv.id, parent_id: conv.head_message_id, role: 'user', content: req.query.draft, status: 'complete', meta_json: '{}', bookmarked: 0, created_at: nowIso(),
-        });
+      const inject = parseInjectInstruction(req.query.inject_instruction);
+      if (!inject.ok) return reply.code(400).send({ error: inject.error });
+      if ((JSON.parse(conv.scene_json || '{}') as Scene).format === 'dialog') {
+        if (req.query.regenerate && (req.query.branch || req.query.draft !== undefined)) return reply.code(400).send({ error: 'conflicting preview mode' });
+        if (req.query.branch && req.query.draft === undefined) return reply.code(400).send({ error: 'branch preview requires draft' });
+        try {
+          const preview = previewDialog(db, conv, config.model.contextTokens, ctx.resolvedModel(), { ...req.query, inject: inject.ctx });
+          if (preview) return preview;
+        } catch (err) { return reply.code(400).send({ error: (err as Error).message }); }
       }
-      const built = buildPrompt(db, conv, history, config.model.contextTokens, ctx.resolvedModel(), undefined, { diagnostics: true });
+      const history = getPath(db, conv);
+      if (req.query.draft !== undefined) {
+        history.push(previewDraftMessage(conv.id, conv.head_message_id, req.query.draft));
+      }
+      const built = buildPrompt(db, conv, history, config.model.contextTokens, ctx.resolvedModel(), undefined, { diagnostics: true, inject: inject.ctx });
       return { messages: built.messages, budget: built.budget, model: built.model, profile: built.profile, stop: built.stop, isOoc: built.isOoc };
     });
 

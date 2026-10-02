@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { del, get, patch, post } from '../lib/api';
 import { navigate } from '../lib/router';
+import { readShortcuts, resolveShortcutSubmit } from '../lib/shortcutMacro';
 import { currentApprovedState, diffWords, priorApprovedWhole } from '../lib/summaryDiff';
 import type { BudgetReport, Memory, PromptPreview, Summary } from '../types';
 import { BottomSheet, useUi } from '../components/ui';
@@ -48,8 +49,17 @@ function BudgetTab({ conversationId, draft, open }: { conversationId: string; dr
 
   useEffect(() => {
     if (!open) return;
-    const q = draft.trim() ? `?draft=${encodeURIComponent(draft.trim())}` : '';
-    get<PromptPreview>(`/api/conversations/${conversationId}/prompt-preview${q}`).then(setPreview).catch((e) => setErr((e as Error).message));
+    const resolved = resolveShortcutSubmit(draft, readShortcuts());
+    const params = new URLSearchParams();
+    if (draft.trim()) params.set('draft', resolved.content.trim());
+    if (resolved.inject_instruction) params.set('inject_instruction', resolved.inject_instruction);
+    const q = params.size ? `?${params}` : '';
+    let active = true;
+    setErr(null);
+    setPreview(null);
+    get<PromptPreview>(`/api/conversations/${conversationId}/prompt-preview${q}`)
+      .then((p) => { if (active) setPreview(p); }).catch((e) => { if (active) setErr((e as Error).message); });
+    return () => { active = false; };
   }, [open, conversationId, draft]);
 
   if (err) return <div className="banner err">{err}</div>;
@@ -61,6 +71,8 @@ function BudgetTab({ conversationId, draft, open }: { conversationId: string; dr
         <span className="small muted">모델 {preview.model} · 프로필 {preview.profile.name}</span>
         <span className="small">{b.est_total} / {b.available}t</span>
       </div>
+      {preview.scene_delta?.pending && <div className="banner warn" style={{ marginBottom: 8 }}>현재 분기의 장면으로 계산했습니다. 생성 중 장면이 바뀌면 대본 프롬프트와 예산도 달라질 수 있습니다.</div>}
+      {b.instruction_overflow && <div className="banner err" style={{ marginBottom: 8 }}>현재 입력과 고정 규칙이 컨텍스트 예산을 초과했습니다.</div>}
       <BudgetBars budget={b} />
       <div className="small muted" style={{ marginTop: 8 }}>
         컨텍스트 {b.context_tokens}t 중 응답용 {b.reply_reserve}t 예약 · 보정계수 ×{b.calibration.toFixed(2)}

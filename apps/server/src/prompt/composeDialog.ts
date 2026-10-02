@@ -55,6 +55,7 @@ export type DialogPlanInput = {
   content_policy?: string;
   story_room?: boolean;
   participant_ids?: string[] | null;
+  separate_user_input?: boolean;
 };
 
 export type DialogPlan = {
@@ -163,6 +164,7 @@ export function planDialogBeat(input: DialogPlanInput): DialogPlan {
       info,
       userName: userNameOf(input),
       userText: input.user_text,
+      includeUserInput: !input.separate_user_input,
       ambientNames: ambient.map((a) => a.name),
       contentPolicy: input.content_policy,
     }),

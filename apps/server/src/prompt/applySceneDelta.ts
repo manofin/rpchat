@@ -91,6 +91,7 @@ function cloneScene(s: Scene): Scene {
     flags: s.flags ? s.flags.map((f) => ({ ...f })) : undefined,
     present_ids: s.present_ids ? [...s.present_ids] : undefined,
   };
+  if (s.dialog_context) out.dialog_context = JSON.parse(JSON.stringify(s.dialog_context));
   // f9-beat-render: the 0012 keys are nested. A shallow spread would let a caller
   // mutate the *input* scene through the returned clone, which is exactly the bug
   // that makes an archive snapshot silently equal the post-apply state.

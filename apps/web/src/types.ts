@@ -388,6 +388,7 @@ export interface ModelProfile {
 }
 
 export interface BudgetReport {
+  instruction_overflow?: { profile: string; instruction_tokens: number; required: number; available: number };
   context_tokens: number;
   reply_reserve: number;
   available: number;
@@ -415,6 +416,8 @@ export interface BudgetDiagnostics {
 }
 
 export interface PromptPreview {
+  path?: 'dialog';
+  scene_delta?: { pending: boolean; messages: Array<{ role: string; content: string }> };
   messages: Array<{ role: string; content: string }>;
   budget: BudgetReport;
   model: string;

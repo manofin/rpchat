@@ -55,6 +55,7 @@ export function renderPassS(input: {
   info: string | null;
   userName: string;
   userText: string;
+  includeUserInput?: boolean;
   ambientNames?: string[];
   contentPolicy?: string;
 }): string {
@@ -88,9 +89,7 @@ export function renderPassS(input: {
     ...(input.info ? [input.info] : []),
     ...(input.scene.beat_goal ? [`- 이 턴이 끝나야 하는 것: ${input.scene.beat_goal}`] : []),
     '',
-    `## ${input.userName}의 입력`,
-    input.userText,
-    '',
+    ...(input.includeUserInput === false ? [] : [`## ${input.userName}의 입력`, input.userText, '']),
     '## 출력 형식',
     '- 서술은 그냥 문단으로 쓴다.',
     `- 대사는 반드시 \`이름${SPEAKER_SEP}대사\` 형식의 한 줄로 쓴다. 예: \`${names[0] ?? '이름'}${SPEAKER_SEP}그래서, 어떻게 할 거야?\``,
