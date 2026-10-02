@@ -127,6 +127,8 @@ function dropOldestRecentNarrationLine(prompt: string): string | null {
 }
 
 export type AttachInjectToIcPassOpts = {
+  /** Structured observation callers own optional-context selection; never scan their completed prompt for shrinkable headings. */
+  allowRecentNarrationShrink?: boolean;
   /** Prompt-side token budget for this IC pass (context − completion max − margin). */
   promptTokenBudget: number;
   /** Token calibration (default 1.0; callers may pass getCalibration(db)). */
@@ -165,6 +167,12 @@ export function attachInjectToIcPass(
   // could capture the inject slot. Both helpers are identity on null/''.
   let current = insertProfileInstructionBeforeRules(prependInjectToRules(prompt, instruction), profileBlock);
   let droppedRecent = 0;
+
+  if (opts.allowRecentNarrationShrink === false) {
+    const est = estimateTokens(current, cal);
+    if (est > budget) throw new Error(`attachInjectToIcPass: structured prompt exceeds budget (est=${est} budget=${budget}); mandatory input, profile and inject are preserved`);
+    return { prompt: current, droppedRecent };
+  }
 
   while (estimateTokens(current, cal) > budget) {
     const next = dropOldestRecentNarrationLine(current);

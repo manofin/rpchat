@@ -670,6 +670,7 @@ export function chatRoutes(ctx: Ctx) {
         try {
           const prompt = attachInjectToIcPass(render(candidate), injectInstr, {
             promptTokenBudget: budget - (observationEnabled ? 5 : 0), calibration: injectCal,
+            allowRecentNarrationShrink: !observationEnabled,
             profileInstruction: icInstruction.forCall(speakerName),
           }).prompt;
           if (!observationEnabled || estimateMessageTokens(prompt, injectCal) <= budget) return prompt;
