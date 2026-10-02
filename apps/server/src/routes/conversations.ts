@@ -1,3 +1,5 @@
+import { storyCastForGenerate } from '../prompt/composeBeat.js';
+import { loadStoryRoster } from '../prompt/dialogContext.js';
 import { PUBLIC, audienceOf, successfulObservationRows } from '../prompt/observation.js';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -362,6 +364,7 @@ export function conversationRoutes(ctx: Ctx) {
         personaRelationshipSnap = src.relationship ?? null;
         personaAppliedAt = t;
       }
+      if (parseJson<Scene>(sceneJson, {}).observation_filter && !partyOpening) return reply.code(400).send({ error: '관찰 필터는 참여자가 둘 이상인 party 방에서만 지원합니다' });
       if (parseJson<Scene>(sceneJson, {}).observation_filter && parseJson<Scene>(sceneJson, {}).format === 'dialog') return reply.code(400).send({ error: '관찰 필터는 beat 형식에서만 지원합니다' });
       db.transaction(() => {
         run(
@@ -416,6 +419,7 @@ export function conversationRoutes(ctx: Ctx) {
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
       const d = p.data;
       const requestedScene = { ...parseJson<Scene>(conv.scene_json, {}), ...d.scene };
+      if (requestedScene.observation_filter && !storyCastForGenerate(conv, loadStoryRoster(db, conv))) return reply.code(400).send({ error: '관찰 필터는 참여자가 둘 이상인 party 방에서만 지원합니다' });
       if (requestedScene.observation_filter && requestedScene.format === 'dialog') return reply.code(400).send({ error: '관찰 필터는 beat 형식에서만 지원합니다. dialog로 바꾸려면 필터를 먼저 끄세요.' });
 
       if (d.scene && ctx.queue.activeList.some((g) => g.conversationId === conv.id)) {

@@ -72,6 +72,11 @@ async function main() {
   focusOutput = '"FOCUS_SAFE_REPLY"'; narrationOutput = 'NEW_PUBLIC_NARRATION';
   const patch = (body:object) => api('PATCH', `/api/conversations/${conv.id}`, body);
   await patch({scene:{observation_filter:true}});
+  await t('API refuses opt-in outside the implemented party path', async () => {
+    const single = await api('POST', '/api/conversations', {characterId:a.id});
+    const r = await app.inject({method:'PATCH',url:`/api/conversations/${single.id}`,payload:{scene:{observation_filter:true}}});
+    assert.equal(r.statusCode,400);
+  });
   await t('server rejects unknown recipients before insert or model call', async () => {
     const before = (db.prepare('SELECT count(*) n FROM messages').get() as any).n;
     calls.length = 0;
