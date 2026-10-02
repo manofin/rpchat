@@ -149,8 +149,8 @@ export function useChat(conversationId: string) {
     return scopeRef.current === scope ? result : true;
   }, [state.generating, applyEvent, patchState, reload, scope]);
 
-  const send = useCallback((content: string, opts?: { inject_instruction?: string }) => {
-    const body: { content: string; inject_instruction?: string } = { content };
+  const send = useCallback((content: string, opts?: { inject_instruction?: string; observation?: { visibility: 'private'; recipient_ids: string[] } }) => {
+    const body = { content, ...opts };
     if (opts?.inject_instruction != null && opts.inject_instruction !== '') {
       body.inject_instruction = opts.inject_instruction;
     }

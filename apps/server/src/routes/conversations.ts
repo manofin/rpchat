@@ -1,3 +1,4 @@
+import { PUBLIC, audienceOf } from '../prompt/observation.js';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../ctx.js';
@@ -9,7 +10,7 @@ import {
   generationBlocksDelete,
   interruptOrphanStreaming,
 } from '../db/generation.js';
-import { deepestLeaf, getPath, insertMessage, messageOut, readablePreview, setHead, updateMessage } from '../db/tree.js';
+import { parseMessageMeta, deepestLeaf, getPath, insertMessage, messageOut, readablePreview, setHead, updateMessage } from '../db/tree.js';
 import { buildPrompt, resolvePersona } from '../prompt/builder.js';
 import { previewDialog } from '../prompt/dialogPreview.js';
 import { previewDraftMessage } from '../prompt/promptHistory.js';
@@ -27,6 +28,7 @@ import { evalRoomEnding, suggestEndings } from '../endingEval.js';
 import { materializeSceneAtHead } from '../db/sceneBase.js';
 
 const sceneSchema = z.object({
+  observation_filter: z.boolean().optional(),
   dialog_context: dialogContextSchema.optional(),
   place: z.string().max(300).optional(),
   time: z.string().max(300).optional(),
@@ -144,6 +146,7 @@ const nonBlankPersonaId = z
   });
 
 const patchSchema = z.object({
+  classify_legacy_public: z.literal(true).optional(),
   title: z.string().max(120).optional(),
   mode: z.enum(['chat', 'story']).optional(),
   profileName: z.string().max(60).optional(),
@@ -430,7 +433,23 @@ export function conversationRoutes(ctx: Ctx) {
       } else if (d.personaId === null) {
         snap = { n: null, a: null, ap: null, pe: null, pr: null, at: null };
       }
+      if (d.classify_legacy_public) {
+        const oldScene = parseJson<Scene>(conv.scene_json, {});
+        if (!d.scene?.observation_filter || oldScene.observation_filter || oldScene.observation_legacy_classified) return reply.code(400).send({ error: '과거 기록 분류는 필터를 켤 때만 가능합니다' });
+        // Explicit confirmation covers only the currently selected successful branch.
+        const rows = getPath(db, conv);
+        const successful = new Set(rows.filter(m => !!parseMessageMeta(m.meta_json).scene_state).map(m => parseMessageMeta(m.meta_json).generation_id));
+        db.transaction(() => {
+          for (const m of rows) {
+            if (audienceOf(m) || m.status !== 'complete' || (m.role === 'assistant' && !successful.has(parseMessageMeta(m.meta_json).generation_id))) continue;
+            const meta = { ...parseMessageMeta(m.meta_json), observation: PUBLIC };
+            run(db, 'UPDATE messages SET meta_json = ? WHERE id = ?', JSON.stringify(meta), m.id);
+          }
+        })();
+      }
+
       const scene = d.scene ? { ...parseJson<Scene>(conv.scene_json, {}), ...d.scene,
+        ...(d.classify_legacy_public ? { observation_legacy_classified: true } : {}),
         pending_edit: { head_message_id: conv.head_message_id },
       } : null;
       const personaFlag = personaTouched ? 1 : 0;

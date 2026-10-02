@@ -2,6 +2,7 @@ import { type DB, many, nowIso, one, run, uid } from './index.js';
 import type { ConversationRow, MessageMeta, MessageRow, MessageStatus } from '../types.js';
 import type { ChatEvent, ChatEventSnapshot } from '@rpchat/contracts/chat-event';
 import { adaptChatEvents, isChatEvent, sanitizeGeneratedContent, stripThoughtContent, type AdaptOptions } from '../contracts/chatEventAdapter.js';
+import { PUBLIC } from '../prompt/observation.js';
 import { objectMessageMeta, parseMessageMeta } from './messageMeta.js';
 
 export { parseMessageMeta } from './messageMeta.js';
@@ -116,7 +117,7 @@ export function insertMessage(
   status: MessageStatus,
   meta: MessageMeta,
 ): MessageRow {
-  meta = objectMessageMeta(meta);
+  meta = { observation: PUBLIC, ...objectMessageMeta(meta) };
   const id = uid();
   const t = nowIso();
   const canonical = eventMeta(db, { id, conversation_id: convId, role, content, status }, meta);

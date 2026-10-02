@@ -1,3 +1,5 @@
+import { actorAudience } from '../prompt/composeBeat.js';
+import { audienceSchema, authorizeAudience, audienceOf, project, PUBLIC, GM } from '../prompt/observation.js';
 import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -530,7 +532,7 @@ export function chatRoutes(ctx: Ctx) {
       parentId,
       regenTurnStartId,
     });
-    const scene = sceneBase.scene;
+    const scene = { ...sceneBase.scene, observation_filter: (JSON.parse(convNow.scene_json || '{}') as Scene).observation_filter };
     // f9-place-catalog: places/arcs/stages come from the Story layer, so the GM can
     // move the scene somewhere no cast member currently stands. Read live because
     // this is a server-side validation allow-list, not narrative text.
@@ -540,6 +542,15 @@ export function chatRoutes(ctx: Ctx) {
     const catalog = catalogFromStory(storyCatalogRow?.scene_catalog ?? '{}');
     const baseVersion = currentSceneVersion(scene);
     const userText = userTextFrom(db, parentId, userMessage);
+    const sourceUser = userMessage ?? (parentId ? one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', parentId) : undefined);
+    const userAudience = audienceOf(sourceUser);
+    const observationEnabled = scene.observation_filter === true;
+    const activePath = getPath(db, convNow);
+    const successful = new Set(activePath.filter(m => !!parseMessageMeta(m.meta_json).scene_state).map(m => parseMessageMeta(m.meta_json).generation_id));
+    const observations = activePath.filter(m => m.id !== sourceUser?.id && m.status === 'complete' &&
+      (m.role === 'user' || successful.has(parseMessageMeta(m.meta_json).generation_id)) &&
+      !['ui','header','panel','thought'].includes(parseMessageMeta(m.meta_json).block_kind ?? ''))
+      .map(m => ({ text: m.content, audience: audienceOf(m) }));
 
     // Lock the conversation before the first await (scene-delta). /messages 409
     // and abort both read this registry; a later register left the wait uncancelable.
@@ -557,7 +568,7 @@ export function chatRoutes(ctx: Ctx) {
       const proposal = await ctx.queue.run(() =>
         ctx.model.complete({
           model,
-          messages: [{ role: 'user', content: renderSceneDeltaPrompt({ scene, catalog: { ...catalog, cast }, userText }) }],
+          messages: [{ role: 'user', content: renderSceneDeltaPrompt({ scene, catalog: { ...catalog, cast }, userText: project(userText, userAudience, GM, observationEnabled) }) }],
           temperature: 0.2,
           top_p: 0.9,
           max_tokens: SCENE_DELTA_MAX_TOKENS,
@@ -606,11 +617,13 @@ export function chatRoutes(ctx: Ctx) {
     // table, and feeding Pass N a narration the user never saw would make it avoid
     // repeating something that is not there.
     const recentNarrations = getPath(db, convNow)
-      .filter((m) => m.role === 'assistant' && parseMessageMeta(m.meta_json).block_kind === 'narration')
+      .filter((m) => m.role === 'assistant' && parseMessageMeta(m.meta_json).block_kind === 'narration' && (!observationEnabled || (m.status === 'complete' && successful.has(parseMessageMeta(m.meta_json).generation_id))))
       .slice(-PASS_N_RECENT_NARRATIONS)
-      .map((m) => m.content.trim())
+      .map((m) => project(m.content, audienceOf(m), GM, observationEnabled))
       .filter(Boolean);
     const planInput: BeatPlanInput = {
+      observation_enabled: observationEnabled, user_audience: userAudience, observations,
+      narration_audience: PUBLIC,
       conversation_id: conv.id,
       scene,
       patch: patch ?? undefined,
@@ -626,7 +639,9 @@ export function chatRoutes(ctx: Ctx) {
       recent_narrations: recentNarrations,
       ...storyFocusPlanFields(convNow),
     };
+    planInput.narration_audience = observationEnabled ? actorAudience(planInput, GM) : PUBLIC;
     const plan = planBeat(planInput);
+    planInput.focus_audience = observationEnabled && plan.focus.focus_id ? actorAudience(planInput, plan.focus.focus_id) : PUBLIC;
 
     // scene-commit-on-success (ADR-F9c §2): the applied scene is NOT written here.
     // `conversations.scene_json` means "the last successfully committed turn", so an
@@ -647,7 +662,7 @@ export function chatRoutes(ctx: Ctx) {
     ): MessageRow => {
       const row = insertMessage(db, conv.id, head, 'assistant', content, 'complete', {
         generation_id: generationId, profile: profileName, prompt_version: PROMPT_VERSION,
-        block_kind: kind, beat_seq: emitted.length, ...meta,
+        block_kind: kind, beat_seq: emitted.length, observation: PUBLIC, ...meta,
       });
       setHead(db, conv.id, row.id);
       head = row.id;
@@ -691,7 +706,7 @@ export function chatRoutes(ctx: Ctx) {
         nDeadline.done();
       }
       passMs.n = Date.now() - tN;
-      if (narration) send(addBlock('narration', narration));
+      if (narration) send(addBlock('narration', narration, { observation: planInput.narration_audience }));
 
       // Pass F — the focus speaks. The only streamed pass, and the only one whose
       // failure is a turn failure.
@@ -706,7 +721,7 @@ export function chatRoutes(ctx: Ctx) {
         focusSeq = emitted.length;
         focusRow = insertMessage(db, conv.id, head, 'assistant', '', 'streaming', {
           generation_id: generationId, profile: profileName, prompt_version: PROMPT_VERSION,
-          block_kind: 'line', beat_seq: focusSeq,
+          block_kind: 'line', beat_seq: focusSeq, observation: planInput.focus_audience,
           speaker_character_id: plan.focus.focus_id, speaker_name: focusName,
         });
         ctx.queue.setMessageId(generationId, focusRow.id);
@@ -772,7 +787,7 @@ export function chatRoutes(ctx: Ctx) {
           content: block?.text ?? focusText,
           status: 'complete',
           meta: {
-            block_kind: 'line', beat_seq: focusSeq,
+            block_kind: 'line', beat_seq: focusSeq, observation: planInput.focus_audience,
             speaker_character_id: plan.focus.focus_id ?? undefined,
             speaker_name: cast.find((c) => c.id === plan.focus.focus_id)?.name ?? undefined,
             image_url: block?.asset_path ?? undefined,
@@ -784,6 +799,7 @@ export function chatRoutes(ctx: Ctx) {
         const block = lineOf(extra.character_id);
         if (!block) continue;
         send(addBlock('line', block.text, {
+          observation: observationEnabled ? actorAudience(planInput, extra.character_id) : PUBLIC,
           speaker_character_id: extra.character_id, speaker_name: extra.name,
           image_url: block.asset_path ?? undefined,
         }));
@@ -1253,6 +1269,15 @@ export function chatRoutes(ctx: Ctx) {
       ctx.queue.unregister(generationId);
     }
   }
+  function validatedAudience(conv: ConversationRow, value = PUBLIC) {
+    const scene = JSON.parse(conv.scene_json || '{}') as Scene;
+    if (value.visibility === 'private' && (!scene.observation_filter || scene.format === 'dialog' || !storyCastForGenerate(conv, loadStoryRoster(db, conv)))) {
+      throw new Error('귓속말은 관찰 필터가 켜진 beat 방에서만 지원합니다');
+    }
+    const snapshot = conv.story_participant_ids_snapshot ? JSON.parse(conv.story_participant_ids_snapshot) as string[] : null;
+    const ids = snapshot ?? loadStoryRoster(db, conv).map(x => x.id);
+    return authorizeAudience(value, ids);
+  }
   return async function plugin(app: FastifyInstance) {
     // inject-macro-client: allow empty/whitespace content when inject_instruction
     // parses to a real instruction (inject-alone). Still reject empty when no inject.
@@ -1260,6 +1285,7 @@ export function chatRoutes(ctx: Ctx) {
     const sendSchema = z.object({
       content: z.string().max(8000),
       inject_instruction: z.string().optional(),
+      observation: audienceSchema.optional(),
     });
     app.post<{ Params: { id: string } }>('/api/conversations/:id/messages', async (req, reply) => {
       const conv = loadConversation(ctx, req.params.id);
@@ -1274,7 +1300,10 @@ export function chatRoutes(ctx: Ctx) {
         return reply.code(400).send({ error: 'content required when inject_instruction is absent' });
       }
       if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
-      const user = insertMessage(db, conv.id, conv.head_message_id, 'user', content, 'complete', {});
+      let observation;
+      try { observation = validatedAudience(conv, p.data.observation); }
+      catch (err) { return reply.code(400).send({ error: (err as Error).message }); }
+      const user = insertMessage(db, conv.id, conv.head_message_id, 'user', content, 'complete', { observation });
       try {
         return await generate(req, reply, conv, user.id, user, undefined, inj.ctx);
       } catch (err) {
@@ -1322,6 +1351,7 @@ export function chatRoutes(ctx: Ctx) {
       messageId: z.string().min(1),
       content: z.string().max(8000),
       inject_instruction: z.string().optional(),
+      observation: audienceSchema.optional(),
     });
     app.post<{ Params: { id: string } }>('/api/conversations/:id/branch', async (req, reply) => {
       const conv = loadConversation(ctx, req.params.id);
@@ -1338,7 +1368,10 @@ export function chatRoutes(ctx: Ctx) {
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ? AND conversation_id = ?', p.data.messageId, conv.id);
       if (!m || m.role !== 'user') return reply.code(404).send({ error: 'user message not found' });
       if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
-      const user = insertMessage(db, conv.id, m.parent_id, 'user', content, 'complete', {});
+      let observation;
+      try { observation = validatedAudience(conv, p.data.observation ?? audienceOf(m)); }
+      catch (err) { return reply.code(400).send({ error: (err as Error).message }); }
+      const user = insertMessage(db, conv.id, m.parent_id, 'user', content, 'complete', { observation });
       try {
         return await generate(req, reply, conv, user.id, user, undefined, inj.ctx);
       } catch (err) {

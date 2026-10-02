@@ -111,6 +111,8 @@ export interface LoreEntryRow {
 }
 
 export interface Scene {
+  observation_filter?: boolean;
+  observation_legacy_classified?: boolean;
   /** Optional user-owned approved-memory assignments. Models cannot write this. */
   dialog_context?: import('./prompt/dialogActorContext.js').DialogKnowledgeSpec;
   place?: string;
@@ -262,6 +264,7 @@ export interface ConversationRow {
 export type MessageStatus = 'streaming' | 'complete' | 'interrupted' | 'error';
 
 export interface MessageMeta {
+  observation?: import('./prompt/observation.js').Audience;
   chat_event_version?: 1;
   events?: ChatEvent[];
   chat_event_script?: boolean;

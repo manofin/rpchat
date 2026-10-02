@@ -119,7 +119,10 @@ async function main() {
   });
   await t('legacy active narration is filtered at read time; sibling and original bytes stay isolated', async () => {
     const head = db.prepare('SELECT head_message_id FROM conversations WHERE id = ?').get(conv.id) as any;
-    const active = insertMessage(db, conv.id, head.head_message_id, 'assistant', `LEGACY_PUBLIC_ACTIVE<think>${SECRET}</think>`, 'complete', { block_kind: 'narration' });
+    const active = insertMessage(db, conv.id, head.head_message_id, 'assistant', 'LEGACY_PUBLIC_ACTIVE', 'complete', { block_kind: 'narration' });
+    // Bypass today's write sanitizer to reproduce an actually contaminated historical row.
+    db.prepare('UPDATE messages SET content = ? WHERE id = ?').run(`LEGACY_PUBLIC_ACTIVE<think>${SECRET}</think>`, active.id);
+    assert.ok((db.prepare('SELECT content FROM messages WHERE id = ?').get(active.id) as any).content.includes(SECRET));
     insertMessage(db, conv.id, head.head_message_id, 'assistant', 'LEGACY_PUBLIC_SIBLING', 'complete', { block_kind: 'narration' });
     setHead(db, conv.id, active.id);
     const before = db.prepare('SELECT content, meta_json FROM messages WHERE id = ?').get(active.id);
