@@ -181,6 +181,16 @@ export type TurnStart =
 const TURN_WALK_LIMIT = 64;
 
 export function resolveTurnStart(db: DB, target: MessageRow): TurnStart {
+  // A 1:1 continuation is an append-only piece of its original response.
+  // Walk only its verified parent chain; never trust a metadata id across branches.
+  for (let hops = 0; parseMessageMeta(target.meta_json).continuation_of && parseMessageMeta(target.meta_json).beat_seq === undefined; hops++) {
+    if (hops >= TURN_WALK_LIMIT) return { kind: 'unresolved', reason: 'walk_limit' };
+    const anchor = parseMessageMeta(target.meta_json).continuation_of;
+    if (target.parent_id !== anchor) return { kind: 'unresolved', reason: 'continuation_parent_mismatch' };
+    const parent = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ? AND conversation_id = ?', anchor, target.conversation_id);
+    if (!parent || parent.role !== 'assistant') return { kind: 'unresolved', reason: 'continuation_parent_missing' };
+    target = parent;
+  }
   if (target.role !== 'assistant') return { kind: 'unresolved', reason: 'not_assistant' };
   const meta = parseMessageMeta(target.meta_json);
   // An unfinished dialog script has its turn position before its final block kind.

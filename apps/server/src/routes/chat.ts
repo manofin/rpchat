@@ -1,3 +1,4 @@
+import { continuationRoutes } from './continuation.js';
 import { responseLengthHint, responseMaxTokens } from '../prompt/responseLength.js';
 import { actorAudience } from '../prompt/composeBeat.js';
 import { choiceContext, audienceSchema, authorizeAudience, audienceOf, project, PUBLIC, GM, successfulObservationRows, speechObservation, observationText } from '../prompt/observation.js';
@@ -1313,6 +1314,7 @@ export function chatRoutes(ctx: Ctx) {
     return authorizeAudience(value, ids);
   }
   return async function plugin(app: FastifyInstance) {
+    await app.register(continuationRoutes(ctx));
     // inject-macro-client: allow empty/whitespace content when inject_instruction
     // parses to a real instruction (inject-alone). Still reject empty when no inject.
     // Attach/budget untouched. DB insertMessage already allows '' (assistant streaming).
