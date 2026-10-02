@@ -5,6 +5,7 @@
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import ts from 'typescript';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { visibleChoices } from '../apps/web/src/lib/choices.ts';
@@ -49,15 +50,29 @@ t('generating: composer stays typable; send slot is stop; submit still latched',
   assert.ok(composer.includes('aria-label="생성 중단"'));
   assert.ok(composer.includes('chat.stop'));
   assert.ok(!/textarea[\s\S]{0,400}disabled=\{chat\.generating\}/.test(composer), 'textarea must stay enabled while generating');
-  // A11 ended-room guard appends `|| chat.detail?.conversation.ended_at` to the
-  // latch; the fence binds on the `!text || chat.generating` prefix, not the tail.
-  assert.match(chat, /async function submit\(\) \{[\s\S]*?if \(!text \|\| chat\.generating/);
-  assert.match(chat, /const onChoice = \(c: string\) => \{[\s\S]*?if \(!text \|\| chat\.generating/);
-  assert.match(chat, /if \(!chat\.generating\) submit\(\)/);
+  assert.match(chat, /const generating = chat\.generating \|\| sideMode\.generating/);
+  const file = ts.createSourceFile('ChatPage.tsx', chat, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  for (const name of ['submit', 'onChoice']) {
+    let body = '';
+    function visit(node: ts.Node) {
+      if (ts.isFunctionDeclaration(node) && node.name?.text === name) body = node.getText(file);
+      if (ts.isVariableDeclaration(node) && node.name.getText(file) === name) body = node.initializer!.getText(file);
+      ts.forEachChild(node, visit);
+    }
+    visit(file);
+    assert.ok(body, `${name} callback must exist`);
+    const js = ts.transpileModule(`exports.callback = ${body}`, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
+    const output: { callback?: (input?: string) => unknown } = {};
+    new Function('exports', 'draft', 'generating', 'chat', js)(output, 'pending text', true, { detail: { conversation: { ended_at: null } } });
+    // No side effects or extra dependencies are available: the busy guard must return first.
+    const result = output.callback!('choice text');
+    if (name === 'onChoice') assert.equal(result, undefined);
+  }
+  assert.match(chat, /if \(!generating\) submit\(\)/);
 });
 
 t('chips stay hidden while generating — stale suggestions cannot send', () => {
-  assert.match(chat, /showTurnChoices = !!\([\s\S]*!chat\.generating\)/);
+  assert.match(chat, /showTurnChoices = !!\([\s\S]*!generating\)/);
   assert.match(chat, /!props\.hideChoices && !props\.streaming && !props\.generating/);
 });
 

@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { get, patch } from '../lib/api';
 import { back } from '../lib/router';
-import type { ConversationDetail, ModelProfile } from '../types';
+import type { ConversationDetail, ModelProfile, ResponseLength } from '../types';
 import { SettingsEmptyState, SettingsPageHeader, SettingsPageLayout } from '../components/settings';
 import { Spinner } from '../components/ui';
 import { outputProfileLabel, settingsBackFallback } from '../lib/conversationSettings';
 import { instructionBadge } from '../lib/profileInstruction';
+import { ResponseLengthSelect } from '../components/ResponseLengthSelect';
+import { buildResponseLengthPatch } from '../lib/responseControls';
 
 export function rpOutputProfiles(profiles: ModelProfile[]): ModelProfile[] {
   return profiles.filter((p) => p.name.startsWith('rp-'));
@@ -22,19 +24,26 @@ export function OutputView({
   pending,
   onChange,
   onBack,
+  responseLength = 'normal',
+  onLengthChange,
+  error,
 }: {
   profileName: string;
   profiles: ModelProfile[];
   pending: boolean;
   onChange: (name: string) => void;
   onBack: () => void;
+  responseLength?: ResponseLength;
+  onLengthChange?: (length: ResponseLength) => void;
+  error?: string | null;
 }) {
   const options = rpOutputProfiles(profiles);
   return (
     <SettingsPageLayout header={<SettingsPageHeader title="최대 출력량 조절" onBack={onBack} />}>
       <section className="card settings-section-body" style={{ padding: 16 }}>
+        <ResponseLengthSelect value={responseLength} disabled={pending || !onLengthChange} onChange={(value) => onLengthChange?.(value)} />
         <label className="sub" htmlFor="output-profile">
-          최대 출력량
+          출력/톤 프로필
         </label>
         <select
           id="output-profile"
@@ -49,7 +58,8 @@ export function OutputView({
             </option>
           ))}
         </select>
-        <p className="sub">대화 프로필의 max_tokens 를 따릅니다. 전역 PUT 은 이 화면에서 하지 않습니다.</p>
+        <p className="sub">보통은 현재 프로필과 대화 방식의 기본 출력량을 사용합니다. 프로필을 바꾸면 문체·온도 설정도 함께 바뀝니다.</p>
+        {error ? <p className="banner err" role="alert">{error}</p> : null}
       </section>
     </SettingsPageLayout>
   );
@@ -60,6 +70,8 @@ export function ConversationOutputPage({ conversationId, onBack }: { conversatio
   const [profiles, setProfiles] = useState<ModelProfile[] | null>(null);
   const [missing, setMissing] = useState(false);
   const [pending, setPending] = useState(false);
+  const [responseLength, setResponseLength] = useState<ResponseLength>('normal');
+  const [error, setError] = useState<string | null>(null);
   const goBack = onBack ?? (() => back(settingsBackFallback(conversationId, 'leaf')));
 
   useEffect(() => {
@@ -67,6 +79,7 @@ export function ConversationOutputPage({ conversationId, onBack }: { conversatio
     setMissing(false);
     setProfileName(null);
     setProfiles(null);
+    setError(null);
     Promise.all([
       get<ConversationDetail>(`/api/conversations/${conversationId}`),
       get<ModelProfile[]>('/api/profiles'),
@@ -75,6 +88,7 @@ export function ConversationOutputPage({ conversationId, onBack }: { conversatio
         if (!live) return;
         setProfileName(d.conversation.profile_name);
         setProfiles(list);
+        setResponseLength(d.conversation.scene.response_length ?? 'normal');
       })
       .catch(() => {
         if (live) setMissing(true);
@@ -94,6 +108,21 @@ export function ConversationOutputPage({ conversationId, onBack }: { conversatio
       await patch(`/api/conversations/${conversationId}`, body);
     } catch {
       if (prev != null) setProfileName(prev);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function onLengthChange(length: ResponseLength) {
+    const body = buildResponseLengthPatch(length);
+    if (!body || pending) return;
+    setPending(true);
+    setError(null);
+    try {
+      const saved = await patch<ConversationDetail['conversation']>(`/api/conversations/${conversationId}`, body);
+      setResponseLength(saved.scene.response_length ?? 'normal');
+    } catch (failure) {
+      setError((failure as Error).message);
     } finally {
       setPending(false);
     }
@@ -122,6 +151,9 @@ export function ConversationOutputPage({ conversationId, onBack }: { conversatio
       pending={pending}
       onChange={onChange}
       onBack={goBack}
+      responseLength={responseLength}
+      onLengthChange={onLengthChange}
+      error={error}
     />
   );
 }

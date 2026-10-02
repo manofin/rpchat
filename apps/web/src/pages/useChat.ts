@@ -157,6 +157,7 @@ export function useChat(conversationId: string) {
     return runStream(`/api/conversations/${conversationId}/messages`, body);
   }, [runStream, conversationId]);
   const regenerate = useCallback((messageId: string) => runStream(`/api/conversations/${conversationId}/regenerate`, { messageId }), [runStream, conversationId]);
+  const continueResponse = useCallback((messageId: string) => runStream(`/api/conversations/${conversationId}/continue`, { messageId }), [runStream, conversationId]);
   const branchEdit = useCallback((messageId: string, content: string) => runStream(`/api/conversations/${conversationId}/branch`, { messageId, content }), [runStream, conversationId]);
 
   const stop = useCallback(async () => {
@@ -225,6 +226,6 @@ export function useChat(conversationId: string) {
     ...state,
     loading: state.loading || (!!state.detail && state.detail.conversation.id !== conversationId),
     generating: state.generating || streamConnected,
-    reload, send, regenerate, branchEdit, stop, selectSibling, editMessage, deleteMessage, toggleBookmark, updateConversation,
+    reload, send, regenerate, continueResponse, branchEdit, stop, selectSibling, editMessage, deleteMessage, toggleBookmark, updateConversation,
   };
 }

@@ -186,7 +186,8 @@ t('S2 turn chrome: generating status, stop wired to useChat.stop, ChoiceChips pe
 
 t('S2 hides recommendation chips while generating/streaming', () => {
   const page = code('apps/web/src/pages/ChatPage.tsx');
-  assert.ok(page.includes('!chat.generating'), 'turn-level choices gated on generating');
+  assert.ok(page.includes('const generating = chat.generating || sideMode.generating'), 'main and side generation both block choices');
+  assert.ok(page.includes('!generating'), 'turn-level choices gated on generating');
   assert.ok(page.includes('!props.generating'), 'message-level choices gated on generating');
 });
 

@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import ts from 'typescript';
+import { parseSideModeCommand } from '../apps/web/src/lib/responseControls.ts';
 import { expandLeadingShortcut, resolveShortcutSubmit, type Shortcut } from '../apps/web/src/lib/shortcutMacro';
 
 const source = ts.createSourceFile('ChatPage.tsx', fs.readFileSync('apps/web/src/pages/ChatPage.tsx', 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -27,7 +28,7 @@ const submitCode = compile(submits[0].getText(source));
 const changeCode = compile(`const change = ${draftChanges[0].getText(source)};`);
 const shortcuts: Shortcut[] = [
   { name: '일기', text: '이번 턴 일기를 써라.', mode: 'inject' },
-  { name: '요약', text: '이야기를 요약해.', mode: 'insert' },
+  { name: '정리', text: '이야기를 요약해.', mode: 'insert' },
 ];
 type Request = [string, { inject_instruction?: string } | undefined];
 function composer(input: string, generating = false, ended_at: string | null = null) {
@@ -41,7 +42,7 @@ function composer(input: string, generating = false, ended_at: string | null = n
     draft = typeof value === 'function' ? value(draft) : value;
     states.push(draft);
   };
-  const common = { resolveShortcutSubmit, expandLeadingShortcut, readShortcuts: () => shortcuts, setDraft };
+  const common = { parseSideModeCommand, resolveShortcutSubmit, expandLeadingShortcut, readShortcuts: () => shortcuts, setDraft };
   return {
     get draft() { return draft; }, states, requests, stickyRef,
     get frames() { return frames; },
@@ -52,7 +53,7 @@ function composer(input: string, generating = false, ended_at: string | null = n
     },
     submit() {
       const deps = {
-        ...common, draft, choiceDraft: null, setChoiceDraft: () => {}, stickyRef, grow: () => {},
+        ...common, draft, generating, choiceDraft: null, setChoiceDraft: () => {}, stickyRef, grow: () => {},
         requestAnimationFrame: () => { frames++; },
         chat: { generating, detail: { conversation: { ended_at } }, send: (...args: Request) => {
           requests.push(args);
@@ -76,8 +77,8 @@ async function main() {
     ['inject whitespace', '  /일기  오늘 일\n둘째 줄  ', false],
     ['ordinary text', '  일반 발화\n둘째 줄  ', false],
     ['unmatched shortcut', '/미등록 추가 발화', false],
-    ['insert at submit', '/요약', false],
-    ['insert expanded onChange', '/요약 추가 발화', true],
+    ['insert at submit', '/정리', false],
+    ['insert expanded onChange', '/정리 추가 발화', true],
     ['inject preserved onChange', '/일기 추가 발화', true],
   ] as const) {
     await test(`${label}: failed send restores exact draft and retry request`, async () => {

@@ -210,7 +210,10 @@ export interface Persona {
   is_default: boolean;
 }
 
+export type ResponseLength = 'short' | 'normal' | 'long';
+
 export interface Scene {
+  response_length?: ResponseLength;
   observation_filter?: boolean;
   observation_legacy_classified?: boolean;
   place?: string;
@@ -311,6 +314,8 @@ export interface Message {
   events?: ChatEvent[];
   status: MessageStatus;
   meta: {
+    side_mode?: { mode: 'summary' | 'community'; prompt: string; anchor_message_id: string | null };
+    generation_id?: string;
     usage?: { prompt_tokens?: number; completion_tokens?: number } | null;
     finish_reason?: string | null;
     choices?: string[];
