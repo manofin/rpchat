@@ -466,9 +466,13 @@ async function main() {
     assert.equal((injSrc.match(/export function attachInjectToIcPass/g) || []).length, 1);
 
     // chat.ts uses the wrapper on IC passes (not bare prepend at send sites)
-    assert.ok(chatSrc.includes('attachInjectToIcPass(plan.pass_n'));
-    assert.ok(chatSrc.includes('attachInjectToIcPass(passFRaw') || chatSrc.includes('attachInjectToIcPass(passF'));
-    assert.ok(chatSrc.includes('attachInjectToIcPass(e.prompt'));
+    const shared = chatSrc.slice(chatSrc.indexOf('const fitObservationPass'), chatSrc.indexOf('const profileName = convNow.profile_name', chatSrc.indexOf('const fitObservationPass')));
+    assert.equal((shared.match(/attachInjectToIcPass\(/g) ?? []).length, 1);
+    assert.ok(shared.includes('attachInjectToIcPass(render(candidate), injectInstr'));
+    assert.ok(shared.includes('profileInstruction: icInstruction.forCall(speakerName)'));
+    assert.ok(chatSrc.includes('fitObservationPass(input => planBeat(input).pass_n'));
+    assert.ok(chatSrc.includes('fitObservationPass(input => passFWith(input, plan, narration)'));
+    assert.ok(chatSrc.includes('fitObservationPass(input => planPassE(input, plan, narration'));
     const dialogSrc = src('apps/server/src/prompt/dialogPrompt.ts');
     assert.ok(chatSrc.includes('buildDialogPrompt(db, convNow, history, plan.pass_s'));
     assert.ok(chatSrc.includes('model, messages: built.messages'));

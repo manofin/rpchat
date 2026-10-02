@@ -90,6 +90,20 @@ async function main() {
   console.log('FINAL_LONG_ROOM_PROMPT_SIZES='+JSON.stringify(sizes));
   for(const x of sizes) assert.ok(x.tokens+x.completion+64<=config.model.contextTokens,`over context: ${JSON.stringify(x)}`);
   assert.ok(calls.some(x=>x.pass==='f')); assert.equal(calls.filter(x=>x.pass==='e').length,2); console.log('ok 1 long-room final adapter prompts fit context without inject/profile');
+  db.prepare('INSERT INTO model_profiles (name,instruction_enabled,instruction_text) VALUES (?,1,?)').run('revision-budget','FULL_PROFILE_SENTINEL_7319');
+  await api('PATCH', `/api/conversations/${conv.id}`, {profileName:'revision-budget'});
+  await send({content:'나리, 지침을 유지해.',inject_instruction:'FULL_INJECT_SENTINEL_7319'});
+  await send({content:'나리, 계속 지침을 유지해.',inject_instruction:'FULL_INJECT_SENTINEL_7319'});
+  assert.equal(calls.filter(x=>x.pass==='e').length,2);
+  for(const x of calls) {
+    assert.ok(estimateMessageTokens(x.text)+x.p.max_tokens+64<=config.model.contextTokens);
+    const ic=['n','f','e'].includes(x.pass);
+    assert.equal(x.text.includes('FULL_PROFILE_SENTINEL_7319'),ic);
+    assert.equal(x.text.includes('FULL_INJECT_SENTINEL_7319'),ic);
+    if(ic) {assert.equal(x.text.split('FULL_PROFILE_SENTINEL_7319').length-1,1);assert.equal(x.text.split('FULL_INJECT_SENTINEL_7319').length-1,1);}
+  }
+  console.log('ok 2 long-room actual N/F/E requests retain complete profile/inject once within context; C/delta unchanged');
+
 
 }
 main().then(() => console.log(`PASS=${passed}`)).catch(e => { console.error(e); process.exitCode=1; }).finally(async () => { await app.close(); db.close(); fs.rmSync(tmp,{recursive:true,force:true}); });
