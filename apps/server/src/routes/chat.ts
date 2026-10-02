@@ -532,7 +532,8 @@ export function chatRoutes(ctx: Ctx) {
       parentId,
       regenTurnStartId,
     });
-    const scene = { ...sceneBase.scene, observation_filter: (JSON.parse(convNow.scene_json || '{}') as Scene).observation_filter };
+    const roomPolicy = JSON.parse(convNow.scene_json || '{}') as Scene;
+    const scene = { ...sceneBase.scene, observation_filter: roomPolicy.observation_filter, observation_legacy_classified: roomPolicy.observation_legacy_classified };
     // f9-place-catalog: places/arcs/stages come from the Story layer, so the GM can
     // move the scene somewhere no cast member currently stands. Read live because
     // this is a server-side validation allow-list, not narrative text.
@@ -997,7 +998,8 @@ export function chatRoutes(ctx: Ctx) {
       parentId,
       regenTurnStartId,
     });
-    const scene: Scene = sceneBase.scene;
+    const roomPolicy = JSON.parse(convNow.scene_json || '{}') as Scene;
+    const scene: Scene = { ...sceneBase.scene, observation_filter: roomPolicy.observation_filter, observation_legacy_classified: roomPolicy.observation_legacy_classified };
     const userText = userTextFrom(db, parentId, userMessage);
     const history = getPath(db, convNow);
     const lastUser = history.at(-1)?.role === 'user' ? history.at(-1)! : null;
