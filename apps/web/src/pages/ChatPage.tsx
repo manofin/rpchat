@@ -602,7 +602,7 @@ export function ChatPage({ id }: { id: string }) {
         </div>
       </BottomSheet>
 
-      <SideModePanel open={sideOpen} mode={sideTab} onModeChange={setSideTab} onClose={() => setSideOpen(false)} messages={sideMode.messages} loading={sideMode.loading} generating={sideMode.generating} disabled={generating || ended} error={sideMode.error} onGenerate={sideMode.generate} onStop={() => void sideMode.stop()} onReload={() => void sideMode.reload()} />
+      <SideModePanel open={sideOpen} mode={sideTab} onModeChange={setSideTab} onClose={() => setSideOpen(false)} messages={sideMode.messages} loading={sideMode.loading} generating={sideMode.generating} disabled={generating} error={sideMode.error} onGenerate={sideMode.generate} onStop={() => void sideMode.stop()} onReload={() => void sideMode.reload()} />
       <ChatDrawer open={drawer} conversationId={id} draft={draft} initialTab={drawerTab} onClose={() => { setDrawer(false); setDrawerTab(undefined); }} onApplied={() => { setSummaryTick((n) => n + 1); }} />
       <ConversationSettings open={settings} conversationId={id} generating={generating} onClose={() => setSettings(false)} onChanged={chat.reload} onOpenMemory={() => { setSettings(false); setDrawerTab(undefined); setDrawer(true); }} />
       </div>

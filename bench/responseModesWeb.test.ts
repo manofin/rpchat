@@ -154,6 +154,17 @@ await test('reloaded side-mode rows recover generation identity and ignore a sta
     await reload(); assert.equal(applied, stale ? 0 : 1); assert.equal(generationRef.current, stale ? null : 'persisted-job');
   }
 });
+await test('ended rooms can generate read-only side modes while main composer stays locked', () => {
+  const panel = nodeAt(chatPage, (node) => ts.isJsxSelfClosingElement(node) && node.tagName.getText(chatPage) === 'SideModePanel') as ts.JsxSelfClosingElement;
+  const attr = panel.attributes.properties.find((item) => ts.isJsxAttribute(item) && item.name.getText(chatPage) === 'disabled') as ts.JsxAttribute;
+  const condition = (attr.initializer as ts.JsxExpression).expression!.getText(chatPage);
+  for (const generating of [false, true]) {
+    assert.equal(compile(`() => (${condition})`, { generating, ended: true })(), generating, 'ended alone must not lock read-only mode');
+  }
+  const input = nodeAt(chatPage, (node) => ts.isJsxSelfClosingElement(node) && node.tagName.getText(chatPage) === 'textarea' && node.getText(chatPage).includes('enterKeyHint="send"')) as ts.JsxSelfClosingElement;
+  const disabled = input.attributes.properties.find((item) => ts.isJsxAttribute(item) && item.name.getText(chatPage) === 'disabled') as ts.JsxAttribute;
+  assert.equal(compile(`() => (${(disabled.initializer as ts.JsxExpression).expression!.getText(chatPage)})`, { ended: true })(), true);
+});
 await test('side-mode panel labels isolation and renders canonical output, not raw model content', () => {
   const row = message({ meta: { side_mode: { mode: 'community', prompt: '탈출 반응', anchor_message_id: 'answer' } } });
   const props = { open: true, mode: 'community' as const, onModeChange() {}, onClose() {}, messages: [row], loading: false, generating: false, disabled: true, error: null, onGenerate: async () => false, onStop() {}, onReload() {} };
