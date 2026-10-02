@@ -204,6 +204,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   const persona = resolvePersona(db, conv);
   const storedProfile = loadProfile(db, profileName ?? conv.profile_name);
   const responseScene = parseJson<Scene>(conv.scene_json, {});
+  const strictResponseBudget = responseScene.response_length === 'short' || responseScene.response_length === 'long';
   const profile = { ...storedProfile, max_tokens: responseMaxTokens(responseScene, storedProfile.max_tokens) };
   const cal = getCalibration(db);
   const contentPolicy = getSetting(db, 'content_policy', '');
@@ -311,9 +312,9 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   }
 
   // The choices contract is appended to the system message below. Reserve it
-  // before packing recent turns when a profile instruction is active.
+  // before packing recent turns when instructions or an explicit length need a hard bound.
   const choicesText = isOoc ? null : substitute(STORY_CHOICES_INSTRUCTION, charName, userName);
-  if (instructionSection && choicesText) {
+  if ((instructionSection || strictResponseBudget) && choicesText) {
     const choicesEst = estimateTokens(choicesText, cal);
     sections.push({ name: '선택지 출력 계약', est_tokens: choicesEst, budget: choicesEst, kind: 'system' });
     used += choicesEst;
@@ -326,7 +327,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   // available 로 판정하면 긴 대화의 평범한 턴이 거부된다(P0, 300메시지 40건 중 38건).
   const hardLimit = contextTokens - profile.max_tokens;
   let instructionOverflow: InstructionOverflow | undefined;
-  if (instructionSection) {
+  if (instructionSection && !strictResponseBudget) {
     const currentTurn = last?.role === 'user' && last.content.trim()
       ? last.content
       : substitute(last ? '(장면을 이어서 {{char}}의 차례로 진행한다.)' : '첫 장면을 {{char}}의 인사로 시작한다.', charName, userName);
@@ -384,7 +385,8 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
     recent.unshift(m);
     recentEst += t;
   }
-  sections.push({ name: '최근 대화', est_tokens: recentEst, budget: recentBudget, note: dropped ? `오래된 메시지 ${dropped}건 제외` : undefined, kind: 'recent' });
+  const recentSection: BudgetReport['sections'][number] = { name: '최근 대화', est_tokens: recentEst, budget: recentBudget, note: dropped ? `오래된 메시지 ${dropped}건 제외` : undefined, kind: 'recent' };
+  sections.push(recentSection);
   used += recentEst;
 
   // 5) 시스템 메시지 합성
@@ -398,23 +400,40 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   }
   const systemText = systemParts.join('\n\n');
 
-  let turns: ChatMessage[] = recent.map((m) => ({ role: m.role, content: m.content }));
-  if (turns.length === 0) turns.push({ role: 'user', content: substitute('첫 장면을 {{char}}의 인사로 시작한다.', charName, userName) });
-  else if (turns[turns.length - 1].role !== 'user') turns.push({ role: 'user', content: substitute('(장면을 이어서 {{char}}의 차례로 진행한다.)', charName, userName) });
-  turns = mergeConsecutive(turns);
-
-  let messages: ChatMessage[];
-  if (profile.system_mode === 'merge') {
-    if (turns[0].role !== 'user') turns.unshift({ role: 'user', content: '(장면을 시작한다.)' });
-    turns[0] = { role: 'user', content: `${systemText}\n\n---\n\n${turns[0].content}` };
-    messages = turns;
-  } else {
-    messages = [{ role: 'system', content: systemText }, ...turns];
+  const assemble = (): ChatMessage[] => {
+    let turns: ChatMessage[] = recent.map((m) => ({ role: m.role, content: m.content }));
+    if (turns.length === 0) turns.push({ role: 'user', content: substitute('첫 장면을 {{char}}의 인사로 시작한다.', charName, userName) });
+    else if (turns[turns.length - 1].role !== 'user') turns.push({ role: 'user', content: substitute('(장면을 이어서 {{char}}의 차례로 진행한다.)', charName, userName) });
+    turns = mergeConsecutive(turns);
+    if (profile.system_mode === 'merge') {
+      if (turns[0].role !== 'user') turns.unshift({ role: 'user', content: '(장면을 시작한다.)' });
+      turns[0] = { role: 'user', content: `${systemText}\n\n---\n\n${turns[0].content}` };
+      return turns;
+    }
+    return [{ role: 'system', content: systemText }, ...turns];
+  };
+  let messages = assemble();
+  const wireCost = () => messages.reduce((sum, message) => sum + estimateMessageTokens(message.content, cal), 0);
+  if (strictResponseBudget) {
+    // Joined blocks and merge wrappers are only measurable after assembly. Keep
+    // the newest/current row intact; older history gives way to the output reserve.
+    while (wireCost() > hardLimit && recent.length > 1) {
+      const removed = recent.shift()!;
+      recentEst -= estimateMessageTokens(removed.content, cal);
+      dropped++;
+      messages = assemble();
+    }
+    recentSection.est_tokens = recentEst;
+    recentSection.note = dropped ? `오래된 메시지 ${dropped}건 제외` : undefined;
+    used = wireCost();
+    instructionOverflow = used > hardLimit
+      ? { reason: 'response_length', profile: profile.name, instruction_tokens: instructionSection?.est_tokens ?? 0, required: used, available: hardLimit }
+      : undefined;
   }
 
   // Joined system blocks and merge-mode wrappers also consume tokens. The
   // inspector still receives the prompt; generation rejects this report.
-  if (instructionSection) {
+  if (instructionSection && !strictResponseBudget) {
     const finalRequired = messages.reduce((sum, message) => sum + estimateMessageTokens(message.content, cal), 0);
     if (finalRequired > hardLimit && (!instructionOverflow || finalRequired > instructionOverflow.required)) {
       instructionOverflow = { profile: profile.name, instruction_tokens: instructionSection.est_tokens, required: finalRequired, available: hardLimit };

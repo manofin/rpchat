@@ -381,14 +381,15 @@ export interface BudgetReport {
   recent_to_id: string | null;
   diagnostics?: BudgetDiagnostics;
   /**
-   * 0023: 서술 지침을 넣으면 현재 턴조차 가용 예산에 못 들어갈 때만 채워진다.
+   * 서술 지침 또는 명시적 응답 길이의 예산에 현재 턴이 들어가지 않으면 채워진다.
    * 생성 경로(routes/chat.ts)는 이 값이 있으면 모델 호출 전에 422 로 거부한다.
-   * 인스펙터·미리보기는 그대로 보고만 한다. 지침이 없는 턴에는 키 자체가 없다.
+   * 인스펙터·미리보기는 그대로 보고만 한다. 기본 길이의 기존 무지침 경로는 유지한다.
    */
   instruction_overflow?: InstructionOverflow;
 }
 
 export interface InstructionOverflow {
+  reason?: 'response_length';
   profile: string;
   /** 렌더된 서술 지침 블록의 추정 토큰 */
   instruction_tokens: number;
