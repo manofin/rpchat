@@ -541,7 +541,13 @@ export function chatRoutes(ctx: Ctx) {
     const committedPath = successfulObservationRows(activePath);
     const observations = committedPath.filter(m => m.id !== sourceUser?.id &&
       !['ui','header','panel','thought'].includes(parseMessageMeta(m.meta_json).block_kind ?? ''))
-      .map(m => ({ text: observationText(m, observationEnabled), audience: audienceOf(m) }));
+      .map(m => {
+        const meta = parseMessageMeta(m.meta_json);
+        const kind = m.role === 'user' ? 'user' as const : meta.block_kind === 'narration' ? 'narration' as const :
+          meta.block_kind === 'line' ? 'dialogue' as const : 'unknown' as const;
+        return { text: observationText(m, observationEnabled), audience: audienceOf(m), kind,
+          speakerName: kind === 'dialogue' ? meta.speaker_name || cast.find(actor => actor.id === meta.speaker_character_id)?.name : undefined };
+      });
 
     // Lock the conversation before the first await (scene-delta). /messages 409
     // and abort both read this registry; a later register left the wait uncancelable.
