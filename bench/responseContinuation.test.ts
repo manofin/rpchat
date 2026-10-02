@@ -138,6 +138,21 @@ async function main() {
       during=async()=>{assert.equal(queue.activeList.length,1);const reload=await api('GET',`/api/conversations/${f.id}`);assert.equal(reload.messages.at(-1).status,'streaming');assert.equal(reload.activeGeneration.messageId,conv(f.id).head_message_id);};
       const r=await send(f.id);during=undefined;behavior='normal';assert.match(r.body,/"type":"error"/);assert.equal(queue.activeList.length,0);assert.deepEqual(mainState(f.id),before);assert.equal(row(f.base.id).status,'complete');assert.equal(row(conv(f.id).head_message_id!).status,'interrupted');
     });
+    await test('an uncommitted original party turn requires regeneration instead of silently losing resumed history',async()=>{
+      for(const format of ['beat','dialog'] as const){
+        const f=await fixture(format);
+        const metadata=parseMessageMeta(row(f.base.id).meta_json);delete metadata.scene_state;
+        run(db,'UPDATE messages SET status=?,meta_json=? WHERE id=?','interrupted',JSON.stringify(metadata),f.base.id);
+        const before=mainState(f.id), head=conv(f.id).head_message_id;
+        const rows=db.prepare('SELECT * FROM messages WHERE conversation_id=?').all(f.id), count=calls.length;
+        const response=await send(f.id);
+        assert.equal(response.statusCode,409,`${format}: ${response.body}`);
+        assert.equal(calls.length,count);
+        assert.equal(conv(f.id).head_message_id,head);
+        assert.deepEqual(db.prepare('SELECT * FROM messages WHERE conversation_id=?').all(f.id),rows);
+        assert.deepEqual(mainState(f.id),before);
+      }
+    });
     await test('model failure restores head if no text and never exposes internal error details',async()=>{
       const f=await fixture();behavior='fail';const before=mainState(f.id);const r=await send(f.id);behavior='normal';assert.ok(!r.body.includes('private internal failure'));assert.equal(conv(f.id).head_message_id,f.base.id);assert.deepEqual(mainState(f.id),before);assert.equal(queue.activeList.length,0);
     });
