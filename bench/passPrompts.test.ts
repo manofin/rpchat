@@ -154,7 +154,7 @@ t('only the newest narrations are carried, oldest first, capped', () => {
   // Chronological, so the newest sits closest to the rules that talk about it.
   assert.ok(p.indexOf('세 번째 서술.') < p.indexOf('가장 최근 서술.'));
   // And the newest still comes before the user input the turn is answering.
-  assert.ok(p.indexOf('가장 최근 서술.') < p.indexOf('## 사용자 입력'));
+  assert.ok(p.indexOf('가장 최근 서술.') < p.indexOf('## 현재 사용자 발화'));
 });
 
 t('continuity context cannot smuggle a voice into the narration pass', () => {
@@ -320,11 +320,11 @@ t('the room roster sentence has one implementation path shared by N/F/E', () => 
   const line = (p: string) => p.split('\n').find((l) => l.includes('이 자리에 있는 사람'));
   assert.equal(line(passN()), line(passF()));
   assert.equal(line(passF()), line(passE()));
-  assert.equal(passN().includes('같은 사람이 아니다'), false);
+  assert.equal(passN().includes('같은 사람이 아니다'), true);
 });
 
 t('user separation has one canonical sentence, not a fact/rule pair', () => {
-  for (const p of [passF(), passE()]) {
+  for (const p of [passN(), passF(), passE()]) {
     assert.ok(p.includes('은 사용자다. 위 목록의 인물과 같은 사람이 아니다.'));
     assert.equal(p.includes('으로 바꿔 부르지 않는다'), false);
   }

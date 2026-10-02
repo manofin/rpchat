@@ -29,7 +29,7 @@ import { assignSpeakers, type AssignSpeakersOutput } from './assignSpeakers.js';
 import { planPartyCore, userNameOf } from './partyChannel.js';
 import { parseParticipantSnapshot, type FocusResult } from './resolveFocus.js';
 import {
-  renderPassE, renderPassF, renderPassN, splitFocusText, type PassCard,
+  renderPassE, renderPassF, renderPassN, splitFocusText, type PassCard, type NarrationObservation,
 } from './passes.js';
 import { renderPassC } from './beatChoices.js';
 import { sanitizeGeneratedContent } from '../contracts/chatEventAdapter.js';
@@ -47,7 +47,7 @@ export type BeatPlanInput = {
   conversation_id?: string;
   observation_enabled?: boolean;
   user_audience?: Audience;
-  observations?: Array<{ text: string; audience?: Audience }>;
+  observations?: Array<{ text: string; audience?: Audience; kind?: NarrationObservation['kind']; speakerName?: string }>;
   narration_audience?: Audience;
   focus_audience?: Audience;
   scene: Scene;
@@ -55,6 +55,8 @@ export type BeatPlanInput = {
   catalog: PartyCatalog;
   current_version: number;
   user_text: string;
+  /** N receives the current utterance separately from already authorized history. */
+  narration_input?: { current_text: string; observations: NarrationObservation[] };
   /** Defaults to 나, matching the 1:1 builder's persona fallback. */
   user_name?: string;
   cast: CastMember[];
@@ -273,7 +275,16 @@ export function planBeat(input: BeatPlanInput): BeatPlan {
       cast: input.cast,
       scene,
       header,
-      userText: observedInput(input, GM),
+      userText: input.narration_input?.current_text ?? project(input.user_text, input.user_audience, GM, !!input.observation_enabled),
+      userName: userNameOf(input),
+      observations: input.narration_input?.observations ?? (input.observation_enabled ? (input.observations ?? []).flatMap(row => {
+        const text = project(row.text, row.audience, GM, true);
+        if (!text) return [];
+        const canReadBody = row.audience?.visibility === 'public' ||
+          (row.audience?.visibility === 'private' && row.audience.recipient_ids.includes(GM));
+        return [{ text, kind: canReadBody ? row.kind ?? 'unknown' : 'unknown',
+          speakerName: canReadBody ? row.speakerName : undefined }];
+      }) : []),
       ambientNames: ambient.map((a) => a.name),
       recentNarrations: input.recent_narrations?.map(text => sanitizeGeneratedContent(text).trim()).filter(Boolean),
     }),
