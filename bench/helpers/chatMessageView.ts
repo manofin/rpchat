@@ -5,15 +5,27 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import ts from 'typescript';
 import { MessageEvents } from '../../apps/web/src/components/EventRenderer.tsx';
 import { CharacterPortrait } from '../../apps/web/src/components/CharacterPortrait.tsx';
-import { messagePortrait } from '../../apps/web/src/lib/chatPortraits.ts';
+import { messagePortrait, portraitMessageIds } from '../../apps/web/src/lib/chatPortraits.ts';
 import { SpeakerHeader, renderContent } from '../../apps/web/src/components/view.tsx';
-import { isEmptyUserMessage } from '../../apps/web/src/lib/chatLayout.ts';
+import { isEmptyUserMessage, visibleChatMessages } from '../../apps/web/src/lib/chatLayout.ts';
 import { hasEventContract } from '../../apps/web/src/lib/chatEvents.ts';
 import { visibleChoices } from '../../apps/web/src/lib/choices.ts';
 import type { Message } from '../../apps/web/src/types.ts';
 
 // Execute the shipped functions without mounting the page's network effects.
 const source = ts.createSourceFile('ChatPage.tsx', readFileSync(new URL('../../apps/web/src/pages/ChatPage.tsx', import.meta.url), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+const portraitSelectors: ts.VariableDeclaration[] = [];
+function findPortraitSelector(node: ts.Node) {
+  if (ts.isVariableDeclaration(node) && node.name.getText(source) === 'portraits') portraitSelectors.push(node);
+  ts.forEachChild(node, findPortraitSelector);
+}
+findPortraitSelector(source);
+assert.equal(portraitSelectors.length, 1, 'one production feed portrait selector');
+const feedPortraitSelector = new Function('chat', 'reorderTurns', 'visibleChatMessages', 'portraitMessageIds',
+  `const shownMessages = visibleChatMessages(chat.messages); return ${portraitSelectors[0].initializer!.getText(source)};`);
+export function feedPortraitMessageIds(messages: Message[], reorder: boolean): Set<string> {
+  return feedPortraitSelector({ messages }, reorder, visibleChatMessages, portraitMessageIds);
+}
 const functions = ['MessageView', 'ChoiceChips'].map((name) => {
   const matches = source.statements.filter((node): node is ts.FunctionDeclaration => ts.isFunctionDeclaration(node) && node.name?.text === name);
   assert.equal(matches.length, 1, `one production ${name} function`);

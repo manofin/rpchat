@@ -246,7 +246,7 @@ export function ChatPage({ id }: { id: string }) {
   const shownMessages = visibleChatMessages(chat.messages);
 
   const reorderTurns = !desktop && shouldReorderTurn(conv.scene.format);
-  const portraits = portraitMessageIds(shownMessages, reorderTurns);
+  const portraits = portraitMessageIds(chat.messages, reorderTurns);
   const ended = !!conv.ended_at;
   const snapshotEndings = parseEndingsSnapshot(conv.story_endings_snapshot);
   const reachedEnding = ended ? (snapshotEndings.find((e) => e.id === conv.reached_ending_id) ?? null) : null;

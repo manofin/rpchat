@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { messagePortrait, portraitMessageIds } from '../apps/web/src/lib/chatPortraits.ts';
-import { renderChatMessage } from './helpers/chatMessageView.ts';
+import { feedPortraitMessageIds, renderChatMessage } from './helpers/chatMessageView.ts';
 import type { Message } from '../apps/web/src/types.ts';
 let passed=0; const t=(name:string,fn:()=>void)=>{fn();console.log(`ok ${++passed} ${name}`);};
 const src='/media/assets/nari/uniform/1.webp';
@@ -33,5 +33,13 @@ t('dialog UI reorder preserves portrait selection, choices, focus and streaming 
  const panel={...message('panel'),meta:{block_kind:'info' as const},events:[{type:'system' as const,id:'panel:0',presentation:'info' as const,text:'INFO'}]};
  assert.deepEqual([...portraitMessageIds([user('u'),panel,message('a')],true)],['a']);
  const m=message('a');m.meta.choices=['창가에 앉는다'];assert.match(renderChatMessage(m),/창가에 앉는다/);assert.match(renderChatMessage(m,{streaming:true,focusId:'nari'}),/class="cursor"/);assert.match(renderChatMessage(m,{focusId:'nari'}),/is-focus/);
+});
+t('hidden inject-only user row still opens a new portrait turn in the production feed',()=>{
+ for(const content of ['', ' \n\t ']) {
+  const empty={...user('inject-only'),content};
+  const rows=[user('u'),message('first'),message('repeat'),empty,message('next-turn'),message('next-repeat')];
+  for(const reorder of [false,true]) assert.deepEqual([...feedPortraitMessageIds(rows,reorder)],['first','next-turn']);
+  assert.equal(renderChatMessage(empty),'','the empty user row remains invisible');
+ }
 });
 console.log(`\n${passed} passed`);
