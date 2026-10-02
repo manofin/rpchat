@@ -197,7 +197,7 @@ async function main() {
     assert.ok(p.includes(narrationText(1)), 'turn 1 narration must come back');
     assert.ok(p.includes('다시 소개하지 않는다'));
     // It is context, not the turn: it sits above the user input being answered.
-    assert.ok(p.indexOf(narrationText(1)) < p.indexOf('## 사용자 입력'));
+    assert.ok(p.indexOf(narrationText(1)) < p.indexOf('## 현재 사용자 발화'));
   });
 
   await t('only the newest narrations are carried once there are more than the cap', async () => {

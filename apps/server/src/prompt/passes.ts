@@ -86,7 +86,7 @@ function rosterLine(cast: CastMember[], scene: Scene): string {
  * the user slot (유키 treating 챙 as 황지명). Names only — no extra card.
  *
  * The room line below is the single source for Pass N/F/E: same format
- * everywhere, and Pass N never gains the user line (it writes no dialogue).
+ * everywhere; narration also needs to distinguish the user from the named NPCs.
  */
 function rosterSentence(cast: CastMember[], scene: Scene): string {
   return `- 이 자리에 있는 사람: ${rosterLine(cast, scene)}`;
@@ -133,6 +133,9 @@ export function renderPassN(input: {
   scene: Scene;
   header: string | null;
   userText: string;
+  userName?: string;
+  /** Already authorized observations; the caller preserves their stored source. */
+  observations?: NarrationObservation[];
   ambientNames: string[];
   /**
    * Already-shown narrations, oldest first, newest last — the newest sits closest
@@ -143,21 +146,26 @@ export function renderPassN(input: {
 }): string {
   const ambient = input.ambientNames.length ? input.ambientNames.join(', ') : '(없음)';
   const recent = (input.recentNarrations ?? []).map((s) => s.trim()).filter(Boolean);
+  const userName = input.userName?.trim() || '나';
+  const observations = (input.observations ?? []).filter(row => row.text.trim());
   return [
     '너는 장면 서술자다. 이번 턴에 새로 달라진 것만 쓴다 — 인물의 행동·반응, 공간에서 바뀐 것, 주변 사람들의 기척. 어떤 인물의 대사도 쓰지 않는다.',
     '',
     ...(input.focusCard ? [cardBlock(input.focusCard, '이번 턴의 중심 인물'), ''] : []),
     '## 장면',
     ...sceneLines(input.scene, input.header),
-    rosterSentence(input.cast, input.scene),
+    ...presentPeopleLines(input.cast, input.scene, userName),
     `- 이번 턴에 몸짓으로 존재감만 드러낼 사람: ${ambient}`,
     '',
     ...(recent.length
-      ? ['## 앞서 이미 서술된 것 (화면에 남아 있다. 다시 쓰지 말 것)', ...recent, '']
+      ? ['## 앞서 이미 서술된 것 (화면에 남아 있다. 다시 쓰지 말 것)', ...recent.map(text => `[서술자] ${text}`), '']
       : []),
-    '## 사용자 입력',
-    input.userText,
+    '## 현재 사용자 발화',
+    `[사용자: ${speakerLabel(userName)}] ${input.userText}`,
     '',
+    ...(observations.length
+      ? ['## 과거 관찰', ...observations.map(row => `${observationLabel(row)} ${row.text}`), '']
+      : []),
     '## 규칙',
     `- ${PASS_N_MAX_SENTENCES}문장 이내. 서술문만 쓴다.`,
     ...(recent.length
@@ -177,6 +185,23 @@ export function renderPassN(input: {
     '',
     '서술:',
   ].join('\n');
+}
+
+export type NarrationObservation = {
+  kind: 'user' | 'narration' | 'dialogue' | 'unknown';
+  speakerName?: string;
+  text: string;
+};
+
+function speakerLabel(name: string): string {
+  return name.replace(/[\r\n\[\]]/g, ' ').trim();
+}
+
+function observationLabel(row: NarrationObservation): string {
+  if (row.kind === 'narration') return '[서술자]';
+  if (row.kind === 'user') return '[사용자]';
+  const name = row.kind === 'dialogue' && row.speakerName ? speakerLabel(row.speakerName) : '';
+  return name ? `[${name}]` : '[화자 미상]';
 }
 
 /**

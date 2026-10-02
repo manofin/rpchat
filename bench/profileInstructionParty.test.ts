@@ -1,7 +1,7 @@
 /** npx tsx bench/profileInstructionParty.test.ts
  * profile-instruction (0023) — party IC calls (beat N/F/E, dialog S).
  *
- *   G-A bytes   → no profile instruction ⇒ attachInjectToIcPass output == HEAD 7b189b3 pins
+ *   G-A bytes   → no profile instruction ⇒ attachInjectToIcPass output == pinned call bytes
  *                 for N/F/E/S × {no inject, inject} + tight-budget shrink
  *   G-P place   → `## 서술 지침` once per call, immediately before that call's `## 규칙`;
  *                 inject still right after `## 규칙`; the call's output contract (sentence /
@@ -49,17 +49,18 @@ const sha = (v: unknown) => createHash('sha256').update(JSON.stringify(v)).diges
 const count = (hay: string, needle: string) => hay.split(needle).length - 1;
 const src = (rel: string) => fs.readFileSync(path.resolve(rel), 'utf8');
 
-// ── HEAD 7b189b3 pins (party-pin fixture) ─────────────────────────────────
+// N pins follow the explicit narrator identity contract; F/E/S keep HEAD 7b189b3 pins.
+// ── party-pin fixture ─────────────────────────────────
 const PIN: Record<string, string> = {
-  'N|none': '5f43a04ccf06da01bcbb6d79390e48e39c36ec980f7fc614fb8e6839a82fde1b',
-  'N|inject': '9986bab1e89c7858fc0b1013b682f2f90a5b0336474129d323f5a81fbf0e22e2',
+  'N|none': '22c92ddaac4c213cd31d9d0f87efab1efc8e2013c8c049438e89ef5c9096ed9b',
+  'N|inject': '92dd7749d4b3d9945866eb0b8b14d251e3e81b7af7bfc8ce23b88b2385f9b4bd',
   'F|none': 'eae4ecde3cd0cd4200024badb962e9ed463f193c5c7dec52cc7595204f64854f',
   'F|inject': 'ffa08b26579b5a45a366a980825ac0a6cac63efdedf18cb738e4cfa591a2bac5',
   'S|none': 'e50eb064d6913e05a5a8c7222dd2325e165fc7aa9dbde9b16367ff28816374f9',
   'S|inject': 'f04fcffe7639a0fcf99128f5c06f3daba077f7fd185fce479bf710cc1a244b7b',
   'E0|none': 'b6c438ec3dd32c70d0daf8d398e531b6fc314a326b8cbc34dca609dcb3587b42',
   'E0|inject': '29ba64ebf7620002b8f82363c2e9616217e2d8d5efc77ebf156dcb6e7b7b1193',
-  'N|inject|tight': '371455bf6af592c944a6c7ff7ed38829a44edef793374563bb73546ebaf50ab0',
+  'N|inject|tight': '8b36ae4721ee68d71f8084b37c00b34f73a739a63d98eb08fbfc4438a16338a5',
   'N|inject|tight|dropped': '391552c099c101b131feaf24c5795a6a15bc8ec82015424e0d2b4274a369a0bf',
 };
 
@@ -119,6 +120,8 @@ async function main() {
     const tight = attachInjectToIcPass(plan.pass_n, INJECT, { promptTokenBudget: estimateTokens(full) - 3, profileInstruction: null });
     assert.equal(sha(tight.prompt), PIN['N|inject|tight']);
     assert.equal(sha(String(tight.droppedRecent)), PIN['N|inject|tight|dropped']);
+    assert.ok(full.includes('[사용자: 황지명]'));
+    assert.ok(full.includes('[서술자] 최신 서술 한 줄.'));
   });
 
   await t('G-P block once, right before the call\'s own ## 규칙; inject right after it; contract kept', () => {

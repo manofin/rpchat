@@ -1,6 +1,6 @@
 /** npm run test:benches -- responseLength
  * Actual routes + isolated DB/mock model. Baseline request hashes were measured at
- * 499afcf, before the room length policy. No real model or live data.
+ * 499afcf, before the room length policy; only N was repinned for explicit speaker identity. No real model or live data.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -95,7 +95,7 @@ async function main() {
   }
   const comparable = (messages: GenParams['messages']) => messages.map(({ role, content }) => ({ role, content }));
   const requestDigest = () => createHash('sha256').update(JSON.stringify(calls.map(({ method, p }) => ({ method, model: p.model, messages: comparable(p.messages), temperature: p.temperature, top_p: p.top_p, max_tokens: p.max_tokens, stop: p.stop })))).digest('hex');
-  const PIN: Record<Format, string> = { solo: '92515f7db5e97d27d5f712d86f2deb34a24a94bad3b2c297368abee7e57076f0', dialog: 'b9edf021708221b9bb607222d5d93ce79a77c71ef0ba6b8da38e57aa1e80c1e0', beat: '53910ce6f87f56aa3ac4564e3dbf3e43a69923eada518e6f1a018c482bb2d390' };
+  const PIN: Record<Format, string> = { solo: '92515f7db5e97d27d5f712d86f2deb34a24a94bad3b2c297368abee7e57076f0', dialog: 'b9edf021708221b9bb607222d5d93ce79a77c71ef0ba6b8da38e57aa1e80c1e0', beat: 'd9791e12a6fea4c0e3dbc833404b1b63aa3abd9da8237d7e727cd4a1b7b62252' };
   const baselineDigests: Partial<Record<Format, string>> = {};
   try {
     // BASELINE_CAPTURE_START: the same fixture can be extracted read-only on the pre-feature tree.
@@ -105,6 +105,8 @@ async function main() {
       baselineDigests[format] = requestDigest();
     }
     console.log(`BASELINE_REQUESTS=${JSON.stringify(baselineDigests)}`);
+    const nonN = calls.filter(x => !x.p.messages.some(m => m.content.startsWith('너는 장면 서술자다')));
+    assert.equal(createHash('sha256').update(JSON.stringify(nonN.map(({method,p}) => ({method,model:p.model,messages:comparable(p.messages),temperature:p.temperature,top_p:p.top_p,max_tokens:p.max_tokens,stop:p.stop})))).digest('hex'), '2e0c1f95fa4f61944191fc7d30c060224d0d4e4f33b7c477587730e623d3eabc', 'non-N beat calls keep their original baseline bytes');
     // BASELINE_CAPTURE_END
     const { responseMaxTokens, responseLengthHint } = await import('../apps/server/src/prompt/responseLength.js');
     await t('unset response length sends byte-identical baseline requests for solo, dialog and beat', () => {

@@ -154,8 +154,8 @@ const thought = payloadOf(
 expectCase(
   '1 focus-only',
   quiet,
-  '891f370ff3f08807e152be71afd8da8b9a38cf2791ee781a8460c3908d8ebe7a',
-  3842,
+  'eb59b21cc1956d6720a9541833ee2b144af62d4a0a8d2953c77e73741dca9abe',
+  3956,
   ['header', 'narration', 'line', 'ui'],
 );
 t('1 focus-only speaker is nari and extras empty', () => {
@@ -167,8 +167,8 @@ t('1 focus-only speaker is nari and extras empty', () => {
 expectCase(
   '2 hard_event extra 1',
   extra1,
-  '8256b3c5463c9b582f871b208627bbe6a3227dcdd6eea9180500f1633096a245',
-  5105,
+  '6a8a504c9f29f2792150bf867a79593ec40a8e6e98751437ebf2e91ccc52460a',
+  5219,
   ['header', 'narration', 'line', 'line', 'ui'],
 );
 t('2 extra 1 is sera after focus', () => {
@@ -182,8 +182,8 @@ t('2 extra 1 is sera after focus', () => {
 expectCase(
   '3 extra 2 approval boundary',
   extra2,
-  'd263adf0100f881f45973d5564196e7d773f900b306e20eb5e549d1e4c4031d9',
-  6380,
+  '8eccd5b5fde3c0483f09c5cd098c3cec3d7dc012543859a06036c2b355d88ebb',
+  6494,
   ['header', 'narration', 'line', 'line', 'line', 'ui'],
 );
 t('3 extra 2 are hayeon then sera', () => {
@@ -197,8 +197,8 @@ t('3 extra 2 are hayeon then sera', () => {
 expectCase(
   '4 ambient present',
   quiet,
-  '891f370ff3f08807e152be71afd8da8b9a38cf2791ee781a8460c3908d8ebe7a',
-  3842,
+  'eb59b21cc1956d6720a9541833ee2b144af62d4a0a8d2953c77e73741dca9abe',
+  3956,
   ['header', 'narration', 'line', 'ui'],
 );
 t('4 ambient includes luna and excludes focus', () => {
@@ -209,8 +209,8 @@ t('4 ambient includes luna and excludes focus', () => {
 expectCase(
   '5 unresolved focus pin',
   unresolved,
-  'b362670dc48d58f697390fce54eb48b8726461f9d3b642291427dd7a51149e1e',
-  3849,
+  '393e13581bfde727affe9123b214c65150c0b70e27005a4c4af38211c94efd3c',
+  3963,
   ['header', 'narration', 'line', 'ui'],
 );
 t('5 last_beat.unresolved pins nari', () => {
@@ -221,8 +221,8 @@ t('5 last_beat.unresolved pins nari', () => {
 expectCase(
   '6 thought block',
   thought,
-  'cb4b797c68a62067353ae2b129f43ebc1dc0e1dc5af8a6aa0d3b9bd7e64e9f1c',
-  3929,
+  '5ebd42804db3b4f5546f44287d19d312da9bd0b417fff4994b88ab59faa02d6c',
+  4043,
   ['header', 'narration', 'line', 'thought', 'ui'],
 );
 t('6 thought speaker is focus nari', () => {
@@ -250,6 +250,16 @@ t('generateBeat model call count and order unchanged', () => {
   const e = body.indexOf('planPassE(');
   const c = body.indexOf('passCWith(');
   assert.ok(n > 0 && f > n && stream > f && e > stream && c > e);
+});
+
+// N changes intentionally; the other prompt/state/render bytes stay pinned to #75.
+t('F/E, speaker approval, persisted scene and render blocks remain byte-identical', () => {
+  const cases = [quiet, extra1, extra2, quiet, unresolved, thought];
+  const expected = ["dcbf05bc63f6de2d7f0693c38d88a853aa854ff76ba856e84188462513a7257d", "d4e006e2651c9dbefaa782d67aaa6fe454be47222216388443bf74ed9a1ce3bc", "42aaaefbfdd23595c82d87168c20b022e2c0d5f52ddf2e3e3985ed91eaa3a9d7", "dcbf05bc63f6de2d7f0693c38d88a853aa854ff76ba856e84188462513a7257d", "aabfde7dbcb4839dc36f6d04aed54366ac1c44c034fe5fd931cbea7a9147dcba", "9ce543a2bbfc7c2a34c265b0a265ddcee3530f565a76d28299f52070b57dfdd7"];
+  cases.forEach((got, i) => {
+    const { pass_n, ...unchanged } = got.payload;
+    assert.equal(createHash('sha256').update(JSON.stringify(unchanged)).digest('hex'), expected[i]);
+  });
 });
 
 
