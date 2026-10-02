@@ -11,6 +11,7 @@ import {
   generationBlocksDelete,
   interruptOrphanStreaming,
 } from '../db/generation.js';
+import { isSideModeMessage, mainMessageSql, sideModeVisible } from '../db/sideMode.js';
 import { parseMessageMeta, deepestLeaf, getPath, insertMessage, messageOut, readablePreview, setHead, updateMessage } from '../db/tree.js';
 import { buildPrompt, resolvePersona } from '../prompt/builder.js';
 import { previewDialog } from '../prompt/dialogPreview.js';
@@ -402,7 +403,7 @@ export function conversationRoutes(ctx: Ctx) {
         minAgeMs: 2000,
       });
       const messages = getPath(db, conv).map((m) => messageOut(db, m));
-      const active = ctx.queue.activeList.find((g) => g.conversationId === conv.id && g.kind !== 'ending-judge');
+      const active = ctx.queue.activeList.find((g) => g.conversationId === conv.id && g.kind !== 'ending-judge' && g.kind !== 'side-mode');
       return {
         conversation: conversationOut(conv),
         character: characterOut(character),
@@ -574,6 +575,10 @@ export function conversationRoutes(ctx: Ctx) {
     app.get<{ Params: { id: string } }>('/api/messages/:id', async (req, reply) => {
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', req.params.id);
       if (!m) return reply.code(404).send({ error: 'not found' });
+      if (isSideModeMessage(m)) {
+        const conv = loadConversation(ctx, m.conversation_id);
+        if (!conv || !sideModeVisible(m, new Set(getPath(db, conv).map(row => row.id)), conv.head_message_id)) return reply.code(404).send({ error: 'not found' });
+      }
       return messageOut(db, m);
     });
 
@@ -593,6 +598,7 @@ export function conversationRoutes(ctx: Ctx) {
     app.post<{ Params: { id: string } }>('/api/messages/:id/select', async (req, reply) => {
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', req.params.id);
       if (!m) return reply.code(404).send({ error: 'not found' });
+      if (isSideModeMessage(m)) return reply.code(409).send({ error: '부가 모드 결과는 본편 분기로 선택할 수 없음' });
       const conv = loadConversation(ctx, m.conversation_id);
       if (!conv) return reply.code(404).send({ error: 'not found' });
       if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '생성 중에는 분기를 바꿀 수 없음' });
@@ -626,7 +632,7 @@ export function conversationRoutes(ctx: Ctx) {
         run(db, 'DELETE FROM messages WHERE id = ?', m.id); // 자식은 CASCADE
         if (conv.head_message_id === m.id || !one(db, 'SELECT 1 FROM messages WHERE id = ?', conv.head_message_id)) {
           // 같은 부모의 남은 형제가 있으면 그쪽 잎으로, 없으면 부모로
-          const sib = one<{ id: string }>(db, 'SELECT id FROM messages WHERE conversation_id = ? AND parent_id IS ? ORDER BY created_at DESC LIMIT 1', conv.id, m.parent_id);
+          const sib = one<{ id: string }>(db, `SELECT id FROM messages WHERE conversation_id = ? AND parent_id IS ? AND ${mainMessageSql()} ORDER BY created_at DESC LIMIT 1`, conv.id, m.parent_id);
           const headId = sib ? deepestLeaf(db, sib.id) : m.parent_id;
           setHead(db, conv.id, headId);
           persistMaterializedScene(conv.id, headId, conv.scene_json);

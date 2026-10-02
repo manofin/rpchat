@@ -3,13 +3,14 @@ import { z } from 'zod';
 import type { Ctx } from '../ctx.js';
 import { config } from '../config.js';
 import { many, nowIso, one, parseJson, run, uid } from '../db/index.js';
+import { isSideModeMessage } from '../db/sideMode.js';
 import { getPath } from '../db/tree.js';
 import { isOocMessage, loadProfile, resolvePersona } from '../prompt/builder.js';
 import { renderSummaryPrompt, renderEpisodePrompt, stateToBullets } from '../prompt/templates.js';
 import { estimateTokens, getCalibration, truncateToTokens } from '../prompt/tokens.js';
 import { classify } from '../memory/conflict.js';
 import { evidenceIdsForSlice, isSummarizeBlocked, sceneCoverRange } from './summarizeContract.js';
-import type { CharacterRow, MemoryRow, SummaryRow } from '../types.js';
+import type { CharacterRow, MemoryRow, SummaryRow, MessageRow } from '../types.js';
 import { loadConversation } from './conversations.js';
 
 function memoryOut(m: MemoryRow) {
@@ -112,6 +113,9 @@ export function memoryRoutes(ctx: Ctx) {
       const p = memoryCreate.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
       const d = p.data;
+      if (d.evidenceMessageIds.some(id => { const row = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', id); return row && isSideModeMessage(row); })) {
+        return reply.code(400).send({ error: '부가 모드 결과는 본편 기억의 근거로 사용할 수 없음' });
+      }
       let characterId = d.characterId ?? null;
       if (d.conversationId) {
         const conv = loadConversation(ctx, d.conversationId);

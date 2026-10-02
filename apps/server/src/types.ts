@@ -266,6 +266,7 @@ export type MessageStatus = 'streaming' | 'complete' | 'interrupted' | 'error';
 
 export interface MessageMeta {
   continuation_of?: string;
+  side_mode?: import('./db/sideMode.js').SideModeMeta;
   observation_text?: string;
   observation?: import('./prompt/observation.js').Audience;
   chat_event_version?: 1;

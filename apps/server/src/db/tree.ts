@@ -4,6 +4,7 @@ import type { ChatEvent, ChatEventSnapshot } from '@rpchat/contracts/chat-event'
 import { adaptChatEvents, isChatEvent, sanitizeGeneratedContent, stripThoughtContent, type AdaptOptions } from '../contracts/chatEventAdapter.js';
 import { PUBLIC } from '../prompt/observation.js';
 import { objectMessageMeta, parseMessageMeta } from './messageMeta.js';
+import { isSideModeMessage, mainMessageSql } from './sideMode.js';
 
 export { parseMessageMeta } from './messageMeta.js';
 
@@ -14,9 +15,9 @@ export interface MessageOut extends Omit<MessageRow, 'meta_json' | 'bookmarked'>
 }
 
 export function messageOut(db: DB, m: MessageRow): MessageOut {
-  const ids = many<{ id: string }>(
+  const ids = isSideModeMessage(m) ? [m.id] : many<{ id: string }>(
     db,
-    'SELECT id FROM messages WHERE conversation_id = ? AND parent_id IS ? ORDER BY created_at, id',
+    `SELECT id FROM messages WHERE conversation_id = ? AND parent_id IS ? AND ${mainMessageSql()} ORDER BY created_at, id`,
     m.conversation_id, m.parent_id,
   ).map((r) => r.id);
   const { meta_json, bookmarked, ...rest } = m;
@@ -87,7 +88,7 @@ export function getPath(db: DB, conv: ConversationRow): MessageRow[] {
     guard.add(cur);
     const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', cur);
     if (!m) break;
-    out.push(m);
+    if (!isSideModeMessage(m)) out.push(m);
     cur = m.parent_id;
   }
   return out.reverse();
@@ -97,7 +98,7 @@ export function getPath(db: DB, conv: ConversationRow): MessageRow[] {
 export function deepestLeaf(db: DB, messageId: string): string {
   let cur = messageId;
   for (let i = 0; i < 10_000; i++) {
-    const child = one<{ id: string }>(db, 'SELECT id FROM messages WHERE parent_id = ? ORDER BY created_at DESC, id DESC LIMIT 1', cur);
+    const child = one<{ id: string }>(db, `SELECT id FROM messages WHERE parent_id = ? AND ${mainMessageSql()} ORDER BY created_at DESC, id DESC LIMIT 1`, cur);
     if (!child) return cur;
     cur = child.id;
   }
@@ -105,6 +106,8 @@ export function deepestLeaf(db: DB, messageId: string): string {
 }
 
 export function setHead(db: DB, convId: string, headId: string | null): void {
+  const target = headId ? one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', headId) : undefined;
+  if (target && isSideModeMessage(target)) throw new Error('부가 모드 결과는 본편 분기로 선택할 수 없음');
   run(db, 'UPDATE conversations SET head_message_id = ?, updated_at = ? WHERE id = ?', headId, nowIso(), convId);
 }
 
@@ -181,6 +184,7 @@ export type TurnStart =
 const TURN_WALK_LIMIT = 64;
 
 export function resolveTurnStart(db: DB, target: MessageRow): TurnStart {
+  if (isSideModeMessage(target)) return { kind: 'unresolved', reason: 'side_mode' };
   // A 1:1 continuation is an append-only piece of its original response.
   // Walk only its verified parent chain; never trust a metadata id across branches.
   for (let hops = 0; parseMessageMeta(target.meta_json).continuation_of && parseMessageMeta(target.meta_json).beat_seq === undefined; hops++) {
@@ -191,6 +195,7 @@ export function resolveTurnStart(db: DB, target: MessageRow): TurnStart {
     if (!parent || parent.role !== 'assistant') return { kind: 'unresolved', reason: 'continuation_parent_missing' };
     target = parent;
   }
+  if (isSideModeMessage(target)) return { kind: 'unresolved', reason: 'side_mode' };
   if (target.role !== 'assistant') return { kind: 'unresolved', reason: 'not_assistant' };
   const meta = parseMessageMeta(target.meta_json);
   // An unfinished dialog script has its turn position before its final block kind.
