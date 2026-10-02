@@ -102,7 +102,6 @@ const PASS_N_MAX_TOKENS = 300;
 const PASS_F_MAX_TOKENS = 500;
 /** Pass N failing must not cost the turn, so it gets a short leash. */
 const PASS_N_TIMEOUT_MS = 20_000;
-const PASS_E_TIMEOUT_MS = 15_000;
 /**
  * optimize-beat-choices-latency: the beat's own short contract (별표 한 조각 +
  * 한 문장, 50자). n=50 interleaved vs the long form: completion p50 64 / p95 70
@@ -150,13 +149,6 @@ function sealClockObserve(
 }
 
 /**
- * Per-pass deadline. The model client has one global timeout tuned for a full 1:1
- * turn, which is far too generous for a four-sentence narration — and §7's whole
- * defence against a five-call beat is that a stalled optional pass gets dropped
- * fast rather than adding a minute to the turn. Composing a signal here keeps that
- * local to the beat path instead of changing the shared client for 1:1 too.
- */
-/**
  * profile-instruction (0023): 파티 IC 호출(N/F/E/S)에 붙일 모델 프로필 서술 지침.
  * - 프로필은 방에 저장된 `conv.profile_name` 으로 조회한다(방 생성 때 정해져 방에서 바꾼 값이
  *   유지된다 — 스토리 기본값을 매 턴 다시 읽지 않는다).
@@ -190,6 +182,7 @@ function partyProfileInstruction(
   };
 }
 
+/** N/C keep short deadlines; an extra's prefill uses the configured model limit. */
 function withDeadline(ms: number, parent: AbortSignal): { signal: AbortSignal; done: () => void } {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(new Error('pass timeout')), ms);
@@ -790,7 +783,7 @@ export function chatRoutes(ctx: Ctx) {
       const extraTexts: Record<string, string> = {};
       for (const e of planPassE(observationEnabled ? { ...planInput, observations: [] } : planInput, plan, narration, speechObservation(focusText, planInput.focus_audience, observationEnabled))) {
         const tE = Date.now();
-        const eDeadline = withDeadline(PASS_E_TIMEOUT_MS, controller.signal);
+        const eDeadline = withDeadline(config.model.timeoutMs, controller.signal);
         try {
           const out = await ctx.queue.run(() => ctx.model.complete({
             model, messages: [{ role: 'user', content: fitObservationPass(input => planPassE(input, plan, narration, speechObservation(focusText, input.focus_audience, observationEnabled)).find(item => item.character_id === e.character_id)!.prompt, AUX_MAX_TOKENS, e.name, e.character_id) }],
