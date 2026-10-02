@@ -13,6 +13,9 @@ import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { visibleChoices } from '../lib/choices';
 import { groupChatTurns, isEmptyUserMessage, shouldReorderTurn, turnChoicesHost, visibleChatMessages, visualAssistantOrder } from '../lib/chatLayout';
 import { MessageEvents } from '../components/EventRenderer';
+import { CharacterPortrait } from '../components/CharacterPortrait';
+import { messagePortrait, portraitMessageIds } from '../lib/chatPortraits';
+import { useFeedResize } from '../lib/useFeedResize';
 import { eventUiData, hasEventContract } from '../lib/chatEvents';
 import { expandLeadingShortcut, readShortcuts, resolveShortcutSubmit } from '../lib/shortcutMacro';
 import { useDesktopLayout } from '../lib/useDesktopLayout';
@@ -104,6 +107,8 @@ export function ChatPage({ id }: { id: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const stickyRef = useRef(true);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useFeedResize(scrollRef, contentRef, stickyRef, id, chat.messages);
 
   // 스크롤 하단 고정 추적
   function onScroll() {
@@ -241,6 +246,7 @@ export function ChatPage({ id }: { id: string }) {
   const shownMessages = visibleChatMessages(chat.messages);
 
   const reorderTurns = !desktop && shouldReorderTurn(conv.scene.format);
+  const portraits = portraitMessageIds(shownMessages, reorderTurns);
   const ended = !!conv.ended_at;
   const snapshotEndings = parseEndingsSnapshot(conv.story_endings_snapshot);
   const reachedEnding = ended ? (snapshotEndings.find((e) => e.id === conv.reached_ending_id) ?? null) : null;
@@ -292,6 +298,7 @@ export function ChatPage({ id }: { id: string }) {
     isLastAssistant: m.id === lastAssistant?.id,
     generating: chat.generating,
     hideChoices: opts?.hideChoices,
+    showPortrait: portraits.has(m.id),
     onRegenerate: () => chat.regenerate(m.id),
     onSwipeLeft: () => { const i = m.siblings.index; if (i > 0) chat.selectSibling(m.siblings.ids[i - 1]); },
     onSwipeRight: () => { const i = m.siblings.index; if (i < m.siblings.count - 1) chat.selectSibling(m.siblings.ids[i + 1]); else chat.regenerate(m.id); },
@@ -397,6 +404,7 @@ export function ChatPage({ id }: { id: string }) {
       })()}
 
       <div className="chat-scroll" ref={scrollRef} onScroll={onScroll}>
+        <div className="chat-feed" ref={contentRef}>
         {shownMessages.length === 0 && <div className="sysline" style={{ margin: 'auto' }}>첫 메시지를 보내 대화를 시작하세요.</div>}
         {reorderTurns
           ? groupChatTurns(shownMessages).map((turn, ti) => {
@@ -415,6 +423,7 @@ export function ChatPage({ id }: { id: string }) {
             <MessageView key={m.id} {...messageViewProps(m)} />
           ))}
         {chat.error && chat.detail && <div className="banner err" style={{ margin: '4px 0' }}>{chat.error}</div>}
+        </div>
       </div>
 
       {/* 기존 sysline 슬롯: 응답 이어가기 + 요약 제안 (키보드/스크롤 경로 비변경) */}
@@ -633,6 +642,7 @@ function MessageView(props: {
   onChoice: (c: string) => void;
   onEditChoice: (c: string) => void;
   hideChoices?: boolean;
+  showPortrait?: boolean;
   focusId?: string | null;
 }) {
   const { m } = props;
@@ -711,12 +721,13 @@ function MessageView(props: {
 
   if (!isUser && hasEventContract(m) && m.events.length === 0 && m.status === 'complete' && !m.meta.choices?.length && !m.meta.error) return null;
   const firstDialogue = !isUser && hasEventContract(m) ? m.events.find((event) => event.type === 'dialogue') : undefined;
+  const portrait = props.showPortrait === false ? null : messagePortrait(m);
   const showActions = !props.streaming && !props.generating;
   const lineFocus = Boolean(!isUser && props.focusId && m.events?.some((event) => event.type === 'dialogue' && event.actorId === props.focusId));
   return (
-    <div id={props.domId} className={`msg ${isUser ? 'user' : 'assistant'} ${m.meta.ooc ? 'ooc' : ''}${lineFocus ? ' is-focus' : ''}`}>
+    <div id={props.domId} className={`msg ${isUser ? 'user' : 'assistant'} ${m.meta.ooc ? 'ooc' : ''}${lineFocus ? ' is-focus' : ''}${portrait ? ' has-portrait' : ''}`}>
       {firstDialogue?.actorName ? (
-        <SpeakerHeader name={firstDialogue.actorName} avatar={m.meta.image_url ?? m.meta.speaker_avatar} focused={lineFocus} />
+        <SpeakerHeader name={firstDialogue.actorName} avatar={m.meta.speaker_avatar === m.meta.image_url ? undefined : m.meta.speaker_avatar} focused={lineFocus} />
       ) : null}
       <div
         className={`${isUser ? 'bubble' : 'chat-event-body'} ${m.status === 'interrupted' ? 'interrupted' : ''} ${m.status === 'error' ? 'error' : ''}`}
@@ -729,6 +740,7 @@ function MessageView(props: {
         onTouchEnd={onTouchEnd}
         onTouchCancel={onTouchCancel}
       >
+        {portrait ? <CharacterPortrait key={portrait.src} src={portrait.src} name={portrait.name} /> : null}
         {isUser ? renderContent(m.content) : <MessageEvents message={m} streaming={props.streaming} focusId={props.isLastAssistant ? props.focusId : null} />}
         {props.streaming && <span className="cursor" />}
         {m.status === 'error' && <div className="small" style={{ color: 'var(--danger)', marginTop: 6 }}>{m.meta.error ?? '생성 실패'}</div>}
