@@ -1,6 +1,6 @@
 export interface ActiveGeneration {
   id: string;
-  kind?: 'chat' | 'ending-judge';
+  kind?: 'chat' | 'ending-judge' | 'side-mode';
   conversationId: string;
   messageId: string;
   startedAt: string;

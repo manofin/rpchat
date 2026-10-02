@@ -1,3 +1,4 @@
+import { ObservationFilterSettings } from './ObservationFilterSettings';
 import { useEffect, useState } from 'react';
 import { get } from '../lib/api';
 import { back } from '../lib/router';
@@ -140,6 +141,7 @@ export function ConversationSettingsPage({ route }: { route: SettingsRoute }) {
         />
       )}
     >
+      <ObservationFilterSettings detail={detail} onReload={setDetail} />
       {SECTION_ORDER.map((section) => {
         const rows = items.filter((item) => item.section === section);
         if (rows.length === 0) return null;

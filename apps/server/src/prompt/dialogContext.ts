@@ -40,3 +40,7 @@ export function dialogPlanInput(db: DB, conv: ConversationRow, scene: Scene, use
     participant_ids: parseParticipantSnapshot(conv.story_participant_ids_snapshot), separate_user_input: true,
   };
 }
+
+export function supportsPartyObservation(db: DB, conv: ConversationRow): boolean {
+  return Boolean(storyCastForGenerate(conv, loadStoryRoster(db, conv)));
+}

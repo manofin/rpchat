@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { execSync } from 'node:child_process';
 import ts from 'typescript';
+import { parseSideModeCommand } from '../apps/web/src/lib/responseControls.ts';
 import { ApiError, sendOkForComposer, StreamInterruptedError } from '../apps/web/src/lib/api.ts';
 import { resolveShortcutSubmit } from '../apps/web/src/lib/shortcutMacro.ts';
 
@@ -171,7 +172,7 @@ t('8 composer and choice send use the message endpoint and preserve optional inj
   const current = streamHarness(async () => {});
   const pending: Array<Promise<boolean | undefined>> = [];
   const dependencies = {
-    draft: 'typed text', resolveShortcutSubmit, readShortcuts: () => [],
+    generating: false, parseSideModeCommand, choiceDraft: null, setWhisperIds: () => {}, setChoiceDraft: () => {}, draft: 'typed text', resolveShortcutSubmit, readShortcuts: () => [],
     chat: { generating: false, detail: { conversation: { ended_at: null } },
       send: (text: string, options?: { inject_instruction?: string }) => {
         const promise = current.send(text, options);

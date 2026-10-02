@@ -40,6 +40,7 @@ export function resolvePromptPolicy(profile: InstructionFields): PromptPolicy {
 
 /** 422 본문. 1:1·파티 거부가 같은 문구를 쓴다. */
 export function formatInstructionOverflow(o: InstructionOverflow): string {
+  if (o.reason === 'response_length') return `선택한 응답 길이에 필요한 컨텍스트가 부족합니다: 입력 추정 ${o.required} > 가용 ${o.available}토큰. 현재 입력을 줄이거나 응답 길이를 줄여 주세요.`;
   return `서술 지침이 컨텍스트 예산을 넘어 생성하지 않음: 프로필 ${o.profile}, 지침 추정 ${o.instruction_tokens}토큰, 필요 ${o.required} > 가용 ${o.available}. 더 짧은 지침(LITE)을 쓰거나 이 방의 프로필을 바꾸세요.`;
 }
 

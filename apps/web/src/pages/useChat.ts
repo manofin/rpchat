@@ -149,14 +149,15 @@ export function useChat(conversationId: string) {
     return scopeRef.current === scope ? result : true;
   }, [state.generating, applyEvent, patchState, reload, scope]);
 
-  const send = useCallback((content: string, opts?: { inject_instruction?: string }) => {
-    const body: { content: string; inject_instruction?: string } = { content };
+  const send = useCallback((content: string, opts?: { inject_instruction?: string } & { choice?: { message_id: string; index: number; visibility: 'public' | 'private' } } & { observation?: { visibility: 'private'; recipient_ids: string[] } }) => {
+    const body = { content, ...opts };
     if (opts?.inject_instruction != null && opts.inject_instruction !== '') {
       body.inject_instruction = opts.inject_instruction;
     }
     return runStream(`/api/conversations/${conversationId}/messages`, body);
   }, [runStream, conversationId]);
   const regenerate = useCallback((messageId: string) => runStream(`/api/conversations/${conversationId}/regenerate`, { messageId }), [runStream, conversationId]);
+  const continueResponse = useCallback((messageId: string) => runStream(`/api/conversations/${conversationId}/continue`, { messageId }), [runStream, conversationId]);
   const branchEdit = useCallback((messageId: string, content: string) => runStream(`/api/conversations/${conversationId}/branch`, { messageId, content }), [runStream, conversationId]);
 
   const stop = useCallback(async () => {
@@ -225,6 +226,6 @@ export function useChat(conversationId: string) {
     ...state,
     loading: state.loading || (!!state.detail && state.detail.conversation.id !== conversationId),
     generating: state.generating || streamConnected,
-    reload, send, regenerate, branchEdit, stop, selectSibling, editMessage, deleteMessage, toggleBookmark, updateConversation,
+    reload, send, regenerate, continueResponse, branchEdit, stop, selectSibling, editMessage, deleteMessage, toggleBookmark, updateConversation,
   };
 }

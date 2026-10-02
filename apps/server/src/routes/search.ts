@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { mainMessageSql } from '../db/sideMode.js';
 import { many } from '../db/index.js';
 import type { Ctx } from '../ctx.js';
 
@@ -41,7 +42,7 @@ const FTS_SQL = `
   JOIN messages m ON m.id = f.message_id
   JOIN conversations v ON v.id = f.conversation_id
   JOIN characters c ON c.id = v.character_id
-  WHERE message_fts MATCH ?
+  WHERE message_fts MATCH ? AND ${mainMessageSql('m.meta_json')}
   ORDER BY m.created_at DESC LIMIT ?`;
 
 const LIKE_SQL = `
@@ -52,7 +53,7 @@ const LIKE_SQL = `
   FROM messages m
   JOIN conversations v ON v.id = m.conversation_id
   JOIN characters c ON c.id = v.character_id
-  WHERE instr(m.content, ?) > 0
+  WHERE instr(m.content, ?) > 0 AND ${mainMessageSql('m.meta_json')}
   ORDER BY m.created_at DESC LIMIT ?`;
 
 export function searchRoutes(ctx: Ctx) {

@@ -1,3 +1,8 @@
+import { sideModeRoutes } from './sideModes.js';
+import { continuationRoutes } from './continuation.js';
+import { responseLengthHint, responseMaxTokens } from '../prompt/responseLength.js';
+import { actorAudience } from '../prompt/composeBeat.js';
+import { choiceContext, audienceSchema, authorizeAudience, audienceOf, project, PUBLIC, GM, successfulObservationRows, speechObservation, observationText } from '../prompt/observation.js';
 import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -32,12 +37,12 @@ import type { PassCard } from '../prompt/passes.js';
 import type { CharacterRow } from '../types.js';
 import { buildPrompt } from '../prompt/builder.js';
 import { loadStoryRoster, dialogPlanInput } from '../prompt/dialogContext.js';
-import { buildDialogPrompt, DIALOG_MAX_TOKENS } from '../prompt/dialogPrompt.js';
+import { buildDialogPrompt } from '../prompt/dialogPrompt.js';
 import { parseInjectInstruction, attachInjectToIcPass, type InjectContext } from '../prompt/injectContext.js';
 import { formatInstructionOverflow, profileInstructionText } from '../prompt/promptPolicy.js';
 import { dumpGenerationPrompt } from '../prompt/dump.js';
-import { extractChoices, renderProfileInstruction, sanitizeAssistantContent, sanitizeNarration } from '../prompt/templates.js';
-import { estimateTokens, getCalibration, updateCalibration } from '../prompt/tokens.js';
+import { extractChoices, renderProfileInstruction, sanitizeAssistantContent } from '../prompt/templates.js';
+import { estimateTokens, estimateMessageTokens, getCalibration, updateCalibration } from '../prompt/tokens.js';
 import type { ConversationRow, InstructionOverflow, MessageRow, Scene } from '../types.js';
 import { loadConversation } from './conversations.js';
 import { fireEndingEvalJob } from '../endingJudge.js';
@@ -99,7 +104,6 @@ const PASS_N_MAX_TOKENS = 300;
 const PASS_F_MAX_TOKENS = 500;
 /** Pass N failing must not cost the turn, so it gets a short leash. */
 const PASS_N_TIMEOUT_MS = 20_000;
-const PASS_E_TIMEOUT_MS = 15_000;
 /**
  * optimize-beat-choices-latency: the beat's own short contract (별표 한 조각 +
  * 한 문장, 50자). n=50 interleaved vs the long form: completion p50 64 / p95 70
@@ -118,13 +122,6 @@ const PASS_C_MAX_TOKENS = 160;
  * not worth the wait, and the reader is already looking at a finished beat.
  */
 const PASS_C_TIMEOUT_MS = 20_000;
-/**
- * dialog-format: Pass S writes the whole turn — narration and every line — so it
- * needs the room the beat path splits across N + F + E. It is also the only call
- * that turn, which is why one budget this size still costs less than the mix.
- */
-const PASS_S_MAX_TOKENS = DIALOG_MAX_TOKENS;
-
 /** User abort, including the window before a focus/script row exists. */
 function wasAborted(controller: AbortController, err: unknown): boolean {
   if (controller.signal.aborted) return true;
@@ -153,13 +150,6 @@ function sealClockObserve(
   });
 }
 
-/**
- * Per-pass deadline. The model client has one global timeout tuned for a full 1:1
- * turn, which is far too generous for a four-sentence narration — and §7's whole
- * defence against a five-call beat is that a stalled optional pass gets dropped
- * fast rather than adding a minute to the turn. Composing a signal here keeps that
- * local to the beat path instead of changing the shared client for 1:1 too.
- */
 /**
  * profile-instruction (0023): 파티 IC 호출(N/F/E/S)에 붙일 모델 프로필 서술 지침.
  * - 프로필은 방에 저장된 `conv.profile_name` 으로 조회한다(방 생성 때 정해져 방에서 바꾼 값이
@@ -194,6 +184,7 @@ function partyProfileInstruction(
   };
 }
 
+/** N/C keep short deadlines; an extra's prefill uses the configured model limit. */
 function withDeadline(ms: number, parent: AbortSignal): { signal: AbortSignal; done: () => void } {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(new Error('pass timeout')), ms);
@@ -499,6 +490,8 @@ export function chatRoutes(ctx: Ctx) {
     regenTurnStartId: string | null,
     inject: InjectContext = { instruction: null },
   ) {
+    const responseScene = JSON.parse(convNow.scene_json || '{}') as Scene;
+    const focusMaxTokens = responseMaxTokens(responseScene, PASS_F_MAX_TOKENS);
     // Party IC passes apply inject regardless of 1:1 isOoc (party has no isOoc gate today).
     // attachInjectToIcPass → prependInjectToRules is the single attach family; MAX 800 is
     // validation-only — full instruction each pass; recent narrations shrink under pressure.
@@ -516,7 +509,7 @@ export function chatRoutes(ctx: Ctx) {
     // 작은 IC 호출 예산을 넘으면 장면 판정·생성 전에 거부한다. 그 밖의 호출별 초과는
     // attachInjectToIcPass 가 fail-closed(지침·inject 를 자르지 않고 오래된 서술부터 줄인 뒤 throw).
     const icInstruction = partyProfileInstruction(db, convNow, resolvePersona(db, convNow)?.name || '나');
-    const icOverflow = icInstruction.overflow(icPromptBudget(Math.max(PASS_N_MAX_TOKENS, PASS_F_MAX_TOKENS, AUX_MAX_TOKENS)), injectCal);
+    const icOverflow = icInstruction.overflow(icPromptBudget(Math.max(PASS_N_MAX_TOKENS, focusMaxTokens, AUX_MAX_TOKENS)), injectCal);
     if (icOverflow) {
       refuseBeforeGeneration(userMessage, conv);
       return reply.code(422).send({ error: formatInstructionOverflow(icOverflow) });
@@ -530,7 +523,8 @@ export function chatRoutes(ctx: Ctx) {
       parentId,
       regenTurnStartId,
     });
-    const scene = sceneBase.scene;
+    const roomPolicy = JSON.parse(convNow.scene_json || '{}') as Scene;
+    const scene = { ...sceneBase.scene, observation_filter: roomPolicy.observation_filter, observation_legacy_classified: roomPolicy.observation_legacy_classified, response_length: roomPolicy.response_length };
     // f9-place-catalog: places/arcs/stages come from the Story layer, so the GM can
     // move the scene somewhere no cast member currently stands. Read live because
     // this is a server-side validation allow-list, not narrative text.
@@ -540,6 +534,14 @@ export function chatRoutes(ctx: Ctx) {
     const catalog = catalogFromStory(storyCatalogRow?.scene_catalog ?? '{}');
     const baseVersion = currentSceneVersion(scene);
     const userText = userTextFrom(db, parentId, userMessage);
+    const sourceUser = userMessage ?? (parentId ? one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', parentId) : undefined);
+    const userAudience = audienceOf(sourceUser);
+    const observationEnabled = scene.observation_filter === true;
+    const activePath = getPath(db, convNow);
+    const committedPath = successfulObservationRows(activePath);
+    const observations = committedPath.filter(m => m.id !== sourceUser?.id &&
+      !['ui','header','panel','thought'].includes(parseMessageMeta(m.meta_json).block_kind ?? ''))
+      .map(m => ({ text: observationText(m, observationEnabled), audience: audienceOf(m) }));
 
     // Lock the conversation before the first await (scene-delta). /messages 409
     // and abort both read this registry; a later register left the wait uncancelable.
@@ -557,7 +559,7 @@ export function chatRoutes(ctx: Ctx) {
       const proposal = await ctx.queue.run(() =>
         ctx.model.complete({
           model,
-          messages: [{ role: 'user', content: renderSceneDeltaPrompt({ scene, catalog: { ...catalog, cast }, userText }) }],
+          messages: [{ role: 'user', content: renderSceneDeltaPrompt({ scene, catalog: { ...catalog, cast }, userText: project(userText, userAudience, GM, observationEnabled) }) }],
           temperature: 0.2,
           top_p: 0.9,
           max_tokens: SCENE_DELTA_MAX_TOKENS,
@@ -605,12 +607,14 @@ export function chatRoutes(ctx: Ctx) {
     // reason — after a regenerate or a swipe the abandoned sibling is still in the
     // table, and feeding Pass N a narration the user never saw would make it avoid
     // repeating something that is not there.
-    const recentNarrations = getPath(db, convNow)
+    const recentNarrations = (observationEnabled ? committedPath : activePath)
       .filter((m) => m.role === 'assistant' && parseMessageMeta(m.meta_json).block_kind === 'narration')
       .slice(-PASS_N_RECENT_NARRATIONS)
-      .map((m) => m.content.trim())
+      .map((m) => project(m.content, audienceOf(m), GM, observationEnabled))
       .filter(Boolean);
     const planInput: BeatPlanInput = {
+      observation_enabled: observationEnabled, user_audience: userAudience, observations,
+      narration_audience: PUBLIC,
       conversation_id: conv.id,
       scene,
       patch: patch ?? undefined,
@@ -626,13 +630,50 @@ export function chatRoutes(ctx: Ctx) {
       recent_narrations: recentNarrations,
       ...storyFocusPlanFields(convNow),
     };
-    const plan = planBeat(planInput);
+    planInput.narration_audience = observationEnabled ? actorAudience(planInput, GM) : PUBLIC;
+    const plan = planBeat(observationEnabled ? { ...planInput, observations: [] } : planInput);
+    planInput.focus_audience = observationEnabled && plan.focus.focus_id ? actorAudience(planInput, plan.focus.focus_id) : PUBLIC;
 
     // scene-commit-on-success (ADR-F9c §2): the applied scene is NOT written here.
     // `conversations.scene_json` means "the last successfully committed turn", so an
     // interrupted turn must leave it alone. Nothing downstream needs the row written
     // first — the passes receive the scene through `planInput` in memory, and no code
     // between here and the finish below reads `scene_json` back.
+
+    const fitObservationPass = (render: (input: BeatPlanInput) => string, completionMax: number, speakerName: string, observer: string = GM): string => {
+      const budget = icPromptBudget(completionMax);
+      const selected: typeof observations = [];
+      let selectedTokens = 0;
+      if (observationEnabled) {
+        for (let i = observations.length - 1; i >= 0; i--) {
+          const text = project(observations[i].text, observations[i].audience, observer, true);
+          if (!text) continue;
+          const cost = estimateMessageTokens(text, injectCal);
+          if (cost > budget) continue;
+          if (selectedTokens + cost > budget) break;
+          selected.unshift(observations[i]);
+          selectedTokens += cost;
+        }
+      }
+      const candidate = { ...planInput, observations: observationEnabled ? selected : observations, recent_narrations: [...recentNarrations] };
+      for (;;) {
+        let failure: unknown;
+        try {
+          const prompt = attachInjectToIcPass(render(candidate), injectInstr, {
+            promptTokenBudget: budget - (observationEnabled ? 5 : 0), calibration: injectCal,
+            allowRecentNarrationShrink: !observationEnabled,
+            profileInstruction: icInstruction.forCall(speakerName),
+          }).prompt;
+          if (!observationEnabled || estimateMessageTokens(prompt, injectCal) <= budget) return prompt;
+          failure = new Error('관찰 맥락을 제외해도 현재 입력이 프롬프트 예산을 초과합니다');
+        } catch (err) { failure = err; }
+        if (!observationEnabled) throw failure;
+        // Drop whole oldest observations; mandatory input/inject/profile stay intact.
+        if (candidate.observations.length) candidate.observations.shift();
+        else if (candidate.recent_narrations.length) candidate.recent_narrations.shift();
+        else throw failure;
+      }
+    };
 
     const profileName = convNow.profile_name;
     const sse = openSse(reply);
@@ -647,7 +688,7 @@ export function chatRoutes(ctx: Ctx) {
     ): MessageRow => {
       const row = insertMessage(db, conv.id, head, 'assistant', content, 'complete', {
         generation_id: generationId, profile: profileName, prompt_version: PROMPT_VERSION,
-        block_kind: kind, beat_seq: emitted.length, ...meta,
+        block_kind: kind, beat_seq: emitted.length, observation: PUBLIC, ...meta,
       });
       setHead(db, conv.id, row.id);
       head = row.id;
@@ -679,11 +720,11 @@ export function chatRoutes(ctx: Ctx) {
       const nDeadline = withDeadline(PASS_N_TIMEOUT_MS, controller.signal);
       try {
         const out = await ctx.queue.run(() => ctx.model.complete({
-          model, messages: [{ role: 'user', content: attachInjectToIcPass(plan.pass_n, injectInstr, { promptTokenBudget: icPromptBudget(PASS_N_MAX_TOKENS), calibration: injectCal, profileInstruction: icInstruction.forCall('') }).prompt }],
+          model, messages: [{ role: 'user', content: fitObservationPass(input => planBeat(input).pass_n, PASS_N_MAX_TOKENS, '') }],
           temperature: 0.8, top_p: 0.95, max_tokens: PASS_N_MAX_TOKENS, stop: [],
           signal: nDeadline.signal,
         }), controller.signal);
-        narration = sanitizeNarration(out.text.trim());
+        narration = sanitizeGeneratedContent(out.text).trim();
       } catch (err) {
         if (controller.signal.aborted) throw err;
         req.log.warn({ err, conversationId: conv.id }, 'pass N failed; beat continues without narration');
@@ -691,22 +732,22 @@ export function chatRoutes(ctx: Ctx) {
         nDeadline.done();
       }
       passMs.n = Date.now() - tN;
-      if (narration) send(addBlock('narration', narration));
+      if (narration) send(addBlock('narration', narration, { observation: planInput.narration_audience }));
 
       // Pass F — the focus speaks. The only streamed pass, and the only one whose
       // failure is a turn failure.
       let focusText = '';
       // IC Pass F: one shared attachInjectToIcPass hook (not format-local attach)
-      const passFRaw = passFWith(planInput, plan, narration);
+      const passFRaw = observationEnabled ? plan.pass_f : passFWith(planInput, plan, narration);
       const passF = passFRaw
-        ? attachInjectToIcPass(passFRaw, injectInstr, { promptTokenBudget: icPromptBudget(PASS_F_MAX_TOKENS), calibration: injectCal, profileInstruction: icInstruction.forCall(cast.find((c) => c.id === plan.focus.focus_id)?.name ?? '') }).prompt
+        ? fitObservationPass(input => passFWith(input, plan, narration)! + responseLengthHint(responseScene), focusMaxTokens, cast.find((c) => c.id === plan.focus.focus_id)?.name ?? '', plan.focus.focus_id!)
         : null;
       if (passF && plan.focus.focus_id) {
         const focusName = cast.find((c) => c.id === plan.focus.focus_id)?.name ?? '';
         focusSeq = emitted.length;
         focusRow = insertMessage(db, conv.id, head, 'assistant', '', 'streaming', {
           generation_id: generationId, profile: profileName, prompt_version: PROMPT_VERSION,
-          block_kind: 'line', beat_seq: focusSeq,
+          block_kind: 'line', beat_seq: focusSeq, observation: planInput.focus_audience,
           speaker_character_id: plan.focus.focus_id, speaker_name: focusName,
         });
         ctx.queue.setMessageId(generationId, focusRow.id);
@@ -725,7 +766,7 @@ export function chatRoutes(ctx: Ctx) {
         const result = await ctx.queue.run(() => ctx.model.stream(
           {
             model, messages: [{ role: 'user', content: passF }],
-            temperature: 0.9, top_p: 0.95, max_tokens: PASS_F_MAX_TOKENS, stop: [], signal: controller.signal,
+            temperature: 0.9, top_p: 0.95, max_tokens: focusMaxTokens, stop: [], signal: controller.signal,
           },
           (delta) => {
             buffer += delta;
@@ -742,12 +783,12 @@ export function chatRoutes(ctx: Ctx) {
 
       // Pass E — each approved extra, serially (queue concurrency is 1 anyway).
       const extraTexts: Record<string, string> = {};
-      for (const e of planPassE(planInput, plan, narration, focusText)) {
+      for (const e of planPassE(observationEnabled ? { ...planInput, observations: [] } : planInput, plan, narration, speechObservation(focusText, planInput.focus_audience, observationEnabled))) {
         const tE = Date.now();
-        const eDeadline = withDeadline(PASS_E_TIMEOUT_MS, controller.signal);
+        const eDeadline = withDeadline(config.model.timeoutMs, controller.signal);
         try {
           const out = await ctx.queue.run(() => ctx.model.complete({
-            model, messages: [{ role: 'user', content: attachInjectToIcPass(e.prompt, injectInstr, { promptTokenBudget: icPromptBudget(AUX_MAX_TOKENS), calibration: injectCal, profileInstruction: icInstruction.forCall(e.name) }).prompt }],
+            model, messages: [{ role: 'user', content: fitObservationPass(input => planPassE(input, plan, narration, speechObservation(focusText, input.focus_audience, observationEnabled)).find(item => item.character_id === e.character_id)!.prompt, AUX_MAX_TOKENS, e.name, e.character_id) }],
             temperature: 0.85, top_p: 0.95, max_tokens: AUX_MAX_TOKENS, stop: [],
             signal: eDeadline.signal,
           }), controller.signal);
@@ -772,7 +813,8 @@ export function chatRoutes(ctx: Ctx) {
           content: block?.text ?? focusText,
           status: 'complete',
           meta: {
-            block_kind: 'line', beat_seq: focusSeq,
+            block_kind: 'line', beat_seq: focusSeq, observation: planInput.focus_audience,
+            observation_text: speechObservation(block?.text ?? focusText, planInput.focus_audience, observationEnabled),
             speaker_character_id: plan.focus.focus_id ?? undefined,
             speaker_name: cast.find((c) => c.id === plan.focus.focus_id)?.name ?? undefined,
             image_url: block?.asset_path ?? undefined,
@@ -784,6 +826,8 @@ export function chatRoutes(ctx: Ctx) {
         const block = lineOf(extra.character_id);
         if (!block) continue;
         send(addBlock('line', block.text, {
+          observation: observationEnabled ? actorAudience(planInput, extra.character_id) : PUBLIC,
+          observation_text: speechObservation(block.text, observationEnabled ? actorAudience(planInput, extra.character_id) : PUBLIC, observationEnabled),
           speaker_character_id: extra.character_id, speaker_name: extra.name,
           image_url: block.asset_path ?? undefined,
         }));
@@ -820,7 +864,13 @@ export function chatRoutes(ctx: Ctx) {
       // The chips ride on the UI block because it is the turn's last assistant row,
       // which is exactly what the client already reads them off (`isLastAssistant`).
       // No web change: the existing ChoiceChips contract is met as-is.
-      const uiRow = addBlock('ui', JSON.stringify(plan.ui), choices ? { choices } : {});
+      const context = observationEnabled ? choiceContext([
+        ...(userText.trim() ? [userAudience] : []),
+        ...finished.blocks.filter(b => (b.kind === 'narration' || b.kind === 'line') && sanitizeGeneratedContent(b.text).trim())
+          .map(b => b.kind === 'narration' ? planInput.narration_audience
+            : b.speaker_character_id ? actorAudience(planInput, b.speaker_character_id) : PUBLIC),
+      ]) : null;
+      const uiRow = addBlock('ui', JSON.stringify(plan.ui), choices ? { choices, ...(context ? { choices_context: context } : {}) } : {});
 
       // Order is fixed by bench/sceneCommitOnSuccess.test.ts: the snapshot is written
       // first because it is the authoritative record and the conversation row is a
@@ -981,7 +1031,8 @@ export function chatRoutes(ctx: Ctx) {
       parentId,
       regenTurnStartId,
     });
-    const scene: Scene = sceneBase.scene;
+    const roomPolicy = JSON.parse(convNow.scene_json || '{}') as Scene;
+    const scene: Scene = { ...sceneBase.scene, observation_filter: roomPolicy.observation_filter, observation_legacy_classified: roomPolicy.observation_legacy_classified, response_length: roomPolicy.response_length };
     const userText = userTextFrom(db, parentId, userMessage);
     const history = getPath(db, convNow);
     const lastUser = history.at(-1)?.role === 'user' ? history.at(-1)! : null;
@@ -1107,7 +1158,7 @@ export function chatRoutes(ctx: Ctx) {
       const result = await ctx.queue.run(() => ctx.model.stream(
         {
           model, messages: built.messages,
-          temperature: 0.9, top_p: 0.95, max_tokens: PASS_S_MAX_TOKENS, stop: [], signal: controller.signal,
+          temperature: 0.9, top_p: 0.95, max_tokens: built.maxTokens, stop: [], signal: controller.signal,
         },
         (delta) => {
           buffer += delta;
@@ -1139,6 +1190,7 @@ export function chatRoutes(ctx: Ctx) {
         status: 'complete',
         meta: {
           block_kind: first.kind, beat_seq: scriptSeq,
+          finish_reason: result.finishReason,
           speaker_character_id: first.speaker_character_id ?? undefined,
           speaker_name: first.speaker_name ?? undefined,
           image_url: first.asset_path ?? undefined,
@@ -1150,7 +1202,7 @@ export function chatRoutes(ctx: Ctx) {
           speaker_character_id: block.speaker_character_id ?? undefined,
           speaker_name: block.speaker_name ?? undefined,
           image_url: block.asset_path ?? undefined,
-          ...(i === rest.length - 1 ? { choices } : {}),
+          ...(i === rest.length - 1 ? { choices, finish_reason: result.finishReason } : {}),
         }));
       });
 
@@ -1253,13 +1305,26 @@ export function chatRoutes(ctx: Ctx) {
       ctx.queue.unregister(generationId);
     }
   }
+  function validatedAudience(conv: ConversationRow, value = PUBLIC) {
+    const scene = JSON.parse(conv.scene_json || '{}') as Scene;
+    if (value.visibility === 'private' && (!scene.observation_filter || scene.format === 'dialog' || !storyCastForGenerate(conv, loadStoryRoster(db, conv)))) {
+      throw new Error('귓속말은 관찰 필터가 켜진 beat 방에서만 지원합니다');
+    }
+    const snapshot = conv.story_participant_ids_snapshot ? JSON.parse(conv.story_participant_ids_snapshot) as string[] : null;
+    const ids = snapshot ?? loadStoryRoster(db, conv).map(x => x.id);
+    return authorizeAudience(value, ids);
+  }
   return async function plugin(app: FastifyInstance) {
+    await app.register(continuationRoutes(ctx));
+    await app.register(sideModeRoutes(ctx));
     // inject-macro-client: allow empty/whitespace content when inject_instruction
     // parses to a real instruction (inject-alone). Still reject empty when no inject.
     // Attach/budget untouched. DB insertMessage already allows '' (assistant streaming).
     const sendSchema = z.object({
       content: z.string().max(8000),
       inject_instruction: z.string().optional(),
+      observation: audienceSchema.optional(),
+      choice: z.object({ message_id: z.string().min(1), index: z.number().int().nonnegative(), visibility: z.enum(['public', 'private']) }).strict().optional(),
     });
     app.post<{ Params: { id: string } }>('/api/conversations/:id/messages', async (req, reply) => {
       const conv = loadConversation(ctx, req.params.id);
@@ -1274,7 +1339,27 @@ export function chatRoutes(ctx: Ctx) {
         return reply.code(400).send({ error: 'content required when inject_instruction is absent' });
       }
       if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
-      const user = insertMessage(db, conv.id, conv.head_message_id, 'user', content, 'complete', {});
+      let observation;
+      try {
+        let requested = p.data.observation;
+        if (p.data.choice) {
+          if (requested) throw new Error('선택지 공개 범위와 별도 수신자를 함께 지정할 수 없음');
+          const source = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ? AND conversation_id = ?', p.data.choice.message_id, conv.id);
+          if (!source || source.role !== 'assistant' || source.status !== 'complete' || !getPath(db, conv).some(m => m.id === source.id)) throw new Error('현재 분기의 저장된 선택지가 아님');
+          const meta = parseMessageMeta(source.meta_json);
+          if (!Array.isArray(meta.choices) || typeof meta.choices[p.data.choice.index] !== 'string') throw new Error('선택지를 찾을 수 없음');
+          if (p.data.choice.visibility === 'private') {
+            const context = meta.choices_context as { private_context?: boolean; recipient_ids?: unknown } | undefined;
+            if (!context?.private_context || !Array.isArray(context.recipient_ids) || !context.recipient_ids.length || !context.recipient_ids.every(id => typeof id === 'string')) throw new Error('원래 귓속말 수신자를 복원할 수 없음');
+            const roster = new Set(loadStoryRoster(db, conv).map(row => row.id));
+            if (context.recipient_ids.some(id => !roster.has(id))) throw new Error('원래 귓속말 수신자가 현재 참여자가 아님');
+            requested = { visibility: 'private', recipient_ids: context.recipient_ids, observer_ids: [] };
+          } else requested = PUBLIC;
+        }
+        observation = validatedAudience(conv, requested);
+      }
+      catch (err) { return reply.code(400).send({ error: (err as Error).message }); }
+      const user = insertMessage(db, conv.id, conv.head_message_id, 'user', content, 'complete', { observation });
       try {
         return await generate(req, reply, conv, user.id, user, undefined, inj.ctx);
       } catch (err) {
@@ -1322,6 +1407,7 @@ export function chatRoutes(ctx: Ctx) {
       messageId: z.string().min(1),
       content: z.string().max(8000),
       inject_instruction: z.string().optional(),
+      observation: audienceSchema.optional(),
     });
     app.post<{ Params: { id: string } }>('/api/conversations/:id/branch', async (req, reply) => {
       const conv = loadConversation(ctx, req.params.id);
@@ -1338,7 +1424,10 @@ export function chatRoutes(ctx: Ctx) {
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ? AND conversation_id = ?', p.data.messageId, conv.id);
       if (!m || m.role !== 'user') return reply.code(404).send({ error: 'user message not found' });
       if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
-      const user = insertMessage(db, conv.id, m.parent_id, 'user', content, 'complete', {});
+      let observation;
+      try { observation = validatedAudience(conv, p.data.observation ?? audienceOf(m)); }
+      catch (err) { return reply.code(400).send({ error: (err as Error).message }); }
+      const user = insertMessage(db, conv.id, m.parent_id, 'user', content, 'complete', { observation });
       try {
         return await generate(req, reply, conv, user.id, user, undefined, inj.ctx);
       } catch (err) {

@@ -4,14 +4,28 @@ import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import ts from 'typescript';
 import { MessageEvents } from '../../apps/web/src/components/EventRenderer.tsx';
+import { CharacterPortrait } from '../../apps/web/src/components/CharacterPortrait.tsx';
+import { messagePortrait, portraitMessageIds } from '../../apps/web/src/lib/chatPortraits.ts';
 import { SpeakerHeader, renderContent } from '../../apps/web/src/components/view.tsx';
-import { isEmptyUserMessage } from '../../apps/web/src/lib/chatLayout.ts';
+import { isEmptyUserMessage, visibleChatMessages } from '../../apps/web/src/lib/chatLayout.ts';
 import { hasEventContract } from '../../apps/web/src/lib/chatEvents.ts';
 import { visibleChoices } from '../../apps/web/src/lib/choices.ts';
 import type { Message } from '../../apps/web/src/types.ts';
 
 // Execute the shipped functions without mounting the page's network effects.
 const source = ts.createSourceFile('ChatPage.tsx', readFileSync(new URL('../../apps/web/src/pages/ChatPage.tsx', import.meta.url), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+const portraitSelectors: ts.VariableDeclaration[] = [];
+function findPortraitSelector(node: ts.Node) {
+  if (ts.isVariableDeclaration(node) && node.name.getText(source) === 'portraits') portraitSelectors.push(node);
+  ts.forEachChild(node, findPortraitSelector);
+}
+findPortraitSelector(source);
+assert.equal(portraitSelectors.length, 1, 'one production feed portrait selector');
+const feedPortraitSelector = new Function('chat', 'reorderTurns', 'visibleChatMessages', 'portraitMessageIds',
+  `const shownMessages = visibleChatMessages(chat.messages); return ${portraitSelectors[0].initializer!.getText(source)};`);
+export function feedPortraitMessageIds(messages: Message[], reorder: boolean): Set<string> {
+  return feedPortraitSelector({ messages }, reorder, visibleChatMessages, portraitMessageIds);
+}
 const functions = ['MessageView', 'ChoiceChips'].map((name) => {
   const matches = source.statements.filter((node): node is ts.FunctionDeclaration => ts.isFunctionDeclaration(node) && node.name?.text === name);
   assert.equal(matches.length, 1, `one production ${name} function`);
@@ -20,10 +34,10 @@ const functions = ['MessageView', 'ChoiceChips'].map((name) => {
 const compiled = ts.transpileModule(functions.join('\n'), {
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React },
 }).outputText;
-const deps = { React, useState: React.useState, useRef: React.useRef, MessageEvents, SpeakerHeader, renderContent, isEmptyUserMessage, hasEventContract, visibleChoices };
+const deps = { React, useState: React.useState, useRef: React.useRef, MessageEvents, CharacterPortrait, messagePortrait, SpeakerHeader, renderContent, isEmptyUserMessage, hasEventContract, visibleChoices };
 type ChoiceProps = { choices: string[]; onChoice: (text: string) => void; onEdit: (text: string) => void; disabled: boolean };
 type ViewOptions = Partial<{
-  streaming: boolean; generating: boolean; isLastAssistant: boolean; hideChoices: boolean;
+  streaming: boolean; generating: boolean; isLastAssistant: boolean; hideChoices: boolean; showPortrait: boolean;
   focusId: string | null; sceneFormat: 'beat' | 'dialog';
 }>;
 const views = new Function(...Object.keys(deps), `${compiled}\nreturn { MessageView, ChoiceChips };`)(...Object.values(deps)) as {

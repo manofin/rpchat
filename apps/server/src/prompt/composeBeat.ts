@@ -1,3 +1,4 @@
+import { project, inheritedAudience, type Audience, GM } from './observation.js';
 /**
  * f9-swap-passes — the whole beat, assembled once (§4 파이프라인, §6 렌더 스키마).
  *
@@ -31,6 +32,7 @@ import {
   renderPassE, renderPassF, renderPassN, splitFocusText, type PassCard,
 } from './passes.js';
 import { renderPassC } from './beatChoices.js';
+import { sanitizeGeneratedContent } from '../contracts/chatEventAdapter.js';
 import {
   assetPathFor, renderHeader, renderUi, serializeBeat,
   type BeatBlock, type BeatLine, type BeatUi,
@@ -43,6 +45,11 @@ import type { Scene } from '../types.js';
 export type BeatPlanInput = {
   /** Only used to seed ambient selection; absent is fine for an isolated plan. */
   conversation_id?: string;
+  observation_enabled?: boolean;
+  user_audience?: Audience;
+  observations?: Array<{ text: string; audience?: Audience }>;
+  narration_audience?: Audience;
+  focus_audience?: Audience;
   scene: Scene;
   patch?: unknown;
   catalog: PartyCatalog;
@@ -173,6 +180,14 @@ function cardFor(id: string, input: BeatPlanInput): PassCard {
   return input.cards?.[id] ?? { name: input.cast.find((c) => c.id === id)?.name ?? id };
 }
 
+export function actorAudience(input: BeatPlanInput, actor: string): Audience {
+  return inheritedAudience([input.user_audience, ...(input.observations ?? []).map(x => x.audience)], actor);
+}
+function observedInput(input: BeatPlanInput, actor: string): string {
+  return [project(input.user_text, input.user_audience, actor, !!input.observation_enabled),
+    ...(input.observation_enabled ? (input.observations ?? []).map(x => project(x.text, x.audience, actor, true)).filter(Boolean) : [])].filter(Boolean).join('\n');
+}
+
 /** Steps 1-6 plus the Pass N / Pass F prompts. No model has run yet. */
 export function planBeat(input: BeatPlanInput): BeatPlan {
   // focused policy: extras via approveExtras, then leftover ambient.
@@ -258,15 +273,15 @@ export function planBeat(input: BeatPlanInput): BeatPlan {
       cast: input.cast,
       scene,
       header,
-      userText: input.user_text,
+      userText: observedInput(input, GM),
       ambientNames: ambient.map((a) => a.name),
-      recentNarrations: input.recent_narrations,
+      recentNarrations: input.recent_narrations?.map(text => sanitizeGeneratedContent(text).trim()).filter(Boolean),
     }),
     pass_f: focusCard
       ? renderPassF({
           focusCard,
           userName: userNameOf(input),
-          userText: input.user_text,
+          userText: observedInput(input, focus.focus_id!),
           scene,
           header,
           narration: '',
@@ -288,10 +303,10 @@ export function passFWith(input: BeatPlanInput, plan: BeatPlan, narration: strin
   return renderPassF({
     focusCard: cardFor(plan.focus.focus_id, input),
     userName: userNameOf(input),
-    userText: input.user_text,
+    userText: observedInput(input, plan.focus.focus_id),
     scene: plan.applied.state,
     header: plan.header,
-    narration,
+    narration: project(narration, input.narration_audience, plan.focus.focus_id, !!input.observation_enabled),
     cast: input.cast,
     contentPolicy: input.content_policy,
   });
@@ -309,7 +324,10 @@ export function passCWith(input: BeatPlanInput, finished: FinishedBeat): string 
   return renderPassC({
     userName: userNameOf(input),
     userText: input.user_text,
-    blocks: finished.blocks,
+    // Choices see displayed blocks, not the planner's hidden thought slot.
+    blocks: finished.blocks.filter(b => b.kind === 'narration' || b.kind === 'line').map(b => ({
+      kind: b.kind, speaker_name: b.speaker_name, text: sanitizeGeneratedContent(b.text).trim(),
+    })),
   });
 }
 
@@ -326,10 +344,10 @@ export function planPassE(input: BeatPlanInput, plan: BeatPlan, narration: strin
       card: cardFor(extra.character_id, input),
       duty: extra.duty,
       focusName,
-      focusText,
-      narration,
+      focusText: project(focusText, input.focus_audience, extra.character_id, !!input.observation_enabled),
+      narration: project(narration, input.narration_audience, extra.character_id, !!input.observation_enabled),
       userName: userNameOf(input),
-      userText: input.user_text,
+      userText: observedInput(input, extra.character_id),
       cast: input.cast,
       scene: plan.applied.state,
       facts: input.facts,

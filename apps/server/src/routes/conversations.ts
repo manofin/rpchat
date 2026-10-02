@@ -1,3 +1,5 @@
+import { supportsPartyObservation } from '../prompt/dialogContext.js';
+import { PUBLIC, audienceOf, successfulObservationRows } from '../prompt/observation.js';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../ctx.js';
@@ -9,7 +11,8 @@ import {
   generationBlocksDelete,
   interruptOrphanStreaming,
 } from '../db/generation.js';
-import { deepestLeaf, getPath, insertMessage, messageOut, readablePreview, setHead, updateMessage } from '../db/tree.js';
+import { isSideModeMessage, mainMessageSql, sideModeVisible } from '../db/sideMode.js';
+import { parseMessageMeta, deepestLeaf, getPath, insertMessage, messageOut, readablePreview, setHead, updateMessage } from '../db/tree.js';
 import { buildPrompt, resolvePersona } from '../prompt/builder.js';
 import { previewDialog } from '../prompt/dialogPreview.js';
 import { previewDraftMessage } from '../prompt/promptHistory.js';
@@ -27,6 +30,8 @@ import { evalRoomEnding, suggestEndings } from '../endingEval.js';
 import { materializeSceneAtHead } from '../db/sceneBase.js';
 
 const sceneSchema = z.object({
+  response_length: z.enum(['short', 'normal', 'long']).optional(),
+  observation_filter: z.boolean().optional(),
   dialog_context: dialogContextSchema.optional(),
   place: z.string().max(300).optional(),
   time: z.string().max(300).optional(),
@@ -144,6 +149,7 @@ const nonBlankPersonaId = z
   });
 
 const patchSchema = z.object({
+  classify_legacy_public: z.literal(true).optional(),
   title: z.string().max(120).optional(),
   mode: z.enum(['chat', 'story']).optional(),
   profileName: z.string().max(60).optional(),
@@ -359,6 +365,8 @@ export function conversationRoutes(ctx: Ctx) {
         personaRelationshipSnap = src.relationship ?? null;
         personaAppliedAt = t;
       }
+      if (parseJson<Scene>(sceneJson, {}).observation_filter && !partyOpening) return reply.code(400).send({ error: '관찰 필터는 참여자가 둘 이상인 party 방에서만 지원합니다' });
+      if (parseJson<Scene>(sceneJson, {}).observation_filter && parseJson<Scene>(sceneJson, {}).format === 'dialog') return reply.code(400).send({ error: '관찰 필터는 beat 형식에서만 지원합니다' });
       db.transaction(() => {
         run(
           db,
@@ -395,7 +403,7 @@ export function conversationRoutes(ctx: Ctx) {
         minAgeMs: 2000,
       });
       const messages = getPath(db, conv).map((m) => messageOut(db, m));
-      const active = ctx.queue.activeList.find((g) => g.conversationId === conv.id && g.kind !== 'ending-judge');
+      const active = ctx.queue.activeList.find((g) => g.conversationId === conv.id && g.kind !== 'ending-judge' && g.kind !== 'side-mode');
       return {
         conversation: conversationOut(conv),
         character: characterOut(character),
@@ -411,6 +419,10 @@ export function conversationRoutes(ctx: Ctx) {
       const p = patchSchema.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
       const d = p.data;
+      const requestedScene = { ...parseJson<Scene>(conv.scene_json, {}), ...d.scene };
+      if (requestedScene.observation_filter && !supportsPartyObservation(db, conv)) return reply.code(400).send({ error: '관찰 필터는 참여자가 둘 이상인 party 방에서만 지원합니다' });
+      if (requestedScene.observation_filter && requestedScene.format === 'dialog') return reply.code(400).send({ error: '관찰 필터는 beat 형식에서만 지원합니다. dialog로 바꾸려면 필터를 먼저 끄세요.' });
+
       if (d.scene && ctx.queue.activeList.some((g) => g.conversationId === conv.id)) {
         return reply.code(409).send({ error: '생성 중에는 장면 상태를 수정할 수 없음' });
       }
@@ -430,7 +442,22 @@ export function conversationRoutes(ctx: Ctx) {
       } else if (d.personaId === null) {
         snap = { n: null, a: null, ap: null, pe: null, pr: null, at: null };
       }
+      if (d.classify_legacy_public) {
+        const oldScene = parseJson<Scene>(conv.scene_json, {});
+        if (!d.scene?.observation_filter || oldScene.observation_filter || oldScene.observation_legacy_classified) return reply.code(400).send({ error: '과거 기록 분류는 필터를 켤 때만 가능합니다' });
+        // Explicit confirmation covers only the currently selected successful branch.
+        const rows = successfulObservationRows(getPath(db, conv));
+        db.transaction(() => {
+          for (const m of rows) {
+            if (audienceOf(m)) continue;
+            const meta = { ...parseMessageMeta(m.meta_json), observation: PUBLIC };
+            run(db, 'UPDATE messages SET meta_json = ? WHERE id = ?', JSON.stringify(meta), m.id);
+          }
+        })();
+      }
+
       const scene = d.scene ? { ...parseJson<Scene>(conv.scene_json, {}), ...d.scene,
+        ...(d.classify_legacy_public ? { observation_legacy_classified: true } : {}),
         pending_edit: { head_message_id: conv.head_message_id },
       } : null;
       const personaFlag = personaTouched ? 1 : 0;
@@ -548,6 +575,10 @@ export function conversationRoutes(ctx: Ctx) {
     app.get<{ Params: { id: string } }>('/api/messages/:id', async (req, reply) => {
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', req.params.id);
       if (!m) return reply.code(404).send({ error: 'not found' });
+      if (isSideModeMessage(m)) {
+        const conv = loadConversation(ctx, m.conversation_id);
+        if (!conv || !sideModeVisible(m, new Set(getPath(db, conv).map(row => row.id)), conv.head_message_id)) return reply.code(404).send({ error: 'not found' });
+      }
       return messageOut(db, m);
     });
 
@@ -567,6 +598,7 @@ export function conversationRoutes(ctx: Ctx) {
     app.post<{ Params: { id: string } }>('/api/messages/:id/select', async (req, reply) => {
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', req.params.id);
       if (!m) return reply.code(404).send({ error: 'not found' });
+      if (isSideModeMessage(m)) return reply.code(409).send({ error: '부가 모드 결과는 본편 분기로 선택할 수 없음' });
       const conv = loadConversation(ctx, m.conversation_id);
       if (!conv) return reply.code(404).send({ error: 'not found' });
       if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '생성 중에는 분기를 바꿀 수 없음' });
@@ -600,7 +632,7 @@ export function conversationRoutes(ctx: Ctx) {
         run(db, 'DELETE FROM messages WHERE id = ?', m.id); // 자식은 CASCADE
         if (conv.head_message_id === m.id || !one(db, 'SELECT 1 FROM messages WHERE id = ?', conv.head_message_id)) {
           // 같은 부모의 남은 형제가 있으면 그쪽 잎으로, 없으면 부모로
-          const sib = one<{ id: string }>(db, 'SELECT id FROM messages WHERE conversation_id = ? AND parent_id IS ? ORDER BY created_at DESC LIMIT 1', conv.id, m.parent_id);
+          const sib = one<{ id: string }>(db, `SELECT id FROM messages WHERE conversation_id = ? AND parent_id IS ? AND ${mainMessageSql()} ORDER BY created_at DESC LIMIT 1`, conv.id, m.parent_id);
           const headId = sib ? deepestLeaf(db, sib.id) : m.parent_id;
           setHead(db, conv.id, headId);
           persistMaterializedScene(conv.id, headId, conv.scene_json);

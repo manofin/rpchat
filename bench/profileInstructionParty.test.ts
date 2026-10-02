@@ -169,12 +169,15 @@ async function main() {
     const chat = src('apps/server/src/routes/chat.ts');
     const dialog = src('apps/server/src/prompt/dialogPrompt.ts');
     const calls = chat.match(/attachInjectToIcPass\([^\n]*/g) ?? [];
-    assert.equal(calls.length, 3, calls.join('\n'));
+    assert.equal(calls.length, 1, calls.join('\n'));
+    assert.equal((chat.match(/fitObservationPass\(input =>/g) ?? []).length, 3);
     assert.equal((dialog.match(/attachInjectToIcPass\(/g) ?? []).length, 1);
     assert.ok(chat.includes('model, messages: built.messages'));
     assert.ok(dialog.includes('profileInstruction: profileBlock'));
     assert.ok(dialog.includes("renderProfileInstruction(instruction, '## 서술 지침', '', userName)"));
-    for (const c of calls) assert.ok(c.includes('profileInstruction: icInstruction.forCall('), c);
+    const shared = chat.slice(chat.indexOf('const fitObservationPass'), chat.indexOf('const profileName = convNow.profile_name', chat.indexOf('const fitObservationPass')));
+    assert.ok(shared.includes('profileInstruction: icInstruction.forCall(speakerName)'));
+    assert.ok(shared.includes('attachInjectToIcPass(render(candidate), injectInstr'));
     assert.equal(/attachInjectToIcPass\(\s*(passCWith|renderSceneDeltaPrompt)/.test(chat), false);
     assert.equal(/renderProfileInstruction\(/.test(chat.slice(chat.indexOf('function partyProfileInstruction'), chat.indexOf('function withDeadline'))), true);
     const helper = chat.slice(chat.indexOf('function partyProfileInstruction'), chat.indexOf('function withDeadline'));

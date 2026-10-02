@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { get, patch, post } from '../lib/api';
 import { back, navigate, useRoute } from '../lib/router';
 import { NAV_TABS } from '../lib/navTabs';
-import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, StoryEnding, Summary } from '../types';
+import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, ResponseLength, StoryEnding, Summary } from '../types';
 import {
   Avatar, BeatUiPanel, renderContent, SpeakerHeader,
 } from '../components/view';
@@ -13,6 +13,9 @@ import { BottomSheet, Spinner, useUi } from '../components/ui';
 import { visibleChoices } from '../lib/choices';
 import { groupChatTurns, isEmptyUserMessage, shouldReorderTurn, turnChoicesHost, visibleChatMessages, visualAssistantOrder } from '../lib/chatLayout';
 import { MessageEvents } from '../components/EventRenderer';
+import { CharacterPortrait } from '../components/CharacterPortrait';
+import { messagePortrait, portraitMessageIds } from '../lib/chatPortraits';
+import { useFeedResize } from '../lib/useFeedResize';
 import { eventUiData, hasEventContract } from '../lib/chatEvents';
 import { expandLeadingShortcut, readShortcuts, resolveShortcutSubmit } from '../lib/shortcutMacro';
 import { useDesktopLayout } from '../lib/useDesktopLayout';
@@ -23,6 +26,10 @@ import {
 } from '../lib/summaryBanner';
 import { shouldRefetchAfterEndError, useEndingSuggestions } from '../lib/endingSuggestion';
 import { useChat } from './useChat';
+import { useSideMode } from './useSideMode';
+import { SideModePanel } from '../components/SideModePanel';
+import { ResponseLengthSelect } from '../components/ResponseLengthSelect';
+import { buildResponseLengthPatch, continuationTarget, parseSideModeCommand, type SideMode } from '../lib/responseControls';
 import { ChatDrawer } from './ChatDrawer';
 import { ChatListRail } from './ChatListRail';
 import { ConversationTools } from './ConversationTools';
@@ -44,6 +51,11 @@ function parseEndingsSnapshot(raw: string | null | undefined): StoryEnding[] {
 export function ChatPage({ id }: { id: string }) {
   const ui = useUi();
   const chat = useChat(id);
+  const sideMode = useSideMode(id, chat.messages.at(-1)?.id ?? null);
+  const generating = chat.generating || sideMode.generating;
+  const [sideOpen, setSideOpen] = useState(false);
+  const [sideTab, setSideTab] = useState<SideMode>('summary');
+  useEffect(() => { setSideOpen(false); setSideTab('summary'); }, [id]);
   const [draft, setDraft] = useState('');
   const [drawer, setDrawer] = useState(false);
   const [drawerTab, setDrawerTab] = useState<'budget' | 'memory' | 'summary' | undefined>(undefined);
@@ -78,7 +90,7 @@ export function ChatPage({ id }: { id: string }) {
   }, [id]);
 
   /** ADR-F8h Slice 4: V3 제안형 엔딩 배너. 강제 잠금 없음, 닫기 가능. */
-  const endingBanner = useEndingSuggestions(id, { detail: chat.detail, generating: chat.generating, loading: chat.loading });
+  const endingBanner = useEndingSuggestions(id, { detail: chat.detail, generating, loading: chat.loading });
 
   /** 배너에서 확정: 사용자 클릭 + confirm 경유, turnId 포함. */
   async function confirmSuggestedEnding(endingId: string, title: string) {
@@ -104,6 +116,8 @@ export function ChatPage({ id }: { id: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const stickyRef = useRef(true);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useFeedResize(scrollRef, contentRef, stickyRef, id, chat.messages);
 
   // 스크롤 하단 고정 추적
   function onScroll() {
@@ -171,13 +185,13 @@ export function ChatPage({ id }: { id: string }) {
   }, [toolsOpen, desktop]);
 
   useEffect(() => {
-    if (chat.generating || chat.loading) return;
+    if (generating || chat.loading) return;
     let cancelled = false;
     get<Summary[]>(`/api/conversations/${id}/summaries`)
       .then((rows) => { if (!cancelled) setSummaryRows(rows); })
       .catch(() => { if (!cancelled) setSummaryRows([]); });
     return () => { cancelled = true; };
-  }, [id, chat.generating, chat.loading, chat.messages.length, summaryTick]);
+  }, [id, generating, chat.loading, chat.messages.length, summaryTick]);
 
   const bannerStorage = sessionBannerKv();
   const bannerLocal = localBannerKv();
@@ -185,7 +199,7 @@ export function ChatPage({ id }: { id: string }) {
     path: chat.messages,
     summaries: summaryRows,
     conversationId: id,
-    generating: chat.generating,
+    generating,
     loading: chat.loading,
     storage: bannerStorage,
     localStorage: bannerLocal,
@@ -193,17 +207,37 @@ export function ChatPage({ id }: { id: string }) {
   void dismissTick;
   const hasDraft = summaryRows?.some((s) => s.status !== 'approved') ?? false;
 
+  const [whisperIds, setWhisperIds] = useState('');
+  const [choiceDraft, setChoiceDraft] = useState<{ message_id: string; index: number; recipient_ids: string[]; visibility: 'public' | 'private' } | null>(null);
+  useEffect(() => { setChoiceDraft(null); setWhisperIds(''); }, [id]);
   async function submit() {
     const original = draft;
+    if (generating || chat.detail?.conversation.ended_at) return;
+    const command = parseSideModeCommand(draft);
+    if (command) {
+      setSideTab(command.mode);
+      setSideOpen(true);
+      setChoiceDraft(null);
+      setWhisperIds('');
+      setDraft('');
+      const accepted = await sideMode.generate(command.mode, command.prompt);
+      if (!accepted) setDraft((current) => current === '' ? original : current);
+      return;
+    }
     const resolved = resolveShortcutSubmit(draft, readShortcuts());
     const text = resolved.content.trim();
     const inject = resolved.inject_instruction;
     // Inject-alone may have empty content; must not fall back to putting command body into content.
-    if ((!text && !inject) || chat.generating || chat.detail?.conversation.ended_at) return;
+    if ((!text && !inject) || generating || chat.detail?.conversation.ended_at) return;
+    if (choiceDraft?.visibility === 'private' && !choiceDraft.recipient_ids.length) return;
     setDraft('');
     requestAnimationFrame(grow);
     stickyRef.current = true;
-    const ok = await chat.send(text, inject ? { inject_instruction: inject } : undefined);
+    const choice = choiceDraft ? { message_id: choiceDraft.message_id, index: choiceDraft.index, visibility: choiceDraft.visibility } : undefined;
+    const ok = await chat.send(text, choice ? { choice, ...(inject ? { inject_instruction: inject } : {}) } : chat.detail?.conversation.scene?.observation_filter && whisperIds.trim()
+      ? { ...(inject ? { inject_instruction: inject } : {}), observation: { visibility: 'private' as const, recipient_ids: whisperIds.split(',').map(x => x.trim()).filter(Boolean) } }
+      : inject ? { inject_instruction: inject } : undefined);
+    if (ok !== false) setChoiceDraft(null);
     if (ok === false) {
       setDraft((cur) => (cur === '' ? original : cur));
       requestAnimationFrame(grow);
@@ -227,6 +261,7 @@ export function ChatPage({ id }: { id: string }) {
   });
   const lastAssistant = [...chat.messages].reverse().find((m) => m.role === 'assistant');
   const lastMsg = chat.messages[chat.messages.length - 1];
+  const continueFrom = continuationTarget(chat.messages);
   const lastUi = [...chat.messages].reverse()
     .flatMap((message) => hasEventContract(message) ? [...message.events].reverse() : [])
     .map(eventUiData).find((panel) => panel !== null) ?? null;
@@ -241,6 +276,7 @@ export function ChatPage({ id }: { id: string }) {
   const shownMessages = visibleChatMessages(chat.messages);
 
   const reorderTurns = !desktop && shouldReorderTurn(conv.scene.format);
+  const portraits = portraitMessageIds(chat.messages, reorderTurns);
   const ended = !!conv.ended_at;
   const snapshotEndings = parseEndingsSnapshot(conv.story_endings_snapshot);
   const reachedEnding = ended ? (snapshotEndings.find((e) => e.id === conv.reached_ending_id) ?? null) : null;
@@ -248,10 +284,19 @@ export function ChatPage({ id }: { id: string }) {
   /** Chip tap → send immediately (StoryForge RecommendationChoices onSend). */
   const onChoice = (c: string) => {
     const text = c.trim();
-    if (!text || chat.generating || chat.detail?.conversation.ended_at) return;
+    if (!text || generating || chat.detail?.conversation.ended_at) return;
+    const host = [...(chat.messages ?? [])].reverse().find(m => m.meta.choices?.some(raw => raw.trim() === text));
+    if (host?.meta.choices_context?.private_context) {
+      setChoiceDraft({ message_id: host.id, index: host.meta.choices!.findIndex(raw => raw.trim() === text), recipient_ids: host.meta.choices_context.recipient_ids, visibility: 'public' });
+      setDraft(text);
+      requestAnimationFrame(grow);
+      return;
+    }
     setDraft('');
     requestAnimationFrame(grow);
     stickyRef.current = true;
+    setChoiceDraft(null);
+    setWhisperIds('');
     void chat.send(text).then((ok) => {
       if (ok === false) {
         setDraft((cur) => (cur === '' ? text : cur));
@@ -261,6 +306,9 @@ export function ChatPage({ id }: { id: string }) {
   };
   /** Pencil → fill composer only; user edits then sends. */
   const onEditChoice = (c: string) => {
+    const host = [...(chat.messages ?? [])].reverse().find(m => m.meta.choices?.some(raw => raw.trim() === c.trim()));
+    setChoiceDraft(host?.meta.choices_context?.private_context ? { message_id: host.id, index: host.meta.choices!.findIndex(raw => raw.trim() === c.trim()), recipient_ids: host.meta.choices_context.recipient_ids, visibility: 'public' } : null);
+    setWhisperIds('');
     setDraft(c);
     requestAnimationFrame(grow);
     taRef.current?.focus();
@@ -290,8 +338,9 @@ export function ChatPage({ id }: { id: string }) {
     sceneFormat: conv.scene.format,
     streaming: chat.streamingId === m.id,
     isLastAssistant: m.id === lastAssistant?.id,
-    generating: chat.generating,
+    generating,
     hideChoices: opts?.hideChoices,
+    showPortrait: portraits.has(m.id),
     onRegenerate: () => chat.regenerate(m.id),
     onSwipeLeft: () => { const i = m.siblings.index; if (i > 0) chat.selectSibling(m.siblings.ids[i - 1]); },
     onSwipeRight: () => { const i = m.siblings.index; if (i < m.siblings.count - 1) chat.selectSibling(m.siblings.ids[i + 1]); else chat.regenerate(m.id); },
@@ -378,7 +427,7 @@ export function ChatPage({ id }: { id: string }) {
           characterName={char.name}
           hasBeatRoster={hasBeatRoster}
           focusId={lastUi?.focus_id ?? conv.scene.last_beat?.focus_id ?? null}
-          generating={chat.generating}
+          generating={generating}
           loadError={chat.error}
           conversationEnded={ended}
           placement="mobile"
@@ -397,17 +446,18 @@ export function ChatPage({ id }: { id: string }) {
       })()}
 
       <div className="chat-scroll" ref={scrollRef} onScroll={onScroll}>
+        <div className="chat-feed" ref={contentRef}>
         {shownMessages.length === 0 && <div className="sysline" style={{ margin: 'auto' }}>첫 메시지를 보내 대화를 시작하세요.</div>}
         {reorderTurns
           ? groupChatTurns(shownMessages).map((turn, ti) => {
               const visual = visualAssistantOrder(turn.assistants, true);
               const host = turnChoicesHost(turn.assistants);
-              const showTurnChoices = !!(host && host.id === lastAssistant?.id && host.meta.choices && host.meta.choices.length > 0 && !chat.generating);
+              const showTurnChoices = !!(host && host.id === lastAssistant?.id && host.meta.choices && host.meta.choices.length > 0 && !generating);
               return (
                 <div key={turn.user?.id ?? visual[0]?.id ?? `turn-${ti}`} className="chat-turn">
                   {turn.user ? <MessageView {...messageViewProps(turn.user)} /> : null}
                   {visual.map((m) => <MessageView key={m.id} {...messageViewProps(m, { hideChoices: true })} />)}
-                  {showTurnChoices && host?.meta.choices ? <ChoiceChips choices={host.meta.choices} onChoice={onChoice} onEdit={onEditChoice} disabled={chat.generating} /> : null}
+                  {showTurnChoices && host?.meta.choices ? <ChoiceChips choices={host.meta.choices} onChoice={onChoice} onEdit={onEditChoice} disabled={generating} /> : null}
                 </div>
               );
             })
@@ -415,17 +465,19 @@ export function ChatPage({ id }: { id: string }) {
             <MessageView key={m.id} {...messageViewProps(m)} />
           ))}
         {chat.error && chat.detail && <div className="banner err" style={{ margin: '4px 0' }}>{chat.error}</div>}
+        </div>
       </div>
 
       {/* 기존 sysline 슬롯: 응답 이어가기 + 요약 제안 (키보드/스크롤 경로 비변경) */}
       {(() => {
-        const needReply = !chat.generating && lastMsg?.role === 'user';
-        if (!needReply && !showSuggest) return null;
+        const needReply = !generating && lastMsg?.role === 'user';
+        if (!needReply && !showSuggest && !continueFrom) return null;
         return (
           <div className="sysline" style={{ padding: '6px 0' }}>
             {needReply && (
               <button className="btn sm primary" onClick={() => chat.regenerate(lastMsg.id)}>↻ {char.name}의 응답 생성</button>
             )}
+            {continueFrom && <button type="button" className="btn sm" disabled={generating || ended} onClick={() => { stickyRef.current = true; void chat.continueResponse(continueFrom.id); }}>이어서 생성</button>}
             {showSuggest && (
               <div className="row" style={{ justifyContent: 'center', flexWrap: 'wrap', marginTop: needReply ? 6 : 0 }}>
                 <span>{hasDraft ? '요약 초안이 있습니다.' : '최근 대화가 컨텍스트 창을 넘었습니다.'}</span>
@@ -485,31 +537,46 @@ export function ChatPage({ id }: { id: string }) {
         </div>
       )}
 
-      <div className={`composer${chat.generating ? ' is-generating' : ''}`}>
-        {chat.generating && (
+      {conv.scene.observation_filter && conv.scene.format !== 'dialog' ? <label>귓속말 수신자 ID (쉼표로 구분, 비우면 공개)
+        <input aria-label="귓속말 수신자" value={whisperIds} onChange={e => setWhisperIds(e.target.value)} disabled={generating || !!choiceDraft} />
+      </label> : null}
+      {choiceDraft && <div className="banner warn" aria-label="선택지 공개 범위">
+        <span>비공개 맥락 기반 · 전송 범위를 확인하세요</span>
+        <button type="button" className="btn sm" aria-pressed={choiceDraft.visibility === 'public'} disabled={generating} onClick={() => setChoiceDraft({ ...choiceDraft, visibility: 'public' })}>공개</button>
+        <button type="button" className="btn sm" aria-pressed={choiceDraft.visibility === 'private'} disabled={generating || !choiceDraft.recipient_ids.length || !conv.scene.observation_filter || conv.scene.format === 'dialog'} onClick={() => setChoiceDraft({ ...choiceDraft, visibility: 'private' })}>귓속말(같은 수신자)</button>
+        {!choiceDraft.recipient_ids.length && <span>원래 수신자를 복원할 수 없어 귓속말을 보낼 수 없습니다.</span>}
+        <button type="button" className="btn sm ghost" disabled={generating} onClick={() => { setChoiceDraft(null); setWhisperIds(''); }}>공개 일반 입력으로 전환</button>
+      </div>}
+      <div className="row" style={{ padding: '4px 12px', gap: 6, flexWrap: 'wrap' }} aria-label="부가 모드">
+        <span className="small muted">부가 모드</span>
+        <button type="button" className="btn sm ghost" onClick={() => { setSideTab('summary'); setSideOpen(true); }}>이야기 요약</button>
+        <button type="button" className="btn sm ghost" onClick={() => { setSideTab('community'); setSideOpen(true); }}>심층갤</button>
+      </div>
+      <div className={`composer${generating ? ' is-generating' : ''}`}>
+        {generating && (
           <div className="gen-status" aria-live="polite">
             <span className="gen-dots" aria-hidden="true"><i /><i /><i /></span>
-            세계관에 반영 중…
+            {sideMode.generating ? '부가 모드 생성 중…' : '세계관에 반영 중…'}
           </div>
         )}
         <div className="inputbar">
           <textarea
             ref={taRef}
             value={draft}
-            onChange={(e) => setDraft(expandLeadingShortcut(e.target.value, readShortcuts(), { bare: false }).text)}
+            onChange={(e) => setDraft(parseSideModeCommand(e.target.value) ? e.target.value : expandLeadingShortcut(e.target.value, readShortcuts(), { bare: false }).text)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
-                if (!chat.generating) submit();
+                if (!generating) submit();
               }
             }}
-            placeholder={ended ? '완결된 대화입니다' : (chat.generating ? '다음 행동을 적어 두세요…' : `${char.name}에게 메시지…`)}
+            placeholder={ended ? '완결된 대화입니다' : (generating ? '다음 행동을 적어 두세요…' : `${char.name}에게 메시지…`)}
             rows={1}
             enterKeyHint="send"
             disabled={ended}
           />
-          {chat.generating ? (
-            <button type="button" className="btn icon stop-gen" onClick={() => void chat.stop()} aria-label="생성 중단" title="생성 중단">■</button>
+          {generating ? (
+            <button type="button" className="btn icon stop-gen" onClick={() => void (sideMode.generating ? sideMode.stop() : chat.stop())} aria-label="생성 중단" title="생성 중단">■</button>
           ) : (
             <button type="button" className="btn primary icon" onClick={submit} disabled={!draft.trim() || ended} aria-label="보내기">↑</button>
           )}
@@ -535,8 +602,9 @@ export function ChatPage({ id }: { id: string }) {
         </div>
       </BottomSheet>
 
+      <SideModePanel open={sideOpen} mode={sideTab} onModeChange={setSideTab} onClose={() => setSideOpen(false)} messages={sideMode.messages} loading={sideMode.loading} generating={sideMode.generating} disabled={generating} error={sideMode.error} onGenerate={sideMode.generate} onStop={() => void sideMode.stop()} onReload={() => void sideMode.reload()} />
       <ChatDrawer open={drawer} conversationId={id} draft={draft} initialTab={drawerTab} onClose={() => { setDrawer(false); setDrawerTab(undefined); }} onApplied={() => { setSummaryTick((n) => n + 1); }} />
-      <ConversationSettings open={settings} conversationId={id} generating={chat.generating} onClose={() => setSettings(false)} onChanged={chat.reload} onOpenMemory={() => { setSettings(false); setDrawerTab(undefined); setDrawer(true); }} />
+      <ConversationSettings open={settings} conversationId={id} generating={generating} onClose={() => setSettings(false)} onChanged={chat.reload} onOpenMemory={() => { setSettings(false); setDrawerTab(undefined); setDrawer(true); }} />
       </div>
 
       <OverlayDrawer
@@ -564,7 +632,7 @@ export function ChatPage({ id }: { id: string }) {
             characterName={char.name}
             hasBeatRoster={hasBeatRoster}
             focusId={lastUi?.focus_id ?? conv.scene.last_beat?.focus_id ?? null}
-            generating={chat.generating}
+            generating={generating}
             loadError={chat.error}
             conversationEnded={ended}
             placement="desktop"
@@ -633,6 +701,7 @@ function MessageView(props: {
   onChoice: (c: string) => void;
   onEditChoice: (c: string) => void;
   hideChoices?: boolean;
+  showPortrait?: boolean;
   focusId?: string | null;
 }) {
   const { m } = props;
@@ -711,12 +780,13 @@ function MessageView(props: {
 
   if (!isUser && hasEventContract(m) && m.events.length === 0 && m.status === 'complete' && !m.meta.choices?.length && !m.meta.error) return null;
   const firstDialogue = !isUser && hasEventContract(m) ? m.events.find((event) => event.type === 'dialogue') : undefined;
+  const portrait = props.showPortrait === false ? null : messagePortrait(m);
   const showActions = !props.streaming && !props.generating;
   const lineFocus = Boolean(!isUser && props.focusId && m.events?.some((event) => event.type === 'dialogue' && event.actorId === props.focusId));
   return (
-    <div id={props.domId} className={`msg ${isUser ? 'user' : 'assistant'} ${m.meta.ooc ? 'ooc' : ''}${lineFocus ? ' is-focus' : ''}`}>
+    <div id={props.domId} className={`msg ${isUser ? 'user' : 'assistant'} ${m.meta.ooc ? 'ooc' : ''}${lineFocus ? ' is-focus' : ''}${portrait ? ' has-portrait' : ''}`}>
       {firstDialogue?.actorName ? (
-        <SpeakerHeader name={firstDialogue.actorName} avatar={m.meta.image_url ?? m.meta.speaker_avatar} focused={lineFocus} />
+        <SpeakerHeader name={firstDialogue.actorName} avatar={m.meta.speaker_avatar === m.meta.image_url ? undefined : m.meta.speaker_avatar} focused={lineFocus} />
       ) : null}
       <div
         className={`${isUser ? 'bubble' : 'chat-event-body'} ${m.status === 'interrupted' ? 'interrupted' : ''} ${m.status === 'error' ? 'error' : ''}`}
@@ -729,6 +799,7 @@ function MessageView(props: {
         onTouchEnd={onTouchEnd}
         onTouchCancel={onTouchCancel}
       >
+        {portrait ? <CharacterPortrait key={portrait.src} src={portrait.src} name={portrait.name} /> : null}
         {isUser ? renderContent(m.content) : <MessageEvents message={m} streaming={props.streaming} focusId={props.isLastAssistant ? props.focusId : null} />}
         {props.streaming && <span className="cursor" />}
         {m.status === 'error' && <div className="small" style={{ color: 'var(--danger)', marginTop: 6 }}>{m.meta.error ?? '생성 실패'}</div>}
@@ -769,6 +840,7 @@ function ConversationSettings({ open, conversationId, generating, onClose, onCha
   const [promptVersion, setPromptVersion] = useState('');
   const [view, setView] = useState<'main' | 'guide' | 'profiles'>('main');
   const [personaList, setPersonaList] = useState<Persona[]>([]);
+  const [lengthSaving, setLengthSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -786,6 +858,21 @@ function ConversationSettings({ open, conversationId, generating, onClose, onCha
   async function save(patchBody: Record<string, unknown>) {
     await patch(`/api/conversations/${conversationId}`, patchBody);
     onChanged();
+  }
+
+  async function saveLength(value: ResponseLength) {
+    const body = buildResponseLengthPatch(value);
+    if (!body || lengthSaving || generating) return;
+    setLengthSaving(true);
+    try {
+      const saved = await patch<Conversation>(`/api/conversations/${conversationId}`, body);
+      setConv(saved);
+      onChanged();
+    } catch (error) {
+      ui.toast((error as Error).message, 'err');
+    } finally {
+      setLengthSaving(false);
+    }
   }
 
   async function pickPersona(p: Persona) {
@@ -882,6 +969,7 @@ function ConversationSettings({ open, conversationId, generating, onClose, onCha
           </select>
           <span className="hint">출력량·온도입니다. 모델을 바꾸지 않습니다.</span>
         </div>
+        <ResponseLengthSelect value={conv.scene.response_length ?? 'normal'} disabled={!!generating || lengthSaving} onChange={(value) => void saveLength(value)} />
         <button className="btn sm block" style={{ marginTop: 6 }} onClick={onOpenMemory}>요약 메모리</button>
 
         <div className="small muted" style={{ marginTop: 16 }}>전체 설정</div>
