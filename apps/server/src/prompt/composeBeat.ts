@@ -31,6 +31,7 @@ import {
   renderPassE, renderPassF, renderPassN, splitFocusText, type PassCard,
 } from './passes.js';
 import { renderPassC } from './beatChoices.js';
+import { sanitizeGeneratedContent } from '../contracts/chatEventAdapter.js';
 import {
   assetPathFor, renderHeader, renderUi, serializeBeat,
   type BeatBlock, type BeatLine, type BeatUi,
@@ -260,7 +261,7 @@ export function planBeat(input: BeatPlanInput): BeatPlan {
       header,
       userText: input.user_text,
       ambientNames: ambient.map((a) => a.name),
-      recentNarrations: input.recent_narrations,
+      recentNarrations: input.recent_narrations?.map(text => sanitizeGeneratedContent(text).trim()).filter(Boolean),
     }),
     pass_f: focusCard
       ? renderPassF({
@@ -291,7 +292,7 @@ export function passFWith(input: BeatPlanInput, plan: BeatPlan, narration: strin
     userText: input.user_text,
     scene: plan.applied.state,
     header: plan.header,
-    narration,
+    narration: sanitizeGeneratedContent(narration).trim(),
     cast: input.cast,
     contentPolicy: input.content_policy,
   });
@@ -309,7 +310,10 @@ export function passCWith(input: BeatPlanInput, finished: FinishedBeat): string 
   return renderPassC({
     userName: userNameOf(input),
     userText: input.user_text,
-    blocks: finished.blocks,
+    // Choices see displayed blocks, not the planner's hidden thought slot.
+    blocks: finished.blocks.filter(b => b.kind === 'narration' || b.kind === 'line').map(b => ({
+      kind: b.kind, speaker_name: b.speaker_name, text: sanitizeGeneratedContent(b.text).trim(),
+    })),
   });
 }
 
@@ -326,8 +330,8 @@ export function planPassE(input: BeatPlanInput, plan: BeatPlan, narration: strin
       card: cardFor(extra.character_id, input),
       duty: extra.duty,
       focusName,
-      focusText,
-      narration,
+      focusText: sanitizeGeneratedContent(focusText).trim(),
+      narration: sanitizeGeneratedContent(narration).trim(),
       userName: userNameOf(input),
       userText: input.user_text,
       cast: input.cast,
