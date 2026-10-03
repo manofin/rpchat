@@ -68,7 +68,12 @@ export function observationText(row: MessageRow, enabled: boolean, actor?: strin
   // A model's free-form metadata is not an authorized action contract, even for GM.
   // Fail closed through the existing speech proof rather than parsing those fields.
   const freeFields = /(?:^|[\s{,])["']?(?:private|private_thought|visible_action)["']?\s*[:：]/i;
-  if (enabled && actor === GM && !(row.role === 'assistant' && meta.block_kind === 'line' && freeFields.test(row.content))) return row.content;
+  if (enabled && actor === GM) {
+    if (row.role === 'assistant' && meta.block_kind === 'line' && freeFields.test(row.content)) {
+      return speechObservation(meta.observation_text ?? row.content, PUBLIC, true);
+    }
+    return row.content;
+  }
   const text = meta.observation_text ?? row.content;
   // OFF-era observation_text is a cache of raw output, not a public speech proof.
   return enabled && row.role === 'assistant' && meta.block_kind === 'line'

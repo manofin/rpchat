@@ -152,6 +152,9 @@ async function main() {
       const contaminated = { ...row, content: `${ACTION}\n"${SPEECH}"\n${field}: FREE_CONTROL_BODY` };
       assert.equal(observationText(contaminated, true, GM), `"${SPEECH}"`);
       assert.equal(observationText(contaminated, false, GM), observationText(contaminated, false));
+      const privateMeta = { ...JSON.parse(row.meta_json), observation_text: contaminated.content,
+        observation: { visibility: 'private', recipient_ids: ['user', 'gm'], observer_ids: [] } };
+      assert.equal(observationText({ ...contaminated, meta_json: JSON.stringify(privateMeta) }, true, GM), `"${SPEECH}"`);
       db.prepare('UPDATE messages SET content=? WHERE id=?').run(contaminated.content, row.id);
       const conv = db.prepare('SELECT * FROM conversations WHERE id=?').get(f.room.id) as ConversationRow;
       const summary = buildSideModePrompt(db, conv, 'summary', '', 16384);
