@@ -545,7 +545,7 @@ export function chatRoutes(ctx: Ctx) {
         const meta = parseMessageMeta(m.meta_json);
         const kind = m.role === 'user' ? 'user' as const : meta.block_kind === 'narration' ? 'narration' as const :
           meta.block_kind === 'line' ? 'dialogue' as const : 'unknown' as const;
-        return { text: observationText(m, observationEnabled), audience: audienceOf(m), kind,
+        return { text: observationText(m, observationEnabled), gmText: observationText(m, observationEnabled, GM), audience: audienceOf(m), kind,
           speakerName: kind === 'dialogue' ? meta.speaker_name || cast.find(actor => actor.id === meta.speaker_character_id)?.name : undefined };
       });
 
@@ -652,12 +652,13 @@ export function chatRoutes(ctx: Ctx) {
       let selectedTokens = 0;
       if (observationEnabled) {
         for (let i = observations.length - 1; i >= 0; i--) {
-          const text = project(observations[i].text, observations[i].audience, observer, true);
+          const sourceText = observer === GM ? observations[i].gmText : observations[i].text;
+          const text = project(sourceText, observations[i].audience, observer, true);
           if (!text) continue;
           const cost = estimateMessageTokens(text, injectCal);
           if (cost > budget) continue;
           if (selectedTokens + cost > budget) break;
-          selected.unshift(observations[i]);
+          selected.unshift({ ...observations[i], text });
           selectedTokens += cost;
         }
       }

@@ -24,7 +24,7 @@ export function buildSideModePrompt(db: DB, conv: ConversationRow, mode: SideMod
     const audience = audienceOf(row);
     // GM needs the authorized event body; typed dialog lines already separate prose from speech.
     // Public beat readers still receive only the speech observation proved by the main path.
-    const text = mode === 'summary' || scene.format === 'dialog' ? row.content : observationText(row, true);
+    const text = scene.format === 'dialog' ? row.content : observationText(row, true, actor);
     const classifyLegacy = scene.format !== 'dialog' && scene.observation_filter === true;
     return { ...row, content: project(text, audience, actor, Boolean(audience) || classifyLegacy) };
   }).filter(row => row.content.trim());

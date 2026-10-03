@@ -61,8 +61,14 @@ export function speechObservation(text: string, audience: Audience | undefined, 
   return clean.split('\n').map(x => x.trim()).filter(x => /^(?:"[^"\n]+"|“[^”\n]+”|「[^」\n]+」|『[^』\n]+』)$/.test(x)).join('\n');
 }
 
-export function observationText(row: MessageRow, enabled: boolean): string {
+export function observationText(row: MessageRow, enabled: boolean, actor?: string): string {
+  // Speech caches constrain NPC observation, not the GM's authorized event body.
+  // The caller still applies project() for audience checks and control sanitization.
   const meta = parseMessageMeta(row.meta_json);
+  // A model's free-form metadata is not an authorized action contract, even for GM.
+  // Fail closed through the existing speech proof rather than parsing those fields.
+  const freeFields = /(?:^|[\s{,])["']?(?:private|private_thought|visible_action)["']?\s*[:：]/i;
+  if (enabled && actor === GM && !(row.role === 'assistant' && meta.block_kind === 'line' && freeFields.test(row.content))) return row.content;
   const text = meta.observation_text ?? row.content;
   // OFF-era observation_text is a cache of raw output, not a public speech proof.
   return enabled && row.role === 'assistant' && meta.block_kind === 'line'
