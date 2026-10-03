@@ -12,6 +12,7 @@ import { classify } from '../memory/conflict.js';
 import { evidenceIdsForSlice, isSummarizeBlocked, sceneCoverRange } from './summarizeContract.js';
 import type { CharacterRow, MemoryRow, SummaryRow, MessageRow } from '../types.js';
 import { loadConversation } from './conversations.js';
+import { dialogKnowledgeRoutes } from './dialogKnowledge.js';
 
 function memoryOut(m: MemoryRow) {
   return { ...m, evidence_message_ids: parseJson<string[]>(m.evidence_message_ids_json, []) };
@@ -93,6 +94,7 @@ function duplicateWarn(v: { kind: string; withMemoryId: string | null; reason: s
 export function memoryRoutes(ctx: Ctx) {
   const { db } = ctx;
   return async function plugin(app: FastifyInstance) {
+    await app.register(dialogKnowledgeRoutes(ctx));
     app.get<{ Params: { id: string } }>('/api/conversations/:id/memories', async (req, reply) => {
       const conv = loadConversation(ctx, req.params.id);
       if (!conv) return reply.code(404).send({ error: 'not found' });
