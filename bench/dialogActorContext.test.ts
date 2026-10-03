@@ -81,7 +81,7 @@ async function main() {
     budget(p);
   });
 
-  await t('directional relationships and active injury, promise and goal persist across turns', async () => {
+  await t('12 HTTP turns retain directional relationships, injury, promise, goal and private actor scope', async () => {
     const relA = await memory('A_TO_B_RELATION'); const relB = await memory('B_TO_A_RELATION');
     const injury = await memory('ACTIVE_INJURY'); const promise = await memory('ACTIVE_PROMISE'); const goal = await memory('UNRESOLVED_GOAL');
     const entries = [...metadata.entries,
@@ -92,13 +92,18 @@ async function main() {
       entry(goal, 'goal', 'public', { subject_id: b.id }),
     ];
     await spec(entries);
-    for (let i = 0; i < 2; i++) {
+    const turnBefore = (await api('GET', `/api/conversations/${room.id}`)).conversation.scene.turn_no;
+    for (let i = 0; i < 12; i++) {
       const p = await preview(); const request = await send(); assert.deepEqual(request.messages, p.messages);
       assert.deepEqual(actor(p, a.id).facts.find((f: any) => f.memory_id === relA.id), { memory_id: relA.id, kind: 'relationship', text: 'A_TO_B_RELATION', subject_id: a.id, target_id: b.id });
       assert.ok(actor(p, b.id).facts.some((f: any) => f.memory_id === relB.id && f.subject_id === b.id && f.target_id === a.id));
       for (const f of [relA, injury, promise]) assert.ok(!JSON.stringify(actor(p, b.id)).includes(f.content));
       for (const f of [injury, promise]) assert.ok(actor(p, a.id).facts.some((v: any) => v.memory_id === f.id));
       assert.ok(p.actor_context.public_facts.some((f: any) => f.memory_id === goal.id)); budget(p);
+      assert.ok(actor(p, a.id).facts.some((f: any) => f.memory_id === secret.id));
+      assert.ok(!JSON.stringify(actor(p, b.id)).includes(secret.content));
+      const stored = await api('GET', `/api/conversations/${room.id}`);
+      assert.equal(stored.conversation.scene.turn_no, turnBefore + i + 1, 'each iteration must advance a persisted turn');
     }
   });
 
