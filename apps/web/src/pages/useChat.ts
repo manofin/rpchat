@@ -99,6 +99,8 @@ export function useChat(conversationId: string) {
     try {
       await streamPost(path, body, (event) => {
         if (scopeRef.current !== scope || abortRef.current !== ctrl) return;
+        // The committed turn snapshot is stamped after its INFO row was streamed.
+        if (state.detail?.conversation.scene.format === 'dialog' && event.type === 'done' && event.message.status === 'complete') resync = true;
         if (event.type === 'error') {
           failed = true;
           requestError = event.message;
@@ -147,7 +149,7 @@ export function useChat(conversationId: string) {
       if (requestError && scopeRef.current === scope) patchState({ error: requestError });
     }
     return scopeRef.current === scope ? result : true;
-  }, [state.generating, applyEvent, patchState, reload, scope]);
+  }, [state.generating, state.detail?.conversation.scene.format, applyEvent, patchState, reload, scope]);
 
   const send = useCallback((content: string, opts?: { inject_instruction?: string } & { choice?: { message_id: string; index: number; visibility: 'public' | 'private' } } & { observation?: { visibility: 'private'; recipient_ids: string[] } }) => {
     const body = { content, ...opts };
