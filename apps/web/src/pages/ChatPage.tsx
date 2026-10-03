@@ -35,6 +35,7 @@ import { ChatListRail } from './ChatListRail';
 import { ConversationTools } from './ConversationTools';
 import { outputProfileLabel } from '../lib/conversationSettings';
 import { chatModelSubtitle, partyCertainty } from '../lib/modelDisplay';
+import { CharacterIntroCard, RosterPortraitStage } from '../components/ChatFeedImages';
 
 /** ADR-F8g: snapshot is the reader-visible endings list. Damaged → no picker. */
 function parseEndingsSnapshot(raw: string | null | undefined): StoryEnding[] {
@@ -55,7 +56,8 @@ export function ChatPage({ id }: { id: string }) {
   const generating = chat.generating || sideMode.generating;
   const [sideOpen, setSideOpen] = useState(false);
   const [sideTab, setSideTab] = useState<SideMode>('summary');
-  useEffect(() => { setSideOpen(false); setSideTab('summary'); }, [id]);
+  const [portraitActorId, setPortraitActorId] = useState<string | null>(null);
+  useEffect(() => { setSideOpen(false); setSideTab('summary'); setPortraitActorId(null); }, [id]);
   const [draft, setDraft] = useState('');
   const [drawer, setDrawer] = useState(false);
   const [drawerTab, setDrawerTab] = useState<'budget' | 'memory' | 'summary' | undefined>(undefined);
@@ -265,6 +267,11 @@ export function ChatPage({ id }: { id: string }) {
   const lastUi = [...chat.messages].reverse()
     .flatMap((message) => hasEventContract(message) ? [...message.events].reverse() : [])
     .map(eventUiData).find((panel) => panel !== null) ?? null;
+  const rosterPortraits = (lastUi?.roster ?? []).flatMap(row => !row.locked && row.image_url
+    ? [{ id: row.id, name: row.name, chip: row.chip, image_url: row.image_url }] : []);
+  const selectedPortraitId = rosterPortraits.some(row => row.id === portraitActorId)
+    ? portraitActorId
+    : rosterPortraits.find(row => row.id === lastUi?.focus_id)?.id ?? rosterPortraits[0]?.id ?? null;
   const hasBeatRoster = Boolean(lastUi?.roster?.length);
   const onSceneIntent = (intent: SceneActionIntent) => {
     const d = resolveSceneAction(intent, id);
@@ -440,13 +447,15 @@ export function ChatPage({ id }: { id: string }) {
         const live = { ...lastUi, focus_id: lastUi.focus_id ?? conv.scene.last_beat?.focus_id ?? null };
         return (
           <div className="cast-status" aria-label="캐스트">
-            <BeatUiPanel ui={{ roster: live.roster, focus_id: live.focus_id }} />
+            <BeatUiPanel ui={{ roster: live.roster, focus_id: live.focus_id }} selectedRosterId={selectedPortraitId} onRosterSelect={setPortraitActorId} />
           </div>
         );
       })()}
 
       <div className="chat-scroll" ref={scrollRef} onScroll={onScroll}>
         <div className="chat-feed" ref={contentRef}>
+        {!conv.story_id ? <CharacterIntroCard character={char} /> : null}
+        <RosterPortraitStage options={rosterPortraits} selectedId={selectedPortraitId} onSelect={setPortraitActorId} />
         {shownMessages.length === 0 && <div className="sysline" style={{ margin: 'auto' }}>첫 메시지를 보내 대화를 시작하세요.</div>}
         {reorderTurns
           ? groupChatTurns(shownMessages).map((turn, ti) => {
