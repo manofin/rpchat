@@ -25,6 +25,10 @@ export function savedDialogStateRows(message: Pick<Message, 'role' | 'status'> &
     const items = value.map(item => item.trim()).filter(Boolean);
     rows.push({ label, value: items.length ? items.join(' · ') : '없음' });
   }
+  const confirmedRoles = snapshot.confirmed_roles;
+  if (Array.isArray(confirmedRoles) && confirmedRoles.every(item => typeof item === 'string')) {
+    const items = confirmedRoles.map(item => item.trim()).filter(Boolean);
+    if (items.length) rows.push({ label: '역할', value: items.join(' · ') });
+  }
   return rows;
 }
-

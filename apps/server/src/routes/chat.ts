@@ -47,6 +47,7 @@ import type { ConversationRow, InstructionOverflow, MessageRow, Scene } from '..
 import { loadConversation } from './conversations.js';
 import { fireEndingEvalJob } from '../endingJudge.js';
 import { createChatEventStream, sanitizeGeneratedContent } from '../contracts/chatEventAdapter.js';
+import { confirmedRolesForInfo } from '../prompt/conversationRoleFacts.js';
 import type { ChatEvent } from '@rpchat/contracts/chat-event';
 
 function storyFocusPlanFields(conv: ConversationRow): {
@@ -206,9 +207,11 @@ export function chatRoutes(ctx: Ctx) {
   // scene-branch-snapshot: last_beat / turn_no are not known until finish, so the
   // start row is stamped here rather than at insert. One extra UPDATE per successful
   // multi-row turn; interrupted turns keep no snapshot and fall back.
-  const stampTurnScene = (startId: string | undefined, before: Scene, after: Scene) => {
+  const stampTurnScene = (conversationId: string, startId: string | undefined, before: Scene, after: Scene) => {
     if (!startId) return;
-    updateMessage(db, startId, { meta: { scene_state: buildSceneSnapshot(before, after) } });
+    const current = loadConversation(ctx, conversationId);
+    const confirmed = current ? confirmedRolesForInfo(db, current) : [];
+    updateMessage(db, startId, { meta: { scene_state: buildSceneSnapshot(before, after, confirmed) } });
   };
 
   /** Failure/interrupt path: a clock_observe row with no beat_log, no scene write. */
@@ -884,7 +887,7 @@ export function chatRoutes(ctx: Ctx) {
       // cache of it. If the process dies between the two, the next successful turn
       // rewrites the cache from the branch; a missing snapshot would never be
       // backfilled and would leave that turn regenerating off the cache again.
-      stampTurnScene(emitted[0]?.id, scene, finished.scene);
+      stampTurnScene(conv.id, emitted[0]?.id, scene, finished.scene);
       run(db, `UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?`,
         JSON.stringify(finished.scene), nowIso(), nowIso(), conv.id);
 
@@ -1166,6 +1169,7 @@ export function chatRoutes(ctx: Ctx) {
         {
           model, messages: built.messages,
           temperature: 0.9, top_p: 0.95, max_tokens: built.maxTokens, stop: [], signal: controller.signal,
+          audience: { kind: 'public' },
         },
         (delta) => {
           buffer += delta;
@@ -1176,22 +1180,61 @@ export function chatRoutes(ctx: Ctx) {
           }
         },
       ), controller.signal);
+      const supplements: Array<{ text: string; observation: { visibility: 'private'; recipient_ids: string[]; observer_ids: string[] } }> = [];
+      const scopedRequests = [
+        ...(built.narrator_request ? [built.narrator_request] : []),
+        ...built.actor_requests,
+      ];
+      for (const scoped of scopedRequests) {
+        const scopedResult = await ctx.queue.run(() => ctx.model.stream(
+          {
+            model,
+            messages: scoped.messages,
+            temperature: 0.7,
+            top_p: 0.95,
+            max_tokens: scoped.maxTokens,
+            stop: [],
+            signal: controller.signal,
+            audience: scoped.audience,
+          },
+          () => {},
+        ), controller.signal);
+        const text = scopedResult.text.trim();
+        if (text && text !== 'NO_LINE' && text !== 'NO_NARRATION') {
+          supplements.push({
+            text,
+            observation: scoped.audience.kind === 'actor'
+              ? { visibility: 'private', recipient_ids: [scoped.audience.actor_id, 'user'], observer_ids: [] }
+              : { visibility: 'private', recipient_ids: ['gm', 'user'], observer_ids: [] },
+          });
+        }
+      }
       passMs.s = Date.now() - tS;
+      const completedScript = [result.text, ...supplements.map(item => item.text)].filter(Boolean).join('\n');
+      if (supplements.length) {
+        buffer = completedScript;
+        sse.send({ type: 'token', ...streamEvents(buffer) });
+        updateMessage(db, scriptRow.id, { content: buffer });
+      }
 
-      const finished = finishDialogBeat(planInput, plan, result.text);
-      const scriptBlocks = sheetSent
-        ? finished.blocks.filter((b) => b.kind !== 'info')
-        : finished.blocks;
+      const mainFinished = finishDialogBeat(planInput, plan, result.text);
+      const finished = finishDialogBeat(planInput, plan, completedScript);
+      const mainBlocks = (sheetSent ? mainFinished.blocks.filter((b) => b.kind !== 'info') : mainFinished.blocks)
+        .map(block => ({ block, observation: undefined as undefined | { visibility: 'private'; recipient_ids: string[]; observer_ids: string[] } }));
+      const scopedBlocks = supplements.flatMap(item => finishDialogBeat(planInput, plan, item.text).blocks
+        .filter(block => !['header', 'info', 'ui'].includes(block.kind))
+        .map(block => ({ block, observation: item.observation })));
+      const scriptBlocks = [...mainBlocks, ...scopedBlocks];
 
       // A turn whose script parsed to nothing is a failed turn, exactly as an
       // empty Pass F is on the beat path. The sheet alone is not a turn.
       if (!scriptBlocks.length) throw new ModelError('대본을 만들지 못했습니다');
 
-      const [first, ...rest] = scriptBlocks;
+      const [{ block: first, observation: firstObservation }, ...rest] = scriptBlocks;
       // Choices ride on whichever block is actually last — same rule the 1:1 path
       // uses (they sit on the one assistant message, and `isLastAssistant` on the
       // client is positional, not kind-specific).
-      const choices = finished.choices && finished.choices.length ? finished.choices : undefined;
+      const choices = mainFinished.choices && mainFinished.choices.length ? mainFinished.choices : undefined;
       updateMessage(db, scriptRow.id, {
         content: first.text,
         status: 'complete',
@@ -1201,14 +1244,16 @@ export function chatRoutes(ctx: Ctx) {
           speaker_character_id: first.speaker_character_id ?? undefined,
           speaker_name: first.speaker_name ?? undefined,
           image_url: first.asset_path ?? undefined,
+          observation: firstObservation,
           ...(rest.length === 0 ? { choices } : {}),
         },
       });
-      rest.forEach((block, i) => {
+      rest.forEach(({ block, observation }, i) => {
         send(addBlock(block.kind as 'info' | 'narration' | 'line', block.text, {
           speaker_character_id: block.speaker_character_id ?? undefined,
           speaker_name: block.speaker_name ?? undefined,
           image_url: block.asset_path ?? undefined,
+          observation,
           ...(i === rest.length - 1 ? { choices, finish_reason: result.finishReason } : {}),
         }));
       });
@@ -1218,7 +1263,7 @@ export function chatRoutes(ctx: Ctx) {
       // cache of it. If the process dies between the two, the next successful turn
       // rewrites the cache from the branch; a missing snapshot would never be
       // backfilled and would leave that turn regenerating off the cache again.
-      stampTurnScene(emitted[0]?.id, scene, finished.scene);
+      stampTurnScene(conv.id, emitted[0]?.id, scene, finished.scene);
       run(db, `UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?`,
         JSON.stringify(finished.scene), nowIso(), nowIso(), conv.id);
 
@@ -1375,13 +1420,15 @@ export function chatRoutes(ctx: Ctx) {
       }
     });
 
-    const regenSchema = z.object({ messageId: z.string().min(1) });
+    const regenSchema = z.object({ messageId: z.string().min(1), inject_instruction: z.string().optional() });
     app.post<{ Params: { id: string } }>('/api/conversations/:id/regenerate', async (req, reply) => {
       const conv = loadConversation(ctx, req.params.id);
       if (!conv) return reply.code(404).send({ error: 'not found' });
       if (conv.ended_at) return reply.code(409).send({ error: 'already ended' });
       const p = regenSchema.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
+      const inj = parseInjectInstruction(p.data.inject_instruction);
+      if (!inj.ok) return reply.code(400).send({ error: inj.error });
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ? AND conversation_id = ?', p.data.messageId, conv.id);
       if (!m) return reply.code(404).send({ error: 'message not found' });
       if (m.status === 'streaming') return reply.code(409).send({ error: '생성 중' });
@@ -1406,7 +1453,7 @@ export function chatRoutes(ctx: Ctx) {
       } else {
         parentId = m.id;
       }
-      return generate(req, reply, conv, parentId, undefined, regenTurnStartId);
+      return generate(req, reply, conv, parentId, undefined, regenTurnStartId, inj.ctx);
     });
 
     // 사용자 메시지 수정 후 재생성 = 같은 부모 아래 새 user 분기 + 생성

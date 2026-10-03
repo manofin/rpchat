@@ -58,6 +58,7 @@ export function buildContinuation(ctx: Ctx, conv: ConversationRow, history: Mess
     if (cost() > available) built.budget.instruction_overflow = { profile: profile.name, instruction_tokens: 0, required: cost(), available };
     return { messages: built.messages, budget: built.budget, model: built.model, maxTokens: built.profile.max_tokens,
       temperature: built.profile.temperature, topP: built.profile.top_p, stop: built.stop,
+      scopedRequests: [],
       meta: {} as MessageMeta, finish: (raw: string) => [{ text: sanitizeGeneratedContent(raw), meta: {} as MessageMeta }] };
   }
   if (scene.format === 'dialog') {
@@ -68,6 +69,7 @@ export function buildContinuation(ctx: Ctx, conv: ConversationRow, history: Mess
       config.model.contextTokens, ctx.resolvedModel(), undefined, scene);
     return { messages: built.messages, budget: built.budget, model: built.model, maxTokens: built.maxTokens,
       temperature: 0.9, topP: 0.95, stop: [],
+      scopedRequests: [...(built.narrator_request ? [built.narrator_request] : []), ...built.actor_requests],
       meta: { chat_event_script: true, chat_event_actors: plan.speakers.map(({ id, name, aliases }) => ({ id, name, aliases })) } as MessageMeta,
       finish: (raw: string) => finishDialogBeat(input, plan, raw).blocks.filter(b => b.kind !== 'info' && b.kind !== 'header' && b.kind !== 'ui').map(b => ({
         text: b.text, meta: { block_kind: b.kind, speaker_character_id: b.speaker_character_id ?? undefined,
@@ -113,6 +115,7 @@ export function buildContinuation(ctx: Ctx, conv: ConversationRow, history: Mess
   const meta: MessageMeta = { block_kind: speaker ? 'line' : 'narration', speaker_character_id: speaker?.id,
     speaker_name: speaker?.name, observation: audience };
   return { messages: [{ role: 'user', content: prompt }] as ChatMessage[], model: ctx.resolvedModel(), maxTokens, temperature: 0.9, topP: 0.95, stop: [],
+    scopedRequests: [],
     budget: { est_total: est, available, dropped_messages: candidates.length - selected.length, included_messages: selected.length + 1,
       ...(est > available ? { instruction_overflow: { required: est, available } } : {}) }, meta,
     finish: (raw: string) => [{ text: sanitizeGeneratedContent(raw), meta: { ...meta,
@@ -173,13 +176,49 @@ export function continuationRoutes(ctx: Ctx) {
       };
       try {
         const result = await ctx.queue.run(() => ctx.model.stream({ model: built.model, messages: built.messages,
-          max_tokens: built.maxTokens, temperature: built.temperature, top_p: built.topP, stop: built.stop, signal: controller.signal, generationId }, delta => {
+          max_tokens: built.maxTokens, temperature: built.temperature, top_p: built.topP, stop: built.stop, signal: controller.signal, generationId,
+          ...(built.scopedRequests.length ? { audience: { kind: 'public' as const } } : {}) }, delta => {
           buffer += delta;
           send({ type: 'token', ...streamEvents(buffer) });
           if (Date.now() - lastPersist > 800) { updateMessage(db, row.id, { content: buffer }); lastPersist = Date.now(); }
         }), controller.signal);
         if (controller.signal.aborted) throw new Error('aborted');
-        const blocks = built.finish(result.text).filter(b => b.text.trim());
+        const supplements: Array<{ text: string; observation: { visibility: 'private'; recipient_ids: string[]; observer_ids: string[] } }> = [];
+        for (const scoped of built.scopedRequests) {
+          const extra = await ctx.queue.run(() => ctx.model.stream({
+            model: built.model,
+            messages: scoped.messages,
+            max_tokens: scoped.maxTokens,
+            temperature: 0.7,
+            top_p: 0.95,
+            stop: [],
+            signal: controller.signal,
+            generationId,
+            audience: scoped.audience,
+          }, () => {}), controller.signal);
+          const text = extra.text.trim();
+          if (text && text !== 'NO_LINE' && text !== 'NO_NARRATION') {
+            supplements.push({
+              text,
+              observation: scoped.audience.kind === 'actor'
+                ? { visibility: 'private', recipient_ids: [scoped.audience.actor_id, 'user'], observer_ids: [] }
+                : { visibility: 'private', recipient_ids: ['gm', 'user'], observer_ids: [] },
+            });
+          }
+        }
+        const completed = [result.text, ...supplements.map(item => item.text)].filter(Boolean).join('\n');
+        if (supplements.length) {
+          buffer = completed;
+          send({ type: 'token', ...streamEvents(buffer) });
+          updateMessage(db, row.id, { content: buffer });
+        }
+        const blocks = [
+          ...built.finish(result.text),
+          ...supplements.flatMap(item => built.finish(item.text).map(block => ({
+            ...block,
+            meta: { ...block.meta, observation: item.observation },
+          }))),
+        ].filter(b => b.text.trim());
         if (!blocks.length) throw new Error('empty continuation');
         db.transaction(() => {
           updateMessage(db, row.id, { content: blocks[0].text, status: 'complete', meta: { ...blocks[0].meta, finish_reason: result.finishReason, usage: result.usage } });

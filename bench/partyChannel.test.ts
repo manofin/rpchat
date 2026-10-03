@@ -124,17 +124,20 @@ t('ensemble source order: dialogSpeakers before ambientPicks', () => {
   assert.ok(speakers > 0 && ambient > speakers);
 });
 
-t('generateDialog model call count and order unchanged', () => {
+t('generateDialog keeps one scene proposal, then public and scoped streams in order', () => {
   const chat = src('apps/server/src/routes/chat.ts');
   const from = chat.indexOf('async function generateDialog');
   const to = chat.indexOf('return async function plugin', from);
   assert.ok(from > 0 && to > from);
   const body = chat.slice(from, to);
   assert.equal(body.split('model.complete(').length - 1, 1);
-  assert.equal(body.split('model.stream(').length - 1, 1);
+  assert.equal(body.split('model.stream(').length - 1, 2);
   const complete = body.indexOf('model.complete(');
-  const stream = body.indexOf('model.stream(');
-  assert.ok(complete > 0 && stream > complete);
+  const publicStream = body.indexOf('model.stream(');
+  const scopedStream = body.indexOf('model.stream(', publicStream + 1);
+  assert.ok(complete > 0 && publicStream > complete && scopedStream > publicStream);
+  assert.ok(body.includes("audience: { kind: 'public' }"));
+  assert.ok(body.includes('audience: scoped.audience'));
 });
 
 console.log(`\n${passed} passed`);

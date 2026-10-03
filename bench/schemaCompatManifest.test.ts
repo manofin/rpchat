@@ -45,14 +45,14 @@ async function main() {
   const migDir = path.join(root, 'apps/server/migrations');
   const compatPath = path.join(root, 'deploy/schema-compat.json');
 
-  // 0023_profile_instruction.sql (profile-instruction) moved the snapshot 22 → 23.
-  await t('live tree: 23 sql files, 23 required, sets equal', () => {
+  // 0024_role_fact_events.sql adds authenticated, append-only role decisions.
+  await t('live tree: 24 sql files, 24 required, sets equal', () => {
     const files = listMigrationFilenames(migDir);
     const loaded = loadRequiredMigrations(compatPath);
     assert.equal(loaded.error, undefined);
-    assert.equal(files.length, 23);
-    assert.equal(loaded.required.length, 23);
-    assert.equal(files[22], '0023_profile_instruction.sql');
+    assert.equal(files.length, 24);
+    assert.equal(loaded.required.length, 24);
+    assert.equal(files[23], '0024_role_fact_events.sql');
     const d = diffMigrationManifest(files, loaded.required);
     assert.deepEqual(d.missingInSpec, []);
     assert.deepEqual(d.extraInSpec, []);
@@ -138,12 +138,11 @@ async function main() {
     assert.equal(src.includes('db:check'), false);
   });
 
-  // Originally "no new sql files added by this lock (22 existing only)". Re-scoped when
-  // profile-instruction added 0023: still a snapshot — any further migration must edit this.
-  await t('sql files after 0022 are exactly 0023_profile_instruction.sql', () => {
+  // Snapshot fence: any later migration must update this test and deploy manifest together.
+  await t('sql files after 0022 are exactly the approved 0023 and 0024 migrations', () => {
     const files = listMigrationFilenames(migDir);
-    assert.deepEqual(files.filter((f) => f > '0022_summaries_relation_scope.sql'), ['0023_profile_instruction.sql']);
-    assert.equal(files.length, 23);
+    assert.deepEqual(files.filter((f) => f > '0022_summaries_relation_scope.sql'), ['0023_profile_instruction.sql', '0024_role_fact_events.sql']);
+    assert.equal(files.length, 24);
   });
 
   console.log(`${passed} passed`);

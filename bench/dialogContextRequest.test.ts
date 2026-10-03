@@ -152,6 +152,25 @@ async function main() {
     assert.equal(request().messages.at(-1)?.content, '나리, 열쇠 CURRENT_USER');
   });
 
+  await t('regenerate inject matches preview and rejects invalid instructions before mutation', async () => {
+    const originalHead = conv(roomId).head_message_id!;
+    const before = await preview(roomId, { regenerate: originalHead, inject_instruction: 'REGEN_INJECT_CONTEXT' });
+    const rowCount = () => (db.prepare('SELECT COUNT(*) AS n FROM messages WHERE conversation_id = ?').get(roomId) as any).n;
+    const count = rowCount();
+    calls.length = 0;
+    for (const inject_instruction of ['x'.repeat(801), 42]) {
+      const rejected = await app.inject({ method: 'POST', url: `/api/conversations/${roomId}/regenerate`, payload: { messageId: originalHead, inject_instruction } });
+      assert.equal(rejected.statusCode, 400);
+      assert.equal(conv(roomId).head_message_id, originalHead);
+      assert.equal(rowCount(), count);
+      assert.equal(calls.length, 0);
+    }
+    await api('POST', `/api/conversations/${roomId}/regenerate`, { messageId: originalHead, inject_instruction: 'REGEN_INJECT_CONTEXT' });
+    assert.deepEqual(comparable(request().messages), comparable(before.messages));
+    assert.equal(text(request()).split('REGEN_INJECT_CONTEXT').length - 1, 1);
+    assert.ok(!text(calls[0]).includes('REGEN_INJECT_CONTEXT'), 'scene delta does not receive inject');
+  });
+
   await t('edited user branch excludes the discarded turn and its later input', async () => {
     const target = getPath(db, conv(roomId)).find((m) => m.content === '나리, 열쇠 CURRENT_USER')!;
     const before = await preview(roomId, { branch: target.id, draft: '나리, BRANCH_USER', inject_instruction: 'BRANCH_INJECT' });
