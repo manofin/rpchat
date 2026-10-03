@@ -40,6 +40,7 @@ export interface SceneCatalog {
   items: string[];
   grades: string[];
   emotions: Record<string, number>;
+  default_emotion?: string;
   stages: Record<string, { closer_duty?: string }>;
   dutySlots: Record<string, string>;
 }

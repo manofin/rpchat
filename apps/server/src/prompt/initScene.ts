@@ -75,7 +75,12 @@ export function initialBeatScene(input: {
   if (!overlay.roster) {
     for (const m of input.cast) {
       const outfit = m.outfit || defaultOutfit;
-      if (outfit) roster[m.id] = { outfit };
+      const emotion = input.catalog.default_emotion;
+      const n = emotion ? input.catalog.emotions?.[emotion] : undefined;
+      if (outfit) roster[m.id] = {
+        outfit,
+        ...(emotion && typeof n === 'number' && Number.isInteger(n) && n >= 0 ? { emotion } : {}),
+      };
     }
   }
 

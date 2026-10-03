@@ -26,6 +26,8 @@ export type PartyCatalog = {
   outfits?: string[];
   /** f9-beat-render: emotion → asset index n. Absent/empty → no image. */
   emotions?: Record<string, number>;
+  /** Explicitly authored initial emotion. Absent means no initial portrait. */
+  default_emotion?: string;
   /** f9-beat-render: stage id → closing duty (hard_event owner). */
   stages?: Record<string, { closer_duty?: string }>;
   /** f9-extra-approve: duties that share one function slot. Unlisted = own slot. */
