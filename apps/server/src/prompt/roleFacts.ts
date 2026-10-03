@@ -32,7 +32,7 @@ export type RoleFactsContext = {
 };
 
 /** Only authenticated, human-confirmed server records belong here, never model JSON.
- * Stage 1 takes a supplied fixture/provider; this module does not persist or infer events. */
+ * Persistence supplies append-only events; this reducer remains pure and never infers decisions. */
 export function reduceRoleFacts(raw: readonly unknown[], ctx: RoleFactsContext) {
   if (raw.length > 256) throw new Error('Too many role events');
   const facts = new Map<string, RoleFact>();

@@ -311,6 +311,7 @@ export interface MessageMeta {
     schema_version: number;
     before_delta: Scene;
     after_delta: Scene;
+    confirmed_roles?: string[];
   };
 }
 

@@ -21,6 +21,7 @@ import { memoryRoutes } from './routes/memory.js';
 import { settingsRoutes } from './routes/settings.js';
 import { searchRoutes } from './routes/search.js';
 import { mediaRoutes } from './routes/media.js';
+import { roleFactRoutes } from './routes/roleFacts.js';
 
 async function main() {
   const problems = validateConfig();
@@ -93,6 +94,7 @@ async function main() {
   await app.register(conversationRoutes(ctx));
   await app.register(chatRoutes(ctx));
   await app.register(memoryRoutes(ctx));
+  await app.register(roleFactRoutes(ctx));
   await app.register(settingsRoutes(ctx));
   await app.register(searchRoutes(ctx));
 

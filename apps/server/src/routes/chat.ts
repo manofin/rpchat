@@ -47,6 +47,7 @@ import type { ConversationRow, InstructionOverflow, MessageRow, Scene } from '..
 import { loadConversation } from './conversations.js';
 import { fireEndingEvalJob } from '../endingJudge.js';
 import { createChatEventStream, sanitizeGeneratedContent } from '../contracts/chatEventAdapter.js';
+import { confirmedRolesForInfo } from '../prompt/conversationRoleFacts.js';
 import type { ChatEvent } from '@rpchat/contracts/chat-event';
 
 function storyFocusPlanFields(conv: ConversationRow): {
@@ -206,9 +207,11 @@ export function chatRoutes(ctx: Ctx) {
   // scene-branch-snapshot: last_beat / turn_no are not known until finish, so the
   // start row is stamped here rather than at insert. One extra UPDATE per successful
   // multi-row turn; interrupted turns keep no snapshot and fall back.
-  const stampTurnScene = (startId: string | undefined, before: Scene, after: Scene) => {
+  const stampTurnScene = (conversationId: string, startId: string | undefined, before: Scene, after: Scene) => {
     if (!startId) return;
-    updateMessage(db, startId, { meta: { scene_state: buildSceneSnapshot(before, after) } });
+    const current = loadConversation(ctx, conversationId);
+    const confirmed = current ? confirmedRolesForInfo(db, current) : [];
+    updateMessage(db, startId, { meta: { scene_state: buildSceneSnapshot(before, after, confirmed) } });
   };
 
   /** Failure/interrupt path: a clock_observe row with no beat_log, no scene write. */
@@ -884,7 +887,7 @@ export function chatRoutes(ctx: Ctx) {
       // cache of it. If the process dies between the two, the next successful turn
       // rewrites the cache from the branch; a missing snapshot would never be
       // backfilled and would leave that turn regenerating off the cache again.
-      stampTurnScene(emitted[0]?.id, scene, finished.scene);
+      stampTurnScene(conv.id, emitted[0]?.id, scene, finished.scene);
       run(db, `UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?`,
         JSON.stringify(finished.scene), nowIso(), nowIso(), conv.id);
 
@@ -1260,7 +1263,7 @@ export function chatRoutes(ctx: Ctx) {
       // cache of it. If the process dies between the two, the next successful turn
       // rewrites the cache from the branch; a missing snapshot would never be
       // backfilled and would leave that turn regenerating off the cache again.
-      stampTurnScene(emitted[0]?.id, scene, finished.scene);
+      stampTurnScene(conv.id, emitted[0]?.id, scene, finished.scene);
       run(db, `UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?`,
         JSON.stringify(finished.scene), nowIso(), nowIso(), conv.id);
 
