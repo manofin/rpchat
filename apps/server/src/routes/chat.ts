@@ -1166,6 +1166,7 @@ export function chatRoutes(ctx: Ctx) {
         {
           model, messages: built.messages,
           temperature: 0.9, top_p: 0.95, max_tokens: built.maxTokens, stop: [], signal: controller.signal,
+          audience: { kind: 'public' },
         },
         (delta) => {
           buffer += delta;
@@ -1176,22 +1177,61 @@ export function chatRoutes(ctx: Ctx) {
           }
         },
       ), controller.signal);
+      const supplements: Array<{ text: string; observation: { visibility: 'private'; recipient_ids: string[]; observer_ids: string[] } }> = [];
+      const scopedRequests = [
+        ...(built.narrator_request ? [built.narrator_request] : []),
+        ...built.actor_requests,
+      ];
+      for (const scoped of scopedRequests) {
+        const scopedResult = await ctx.queue.run(() => ctx.model.stream(
+          {
+            model,
+            messages: scoped.messages,
+            temperature: 0.7,
+            top_p: 0.95,
+            max_tokens: scoped.maxTokens,
+            stop: [],
+            signal: controller.signal,
+            audience: scoped.audience,
+          },
+          () => {},
+        ), controller.signal);
+        const text = scopedResult.text.trim();
+        if (text && text !== 'NO_LINE' && text !== 'NO_NARRATION') {
+          supplements.push({
+            text,
+            observation: scoped.audience.kind === 'actor'
+              ? { visibility: 'private', recipient_ids: [scoped.audience.actor_id, 'user'], observer_ids: [] }
+              : { visibility: 'private', recipient_ids: ['gm', 'user'], observer_ids: [] },
+          });
+        }
+      }
       passMs.s = Date.now() - tS;
+      const completedScript = [result.text, ...supplements.map(item => item.text)].filter(Boolean).join('\n');
+      if (supplements.length) {
+        buffer = completedScript;
+        sse.send({ type: 'token', ...streamEvents(buffer) });
+        updateMessage(db, scriptRow.id, { content: buffer });
+      }
 
-      const finished = finishDialogBeat(planInput, plan, result.text);
-      const scriptBlocks = sheetSent
-        ? finished.blocks.filter((b) => b.kind !== 'info')
-        : finished.blocks;
+      const mainFinished = finishDialogBeat(planInput, plan, result.text);
+      const finished = finishDialogBeat(planInput, plan, completedScript);
+      const mainBlocks = (sheetSent ? mainFinished.blocks.filter((b) => b.kind !== 'info') : mainFinished.blocks)
+        .map(block => ({ block, observation: undefined as undefined | { visibility: 'private'; recipient_ids: string[]; observer_ids: string[] } }));
+      const scopedBlocks = supplements.flatMap(item => finishDialogBeat(planInput, plan, item.text).blocks
+        .filter(block => !['header', 'info', 'ui'].includes(block.kind))
+        .map(block => ({ block, observation: item.observation })));
+      const scriptBlocks = [...mainBlocks, ...scopedBlocks];
 
       // A turn whose script parsed to nothing is a failed turn, exactly as an
       // empty Pass F is on the beat path. The sheet alone is not a turn.
       if (!scriptBlocks.length) throw new ModelError('대본을 만들지 못했습니다');
 
-      const [first, ...rest] = scriptBlocks;
+      const [{ block: first, observation: firstObservation }, ...rest] = scriptBlocks;
       // Choices ride on whichever block is actually last — same rule the 1:1 path
       // uses (they sit on the one assistant message, and `isLastAssistant` on the
       // client is positional, not kind-specific).
-      const choices = finished.choices && finished.choices.length ? finished.choices : undefined;
+      const choices = mainFinished.choices && mainFinished.choices.length ? mainFinished.choices : undefined;
       updateMessage(db, scriptRow.id, {
         content: first.text,
         status: 'complete',
@@ -1201,14 +1241,16 @@ export function chatRoutes(ctx: Ctx) {
           speaker_character_id: first.speaker_character_id ?? undefined,
           speaker_name: first.speaker_name ?? undefined,
           image_url: first.asset_path ?? undefined,
+          observation: firstObservation,
           ...(rest.length === 0 ? { choices } : {}),
         },
       });
-      rest.forEach((block, i) => {
+      rest.forEach(({ block, observation }, i) => {
         send(addBlock(block.kind as 'info' | 'narration' | 'line', block.text, {
           speaker_character_id: block.speaker_character_id ?? undefined,
           speaker_name: block.speaker_name ?? undefined,
           image_url: block.asset_path ?? undefined,
+          observation,
           ...(i === rest.length - 1 ? { choices, finish_reason: result.finishReason } : {}),
         }));
       });

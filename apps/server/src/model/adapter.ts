@@ -10,6 +10,10 @@ export interface GenParams {
   stop?: string[];
   signal?: AbortSignal;
   generationId?: string;
+  audience?:
+    | { kind: 'public' }
+    | { kind: 'actor'; actor_id: string; actor_name: string }
+    | { kind: 'narrator' };
 }
 
 export interface Usage {

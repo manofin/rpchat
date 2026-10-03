@@ -21,7 +21,12 @@ const calls: GenParams[] = [];
 const result = (text: string) => ({ text, usage: null, finishReason: 'stop', ttftMs: 1, totalMs: 1 });
 const model = {
   complete: async (p: GenParams) => { calls.push(p); return result('null'); },
-  stream: async (p: GenParams, cb: (text: string) => void) => { calls.push(p); const s = '서술\n나리 | 응답'; cb(s); return result(s); },
+  stream: async (p: GenParams, cb: (text: string) => void) => {
+    calls.push(p);
+    const s = p.audience?.kind === 'actor' ? `${p.audience.actor_name} | PRIVATE_ACTOR_OUTPUT` : '서술\n나리 | 응답';
+    cb(s);
+    return result(s);
+  },
 };
 const ctx = { db, model, queue: new GenerationQueue(1), resolvedModel: () => 'mock', effectiveDataDir: tmp } as unknown as Ctx;
 const app = Fastify();
@@ -52,6 +57,21 @@ async function main() {
   await api('PATCH', `/api/conversations/${room.id}`, { scene: { dialog_context: metadata } });
   const preview = () => api('GET', `/api/conversations/${room.id}/prompt-preview?draft=${encodeURIComponent('나리, CURRENT')}`);
   const send = async () => { calls.length = 0; const r = await app.inject({ method: 'POST', url: `/api/conversations/${room.id}/messages`, payload: { content: '나리, CURRENT' } }); assert.ok(r.body.includes('"type":"done"'), r.body); return calls.find(p => p.max_tokens === 900)!; };
+  const wireText = () => calls.filter(p => p.audience).flatMap(p => p.messages).map(m => m.content).join('\n');
+  const assertScopedWire = (p: any) => {
+    const publicCall = calls.find(c => c.audience?.kind === 'public')!;
+    assert.deepEqual(publicCall.messages, p.messages);
+    for (const request of p.actor_requests) {
+      const actual = calls.find(c => c.audience?.kind === 'actor' && c.audience.actor_id === request.audience.actor_id)!;
+      assert.ok(actual, `missing actor request ${request.audience.actor_id}`);
+      assert.deepEqual(actual.messages, request.messages);
+    }
+    if (p.narrator_request) {
+      const actual = calls.find(c => c.audience?.kind === 'narrator')!;
+      assert.ok(actual, 'missing narrator request');
+      assert.deepEqual(actual.messages, p.narrator_request.messages);
+    }
+  };
   const actor = (p: any, id: string) => p.actor_context.actors.find((v: any) => v.id === id);
   const spec = async (entries: any[]) => api('PATCH', `/api/conversations/${room.id}`, { scene: { dialog_context: { version: 1, entries } } });
   const memory = (text: string, extra: object = {}) => api('POST', '/api/memories?confirm=1', { conversationId: room.id, content: text, evidenceMessageIds: [root.id], ...extra });
@@ -72,12 +92,16 @@ async function main() {
     assert.ok(!actor(p, b.id).facts.some((f: any) => f.memory_id === secret.id));
     assert.ok(!JSON.stringify(actor(p, b.id)).includes('PRIVATE_FACT'));
     assert.ok(actor(p, b.id).public_memory_ids.includes(publicFact.id));
-    const marker = '### 승인된 지식 배정\n';
-    const system = actual.messages[0].content;
-    assert.deepEqual(JSON.parse(system.slice(system.indexOf(marker) + marker.length)), {
-      public_facts: p.actor_context.public_facts, narrator_facts: p.actor_context.narrator_facts, actors: p.actor_context.actors,
-    }, 'the inspector packet is the serialized adapter packet');
-    assert.equal(actual.messages.map(m => m.content).join('\n').split('PRIVATE_FACT').length - 1, 1, 'no unscoped duplicate');
+    assertScopedWire(p);
+    assert.ok(!actual.messages.some(m => m.content.includes('PRIVATE_FACT')), 'public script request excludes private fact');
+    const privateCall = calls.find(c => c.audience?.kind === 'actor' && c.audience.actor_id === a.id)!;
+    assert.equal(privateCall.messages.map(m => m.content).join('\n').split('PRIVATE_FACT').length - 1, 1, 'private fact appears once in holder request');
+    assert.ok(!privateCall.messages.some(m => m.content.includes(b.name)), 'holder request does not carry another actor packet');
+    const stored = await api('GET', `/api/conversations/${room.id}`);
+    const privateOutput = stored.messages.find((m: any) => m.content === 'PRIVATE_ACTOR_OUTPUT');
+    assert.deepEqual(privateOutput.meta.observation, { visibility: 'private', recipient_ids: [a.id, 'user'], observer_ids: [] });
+    const next = await preview();
+    assert.ok(!next.messages.some((m: any) => m.content.includes('PRIVATE_ACTOR_OUTPUT')), 'private output never re-enters the public script request');
     budget(p);
   });
 
@@ -94,7 +118,7 @@ async function main() {
     await spec(entries);
     const turnBefore = (await api('GET', `/api/conversations/${room.id}`)).conversation.scene.turn_no;
     for (let i = 0; i < 12; i++) {
-      const p = await preview(); const request = await send(); assert.deepEqual(request.messages, p.messages);
+      const p = await preview(); const request = await send(); assert.deepEqual(request.messages, p.messages); assertScopedWire(p);
       assert.deepEqual(actor(p, a.id).facts.find((f: any) => f.memory_id === relA.id), { memory_id: relA.id, kind: 'relationship', text: 'A_TO_B_RELATION', subject_id: a.id, target_id: b.id });
       assert.ok(actor(p, b.id).facts.some((f: any) => f.memory_id === relB.id && f.subject_id === b.id && f.target_id === a.id));
       for (const f of [relA, injury, promise]) assert.ok(!JSON.stringify(actor(p, b.id)).includes(f.content));
@@ -199,7 +223,9 @@ async function main() {
     const check = async (included: boolean) => {
       const p = await preview(); const actual = await send(); assert.deepEqual(actual.messages, p.messages);
       assert.equal(actor(p, a.id).facts.some((f: any) => f.memory_id === promise.id), included);
-      assert.equal(actual.messages.some(m => m.content.includes(promise.content)), included);
+      assert.equal(wireText().includes(promise.content), included);
+      assert.equal(actual.messages.some(m => m.content.includes(promise.content)), false, 'private promise never enters public request');
+      assertScopedWire(p);
       budget(p); return p;
     };
     await spec([...metadata.entries, definition]); await check(true);
@@ -266,7 +292,7 @@ async function main() {
       assert.deepEqual(actual.messages, p.messages, 'draft anchor must not grant knowledge in preview only');
       assert.ok(p.actor_context.excluded.some((e: any) => e.memory_id === secret.id && e.reason === reason));
       assert.ok(!JSON.stringify(p.actor_context.actors).includes('PRIVATE_FACT'));
-      assert.ok(!actual.messages.some(m => m.content.includes('PRIVATE_FACT'))); budget(p);
+      assert.ok(!wireText().includes('PRIVATE_FACT')); budget(p);
     };
     for (const anchor of ['draft', foreign.id, deleted.id]) { await reject(anchor); await legacy(anchor, 'invalid-anchor'); }
     await reject(sibling.id); await legacy(sibling.id, 'assignment-off-branch');

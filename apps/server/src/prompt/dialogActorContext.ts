@@ -30,12 +30,43 @@ type Fact = { memory_id: string; kind: DialogKnowledgeSpec['entries'][number]['k
 export type ActorContext = {
   version: 1;
   legacy_policy: 'narrator_reference_unspecified';
-  boundary: 'single_narrator_request';
+  boundary: 'public_script_with_scoped_supplements';
   public_facts: Fact[];
   narrator_facts: Fact[];
   actors: Array<{ id: string; name: string; public_memory_ids: string[]; facts: Fact[] }>;
   excluded: Array<{ memory_id: string; reason: string }>;
 };
+
+export function renderPublicActorContext(packet: ActorContext): string {
+  return packet.public_facts.length
+    ? `### 승인된 공개 지식\n${JSON.stringify({ public_facts: packet.public_facts })}`
+    : '';
+}
+
+export function renderActorPrivateContext(packet: ActorContext, actorId: string): string {
+  const actor = packet.actors.find((row) => row.id === actorId);
+  if (!actor?.facts.length) return '';
+  return [
+    `너는 오직 ${actor.name} 한 인물의 다음 대사만 작성한다.`,
+    `### 승인된 공개 사실\n${JSON.stringify(packet.public_facts)}`,
+    `### ${actor.name}에게만 배정된 사실\n${JSON.stringify(actor.facts)}`,
+    '## 규칙',
+    '- 다른 인물의 대사·행동·생각·감정이나 서술을 작성하지 않는다.',
+    `- 대사가 필요하면 \`${actor.name} | 대사\` 형식만 사용하고, 필요 없으면 정확히 \`NO_LINE\`만 출력한다.`,
+    '- 위 공개 사실과 이 인물에게 배정된 비공개 사실만 근거로 삼는다.',
+  ].join('\n');
+}
+
+export function renderNarratorPrivateContext(packet: ActorContext): string {
+  if (!packet.narrator_facts.length) return '';
+  return [
+    '너는 인물의 목소리를 맡지 않는 장면 서술자다.',
+    `### 승인된 공개 사실\n${JSON.stringify(packet.public_facts)}`,
+    `### 서술자에게만 배정된 사실\n${JSON.stringify(packet.narrator_facts)}`,
+    '## 규칙',
+    '- 대사·이름표를 쓰지 않는다. 필요한 서술이 없으면 정확히 `NO_NARRATION`만 출력한다.',
+  ].join('\n');
+}
 export const ACTOR_CONTEXT_RULES = [
   '## 인물별 지식 경계',
   '- 전체 대본을 쓰는 서술자와 각 인물의 지식은 다르다. 명시적 공개 기억은 모든 인물이 아는 사실이다.',
@@ -54,7 +85,7 @@ export function buildActorContext(db: DB, conv: ConversationRow, pathIds: Set<st
   if (raw && typeof raw === 'object' && Array.isArray((raw as any).entries)) {
     for (const e of (raw as any).entries) if (e && typeof e.memory_id === 'string') reservedIds.add(e.memory_id);
   }
-  const packet: ActorContext = { version: 1, legacy_policy: 'narrator_reference_unspecified', boundary: 'single_narrator_request',
+  const packet: ActorContext = { version: 1, legacy_policy: 'narrator_reference_unspecified', boundary: 'public_script_with_scoped_supplements',
     public_facts: [], narrator_facts: [], actors: actors.map(a => ({ ...a, public_memory_ids: [], facts: [] })), excluded: [] };
   const render = () => packet.public_facts.length || packet.narrator_facts.length || packet.actors.some(a => a.facts.length)
     ? `### 승인된 지식 배정\n${JSON.stringify({ public_facts: packet.public_facts, narrator_facts: packet.narrator_facts, actors: packet.actors })}` : '';
