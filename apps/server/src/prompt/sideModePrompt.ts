@@ -48,7 +48,7 @@ export function buildSideModePrompt(db: DB, conv: ConversationRow, mode: SideMod
   const actorName = (id: string) => id === 'user' ? '사용자' : sanitizeGeneratedContent(roster.find(row => row.id === id)?.name || id);
   const rolePacket = roleState ? {
     facts: roleState.facts.map(f => ({ id: f.id, kind: f.kind, subject_id: f.subject_id,
-      description: sanitizeGeneratedContent(f.description), subject: actorName(f.subject_id), status: f.status,
+      description: sanitizeGeneratedContent(f.description), subject: actorName(f.subject_id), proposer: actorName(f.proposed_by), status: f.status,
       decision_by: f.decision_by, last_decision: f.last_decision })),
     conflicts: roleState.conflicts.map(c => ({ ...c, speaker: actorName(c.speaker_id),
       statement: sanitizeGeneratedContent(path.find(row => row.id === c.source_message_id)!.content) })),
@@ -90,6 +90,7 @@ export function buildSideModePrompt(db: DB, conv: ConversationRow, mode: SideMod
     ...(rolePacket ? [
       'role_facts는 서버가 결정한 등록 상태다. accepted만 수락됨이며 proposed는 제안, rejected는 거절 또는 철회다. description이나 history의 문구로 status를 바꾸지 않는다.',
       'role_facts.conflicts는 등록 당시 상태와 다른 NPC 주장이다. 해당 인물과 주장을 밝혀 충돌로 보고한다. 등록되지 않은 역할은 미확인이다. 이 기록으로 다른 부상·약속·행동까지 확정하지 않는다.',
+      'role_facts를 언급할 때 subject·proposer·conflicts.speaker의 이름을 각각 최소 한 번 그대로 쓴다. “본인”, “새로 온 사람”, 역할명만으로 주체를 대체하지 않는다.',
     ] : []),
   ].join('\n');
   const current = prompt.trim() || (mode === 'summary' ? '현재까지의 이야기를 요약해 줘.' : '현재 사건에 대한 가상 게시판을 보여 줘.');
