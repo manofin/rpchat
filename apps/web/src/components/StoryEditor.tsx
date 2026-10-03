@@ -16,6 +16,8 @@ import {
 } from '../lib/endingConditions';
 import { LorePanel, type LoreEntry } from './LorePanel';
 import { Modal, useUi } from './ui';
+import { StoryPortraitSettings } from './StoryPortraitSettings';
+import { buildPortraitCatalog, portraitDraft, type PortraitCatalogDraft } from '../lib/storyPortraits';
 
 /** hint-only; canonical: apps/server/src/media/avatar.ts AVATAR_MAX_BYTES. Server 413 is the verdict. */
 const COVER_MAX_BYTES = 8 * 1024 * 1024;
@@ -169,8 +171,8 @@ const TABS: Array<{ key: Tab; label: string }> = [
 
 /**
  * story-place-catalog-editor: everything in the catalog except `places`. Kept out
- * of `Draft` on purpose — this section never renders it, so nothing here should
- * ever go through `set()`. `PUT /api/stories/:id` replaces the whole
+ * of `Draft` on purpose. Image settings have their own draft; all other keys
+ * remain untouched. `PUT /api/stories/:id` replaces the whole
  * `scene_catalog` object when the key is sent at all, so saving with only
  * `{ places }` would silently erase weather/arc/duty tokens a beat turn already
  * wrote. Round-tripping the untouched rest is what keeps this editor at the same
@@ -196,6 +198,7 @@ export function StoryEditor({
   const [extras, setExtras] = useState<ExtraDraft[]>([]);
   const [endings, setEndings] = useState<EndingDraft[]>([]);
   const [catalogRest, setCatalogRest] = useState<Omit<SceneCatalog, 'places'>>(EMPTY_CATALOG_REST);
+  const [portraits, setPortraits] = useState<PortraitCatalogDraft>(() => portraitDraft(EMPTY_CATALOG_REST));
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [lore, setLore] = useState<LoreEntry[]>([]);
@@ -229,6 +232,7 @@ export function StoryEditor({
         stats: (story.stats_json ?? []).map((s) => ({ ...s })),
       });
       setCatalogRest(rest);
+      setPortraits(portraitDraft(rest));
       // Mapping removal is immediate even when the rest of an edit is cancelled.
       // Drop stale references when reopening so an invisible removed cast member
       // cannot prevent the next save; unrelated opening fields remain intact.
@@ -246,6 +250,7 @@ export function StoryEditor({
       setExtras([]);
       setEndings([]);
       setCatalogRest(EMPTY_CATALOG_REST);
+      setPortraits(portraitDraft(EMPTY_CATALOG_REST));
       setLore([]);
     }
   }, [open, story, initialTab]);
@@ -295,6 +300,9 @@ export function StoryEditor({
 
   async function save() {
     if (!d.name.trim()) return ui.toast('이름은 필수', 'err');
+    const portraitSettings = buildPortraitCatalog(portraits);
+    if (portraitSettings.error) return ui.toast(portraitSettings.error, 'err');
+    const { default_emotion: _oldDefaultEmotion, ...catalogFields } = catalogRest;
     const minor_cast = d.minor_cast
       .map((c) => ({ name: c.name.trim(), note: c.note.trim() }))
       .filter((c) => c.name);
@@ -310,7 +318,7 @@ export function StoryEditor({
         name: d.name.trim(), tagline: d.tagline.trim(), cover: d.cover,
         default_profile_name: d.default_profile_name || null, default_format: d.default_format || null,
         setting: d.setting, minor_cast,
-        scene_catalog: { ...catalogRest, places },
+        scene_catalog: { ...catalogFields, ...portraitSettings.value, places },
         opening: openingBody,
         openings_extra: extras
           .map((e) => ({
@@ -448,6 +456,8 @@ export function StoryEditor({
             </div>
           ))}
           <button className="btn block" type="button" onClick={() => set('minor_cast', [...d.minor_cast, { name: '', note: '' }])}>＋ 조연 추가</button>
+
+          <StoryPortraitSettings draft={portraits} onChange={setPortraits} />
 
           <div className="section-title">기본값</div>
           <div className="small muted" style={{ marginBottom: 8 }}>
