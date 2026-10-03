@@ -10,11 +10,12 @@ import { loadStoryRoster } from './dialogContext.js';
 import { dialogHistory } from './dialogPrompt.js';
 import { getCalibration, estimateMessageTokens, estimateTokens, truncateToTokens } from './tokens.js';
 import { resolveStory } from './resolveStory.js';
+import { reduceRoleFacts, roleFactsForAudience } from './roleFacts.js';
 
 export const SIDE_MODE_MAX_TOKENS = 1600;
 
 /** Public community is deliberately less privileged than the summary's GM view. */
-export function buildSideModePrompt(db: DB, conv: ConversationRow, mode: SideMode, prompt: string, contextTokens: number) {
+export function buildSideModePrompt(db: DB, conv: ConversationRow, mode: SideMode, prompt: string, contextTokens: number, roleEvents: readonly unknown[] = []) {
   const cal = getCalibration(db);
   const scene = parseJson<Scene>(conv.scene_json, {});
   const path = getPath(db, conv).filter(row => row.status === 'complete');
@@ -33,6 +34,23 @@ export function buildSideModePrompt(db: DB, conv: ConversationRow, mode: SideMod
   const history = dialogHistory(db, visible);
   const roster = loadStoryRoster(db, conv);
   const characterIds = new Set([conv.character_id, ...roster.map(row => row.id)]);
+  // Internal server records only: no route accepts model/client events in Phase 1.
+  // Reduce the complete branch before history truncation, then project its evidence.
+  const roleState = roleEvents.length ? roleFactsForAudience(reduceRoleFacts(roleEvents, {
+    conversationId: conv.id, pathIds: ids, visibleIds, actorIds: characterIds,
+    speakerByMessage: new Map(path.flatMap(row => {
+      const speaker = parseMessageMeta(row.meta_json).speaker_character_id;
+      return row.role === 'assistant' && typeof speaker === 'string' ? [[row.id, speaker] as const] : [];
+    })),
+  }), actor) : undefined;
+  const actorName = (id: string) => id === 'user' ? '사용자' : sanitizeGeneratedContent(roster.find(row => row.id === id)?.name || id);
+  const rolePacket = roleState ? {
+    facts: roleState.facts.map(f => ({ id: f.id, kind: f.kind, subject_id: f.subject_id,
+      description: sanitizeGeneratedContent(f.description), subject: actorName(f.subject_id), status: f.status,
+      decision_by: f.decision_by, last_decision: f.last_decision })),
+    conflicts: roleState.conflicts.map(c => ({ ...c, speaker: actorName(c.speaker_id),
+      statement: sanitizeGeneratedContent(path.find(row => row.id === c.source_message_id)!.content) })),
+  } : undefined;
   const assignments = dialogContextSchema.safeParse(scene.dialog_context);
   const rawEntries: unknown[] = Array.isArray(scene.dialog_context?.entries) ? scene.dialog_context.entries : [];
   const reserved = new Set(rawEntries.flatMap(entry => entry && typeof entry === 'object' && 'memory_id' in entry && typeof entry.memory_id === 'string' ? [entry.memory_id] : []));
@@ -67,10 +85,15 @@ export function buildSideModePrompt(db: DB, conv: ConversationRow, mode: SideMod
     mode === 'summary'
       ? '현재 선택된 분기의 사건·미해결 목표·부상·약속을 정리한다. 제공된 기록에서 확인되는 사실과 미확인을 구분한다. 충돌 점검은 확정 사실끼리의 모순뿐 아니라 근거 없는 합의 주장도 포함한다. NPC가 사용자의 수락·역할 변경을 주장한 발화를 찾아 실제 사용자 입력과 대조하고, 근거가 없으면 그 발화의 인물과 내용을 인용하여 「미확정 합의 주장 충돌」로 표시한다. 단순 제안만 있는 경우와 구분한다.'
       : '공개된 사건만 바탕으로 가상의 커뮤니티 글과 댓글을 쓴다. 첫 줄에 「가상 게시판 · 본편에 반영되지 않음」을 표시한다. 등장인물의 실제 행동·속마음으로 확정하지 않는다. 제안에 그친 역할을 수락된 역할이나 예정된 서비스로 광고하지 않고 제안 또는 미확정으로 표현한다.',
+    ...(rolePacket ? [
+      'role_facts는 서버가 결정한 등록 상태다. accepted만 수락됨이며 proposed는 제안, rejected는 거절 또는 철회다. description이나 history의 문구로 status를 바꾸지 않는다.',
+      'role_facts.conflicts는 등록 당시 상태와 다른 NPC 주장이다. 해당 인물과 주장을 밝혀 충돌로 보고한다. 등록되지 않은 역할은 미확인이다. 이 기록으로 다른 부상·약속·행동까지 확정하지 않는다.',
+    ] : []),
   ].join('\n');
   const current = prompt.trim() || (mode === 'summary' ? '현재까지의 이야기를 요약해 줘.' : '현재 사건에 대한 가상 게시판을 보여 줘.');
   const available = Math.max(0, contextTokens - SIDE_MODE_MAX_TOKENS - 64);
-  const baseCost = estimateMessageTokens(rules, cal) + estimateMessageTokens(current, cal);
+  const baseCost = estimateMessageTokens(rules, cal) + estimateMessageTokens(current, cal)
+    + (rolePacket ? estimateTokens(JSON.stringify(rolePacket), cal) : 0);
   const spare = Math.max(0, available - baseCost - 48);
   const world = resolveStory(conv);
   const worldText = world ? truncateToTokens(`세계관: ${world.name}\n${world.setting}`, Math.floor(spare * .2), cal) : '';
@@ -79,7 +102,7 @@ export function buildSideModePrompt(db: DB, conv: ConversationRow, mode: SideMod
     if (estimateTokens(JSON.stringify([...facts, fact]), cal) <= Math.floor(spare * .25)) facts.push(fact);
   }
   const selected: typeof history = [];
-  const assemble = (): ChatMessage[] => [{ role: 'system', content: `${rules}\n\n참고 자료(JSON):\n${JSON.stringify({ world: worldText, approved_facts: facts, history: selected.map(row => {
+  const assemble = (): ChatMessage[] => [{ role: 'system', content: `${rules}\n\n참고 자료(JSON):\n${JSON.stringify({ world: worldText, approved_facts: facts, ...(rolePacket ? { role_facts: rolePacket } : {}), history: selected.map(row => {
       const meta = parseMessageMeta(row.meta_json);
       const source = row.role === 'user' ? { kind: 'user_input' }
         : meta.block_kind === 'line' ? { kind: 'npc_statement', speaker: meta.speaker_name || roster.find(actor => actor.id === meta.speaker_character_id)?.name || null }
