@@ -266,7 +266,10 @@ export function ChatPage({ id }: { id: string }) {
   const lastMsg = chat.messages[chat.messages.length - 1];
   const continueFrom = continuationTarget(chat.messages);
   const lastUiEntry = [...chat.messages].reverse()
-    .flatMap((message) => hasEventContract(message) ? [...message.events].reverse().map(event => ({ panel: eventUiData(event), message })) : [])
+    .flatMap((message) => {
+      const panels = hasEventContract(message) ? [...message.events].reverse().map(eventUiData) : [];
+      return panels.map(panel => ({ panel, message }));
+    })
     .find(entry => entry.panel !== null) ?? null;
   const lastUi = lastUiEntry?.panel ?? null;
   const rosterPortraits = rosterPortraitOptions(lastUi, lastUiEntry?.message.meta.roster_portraits);
