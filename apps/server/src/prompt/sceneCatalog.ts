@@ -30,6 +30,7 @@ export type SceneCatalog = {
   outfits: string[];
   /** f9-beat-render: emotion → asset index n. Anything else yields no image. */
   emotions: Record<string, number>;
+  default_emotion?: string;
   /** f9-beat-render: stage id → the duty that closes it (hard_event owner). */
   stages: Record<string, { closer_duty?: string }>;
   /**
@@ -156,6 +157,8 @@ export function parseSceneCatalog(raw: string): SceneCatalog {
     flags,
     outfits: strings(src.outfits),
     emotions,
+    ...(typeof src.default_emotion === 'string' && Object.prototype.hasOwnProperty.call(emotions, src.default_emotion)
+      ? { default_emotion: src.default_emotion } : {}),
     stages,
     dutySlots,
     items: strings(src.items),
@@ -178,6 +181,7 @@ export function catalogFromStory(raw: string): PartyCatalog {
     places: c.places,
     outfits: c.outfits,
     emotions: c.emotions,
+    ...(c.default_emotion ? { default_emotion: c.default_emotion } : {}),
     stages: c.stages,
     dutySlots: c.dutySlots,
     items: c.items,

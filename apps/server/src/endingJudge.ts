@@ -209,7 +209,7 @@ async function runEndingEvalInner(exec: EvalJobCtx, conversationId: string): Pro
   if (!targets.length) return; // rule 통과 0 또는 hint 0 → LLM 호출 0 보장.
   const rawPath = getPath(db, conv);
   const enabled = JSON.parse(conv.scene_json || '{}').observation_filter === true;
-  const path = enabled ? successfulObservationRows(rawPath).map(m => ({ ...m, content: project(observationText(m, true), audienceOf(m), GM, true) })).filter(m => m.content) : rawPath;
+  const path = enabled ? successfulObservationRows(rawPath).map(m => ({ ...m, content: project(observationText(m, true, GM), audienceOf(m), GM, true) })).filter(m => m.content) : rawPath;
   const turns = buildJudgeContext(path);
   const { verdicts, llmCalled, latencyMs } = await judgeNarratives(
     { complete: exec.complete, model: exec.modelName, schedule: exec.schedule, signal: exec.signal },
