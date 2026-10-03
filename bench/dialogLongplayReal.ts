@@ -25,22 +25,26 @@ const evidence = path.resolve(required('RPCHAT_LONGPLAY_REAL_EVIDENCE_DIR'));
 if (fs.existsSync(evidence) && fs.readdirSync(evidence).length) throw new Error(`evidence directory is not empty: ${evidence}`);
 fs.mkdirSync(path.join(evidence, 'calls'), { recursive: true });
 const criteria = {
-  version: 1,
+  version: 2,
   frozenBeforeModelCalls: true,
   scenario: { npcCount: 3, committedTurns: 12, branchAtTurn: 7, regenerateAtTurn: 9 },
-  requiredFacts: ['CANON_INJURY_LEFT_WRIST_ACTIVE', 'CANON_POWER_COST_HP_2', 'CANON_PROMISE_RETURN_NOTEBOOK_ACTIVE'],
-  secret: 'NARI_ONLY_CODE_7391',
+  requiredFacts: [
+    'CANON_INJURY_LEFT_WRIST_ACTIVE: 사용자의 왼손목 부상은 활성 상태이며 임의로 회복되지 않는다.',
+    'CANON_POWER_COST_HP_2: 사용자가 능력을 사용할 때마다 사용자의 HP가 2 소모된다.',
+    'CANON_PROMISE_RETURN_NOTEBOOK_ACTIVE: 사용자가 나리에게 수첩을 돌려주기로 한 약속은 아직 이행되지 않았다.',
+  ],
+  secret: 'NARI_ONLY_CODE_7391: 이 비밀 코드는 나리만 알고 있다.',
   gates: {
     inputRetention: 'Every dialog model request contains every required public fact.',
-    secretWireIsolation: 'A request containing the secret has audience actor:nari and contains neither sera nor hayeon by name.',
+    secretWireIsolation: 'A request containing the secret has audience actor:nari; requests addressed to sera or hayeon never contain it.',
     outputLeak: 'The secret may appear only in assistant blocks whose server observation recipients include nari.',
     branchIsolation: 'After branching, neither BRANCH_A_EVENT nor BRANCH_A_ONLY_FACT appears in requests or responses.',
     contradictionCandidate: 'Fixed lexical scans flag possible healing, zero-cost, or completed-promise claims for review; zero unreviewed hits required.',
   },
   contradictionPatterns: {
-    injury: ['왼손목.{0,24}(완치|멀쩡|다 나았|회복했다)', 'CANON_INJURY_LEFT_WRIST_(RESOLVED|HEALED)'],
-    cost: ['(체력|HP).{0,20}(소모.{0,8}없|0.{0,4}소모|무료)', 'CANON_POWER_COST_HP_(0|ZERO)'],
-    promise: ['수첩.{0,24}(이미 돌려줬|반납 완료|약속.{0,8}(끝|이행 완료))', 'CANON_PROMISE_RETURN_NOTEBOOK_(RESOLVED|FULFILLED)'],
+    injury: ['왼손목.{0,24}(완치|멀쩡|다 나았|회복했다)', '나리.{0,20}(왼손목|손목.{0,8}(아프|부상))', 'CANON_INJURY_LEFT_WRIST_(RESOLVED|HEALED)'],
+    cost: ['(체력|HP).{0,20}(소모.{0,8}없|0.{0,4}소모|무료)', '세라.{0,25}(능력|체력).{0,25}(2|소모)', 'CANON_POWER_COST_HP_(0|ZERO)'],
+    promise: ['수첩.{0,24}(이미 돌려줬|반납 완료|약속.{0,8}(끝|이행 완료))', '(하연|세라|나리)(가|이| 님께서).{0,15}수첩.{0,24}(돌려주|반납)', 'CANON_PROMISE_RETURN_NOTEBOOK_(RESOLVED|FULFILLED)'],
   },
   pass: 'All four hard gates have zero violations and every contradiction candidate is reviewed as non-contradictory.',
 };
@@ -153,7 +157,7 @@ async function main() {
     const secretWireViolations = dialogCalls.filter(call => {
       const text = JSON.stringify(call.params.messages);
       if (!text.includes(SECRET)) return false;
-      return call.params.audience?.kind !== 'actor' || call.params.audience.actor_id !== nari.id || text.includes(sera.name) || text.includes(hayeon.name);
+      return call.params.audience?.kind !== 'actor' || call.params.audience.actor_id !== nari.id;
     }).length;
     const outputLeaks = added.filter((row: any) => row.role === 'assistant' && row.content.includes(SECRET)
       && !(row.meta?.observation?.visibility === 'private' && row.meta.observation.recipient_ids?.includes(nari.id)));

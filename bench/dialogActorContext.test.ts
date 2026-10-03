@@ -123,6 +123,9 @@ async function main() {
       assert.ok(actor(p, b.id).facts.some((f: any) => f.memory_id === relB.id && f.subject_id === b.id && f.target_id === a.id));
       for (const f of [relA, injury, promise]) assert.ok(!JSON.stringify(actor(p, b.id)).includes(f.content));
       for (const f of [injury, promise]) assert.ok(actor(p, a.id).facts.some((v: any) => v.memory_id === f.id));
+      const directed = p.actor_requests.find((request: any) => request.audience.actor_id === a.id);
+      assert.ok(directed.messages[0].content.includes('"subject":"나리"'));
+      assert.ok(directed.messages[0].content.includes('"target":"세라"'));
       assert.ok(p.actor_context.public_facts.some((f: any) => f.memory_id === goal.id)); budget(p);
       assert.ok(actor(p, a.id).facts.some((f: any) => f.memory_id === secret.id));
       assert.ok(!JSON.stringify(actor(p, b.id)).includes(secret.content));
