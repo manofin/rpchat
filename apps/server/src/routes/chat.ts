@@ -1375,13 +1375,15 @@ export function chatRoutes(ctx: Ctx) {
       }
     });
 
-    const regenSchema = z.object({ messageId: z.string().min(1) });
+    const regenSchema = z.object({ messageId: z.string().min(1), inject_instruction: z.string().optional() });
     app.post<{ Params: { id: string } }>('/api/conversations/:id/regenerate', async (req, reply) => {
       const conv = loadConversation(ctx, req.params.id);
       if (!conv) return reply.code(404).send({ error: 'not found' });
       if (conv.ended_at) return reply.code(409).send({ error: 'already ended' });
       const p = regenSchema.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
+      const inj = parseInjectInstruction(p.data.inject_instruction);
+      if (!inj.ok) return reply.code(400).send({ error: inj.error });
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ? AND conversation_id = ?', p.data.messageId, conv.id);
       if (!m) return reply.code(404).send({ error: 'message not found' });
       if (m.status === 'streaming') return reply.code(409).send({ error: '생성 중' });
@@ -1406,7 +1408,7 @@ export function chatRoutes(ctx: Ctx) {
       } else {
         parentId = m.id;
       }
-      return generate(req, reply, conv, parentId, undefined, regenTurnStartId);
+      return generate(req, reply, conv, parentId, undefined, regenTurnStartId, inj.ctx);
     });
 
     // 사용자 메시지 수정 후 재생성 = 같은 부모 아래 새 user 분기 + 생성
