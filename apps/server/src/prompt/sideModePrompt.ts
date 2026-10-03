@@ -22,7 +22,11 @@ export function buildSideModePrompt(db: DB, conv: ConversationRow, mode: SideMod
   // Explicit private provenance remains private even if the room later disables its filter.
   const visible = path.map(row => {
     const audience = audienceOf(row);
-    return { ...row, content: project(observationText(row, true), audience, actor, Boolean(audience) || scene.observation_filter === true) };
+    // GM needs the authorized event body; typed dialog lines already separate prose from speech.
+    // Public beat readers still receive only the speech observation proved by the main path.
+    const text = mode === 'summary' || scene.format === 'dialog' ? row.content : observationText(row, true);
+    const classifyLegacy = scene.format !== 'dialog' && scene.observation_filter === true;
+    return { ...row, content: project(text, audience, actor, Boolean(audience) || classifyLegacy) };
   }).filter(row => row.content.trim());
   const visibleIds = new Set(visible.map(row => row.id));
   const history = dialogHistory(db, visible);
