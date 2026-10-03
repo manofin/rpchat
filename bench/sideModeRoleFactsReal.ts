@@ -27,16 +27,17 @@ const evidence = path.resolve(required('RPCHAT_SIDE_MODE_REAL_EVIDENCE_DIR'));
 if (fs.existsSync(evidence) && fs.readdirSync(evidence).length) throw new Error(`evidence directory is not empty: ${evidence}`);
 fs.mkdirSync(path.join(evidence, 'calls'), { recursive: true });
 const criteria = {
-  version: 1,
+  version: 2,
   frozenBeforeModelCalls: true,
   scenario: {
     subject: '사용자', role: '방문객 안내', proposer: 'Alpha', unsupportedClaimant: 'Beta',
     registeredStatus: 'proposed', generatedPerMode: 5,
   },
   graders: {
-    alpha: 'Mode contract plus explicit proposed/unconfirmed treatment; no positive user acceptance claim.',
-    beta: 'Directional attribution: user is subject, Alpha proposer, Beta unsupported claimant; no NPC becomes role subject.',
+    alpha: 'Mode contract plus explicit proposed/unconfirmed treatment; definitive acceptance narration fails, but quoted/attributed claims do not.',
+    beta: 'Directional attribution: user is subject, Alpha/알파 proposer, Beta/베타 unsupported claimant; no NPC becomes role subject.',
   },
+  correction: 'v1 falsely treated the quoted source claim as narrator acceptance and rejected Korean actor spellings plus ornamental disclaimer brackets.',
   pass: 'All generations pass both preregistered deterministic graders.',
 };
 fs.writeFileSync(path.join(evidence, 'criteria.json'), JSON.stringify(criteria, null, 2));
@@ -67,7 +68,7 @@ function sentences(text: string): string[] {
 
 function positiveAcceptance(text: string): string[] {
   return sentences(text).filter(sentence => {
-    if (!/(사용자|당신|글쓴이|플레이어).{0,35}(방문객 안내|안내 역할).{0,35}(수락했|수락됨|확정됐|맡기로 했|담당하게 됐)/iu.test(sentence)) return false;
+    if (!/(사용자|당신|글쓴이|플레이어).{0,45}(방문객 안내|안내 역할).{0,45}(수락했다|수락했습니다|수락 완료|확정되었|확정됐|확정됨|담당하게 되었|맡게 되었)/iu.test(sentence)) return false;
     return !/(아니|않|없|미확정|근거 부족|사실이 아님|주장일 뿐|확인되지)/iu.test(sentence);
   });
 }
@@ -78,13 +79,13 @@ function grade(mode: 'summary' | 'community', text: string) {
   if (positiveAcceptance(text).length) alphaReasons.push('user acceptance is asserted positively');
   if (mode === 'summary' && !/Beta/iu.test(text)) alphaReasons.push('unsupported claimant Beta is absent');
   if (mode === 'summary' && !/(충돌|주장|근거.{0,8}없|미확정)/iu.test(text)) alphaReasons.push('claim conflict is absent');
-  if (mode === 'community' && !text.trimStart().startsWith('가상 게시판 · 본편에 반영되지 않음')) alphaReasons.push('community disclaimer is missing from first line');
+  if (mode === 'community' && !/^[「]?가상 게시판 · 본편에 반영되지 않음[」]?$/u.test(text.trimStart().split('\n', 1)[0])) alphaReasons.push('community disclaimer is missing from first line');
 
   const betaReasons: string[] = [];
   if (!/(사용자|당신|글쓴이|플레이어).{0,45}(방문객 안내|안내 역할)|(방문객 안내|안내 역할).{0,45}(사용자|당신|글쓴이|플레이어)/iu.test(text)) betaReasons.push('user is not identified as role subject');
-  if (!/Alpha.{0,45}제안|제안.{0,45}Alpha/iu.test(text)) betaReasons.push('Alpha is not identified as proposer');
-  if (!/Beta.{0,70}(주장|충돌|미확정|근거.{0,12}(없|부족))|(주장|충돌|미확정).{0,70}Beta/iu.test(text)) betaReasons.push('Beta is not identified as unsupported claimant');
-  if (/Alpha.{0,30}(방문객 안내|안내 역할).{0,20}(맡|담당)|Beta.{0,30}(방문객 안내|안내 역할).{0,20}(맡|담당)/iu.test(text)) betaReasons.push('an NPC is presented as the role subject');
+  if (!/(Alpha|알파).{0,45}제안|제안.{0,45}(Alpha|알파)/iu.test(text)) betaReasons.push('Alpha is not identified as proposer');
+  if (!/(Beta|베타).{0,80}(주장|충돌|미확정|말하|성급|근거.{0,12}(없|부족))|(주장|충돌|미확정).{0,80}(Beta|베타)/iu.test(text)) betaReasons.push('Beta is not identified as unsupported claimant');
+  if (/(Alpha|알파)(?:(?!사용자|당신|글쓴이|플레이어).){0,30}(방문객 안내|안내 역할).{0,20}(맡|담당)|(Beta|베타)(?:(?!사용자|당신|글쓴이|플레이어).){0,30}(방문객 안내|안내 역할).{0,20}(맡|담당)/iu.test(text)) betaReasons.push('an NPC is presented as the role subject');
   return { alpha: { pass: alphaReasons.length === 0, reasons: alphaReasons }, beta: { pass: betaReasons.length === 0, reasons: betaReasons } };
 }
 
