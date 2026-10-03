@@ -213,7 +213,29 @@ export interface Persona {
 
 export type ResponseLength = 'short' | 'normal' | 'long';
 
+export interface DialogKnowledgeEntry {
+  memory_id: string;
+  anchor_message_id: string;
+  kind: 'fact' | 'relationship' | 'injury' | 'promise' | 'goal';
+  known_by: 'public' | string[];
+  subject_id?: string;
+  target_id?: string;
+  status: 'active' | 'resolved';
+}
+
+export interface DialogKnowledgeView {
+  enabled: boolean;
+  headMessageId: string | null;
+  userName: string;
+  actors: Array<{ id: string; name: string }>;
+  memories: Memory[];
+  entries: DialogKnowledgeEntry[];
+  excluded: Array<{ memory_id: string; reason: string }>;
+  invalidContract: boolean;
+}
+
 export interface Scene {
+  dialog_context?: { version: 1; entries: DialogKnowledgeEntry[] };
   response_length?: ResponseLength;
   observation_filter?: boolean;
   observation_legacy_classified?: boolean;
