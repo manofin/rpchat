@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { CharacterIntroCard, RosterPortraitStage } from '../apps/web/src/components/ChatFeedImages.tsx';
+import { CharacterIntroCard, CharacterIntroMedia, RosterPortraitStage, shouldShowCharacterIntro } from '../apps/web/src/components/ChatFeedImages.tsx';
 import { BeatUiPanel } from '../apps/web/src/components/view.tsx';
 import { rosterPortraitOptions } from '../apps/web/src/lib/rosterPortraits.ts';
 
@@ -23,9 +23,29 @@ t('empty character metadata adds no decorative feed card', () => {
   assert.equal(renderToStaticMarkup(createElement(CharacterIntroCard, { character: { name: '빈 카드', tagline: '', description: '', avatar: null } })), '');
 });
 
+t('intro is limited to an empty new solo feed so existing solo and story rendering stay unchanged', () => {
+  assert.equal(shouldShowCharacterIntro(null, 0), true);
+  assert.equal(shouldShowCharacterIntro(null, 1), false);
+  assert.equal(shouldShowCharacterIntro('story-1', 0), false);
+});
+
+t('intro image failure stays inside the reserved media frame', () => {
+  let failed = false;
+  const media = CharacterIntroMedia({ src: avatar, name: '나리', failed: false, onError() { failed = true; } }) as any;
+  media.props.children.props.onError();
+  assert.equal(failed, true);
+  const fallback = renderToStaticMarkup(createElement(CharacterIntroMedia, { src: avatar, name: '나리', failed: true, onError() {} }));
+  assert.match(fallback, /class="chat-intro-media"/);
+  assert.match(fallback, /role="status">이미지를 불러올 수 없습니다/);
+});
+
 t('roster selection switches only among server-provided emotion assets', () => {
   const options = [{ id: 'nari', name: '나리', chip: '🙂', image_url: nari }, { id: 'sera', name: '세라', chip: '😠', image_url: sera }];
-  const html = renderToStaticMarkup(createElement(RosterPortraitStage, { options, selectedId: 'sera', onSelect() {} }));
+  let selected = 'nari';
+  const tree = RosterPortraitStage({ options, selectedId: selected, onSelect(id) { selected = id; } }) as any;
+  tree.props.children[0].props.children[1].props.onClick();
+  assert.equal(selected, 'sera');
+  const html = renderToStaticMarkup(createElement(RosterPortraitStage, { options, selectedId: selected, onSelect() {} }));
   assert.match(html, /src="\/media\/assets\/sera\/uniform\/2.webp"/);
   assert.doesNotMatch(html, /src="\/media\/assets\/nari\/uniform\/1.webp"/);
   assert.match(html, /세라 😠의 모습/);
@@ -59,7 +79,8 @@ t('feed stages keep a fixed 3:4 media ratio and preserve party-only placement', 
     const block = css.slice(css.indexOf(selector), css.indexOf('}', css.indexOf(selector)) + 1);
     assert.match(block, /aspect-ratio:\s*3\s*\/\s*4/);
   }
-  assert.match(page, /!conv\.story_id\s*\?\s*<CharacterIntroCard/);
+  assert.match(page, /shouldShowCharacterIntro\(conv\.story_id, shownMessages\.length\)/);
+  assert.match(page, /<CharacterIntroCard key=\{char\.id\}/);
   assert.match(page, /<RosterPortraitStage options=\{rosterPortraits\}/);
   assert.match(route, /roster_portraits:\s*rosterPortraits/);
 });

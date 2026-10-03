@@ -1,11 +1,28 @@
+import { useState } from 'react';
 import type { Character } from '../types';
 import { CharacterPortrait } from './CharacterPortrait';
 
+export function shouldShowCharacterIntro(storyId: string | null | undefined, visibleMessageCount: number): boolean {
+  return !storyId && visibleMessageCount === 0;
+}
+
+export function CharacterIntroMedia({ src, name, failed, onError }: {
+  src: string;
+  name: string;
+  failed: boolean;
+  onError: () => void;
+}) {
+  return <div className="chat-intro-media">{failed
+    ? <span className="character-portrait-unavailable" role="status">이미지를 불러올 수 없습니다.</span>
+    : <img src={src} alt={`${name} 대표 이미지`} width={600} height={800} loading="lazy" decoding="async" onError={onError} />}</div>;
+}
+
 export function CharacterIntroCard({ character }: { character: Pick<Character, 'name' | 'tagline' | 'description' | 'avatar'> }) {
+  const [failed, setFailed] = useState(false);
   const summary = character.description.trim() || character.tagline.trim();
   if (!character.avatar && !summary) return null;
   return <section className="chat-intro-card" aria-label={`${character.name} 캐릭터 소개`}>
-    {character.avatar ? <div className="chat-intro-media"><img src={character.avatar} alt={`${character.name} 대표 이미지`} width={600} height={800} loading="lazy" decoding="async" /></div> : null}
+    {character.avatar ? <CharacterIntroMedia src={character.avatar} name={character.name} failed={failed} onError={() => setFailed(true)} /> : null}
     <div className="chat-intro-copy">
       <span className="chat-intro-kicker">캐릭터 소개</span>
       <strong>{character.name}</strong>

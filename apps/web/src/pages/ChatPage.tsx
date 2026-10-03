@@ -35,7 +35,7 @@ import { ChatListRail } from './ChatListRail';
 import { ConversationTools } from './ConversationTools';
 import { outputProfileLabel } from '../lib/conversationSettings';
 import { chatModelSubtitle, partyCertainty } from '../lib/modelDisplay';
-import { CharacterIntroCard, RosterPortraitStage } from '../components/ChatFeedImages';
+import { CharacterIntroCard, RosterPortraitStage, shouldShowCharacterIntro } from '../components/ChatFeedImages';
 import { rosterPortraitOptions } from '../lib/rosterPortraits';
 
 /** ADR-F8g: snapshot is the reader-visible endings list. Damaged → no picker. */
@@ -459,7 +459,7 @@ export function ChatPage({ id }: { id: string }) {
 
       <div className="chat-scroll" ref={scrollRef} onScroll={onScroll}>
         <div className="chat-feed" ref={contentRef}>
-        {!conv.story_id ? <CharacterIntroCard character={char} /> : null}
+        {shouldShowCharacterIntro(conv.story_id, shownMessages.length) ? <CharacterIntroCard key={char.id} character={char} /> : null}
         <RosterPortraitStage options={rosterPortraits} selectedId={selectedPortraitId} onSelect={setPortraitActorId} />
         {shownMessages.length === 0 && <div className="sysline" style={{ margin: 'auto' }}>첫 메시지를 보내 대화를 시작하세요.</div>}
         {reorderTurns
