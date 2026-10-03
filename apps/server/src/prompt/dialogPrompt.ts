@@ -34,7 +34,7 @@ function fitText(text: string, cap: number, cal: number): string {
 }
 
 /** Roles remain adapter roles; INFO/UI, thoughts and choice drafts never become conversation text. */
-export function dialogHistory(db: DB, history: MessageRow[]): MessageRow[] {
+export function dialogHistory(db: DB, history: MessageRow[], opts: { includePrivate?: boolean } = {}): MessageRow[] {
   const names = new Map(many<{ id: string; name: string }>(db, 'SELECT id, name FROM characters').map((r) => [r.id, r.name]));
   const out: MessageRow[] = [];
   let skipAssistant = false;
@@ -46,7 +46,7 @@ export function dialogHistory(db: DB, history: MessageRow[]): MessageRow[] {
     }
     if (skipAssistant) continue;
     const meta = parseMessageMeta(m.meta_json);
-    if (meta.observation?.visibility === 'private') continue;
+    if (!opts.includePrivate && meta.observation?.visibility === 'private') continue;
     if (meta.block_kind && !['line', 'narration'].includes(meta.block_kind)) continue;
     const content = extractChoices(sanitizeGeneratedContent(m.content)).content.trim();
     if (!content) continue;
@@ -165,14 +165,15 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
   if (estTotal > available) budget.instruction_overflow = {
     profile: profile.name, instruction_tokens: profileBlock ? estimateTokens(profileBlock, cal) : 0, required: estTotal, available,
   };
+  const attachScopedInstruction = (prompt: string) => attachInjectToIcPass(prompt, inject.instruction, {
+    promptTokenBudget: available,
+    calibration: cal,
+    allowRecentNarrationShrink: false,
+  }).prompt;
   const actorRequests = assigned?.packet.actors.flatMap((actor) => {
     const actorSystem = renderActorPrivateContext(assigned.packet, actor.id);
     if (!actorSystem) return [];
-    const scopedSystem = attachInjectToIcPass(actorSystem, inject.instruction, {
-      promptTokenBudget: available,
-      calibration: cal,
-      allowRecentNarrationShrink: false,
-    }).prompt;
+    const scopedSystem = attachScopedInstruction(actorSystem);
     return [{
       audience: { kind: 'actor' as const, actor_id: actor.id, actor_name: actor.name },
       messages: [{ role: 'system' as const, content: scopedSystem }, current],
@@ -180,11 +181,7 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
     }];
   }) ?? [];
   const narratorSystem = assigned ? renderNarratorPrivateContext(assigned.packet) : '';
-  const scopedNarratorSystem = narratorSystem ? attachInjectToIcPass(narratorSystem, inject.instruction, {
-    promptTokenBudget: available,
-    calibration: cal,
-    allowRecentNarrationShrink: false,
-  }).prompt : '';
+  const scopedNarratorSystem = narratorSystem ? attachScopedInstruction(narratorSystem) : '';
   const narratorRequest = narratorSystem
     ? { audience: { kind: 'narrator' as const }, messages: [{ role: 'system' as const, content: scopedNarratorSystem }, current], maxTokens: Math.min(320, maxTokens) }
     : null;

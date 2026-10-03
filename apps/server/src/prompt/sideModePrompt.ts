@@ -31,7 +31,7 @@ export function buildSideModePrompt(db: DB, conv: ConversationRow, mode: SideMod
     return { ...row, content: project(text, audience, actor, Boolean(audience) || classifyLegacy) };
   }).filter(row => row.content.trim());
   const visibleIds = new Set(visible.map(row => row.id));
-  const history = dialogHistory(db, visible);
+  const history = dialogHistory(db, visible, { includePrivate: true });
   const roster = loadStoryRoster(db, conv);
   const characterIds = new Set([conv.character_id, ...roster.map(row => row.id)]);
   // Internal server records only: no route accepts model/client events in Phase 1.
