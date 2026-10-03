@@ -36,6 +36,7 @@ import { ConversationTools } from './ConversationTools';
 import { outputProfileLabel } from '../lib/conversationSettings';
 import { chatModelSubtitle, partyCertainty } from '../lib/modelDisplay';
 import { CharacterIntroCard, RosterPortraitStage } from '../components/ChatFeedImages';
+import { rosterPortraitOptions } from '../lib/rosterPortraits';
 
 /** ADR-F8g: snapshot is the reader-visible endings list. Damaged → no picker. */
 function parseEndingsSnapshot(raw: string | null | undefined): StoryEnding[] {
@@ -264,11 +265,11 @@ export function ChatPage({ id }: { id: string }) {
   const lastAssistant = [...chat.messages].reverse().find((m) => m.role === 'assistant');
   const lastMsg = chat.messages[chat.messages.length - 1];
   const continueFrom = continuationTarget(chat.messages);
-  const lastUi = [...chat.messages].reverse()
-    .flatMap((message) => hasEventContract(message) ? [...message.events].reverse() : [])
-    .map(eventUiData).find((panel) => panel !== null) ?? null;
-  const rosterPortraits = (lastUi?.roster ?? []).flatMap(row => !row.locked && row.image_url
-    ? [{ id: row.id, name: row.name, chip: row.chip, image_url: row.image_url }] : []);
+  const lastUiEntry = [...chat.messages].reverse()
+    .flatMap((message) => hasEventContract(message) ? [...message.events].reverse().map(event => ({ panel: eventUiData(event), message })) : [])
+    .find(entry => entry.panel !== null) ?? null;
+  const lastUi = lastUiEntry?.panel ?? null;
+  const rosterPortraits = rosterPortraitOptions(lastUi, lastUiEntry?.message.meta.roster_portraits);
   const selectedPortraitId = rosterPortraits.some(row => row.id === portraitActorId)
     ? portraitActorId
     : rosterPortraits.find(row => row.id === lastUi?.focus_id)?.id ?? rosterPortraits[0]?.id ?? null;
@@ -445,9 +446,10 @@ export function ChatPage({ id }: { id: string }) {
       {(() => {
         if (!lastUi?.roster?.length) return null;
         const live = { ...lastUi, focus_id: lastUi.focus_id ?? conv.scene.last_beat?.focus_id ?? null };
+        const selectable = new Map(rosterPortraits.map(row => [row.id, row.image_url]));
         return (
           <div className="cast-status" aria-label="캐스트">
-            <BeatUiPanel ui={{ roster: live.roster, focus_id: live.focus_id }} selectedRosterId={selectedPortraitId} onRosterSelect={setPortraitActorId} />
+            <BeatUiPanel ui={{ roster: (live.roster ?? []).map(row => ({ ...row, image_url: selectable.get(row.id) ?? null })), focus_id: live.focus_id }} selectedRosterId={selectedPortraitId} onRosterSelect={setPortraitActorId} />
           </div>
         );
       })()}

@@ -4,7 +4,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { CharacterIntroCard, RosterPortraitStage } from '../apps/web/src/components/ChatFeedImages.tsx';
 import { BeatUiPanel } from '../apps/web/src/components/view.tsx';
-import { eventUiData } from '../apps/web/src/lib/chatEvents.ts';
+import { rosterPortraitOptions } from '../apps/web/src/lib/rosterPortraits.ts';
 
 let passed = 0;
 function t(name: string, fn: () => void) { fn(); console.log(`ok ${++passed} ${name}`); }
@@ -42,21 +42,26 @@ t('roster chips become accessible buttons only when a current asset is selectabl
   assert.match(html, /세라 잠금/);
 });
 
-t('UI decoder accepts only canonical local asset paths', () => {
-  const decode = (image_url: unknown) => eventUiData({ type: 'system', id: 'ui', presentation: 'ui', text: '', payload: { roster: [{ id: 'nari', name: '나리', chip: '🙂', locked: false, in_room: true, image_url }] } })!;
-  assert.equal(decode(nari).roster?.[0].image_url, nari);
-  for (const value of ['https://example.test/a.webp', '/media/assets/nari/uniform/1.webp?x=1', '/media/avatars/a.webp', 'data:image/png;base64,x']) assert.equal(decode(value).roster?.[0].image_url, null);
+t('current roster authority joins only canonical server metadata', () => {
+  const ui = { roster: [{ id: 'nari', name: '나리', chip: '🙂', locked: false, in_room: true }] };
+  const decode = (image_url: unknown, name = '나리') => rosterPortraitOptions(ui, [{ id: 'nari', name, image_url, emotion: '🙂' }]);
+  assert.equal(decode(nari)[0].image_url, nari);
+  for (const value of ['https://example.test/a.webp', '/media/assets/nari/uniform/1.webp?x=1', '/media/avatars/a.webp', 'data:image/png;base64,x']) assert.deepEqual(decode(value), []);
+  assert.deepEqual(decode(nari, '다른 인물'), []);
+  assert.deepEqual(rosterPortraitOptions({ roster: [{ ...ui.roster[0], locked: true }] }, [{ id: 'nari', name: '나리', image_url: nari }]), []);
 });
 
 t('feed stages keep a fixed 3:4 media ratio and preserve party-only placement', () => {
   const css = fs.readFileSync(new URL('../apps/web/src/app.css', import.meta.url), 'utf8');
   const page = fs.readFileSync(new URL('../apps/web/src/pages/ChatPage.tsx', import.meta.url), 'utf8');
+  const route = fs.readFileSync(new URL('../apps/server/src/routes/chat.ts', import.meta.url), 'utf8');
   for (const selector of ['.character-portrait-frame', '.chat-intro-media']) {
     const block = css.slice(css.indexOf(selector), css.indexOf('}', css.indexOf(selector)) + 1);
     assert.match(block, /aspect-ratio:\s*3\s*\/\s*4/);
   }
   assert.match(page, /!conv\.story_id\s*\?\s*<CharacterIntroCard/);
   assert.match(page, /<RosterPortraitStage options=\{rosterPortraits\}/);
+  assert.match(route, /roster_portraits:\s*rosterPortraits/);
 });
 
 console.log(`${passed} passed`);
