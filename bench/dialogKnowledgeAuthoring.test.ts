@@ -154,6 +154,22 @@ async function main() {
     assert.equal((await view()).invalidContract, true); await rejectUnchanged(secret, null, 409);
     db.prepare('UPDATE conversations SET scene_json=? WHERE id=?').run(original, room.id);
   });
+  await t('beat rooms cannot edit dialog recognition scope even with stored assignments and observation filtering enabled', async () => {
+    const original = sceneJson();
+    const beat = { ...JSON.parse(original), format: 'beat', observation_filter: true };
+    db.prepare('UPDATE conversations SET scene_json=? WHERE id=?').run(JSON.stringify(beat), room.id);
+    try {
+      const before = memoryRows();
+      const v = await view();
+      assert.equal(v.enabled, false);
+      await rejectUnchanged(secret, entry(secret, 'public'), 400);
+      await rejectUnchanged(secret, null, 400);
+      assert.deepEqual(memoryRows(), before);
+      assert.deepEqual(JSON.parse(sceneJson()).dialog_context, beat.dialog_context);
+    } finally {
+      db.prepare('UPDATE conversations SET scene_json=? WHERE id=?').run(original, room.id);
+    }
+  });
   await t('authoring never invokes model and nonexistent rooms return 404', async () => {
     assert.equal(modelCalls, 0);
     assert.equal((await app.inject({ method: 'GET', url: '/api/conversations/missing/knowledge' })).statusCode, 404);

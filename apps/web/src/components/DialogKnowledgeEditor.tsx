@@ -46,7 +46,7 @@ export function KnowledgeForm({ memory, view, entry, busy, onSave, onCancel }: {
         }}>
           {Object.entries(kinds).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
         </select></label></div>
-        <div className="field"><label>기억을 아는 범위<select value={scope} onChange={e => setScope(e.target.value as typeof scope)}>
+        <div className="field"><label>인물 인식 범위<select value={scope} onChange={e => setScope(e.target.value as typeof scope)}>
           <option value="narrator">서술자만</option><option value="actors">지정한 인물만</option><option value="public">모두</option>
         </select></label></div>
         {scope === 'actors' && <fieldset style={{ border: 0, padding: 0 }}><legend>기억을 아는 인물</legend>
@@ -65,10 +65,10 @@ export function KnowledgeForm({ memory, view, entry, busy, onSave, onCancel }: {
         <div className="field"><label>진행 상태<select value={status} onChange={e => setStatus(e.target.value as typeof status)}>
           <option value="active">유지</option><option value="resolved">종료</option>
         </select></label></div>
-        <p className="small muted">현재 분기에서 확인한 내용으로 저장합니다. 다른 분기에 자동으로 공개하지 않습니다.</p>
+        <p className="small muted">인물 인식 범위는 역할극 지침입니다. 인물별로 모델 요청을 분리하는 기능은 아닙니다. 현재 분기에서 확인한 내용으로 저장합니다.</p>
         {!view.headMessageId && <p className="small">첫 대화를 저장한 뒤 지정할 수 있습니다.</p>}
         <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
-          <button type="submit" className="btn primary" disabled={!canSave}>{busy ? '저장 중…' : '기억 범위 저장'}</button>
+          <button type="submit" className="btn primary" disabled={!canSave}>{busy ? '저장 중…' : '인식 범위 저장'}</button>
           <button type="button" className="btn ghost" onClick={onCancel}>취소</button>
           {entry && <button type="button" className="btn ghost" onClick={() => onSave(null)}>지정 해제</button>}
         </div>
@@ -126,7 +126,7 @@ export function DialogKnowledgeEditor({ conversationId }: { conversationId: stri
         <div className="body"><div>{m.content}</div><div className="imp">{knowledgeLabel(view.entries.find(e => e.memory_id === m.id), view.actors)}</div>
           {view.excluded.some(e => e.memory_id === m.id) && <div className="small muted">현재 분기에서 사용할 수 없는 지정입니다.</div>}
         </div>
-        <button type="button" className="btn sm" disabled={busy || view.invalidContract} onClick={() => { setEditing(m.id); setSaved(false); }}>범위 지정</button>
+        <button type="button" className="btn sm" disabled={busy || view.invalidContract} onClick={() => { setEditing(m.id); setSaved(false); }}>인식 범위 지정</button>
       </div>)}
     </>}
   </section>;

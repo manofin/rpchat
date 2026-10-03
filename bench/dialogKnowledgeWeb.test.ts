@@ -51,3 +51,11 @@ t('saving disables the whole form; labels never expose internal IDs', () => {
   assert.ok(form(undefined, true).includes('<fieldset disabled=""'));
   assert.equal(knowledgeLabel({ memory_id: 'secret-internal-id', anchor_message_id: 'head', kind: 'injury', known_by: ['a'], subject_id: 'user', status: 'active' }, view.actors), '부상 · 나리');
 });
+
+t('scope wording describes character recognition, not model request isolation', () => {
+  const html = form();
+  assert.ok(html.includes('인물 인식 범위'));
+  assert.ok(html.includes('인식 범위 저장'));
+  assert.ok(html.includes('인물별로 모델 요청을 분리하는 기능은 아닙니다.'));
+  assert.ok(!html.includes('비밀'));
+});
