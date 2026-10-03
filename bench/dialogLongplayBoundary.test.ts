@@ -106,7 +106,7 @@ async function main() {
     if (turn === 5) await remember('BRANCH_A_ONLY_FACT', turns[turn - 1].userId, 'fact', 'public');
     if (turn === 9) await generate(turn, 'regenerate', '', turns[turn - 1].head, 'REGENERATE_INJECT_MARKER');
   }
-  fs.writeFileSync(path.join(evidence, 'verdict.json'), JSON.stringify({ host: { platform: os.platform(), hostname: os.hostname() }, gitHead: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), baseline: 'c890148', turns: 12, generationOperations: records.length, realModelCalls: 0, issues, gates: ['persistent-fact', 'unknown-actor-wire-secret', 'branch-isolation', 'preview-equals-wire', 'saved-state', 'inject-present'], knownBoundary: 'single_narrator_request' }, null, 2));
+  fs.writeFileSync(path.join(evidence, 'verdict.json'), JSON.stringify({ host: { platform: os.platform(), hostname: os.hostname() }, gitHead: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), baseline: 'c890148', turns: 12, generationOperations: records.length, realModelCalls: 0, issues, gates: ['persistent-fact', 'unknown-actor-wire-secret', 'branch-isolation', 'preview-equals-wire', 'saved-state', 'inject-present'], knownBoundary: records[0]?.preview?.actor_context?.boundary ?? null }, null, 2));
   console.log(`Evidence: ${evidence}`);
   for (const gate of ['persistent-fact', 'unknown-actor-wire-secret', 'branch-isolation', 'preview-equals-wire', 'saved-state', 'inject-present']) console.log(`${gate}: ${issues.filter(i => i.gate === gate).length} violations`);
   assert.deepEqual(issues, [], 'longplay wire boundary does not satisfy the Goal');
