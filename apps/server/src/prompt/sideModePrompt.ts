@@ -11,11 +11,12 @@ import { dialogHistory } from './dialogPrompt.js';
 import { getCalibration, estimateMessageTokens, estimateTokens, truncateToTokens } from './tokens.js';
 import { resolveStory } from './resolveStory.js';
 import { reduceRoleFacts, roleFactsForAudience } from './roleFacts.js';
+import { loadRoleEvents } from '../db/roleFacts.js';
 
 export const SIDE_MODE_MAX_TOKENS = 1600;
 
 /** Public community is deliberately less privileged than the summary's GM view. */
-export function buildSideModePrompt(db: DB, conv: ConversationRow, mode: SideMode, prompt: string, contextTokens: number, roleEvents: readonly unknown[] = []) {
+export function buildSideModePrompt(db: DB, conv: ConversationRow, mode: SideMode, prompt: string, contextTokens: number, roleEvents: readonly unknown[] = loadRoleEvents(db, conv.id)) {
   const cal = getCalibration(db);
   const scene = parseJson<Scene>(conv.scene_json, {});
   const path = getPath(db, conv).filter(row => row.status === 'complete');
@@ -34,7 +35,8 @@ export function buildSideModePrompt(db: DB, conv: ConversationRow, mode: SideMod
   const history = dialogHistory(db, visible, { includePrivate: true });
   const roster = loadStoryRoster(db, conv);
   const characterIds = new Set([conv.character_id, ...roster.map(row => row.id)]);
-  // Internal server records only: no route accepts model/client events in Phase 1.
+  // Internal server records only: authenticated routes assign keys, recorder and versions;
+  // no model output is parsed into this event stream.
   // Reduce the complete branch before history truncation, then project its evidence.
   const roleState = roleEvents.length ? roleFactsForAudience(reduceRoleFacts(roleEvents, {
     conversationId: conv.id, pathIds: ids, visibleIds, actorIds: characterIds,
