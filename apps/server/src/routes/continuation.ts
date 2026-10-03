@@ -83,7 +83,7 @@ export function buildContinuation(ctx: Ctx, conv: ConversationRow, history: Mess
   const observer = actor ?? GM;
   const scope = audienceOf(target);
   // Unknown/private provenance must not become a public continuation.
-  const targetText = project(observationText(target, enabled), scope, observer, enabled);
+  const targetText = project(observationText(target, enabled, observer), scope, observer, enabled);
   if (!targetText.trim()) throw new Error('직전 응답의 공개 범위를 복원할 수 없습니다.');
   continuationInput = `${CONTINUE}\n\n## 이어 쓸 직전 응답 (이미 표시한 본문)\n${targetText}`;
   const cal = getCalibration(db);
@@ -91,7 +91,7 @@ export function buildContinuation(ctx: Ctx, conv: ConversationRow, history: Mess
   const available = config.model.contextTokens - maxTokens - 64;
   const eligible = enabled ? successfulObservationRows(history) : history;
   const candidates = eligible.filter(row => row.id !== target.id).map(row => ({ row,
-    text: project(observationText(row, enabled), audienceOf(row), observer, enabled),
+    text: project(observationText(row, enabled, observer), audienceOf(row), observer, enabled),
   })).filter(item => item.text.trim());
   const selected = [...candidates];
   const rawInstruction = profileInstructionText(profile);
