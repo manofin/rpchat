@@ -38,8 +38,6 @@ export type RosterChip = {
   chip: string;
   locked: boolean;
   in_room: boolean;
-  /** Current server-selected emotion × outfit asset; null when locked or unavailable. */
-  image_url: string | null;
 };
 
 export type BeatUi = {
@@ -173,7 +171,6 @@ export function isAddressable(
 export function renderUi(input: {
   scene: Scene;
   cast: BeatCastMember[];
-  catalog?: Pick<PartyCatalog, 'outfits' | 'emotions'>;
   focus_id?: string | null;
   extra_ids?: string[];
   intent_hint?: string | null;
@@ -194,16 +191,12 @@ export function renderUi(input: {
     roster: cast.map((m): RosterChip => {
       const addressable = isAddressable(m, scene, focusId, extraIds);
       const emotion = roster[m.id]?.emotion;
-      const outfit = roster[m.id]?.outfit ?? m.outfit ?? null;
       return {
         id: m.id,
         name: m.name,
         chip: addressable ? (emotion || NEUTRAL_CHIP) : LOCK_CHIP,
         locked: !addressable,
         in_room: present ? present.includes(m.id) : false,
-        image_url: addressable && input.catalog
-          ? assetPathFor({ characterId: m.id, outfit, emotion }, input.catalog)
-          : null,
       };
     }),
     intent_hint: input.intent_hint ?? null,

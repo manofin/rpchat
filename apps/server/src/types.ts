@@ -296,6 +296,8 @@ export interface MessageMeta {
   beat_seq?: number;
   /** Server-chosen local asset path, or absent. Never a model-written URL. */
   image_url?: string;
+  /** Server-resolved portraits for the current UI roster; never model-written URLs. */
+  roster_portraits?: Array<{ id: string; name: string; image_url: string; emotion: string | null }>;
   /**
    * scene-branch-snapshot: on a turn's first block (`beat_seq: 0`) only — the scene
    * this generation planned against and the scene it committed (validated delta

@@ -240,7 +240,6 @@ export function planBeat(input: BeatPlanInput): BeatPlan {
   const ui = renderUi({
     scene,
     cast: input.cast,
-    catalog: input.catalog,
     focus_id: focus.focus_id,
     extra_ids: extraIds,
     intent_hint: scene.beat_goal ?? null,
