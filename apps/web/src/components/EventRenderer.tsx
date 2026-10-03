@@ -1,6 +1,7 @@
 import type { ChatEvent, Message } from '../types';
 import { EVENT_CONTRACT_UNAVAILABLE, eventUiData, hasEventContract } from '../lib/chatEvents';
 import { BeatUiPanel } from './view';
+import { DialogSavedState } from './DialogSavedState';
 
 export function EventRenderer({ events, focusId }: { events: ChatEvent[]; streaming?: boolean; focusId?: string | null }) {
   return <>{events.map((event) => {
@@ -32,11 +33,14 @@ export function EventRenderer({ events, focusId }: { events: ChatEvent[]; stream
 }
 
 export function MessageEvents({ message, streaming, focusId }: {
-  message: Pick<Message, 'events' | 'eventVersion' | 'status'>;
+  message: Pick<Message, 'events' | 'eventVersion' | 'status'> & Partial<Pick<Message, 'role' | 'meta'>>;
   streaming?: boolean;
   focusId?: string | null;
 }) {
   if (!hasEventContract(message)) return <div className="chat-event-system" role="status">{EVENT_CONTRACT_UNAVAILABLE}</div>;
   if (!message.events.length) return streaming ? <span className="muted">…</span> : null;
-  return <EventRenderer events={message.events} streaming={streaming} focusId={focusId} />;
+  return <>
+    <EventRenderer events={message.events} streaming={streaming} focusId={focusId} />
+    {message.role && <DialogSavedState message={{ role: message.role, status: message.status, meta: message.meta }} />}
+  </>;
 }
