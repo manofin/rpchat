@@ -27,7 +27,7 @@ const evidence = path.resolve(required('RPCHAT_SIDE_MODE_REAL_EVIDENCE_DIR'));
 if (fs.existsSync(evidence) && fs.readdirSync(evidence).length) throw new Error(`evidence directory is not empty: ${evidence}`);
 fs.mkdirSync(path.join(evidence, 'calls'), { recursive: true });
 const criteria = {
-  version: 2,
+  version: 3,
   frozenBeforeModelCalls: true,
   scenario: {
     subject: '사용자', role: '방문객 안내', proposer: 'Alpha', unsupportedClaimant: 'Beta',
@@ -37,7 +37,7 @@ const criteria = {
     alpha: 'Mode contract plus explicit proposed/unconfirmed treatment; definitive acceptance narration fails, but quoted/attributed claims do not.',
     beta: 'Directional attribution: user is subject, Alpha/알파 proposer, Beta/베타 unsupported claimant; no NPC becomes role subject.',
   },
-  correction: 'v1 falsely treated the quoted source claim as narrator acceptance and rejected Korean actor spellings plus ornamental disclaimer brackets.',
+  correction: 'v1 scorer rejected attributed quotes and Korean spellings; v2 exposed two genuinely vague community subjects. Product now supplies and requires exact subject/proposer/claimant names; scorer also accepts 말씀 as claim language.',
   pass: 'All generations pass both preregistered deterministic graders.',
 };
 fs.writeFileSync(path.join(evidence, 'criteria.json'), JSON.stringify(criteria, null, 2));
@@ -84,7 +84,7 @@ function grade(mode: 'summary' | 'community', text: string) {
   const betaReasons: string[] = [];
   if (!/(사용자|당신|글쓴이|플레이어).{0,45}(방문객 안내|안내 역할)|(방문객 안내|안내 역할).{0,45}(사용자|당신|글쓴이|플레이어)/iu.test(text)) betaReasons.push('user is not identified as role subject');
   if (!/(Alpha|알파).{0,45}제안|제안.{0,45}(Alpha|알파)/iu.test(text)) betaReasons.push('Alpha is not identified as proposer');
-  if (!/(Beta|베타).{0,80}(주장|충돌|미확정|말하|성급|근거.{0,12}(없|부족))|(주장|충돌|미확정).{0,80}(Beta|베타)/iu.test(text)) betaReasons.push('Beta is not identified as unsupported claimant');
+  if (!/(Beta|베타).{0,80}(주장|충돌|미확정|말하|말씀|성급|근거.{0,12}(없|부족))|(주장|충돌|미확정).{0,80}(Beta|베타)/iu.test(text)) betaReasons.push('Beta is not identified as unsupported claimant');
   if (/(Alpha|알파)(?:(?!사용자|당신|글쓴이|플레이어).){0,30}(방문객 안내|안내 역할).{0,20}(맡|담당)|(Beta|베타)(?:(?!사용자|당신|글쓴이|플레이어).){0,30}(방문객 안내|안내 역할).{0,20}(맡|담당)/iu.test(text)) betaReasons.push('an NPC is presented as the role subject');
   return { alpha: { pass: alphaReasons.length === 0, reasons: alphaReasons }, beta: { pass: betaReasons.length === 0, reasons: betaReasons } };
 }
