@@ -247,6 +247,7 @@ const sceneCatalogSchema = z.object({
   grades: z.array(z.string().max(40)).max(20).default([]),
   /** emotion → asset index n. Non-integer or negative is rejected, not silently coerced. */
   emotions: z.record(z.number().int().min(0)).default({}),
+  default_emotion: z.string().min(1).max(40).optional(),
   /** stage id → the duty that closes it (the other half of hard_event). */
   stages: z.record(z.object({ closer_duty: z.string().max(60).optional() })).default({}),
   /** duty → function slot, so two duties that do the same job share one line (§4.3). */
@@ -258,6 +259,10 @@ const sceneCatalogSchema = z.object({
    * stored spelling. `duties` wins if a client sends both.
    */
   dutySlots: z.record(z.string().max(60)).optional(),
+}).superRefine((catalog, ctx) => {
+  if (catalog.default_emotion !== undefined && !Object.prototype.hasOwnProperty.call(catalog.emotions, catalog.default_emotion)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['default_emotion'], message: '시작 표정은 등록한 표정 중에서 선택해야 합니다.' });
+  }
 });
 
 type SceneCatalogInput = z.infer<typeof sceneCatalogSchema>;
