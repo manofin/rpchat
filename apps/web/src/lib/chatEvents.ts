@@ -16,6 +16,7 @@ export function eventUiData(event: ChatEvent): BeatUiData | null {
   const stringList = (value: unknown) => Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
   const sheet = data.user_sheet && typeof data.user_sheet === 'object' && !Array.isArray(data.user_sheet)
     ? data.user_sheet as Record<string, unknown> : null;
+  const asset = (value: unknown) => typeof value === 'string' && /^\/media\/assets\/[^/?#]+\/[^/?#]+\/\d+\.webp$/.test(value) ? value : null;
   return {
     location_badge: typeof data.location_badge === 'string' ? data.location_badge : null,
     intent_hint: typeof data.intent_hint === 'string' ? data.intent_hint : null,
@@ -31,7 +32,7 @@ export function eventUiData(event: ChatEvent): BeatUiData | null {
     }) : [],
     roster: Array.isArray(data.roster) ? data.roster.flatMap((value) => {
       if (!value || typeof value !== 'object' || typeof value.id !== 'string' || typeof value.name !== 'string' || typeof value.chip !== 'string') return [];
-      return [{ id: value.id, name: value.name, chip: value.chip, locked: value.locked === true, in_room: value.in_room === true }];
+      return [{ id: value.id, name: value.name, chip: value.chip, locked: value.locked === true, in_room: value.in_room === true, image_url: asset(value.image_url) }];
     }) : [],
   };
 }

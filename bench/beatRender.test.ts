@@ -126,6 +126,14 @@ t('🔒 rule: only this turn focus and approved extras are addressable', () => {
   assert.equal(chip('yuki').chip, LOCK_CHIP);     // outside the room
 });
 
+t('roster carries only server-resolved current emotion portraits', () => {
+  const ui = renderUi({ scene: CLASSROOM, cast: CAST, catalog: CAT, focus_id: 'nari', extra_ids: ['sera'] });
+  const chip = (id: string) => ui.roster.find((row) => row.id === id)!;
+  assert.equal(chip('nari').image_url, `/media/assets/nari/${encodeURIComponent('교복')}/8.webp`);
+  assert.equal(chip('sera').image_url, `/media/assets/sera/${encodeURIComponent('교복')}/1.webp`);
+  assert.equal(chip('hayeon').image_url, null, 'locked rows cannot expose an inferred portrait');
+});
+
 t('roster shows characters who are out of the room, flagged not in_room', () => {
   const ui = renderUi({ scene: CLASSROOM, cast: CAST, focus_id: 'nari' });
   const yuki = ui.roster.find((r) => r.id === 'yuki')!;
