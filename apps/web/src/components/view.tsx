@@ -24,12 +24,12 @@ export type BeatUiData = {
     gear?: string[]; inventory?: string[]; traits?: string[];
   } | null;
   custom_stats?: Array<{ label: string; value: number }>;
-  roster?: Array<{ id: string; name: string; chip: string; locked: boolean; in_room: boolean }>;
+  roster?: Array<{ id: string; name: string; chip: string; locked: boolean; in_room: boolean; image_url?: string | null }>;
   intent_hint?: string | null;
   focus_id?: string | null;
 };
 
-export function BeatUiPanel({ ui }: { ui: BeatUiData }) {
+export function BeatUiPanel({ ui, selectedRosterId, onRosterSelect }: { ui: BeatUiData; selectedRosterId?: string | null; onRosterSelect?: (id: string) => void }) {
   const sheet = ui.user_sheet;
   const stats: string[] = [];
   if (sheet) {
@@ -58,19 +58,15 @@ export function BeatUiPanel({ ui }: { ui: BeatUiData }) {
         <div className="beat-ui-roster">
           {(ui.roster ?? []).map((r) => {
             const isFocus = Boolean(ui.focus_id && r.id === ui.focus_id);
+            const selectable = Boolean(onRosterSelect && r.image_url && !r.locked);
             const label = `${r.name}${r.locked ? ' 잠금' : ''}${isFocus && !r.locked ? ' 포커스' : ''}`;
-            return (
-              <span
-                key={r.id}
-                className={`beat-chip${r.locked ? ' locked' : ''}${isFocus && !r.locked ? ' is-focus' : ''}`}
-                title={label}
-                aria-label={label}
-              >
-                {r.chip} {r.name}
-                {r.locked ? <span className="beat-chip-tag">잠금</span> : null}
-                {isFocus && !r.locked ? <span className="beat-chip-tag">포커스</span> : null}
-              </span>
-            );
+            const content = <>{r.chip} {r.name}
+              {r.locked ? <span className="beat-chip-tag">잠금</span> : null}
+              {isFocus && !r.locked ? <span className="beat-chip-tag">포커스</span> : null}</>;
+            const cls = `beat-chip${r.locked ? ' locked' : ''}${isFocus && !r.locked ? ' is-focus' : ''}${selectedRosterId === r.id ? ' is-selected' : ''}`;
+            return selectable
+              ? <button type="button" key={r.id} className={cls} title={`${label} 초상화 보기`} aria-label={`${label} 초상화 보기`} aria-pressed={selectedRosterId === r.id} onClick={() => onRosterSelect?.(r.id)}>{content}</button>
+              : <span key={r.id} className={cls} title={label} aria-label={label}>{content}</span>;
           })}
         </div>
       ) : null}
