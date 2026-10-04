@@ -2,7 +2,13 @@ import { responseLengthHint, responseMaxTokens } from './responseLength.js';
 import { type DB, many } from '../db/index.js';
 import { parseMessageMeta } from '../db/messageMeta.js';
 import type { BudgetReport, ChatMessage, ConversationRow, MessageRow, Scene } from '../types.js';
-import { ACTOR_CONTEXT_RULES, buildActorContext } from './dialogActorContext.js';
+import {
+  ACTOR_CONTEXT_RULES,
+  buildActorContext,
+  renderActorPrivateContext,
+  renderNarratorPrivateContext,
+  renderPublicActorContext,
+} from './dialogActorContext.js';
 import { loadStoryRoster } from './dialogContext.js';
 import { computeStoryInjection, isOocMessage, loadProfile, mergeConsecutive, resolvePersona } from './builder.js';
 import { selectContext } from './contextSelection.js';
@@ -28,7 +34,7 @@ function fitText(text: string, cap: number, cal: number): string {
 }
 
 /** Roles remain adapter roles; INFO/UI, thoughts and choice drafts never become conversation text. */
-export function dialogHistory(db: DB, history: MessageRow[]): MessageRow[] {
+export function dialogHistory(db: DB, history: MessageRow[], opts: { includePrivate?: boolean } = {}): MessageRow[] {
   const names = new Map(many<{ id: string; name: string }>(db, 'SELECT id, name FROM characters').map((r) => [r.id, r.name]));
   const out: MessageRow[] = [];
   let skipAssistant = false;
@@ -40,6 +46,7 @@ export function dialogHistory(db: DB, history: MessageRow[]): MessageRow[] {
     }
     if (skipAssistant) continue;
     const meta = parseMessageMeta(m.meta_json);
+    if (!opts.includePrivate && meta.observation?.visibility === 'private') continue;
     if (meta.block_kind && !['line', 'narration'].includes(meta.block_kind)) continue;
     const content = extractChoices(sanitizeGeneratedContent(m.content)).content.trim();
     if (!content) continue;
@@ -101,12 +108,13 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
   const actorCap = scoped ? Math.floor(memoryCap / 2) : 0;
   const actors = scoped ? loadStoryRoster(db, conv).map(({ id, name }) => ({ id, name })) : [];
   const assigned = scoped ? buildActorContext(db, conv, pathIds, scene!.dialog_context, actors, actorCap, cal) : null;
+  const publicActorText = assigned ? renderPublicActorContext(assigned.packet) : '';
   const generalMemoryCap = memoryCap - actorCap;
   const selected = selectContext(db, conv, scanHistory, { lore: loreCap, memory: generalMemoryCap }, cal,
     { pathIds, branchScoped: true, strictBudget: true, excludeMemoryIds: assigned?.reservedIds });
   sections.push(...selected.sections.map((s) => ({ ...s, budget: s.kind === 'lore' ? loreCap : generalMemoryCap })));
-  if (assigned) sections.push({ name: '명시적 공개/인물별 승인 기억', kind: 'memory', est_tokens: assigned.tokens, budget: actorCap });
-  const system = [mandatory, staticText, ...selected.parts, assigned?.text].filter(Boolean).join('\n\n');
+  if (assigned) sections.push({ name: '명시적 공개 승인 기억', kind: 'memory', est_tokens: estimateTokens(publicActorText, cal), budget: actorCap });
+  const system = [mandatory, staticText, ...selected.parts, publicActorText].filter(Boolean).join('\n\n');
   // Only complete bodies retained in the final system prompt can replace their source coverage.
   // A coverage starting later in the path must not erase an uncovered earlier prefix.
   const indexById = promptIndexById(history);
@@ -157,5 +165,30 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
   if (estTotal > available) budget.instruction_overflow = {
     profile: profile.name, instruction_tokens: profileBlock ? estimateTokens(profileBlock, cal) : 0, required: estTotal, available,
   };
-  return { messages, budget, profile, model, maxTokens, stop: [], isOoc: false as const, ...(assigned ? { actor_context: assigned.packet } : {}) };
+  const attachScopedInstruction = (prompt: string) => attachInjectToIcPass(prompt, inject.instruction, {
+    promptTokenBudget: available,
+    calibration: cal,
+    allowRecentNarrationShrink: false,
+  }).prompt;
+  const actorRequests = assigned?.packet.actors.flatMap((actor) => {
+    const actorSystem = renderActorPrivateContext(assigned.packet, actor.id);
+    if (!actorSystem) return [];
+    const scopedSystem = attachScopedInstruction(actorSystem);
+    return [{
+      audience: { kind: 'actor' as const, actor_id: actor.id, actor_name: actor.name },
+      messages: [{ role: 'system' as const, content: scopedSystem }, current],
+      maxTokens: Math.min(320, maxTokens),
+    }];
+  }) ?? [];
+  const narratorSystem = assigned ? renderNarratorPrivateContext(assigned.packet) : '';
+  const scopedNarratorSystem = narratorSystem ? attachScopedInstruction(narratorSystem) : '';
+  const narratorRequest = narratorSystem
+    ? { audience: { kind: 'narrator' as const }, messages: [{ role: 'system' as const, content: scopedNarratorSystem }, current], maxTokens: Math.min(320, maxTokens) }
+    : null;
+  return {
+    messages, budget, profile, model, maxTokens, stop: [], isOoc: false as const,
+    actor_requests: actorRequests,
+    narrator_request: narratorRequest,
+    ...(assigned ? { actor_context: assigned.packet } : {}),
+  };
 }

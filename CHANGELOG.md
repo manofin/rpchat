@@ -9,6 +9,12 @@
 ## [Unreleased]
 
 ### Added
+- `0024_role_fact_events.sql`: 인증된 역할 제안·수락·거절·수락 철회·주장 기록을
+  서버 소유 append-only 이벤트로 저장하는 테이블과 인덱스 2개 추가.
+  `deploy/schema-compat.json`의 필수 migration 집합에 `0024`를 포함한다.
+  기존 데이터는 변경하지 않지만, 적용 후 `0024`가 없는 코드로만 되돌리면
+  기동 시 스키마 집합 검사에 실패한다. 적용 전 백업을 보존하고, 롤백 시
+  이전 코드가 요구하는 스키마의 백업을 `restore.sh`로 복원해야 한다.
 - `schema-compat.json` `required_migrations` 를 디스크 migration 파일 22개와 일치시킴
   (기존 명세 12개에서 누락 10개 정정). 부트는 파일 집합과 명세가 다르면 DB를 열기 전에 종료한다.
 - 백업 매니페스트: `backup-host.py` 가 `.db.gz` 옆에 `rpchat-<stamp>.manifest.json` 을 남긴다

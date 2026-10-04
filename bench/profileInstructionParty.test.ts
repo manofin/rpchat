@@ -174,7 +174,9 @@ async function main() {
     const calls = chat.match(/attachInjectToIcPass\([^\n]*/g) ?? [];
     assert.equal(calls.length, 1, calls.join('\n'));
     assert.equal((chat.match(/fitObservationPass\(input =>/g) ?? []).length, 3);
-    assert.equal((dialog.match(/attachInjectToIcPass\(/g) ?? []).length, 1);
+    assert.equal((dialog.match(/attachInjectToIcPass\(/g) ?? []).length, 2);
+    assert.ok(dialog.includes('attachScopedInstruction(actorSystem)'));
+    assert.ok(dialog.includes('attachScopedInstruction(narratorSystem)'));
     assert.ok(chat.includes('model, messages: built.messages'));
     assert.ok(dialog.includes('profileInstruction: profileBlock'));
     assert.ok(dialog.includes("renderProfileInstruction(instruction, '## 서술 지침', '', userName)"));

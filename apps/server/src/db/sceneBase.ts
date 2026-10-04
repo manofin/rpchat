@@ -42,6 +42,8 @@ export type SceneSnapshot = {
   before_delta: Scene;
   /** The scene the validated delta produced. Equal to `before_delta` on a no-op. */
   after_delta: Scene;
+  /** Human-confirmed role records visible to the user at commit time. */
+  confirmed_roles?: string[];
 };
 
 export type SceneBaseSource =
@@ -71,11 +73,12 @@ function freezeCopy<T>(v: T): T {
   return JSON.parse(JSON.stringify(v)) as T;
 }
 
-export function buildSceneSnapshot(before: Scene, after: Scene): SceneSnapshot {
+export function buildSceneSnapshot(before: Scene, after: Scene, confirmedRoles: string[] = []): SceneSnapshot {
   return {
     schema_version: SCENE_SNAPSHOT_VERSION,
     before_delta: freezeCopy(before),
     after_delta: freezeCopy(after),
+    ...(confirmedRoles.length ? { confirmed_roles: freezeCopy(confirmedRoles) } : {}),
   };
 }
 
@@ -94,6 +97,8 @@ export function readSceneSnapshot(meta: MessageMeta): SceneSnapshot | null {
     schema_version: SCENE_SNAPSHOT_VERSION,
     before_delta: freezeCopy(raw.before_delta) as Scene,
     after_delta: freezeCopy(raw.after_delta) as Scene,
+    ...(Array.isArray(raw.confirmed_roles) && raw.confirmed_roles.every(value => typeof value === 'string')
+      ? { confirmed_roles: freezeCopy(raw.confirmed_roles) as string[] } : {}),
   };
 }
 
