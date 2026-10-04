@@ -1,5 +1,8 @@
 import type { ChatMessage } from '../types.js';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { dumpRequestBody } from './requestDump.js';
+
+const CONNECTION_ERROR_CODES = new Set(['UND_ERR_SOCKET', 'ECONNREFUSED', 'UND_ERR_CONNECT_TIMEOUT', 'ECONNRESET', 'ETIMEDOUT']);
 
 export interface GenParams {
   model: string;
@@ -41,6 +44,8 @@ export class ModelError extends Error {
  * 런타임(mlx-openai-server, vllm, Ollama, llama.cpp server 등)을 바꿔도 이 파일만 조정하면 된다.
  */
 export class ModelClient {
+  private previousCallFinishedAt: number | null = null;
+  private readonly callKind = new AsyncLocalStorage<'complete'>();
   constructor(
     private readonly baseUrl: string,
     private readonly apiKey: string,
@@ -62,10 +67,49 @@ export class ModelClient {
   }
 
   async stream(p: GenParams, onToken: (delta: string) => void): Promise<GenResult> {
-    const started = Date.now();
+    return this.generate(p, onToken, this.callKind.getStore() ?? 'stream');
+  }
+
+  private transportCode(error: unknown): string {
+    const cause = (error as { cause?: { code?: unknown } } | null)?.cause?.code;
+    return typeof cause === 'string' && /^[A-Z0-9_]{1,64}$/.test(cause) ? cause : 'UNKNOWN';
+  }
+
+  private async generate(p: GenParams, onToken: (delta: string) => void, kind: 'stream' | 'complete'): Promise<GenResult> {
     const signals: AbortSignal[] = [AbortSignal.timeout(this.timeoutMs)];
     if (p.signal) signals.push(p.signal);
-    const signal = AbortSignal.any(signals);
+    const state = {
+      signal: AbortSignal.any(signals),
+      retries: 0,
+      retryCode: '',
+      sincePreviousCallMs: this.previousCallFinishedAt === null ? null : Math.max(0, Date.now() - this.previousCallFinishedAt),
+    };
+    try {
+      const result = await this.streamRequest(p, onToken, state);
+      if (state.retries) {
+        console.warn('model-transport', { outcome: 'recovered', kind, code: state.retryCode, retries: state.retries, sincePreviousCallMs: state.sincePreviousCallMs });
+      }
+      return result;
+    } catch (error) {
+      const code = this.transportCode(error);
+      const outcome = state.signal.aborted ? 'aborted' : error instanceof ModelError ? 'http-error'
+        : CONNECTION_ERROR_CODES.has(code) ? 'final-failure' : 'other-error';
+      const reasonName = state.signal.reason?.name;
+      console.warn('model-transport', {
+        outcome, kind, code, retries: state.retries, sincePreviousCallMs: state.sincePreviousCallMs,
+        ...(outcome === 'aborted' ? { reasonName: reasonName === 'AbortError' || reasonName === 'TimeoutError' ? reasonName : 'UNKNOWN' } : {}),
+        ...(outcome === 'http-error' ? { status: (error as ModelError).status } : {}),
+      });
+      throw error;
+    } finally {
+      this.previousCallFinishedAt = Date.now();
+    }
+  }
+
+  private async streamRequest(p: GenParams, onToken: (delta: string) => void, state: { signal: AbortSignal; retries: number; retryCode: string }): Promise<GenResult> {
+    const started = Date.now();
+    const signal = state.signal;
+    signal.throwIfAborted();
 
     const body: Record<string, unknown> = {
       model: p.model,
@@ -91,12 +135,27 @@ export class ModelClient {
       });
     }
 
-    const res = await fetch(`${this.baseUrl}/chat/completions`, {
+    const request: RequestInit = {
       method: 'POST',
       headers: this.headers(),
       body: JSON.stringify(body),
       signal,
-    });
+    };
+    let res: Response;
+    for (;;) {
+      signal.throwIfAborted();
+      try {
+        res = await fetch(`${this.baseUrl}/chat/completions`, request);
+        break;
+      } catch (error) {
+        const code = this.transportCode(error);
+        // No Response is a practical boundary, not proof the server did no inference.
+        if (state.retries || signal.aborted || !(error instanceof TypeError) || error.message !== 'fetch failed'
+          || !CONNECTION_ERROR_CODES.has(code)) throw error;
+        state.retries = 1;
+        state.retryCode = code;
+      }
+    }
     if (!res.ok || !res.body) {
       const detail = await res.text().catch(() => '');
       throw new ModelError(`모델 서버 응답 ${res.status}: ${detail.slice(0, 500)}`, res.status);
@@ -153,6 +212,8 @@ export class ModelClient {
 
   /** 비스트리밍 편의 함수 (요약·기억 추출용) */
   async complete(p: GenParams): Promise<GenResult> {
-    return this.stream(p, () => {});
+    return this.callKind.run('complete', () => {
+      return this.stream(p, () => {});
+    });
   }
 }

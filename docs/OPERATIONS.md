@@ -36,6 +36,39 @@
 - 활성 분기(head)만 프롬프트에 반영된다. 내보내기 JSON 에는 전체 트리가 포함된다.
 
 ## 모델 프로필 튜닝
+
+### 모델 연결 실패의 제한적 재시도
+
+생성 POST의 `fetch()`가 `Response` 반환 전에 `fetch failed`로 거부되고 원인 코드가
+`UND_ERR_SOCKET`, `ECONNREFUSED`, `UND_ERR_CONNECT_TIMEOUT`, `ECONNRESET`, `ETIMEDOUT` 중
+하나일 때만 1회 재시도한다. 취소·타임아웃이 발생했으면 재시도하지 않는다.
+같은 요청 본문과 같은 AbortSignal을 사용하며, 원래 타임아웃과 `GenerationQueue(1)`의
+같은 슬롯 안에서 처리한다. 응답 헤더를 받은 뒤의 스트림 오류, HTTP 오류,
+원인 코드 없는 오류는 재시도하지 않는다. `complete()`도 실제 전송은 스트리밍이다.
+
+이 경계는 **응답 0바이트의 직접 증명이나 서버 미실행 보장이 아니다**. 서버가 이미
+추론을 시작했을 수 있으므로 재시도가 모델 연산을 중복시킬 수 있다. 재시도 시점에는
+앱이 Response/출력을 받지 않았으므로 받은 출력을 사용자에게 중복 전달하지 않는다.
+소켓 종료 원인의 수정이 아니라 제한적인 복구 정책이며 `/models` 조회에는 적용하지 않는다.
+
+서버 로그의 `model-transport`에는 `outcome`, 원인 `code`
+(불명은 `UNKNOWN`), 호출 `kind`(`stream` / `complete`), `retries`,
+`sincePreviousCallMs`(같은 클라이언트의 직전 논리 호출 종료부터 현재 호출 시작까지,
+첫 호출은 null)를 남긴다. 복구는 스트림 처리까지 성공했을 때 기록한다.
+프롬프트·출력·URL·헤더·API 키·오류 메시지는 이 로그에 넣지 않으며 DB 저장·마이그레이션은 없다.
+`outcome`은 복구 성공 `recovered`, 허용 목록의 연결 원인 코드가 있는 최종 실패
+`final-failure`, 취소·타임아웃 `aborted`, `ModelError` 응답 오류 `http-error`,
+그 밖의 예외 `other-error`로 구분한다. 취소 상태를 가장 먼저 판별한다.
+`aborted`의 `reasonName`은 원래 결합 신호의 `AbortError`(일반적인 사용자 취소)와
+`TimeoutError`(타임아웃)를 구분하며, 다른 사용자 지정 이름은 개인정보 보호를 위해
+`UNKNOWN`으로 기록한다. `http-error`에는 HTTP `status`를 남긴다.
+취소·타임아웃·HTTP 오류·기타 예외는 연결 실패 집계에서 제외해야 한다.
+`sincePreviousCallMs`는 클라이언트 전체가 공유한다. 큐 밖의 호출이나 동시 호출이
+섞이면 이 값은 근삿값이며 특정 대화·소켓의 직전 호출과의 간격을 보장하지 않는다.
+
+현재 라이브 실패율은 미상이다. 이 오류 로그만으로 분모나 전체 실패율을 계산할 수는
+없으며, 승인된 배포·재시작 후 성공 호출 수와 함께 관찰해야 한다.
+
 설정 → 모델 프로필. RP 대화에 쓰는 두 개:
 - `rp-balanced` (temp 0.8): 일관성 우선. 기본 채팅.
 - `rp-creative` (temp 1.0): 전개·묘사 풍부. 스토리 모드 기본.
