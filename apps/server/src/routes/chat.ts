@@ -880,7 +880,12 @@ export function chatRoutes(ctx: Ctx) {
           .map(b => b.kind === 'narration' ? planInput.narration_audience
             : b.speaker_character_id ? actorAudience(planInput, b.speaker_character_id) : PUBLIC),
       ]) : null;
-      const uiRow = addBlock('ui', JSON.stringify(plan.ui), choices ? { choices, ...(context ? { choices_context: context } : {}) } : {});
+      const rosterPortraits = finished.blocks.flatMap(block => block.kind === 'line' && block.speaker_character_id && block.speaker_name && block.asset_path
+        ? [{ id: block.speaker_character_id, name: block.speaker_name, image_url: block.asset_path, emotion: block.emotion }]
+        : []);
+      const uiMeta = { ...(rosterPortraits.length ? { roster_portraits: rosterPortraits } : {}),
+        ...(choices ? { choices, ...(context ? { choices_context: context } : {}) } : {}) };
+      const uiRow = addBlock('ui', JSON.stringify(plan.ui), uiMeta);
 
       // Order is fixed by bench/sceneCommitOnSuccess.test.ts: the snapshot is written
       // first because it is the authoritative record and the conversation row is a

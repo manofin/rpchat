@@ -356,6 +356,7 @@ export interface Message {
     beat_seq?: number;
     /** Server-chosen local asset path. Never a model-written URL. */
     image_url?: string;
+    roster_portraits?: Array<{ id: string; name: string; image_url: string; emotion: string | null }>;
   };
   bookmarked: boolean;
   created_at: string;

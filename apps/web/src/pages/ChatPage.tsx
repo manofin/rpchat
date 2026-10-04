@@ -35,6 +35,8 @@ import { ChatListRail } from './ChatListRail';
 import { ConversationTools } from './ConversationTools';
 import { outputProfileLabel } from '../lib/conversationSettings';
 import { chatModelSubtitle, partyCertainty } from '../lib/modelDisplay';
+import { CharacterIntroCard, RosterPortraitStage, shouldShowCharacterIntro } from '../components/ChatFeedImages';
+import { rosterPortraitOptions } from '../lib/rosterPortraits';
 
 /** ADR-F8g: snapshot is the reader-visible endings list. Damaged → no picker. */
 function parseEndingsSnapshot(raw: string | null | undefined): StoryEnding[] {
@@ -55,7 +57,8 @@ export function ChatPage({ id }: { id: string }) {
   const generating = chat.generating || sideMode.generating;
   const [sideOpen, setSideOpen] = useState(false);
   const [sideTab, setSideTab] = useState<SideMode>('summary');
-  useEffect(() => { setSideOpen(false); setSideTab('summary'); }, [id]);
+  const [portraitActorId, setPortraitActorId] = useState<string | null>(null);
+  useEffect(() => { setSideOpen(false); setSideTab('summary'); setPortraitActorId(null); }, [id]);
   const [draft, setDraft] = useState('');
   const [drawer, setDrawer] = useState(false);
   const [drawerTab, setDrawerTab] = useState<'budget' | 'memory' | 'summary' | undefined>(undefined);
@@ -262,9 +265,17 @@ export function ChatPage({ id }: { id: string }) {
   const lastAssistant = [...chat.messages].reverse().find((m) => m.role === 'assistant');
   const lastMsg = chat.messages[chat.messages.length - 1];
   const continueFrom = continuationTarget(chat.messages);
-  const lastUi = [...chat.messages].reverse()
-    .flatMap((message) => hasEventContract(message) ? [...message.events].reverse() : [])
-    .map(eventUiData).find((panel) => panel !== null) ?? null;
+  const lastUiEntry = [...chat.messages].reverse()
+    .flatMap((message) => {
+      const panels = hasEventContract(message) ? [...message.events].reverse().map(eventUiData) : [];
+      return panels.map(panel => ({ panel, message }));
+    })
+    .find(entry => entry.panel !== null) ?? null;
+  const lastUi = lastUiEntry?.panel ?? null;
+  const rosterPortraits = rosterPortraitOptions(lastUi, lastUiEntry?.message.meta.roster_portraits);
+  const selectedPortraitId = rosterPortraits.some(row => row.id === portraitActorId)
+    ? portraitActorId
+    : rosterPortraits.find(row => row.id === lastUi?.focus_id)?.id ?? rosterPortraits[0]?.id ?? null;
   const hasBeatRoster = Boolean(lastUi?.roster?.length);
   const onSceneIntent = (intent: SceneActionIntent) => {
     const d = resolveSceneAction(intent, id);
@@ -438,15 +449,18 @@ export function ChatPage({ id }: { id: string }) {
       {(() => {
         if (!lastUi?.roster?.length) return null;
         const live = { ...lastUi, focus_id: lastUi.focus_id ?? conv.scene.last_beat?.focus_id ?? null };
+        const selectable = new Map(rosterPortraits.map(row => [row.id, row.image_url]));
         return (
           <div className="cast-status" aria-label="캐스트">
-            <BeatUiPanel ui={{ roster: live.roster, focus_id: live.focus_id }} />
+            <BeatUiPanel ui={{ roster: (live.roster ?? []).map(row => ({ ...row, image_url: selectable.get(row.id) ?? null })), focus_id: live.focus_id }} selectedRosterId={selectedPortraitId} onRosterSelect={setPortraitActorId} />
           </div>
         );
       })()}
 
       <div className="chat-scroll" ref={scrollRef} onScroll={onScroll}>
         <div className="chat-feed" ref={contentRef}>
+        {shouldShowCharacterIntro(conv.story_id, shownMessages.length) ? <CharacterIntroCard key={char.id} character={char} /> : null}
+        <RosterPortraitStage options={rosterPortraits} selectedId={selectedPortraitId} onSelect={setPortraitActorId} />
         {shownMessages.length === 0 && <div className="sysline" style={{ margin: 'auto' }}>첫 메시지를 보내 대화를 시작하세요.</div>}
         {reorderTurns
           ? groupChatTurns(shownMessages).map((turn, ti) => {
