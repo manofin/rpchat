@@ -38,6 +38,7 @@ import type { CharacterRow } from '../types.js';
 import { buildPrompt } from '../prompt/builder.js';
 import { loadStoryRoster, dialogPlanInput } from '../prompt/dialogContext.js';
 import { buildDialogPrompt } from '../prompt/dialogPrompt.js';
+import { dialogSecretRules, segmentSecretViolations, type SecretSegment } from '../prompt/dialogSecretOutput.js';
 import { parseInjectInstruction, attachInjectToIcPass, type InjectContext } from '../prompt/injectContext.js';
 import { formatInstructionOverflow, profileInstructionText } from '../prompt/promptPolicy.js';
 import { dumpGenerationPrompt } from '../prompt/dump.js';
@@ -1113,6 +1114,7 @@ export function chatRoutes(ctx: Ctx) {
     // first — the passes receive the scene through `planInput` in memory, and no code
     // between here and the finish below reads `scene_json` back.
 
+    const secretRules = dialogSecretRules(db, convNow, history, plan.applied.state);
     const profileName = convNow.profile_name;
     const sse = openSse(reply);
 
@@ -1178,6 +1180,8 @@ export function chatRoutes(ctx: Ctx) {
         },
         (delta) => {
           buffer += delta;
+          // Withhold unvalidated private scripts from SSE and GET polling alike.
+          if (secretRules.length) return;
           sse.send({ type: 'token', ...streamEvents(buffer) });
           if (Date.now() - lastPersist > PERSIST_INTERVAL_MS) {
             lastPersist = Date.now();
@@ -1185,7 +1189,7 @@ export function chatRoutes(ctx: Ctx) {
           }
         },
       ), controller.signal);
-      const supplements: Array<{ text: string; observation: { visibility: 'private'; recipient_ids: string[]; observer_ids: string[] } }> = [];
+      const supplements: Array<{ audience: SecretSegment['audience']; text: string; observation: { visibility: 'private'; recipient_ids: string[]; observer_ids: string[] } }> = [];
       const scopedRequests = [
         ...(built.narrator_request ? [built.narrator_request] : []),
         ...built.actor_requests,
@@ -1207,6 +1211,7 @@ export function chatRoutes(ctx: Ctx) {
         const text = scopedResult.text.trim();
         if (text && text !== 'NO_LINE' && text !== 'NO_NARRATION') {
           supplements.push({
+            audience: scoped.audience.kind === 'actor' ? `actor:${scoped.audience.actor_id}` : 'narrator',
             text,
             observation: scoped.audience.kind === 'actor'
               ? { visibility: 'private', recipient_ids: [scoped.audience.actor_id, 'user'], observer_ids: [] }
@@ -1215,8 +1220,17 @@ export function chatRoutes(ctx: Ctx) {
         }
       }
       passMs.s = Date.now() - tS;
+      // 공개 대본과 각 비공개 보충을 따로 검사한 뒤에만 화면·DB로 내보낸다.
+      const secretViolations = segmentSecretViolations(
+        [{ audience: 'public', text: result.text }, ...supplements.map(({ audience, text }) => ({ audience, text }))],
+        plan.speakers, secretRules,
+      );
+      if (secretViolations.length) {
+        ctx.log.warn({ generationId, violations: secretViolations }, 'dialog secret output rejected');
+        throw new ModelError('인물 인식 범위를 벗어난 비공개 대사가 감지되었습니다. 다시 생성해 주세요.');
+      }
       const completedScript = [result.text, ...supplements.map(item => item.text)].filter(Boolean).join('\n');
-      if (supplements.length) {
+      if (supplements.length || secretRules.length) {
         buffer = completedScript;
         sse.send({ type: 'token', ...streamEvents(buffer) });
         updateMessage(db, scriptRow.id, { content: buffer });
@@ -1311,17 +1325,18 @@ export function chatRoutes(ctx: Ctx) {
       void fireEndingEvalJob(ctx, conv.id);
     } catch (err) {
       const aborted = wasAborted(controller, err);
-      const msg = err instanceof ModelError ? err.message : (err as Error)?.name === 'TimeoutError' ? '모델 응답 시간 초과' : (err as Error).message;
+      const msg = secretRules.length ? '비공개 대본을 검증하지 못했습니다. 다시 생성해 주세요.'
+        : err instanceof ModelError ? err.message : (err as Error)?.name === 'TimeoutError' ? '모델 응답 시간 초과' : (err as Error).message;
       if (scriptRow) {
         updateMessage(db, scriptRow.id, {
-          content: buffer.trim(),
+          content: secretRules.length ? '' : buffer.trim(),
           status: aborted ? 'interrupted' : 'error',
           meta: aborted ? { finish_reason: 'aborted' } : { error: msg },
         });
         if (aborted) {
           sse.send({ type: 'done', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', scriptRow.id)!), usage: null, ttftMs: null, totalMs: Date.now() - tBeat });
         } else {
-          ctx.log.error({ err, generationId }, '대본 생성 실패');
+          ctx.log.error({ ...(secretRules.length ? {} : { err }), generationId }, '대본 생성 실패');
           retractUnconfirmedSend(userMessage, conv.head_message_id);
           sse.send({ type: 'error', message: msg, messageId: scriptRow.id });
         }
@@ -1335,7 +1350,7 @@ export function chatRoutes(ctx: Ctx) {
           });
         }
       } else {
-        ctx.log.error({ err, generationId }, '대본 생성 실패');
+        ctx.log.error({ ...(secretRules.length ? {} : { err }), generationId }, '대본 생성 실패');
         retractUnconfirmedSend(userMessage, conv.head_message_id);
         sse.send({ type: 'error', message: msg });
       }
