@@ -161,7 +161,7 @@ await test('ended rooms can generate read-only side modes while main composer st
   for (const generating of [false, true]) {
     assert.equal(compile(`() => (${condition})`, { generating, ended: true })(), generating, 'ended alone must not lock read-only mode');
   }
-  const input = nodeAt(chatPage, (node) => ts.isJsxSelfClosingElement(node) && node.tagName.getText(chatPage) === 'textarea' && node.getText(chatPage).includes('enterKeyHint="send"')) as ts.JsxSelfClosingElement;
+  const input = nodeAt(chatPage, (node) => ts.isJsxSelfClosingElement(node) && node.tagName.getText(chatPage) === 'textarea' && node.getText(chatPage).includes('enterKeyHint="enter"')) as ts.JsxSelfClosingElement;
   const disabled = input.attributes.properties.find((item) => ts.isJsxAttribute(item) && item.name.getText(chatPage) === 'disabled') as ts.JsxAttribute;
   assert.equal(compile(`() => (${(disabled.initializer as ts.JsxExpression).expression!.getText(chatPage)})`, { ended: true })(), true);
 });

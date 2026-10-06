@@ -586,7 +586,7 @@ export function ChatPage({ id }: { id: string }) {
             }}
             placeholder={ended ? '완결된 대화입니다' : (generating ? '다음 행동을 적어 두세요…' : `${char.name}에게 메시지…`)}
             rows={1}
-            enterKeyHint="send"
+            enterKeyHint="enter"
             disabled={ended}
           />
           {generating ? (
