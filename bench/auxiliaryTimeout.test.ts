@@ -189,7 +189,7 @@ try {
     for (const call of extras()) {
       assert.equal(call.beforeDeadline, false);
       assert.equal(call.atDeadline, true);
-      assert.match(String(call.reason), /pass timeout/);
+      assert.match(String(call.reason), /pass timeout|ModelTimeoutError|모델 응답 시간/);
     }
     assert.equal(lines(rows).length, 1);
     assert.equal(JSON.parse(lines(rows)[0].meta_json).speaker_character_id, nariId);

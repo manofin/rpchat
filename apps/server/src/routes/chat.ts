@@ -1,5 +1,9 @@
-import { generationFailure, PrivateValidationError, type GenerationFailureCode } from '../model/generationFailure.js';
+import { classifyTurnTermination, generationFailure, PrivateValidationError, turnTerminationMessage, type GenerationFailureCode } from '../model/generationFailure.js';
 import type { GenerationPhase } from '../model/queue.js';
+import {
+  isTurnDeadlineError, TurnDeadline, TurnDeadlineError, withCallDeadline,
+  type TurnDeadlineTelemetry,
+} from '../model/turnDeadline.js';
 import { sideModeRoutes } from './sideModes.js';
 import { continuationRoutes } from './continuation.js';
 import { responseLengthHint, responseMaxTokens } from '../prompt/responseLength.js';
@@ -205,6 +209,53 @@ function withDeadline(ms: number, parent: AbortSignal): { signal: AbortSignal; d
   };
 }
 
+/** Optional pass (N/E): local model timeout → skip; remaining-total / parent deadline → rethrow. */
+function isOptionalPassSkip(err: unknown, controller: AbortController): boolean {
+  if (controller.signal.aborted || isTurnDeadlineError(err) || isTurnDeadlineError(controller.signal.reason)) return false;
+  return true;
+}
+
+function attachTurnDeadline(
+  ctx: Ctx,
+  generationId: string,
+  controller: AbortController,
+): TurnDeadline {
+  const turn = new TurnDeadline({
+    deadlineMs: config.turnTotalDeadlineMs,
+    controller,
+    log: ctx.log,
+    onForceRelease: () => {
+      ctx.queue.forceRelease(generationId);
+    },
+  });
+  ctx.queue.setTurnDeadline(generationId, turn);
+  turn.start();
+  return turn;
+}
+
+function commitGateOrThrow(
+  turn: TurnDeadline,
+  gate: {
+    sceneVersionAtStart: number;
+    currentSceneVersion: number;
+  },
+): void {
+  if (turn.tryEnterCommit(gate)) return;
+  if (isTurnDeadlineError(turn.controller.signal.reason) || turn.termination === 'turn_deadline_exceeded') {
+    throw turn.controller.signal.reason instanceof Error
+      ? turn.controller.signal.reason
+      : new TurnDeadlineError();
+  }
+  throw new Error('stale turn: scene version changed before commit');
+}
+
+function turnTelemetryBudget(
+  turn: TurnDeadline,
+  stageMs?: Record<string, number>,
+): { turn_deadline: TurnDeadlineTelemetry } {
+  return { turn_deadline: turn.telemetry(stageMs) };
+}
+
 export function chatRoutes(ctx: Ctx) {
   const { db } = ctx;
 
@@ -226,14 +277,16 @@ export function chatRoutes(ctx: Ctx) {
     outcome: ClockObserveOutcome,
     totalMs: number,
     observe: ClockObserve,
+    extraBudget: Record<string, unknown> = {},
+    finishReason: string = outcome,
   ) => {
     run(
       db,
       `INSERT INTO generation_log (id, conversation_id, message_id, profile_name, prompt_version, est_prompt_tokens, actual_prompt_tokens, completion_tokens, ttft_ms, total_ms, finish_reason, status, budget_json, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       uid(), convId, messageId ?? null, profileName, PROMPT_VERSION,
-      null, null, null, null, totalMs, outcome, outcome,
-      JSON.stringify({ clock_observe: observe }),
+      null, null, null, null, totalMs, finishReason, outcome,
+      JSON.stringify({ clock_observe: observe, ...extraBudget }),
       nowIso(),
     );
   };
@@ -562,6 +615,7 @@ export function chatRoutes(ctx: Ctx) {
     // and abort both read this registry; a later register left the wait uncancelable.
     const controller = new AbortController();
     ctx.queue.register({ id: generationId, conversationId: conv.id, messageId: '', startedAt: nowIso(), controller });
+    const turn = attachTurnDeadline(ctx, generationId, controller);
     try {
 
     // Turn Pipeline step 2-4: propose → validate → apply. One short call; any
@@ -571,6 +625,8 @@ export function chatRoutes(ctx: Ctx) {
     const passMs: { delta: number; n: number; f: number; e: number[]; c: number } = { delta: 0, n: 0, f: 0, e: [], c: 0 };
     const t0delta = Date.now();
     try {
+      const deltaDeadline = withCallDeadline(config.model.timeoutMs, turn.remainingMs(), controller.signal);
+      try {
       const proposal = await ctx.queue.runGeneration(generationId, () =>
         ctx.model.complete({
           model,
@@ -579,15 +635,19 @@ export function chatRoutes(ctx: Ctx) {
           top_p: 0.9,
           max_tokens: SCENE_DELTA_MAX_TOKENS,
           stop: [],
-          signal: controller.signal,
+          signal: deltaDeadline.signal,
         }),
         controller.signal,
       );
       patch = parseSceneDelta(proposal.text);
       clockParse = patch === null ? 'null' : 'ok';
+      } finally {
+        deltaDeadline.done();
+      }
     } catch (err) {
-      if (controller.signal.aborted) {
-        return reply.code(499).send({ error: '생성이 중단되었습니다' });
+      if (controller.signal.aborted || isTurnDeadlineError(err)) {
+        turn.recordTerminal(classifyTurnTermination(controller, err, turn.termination));
+        return reply.code(499).send({ error: turnTerminationMessage(turn.termination ?? 'user_cancelled') });
       }
       clockParse = 'fail';
       req.log.warn({ err, conversationId: conv.id }, 'scene delta proposal failed; scene unchanged');
@@ -734,7 +794,7 @@ export function chatRoutes(ctx: Ctx) {
       // Pass N — narration, crowd, camera. Failure costs the block, not the turn.
       let narration = '';
       const tN = Date.now();
-      const nDeadline = withDeadline(PASS_N_TIMEOUT_MS, controller.signal);
+      const nDeadline = withCallDeadline(PASS_N_TIMEOUT_MS, turn.remainingMs(), controller.signal);
       try {
         const out = await ctx.queue.runGeneration(generationId, () => ctx.model.complete({
           model, messages: [{ role: 'user', content: fitObservationPass(input => planBeat(input).pass_n, PASS_N_MAX_TOKENS, '') }],
@@ -743,7 +803,10 @@ export function chatRoutes(ctx: Ctx) {
         }), controller.signal);
         narration = sanitizeGeneratedContent(out.text).trim();
       } catch (err) {
-        if (controller.signal.aborted) throw err;
+        if (!isOptionalPassSkip(err, controller)) {
+          if (isTurnDeadlineError(err) || isTurnDeadlineError(nDeadline.signal.reason)) turn.tripDeadline();
+          throw err;
+        }
         req.log.warn({ err, conversationId: conv.id }, 'pass N failed; beat continues without narration');
       } finally {
         nDeadline.done();
@@ -780,10 +843,12 @@ export function chatRoutes(ctx: Ctx) {
 
         const tF = Date.now();
         let lastPersist = Date.now();
+        const fDeadline = withCallDeadline(config.model.timeoutMs, turn.remainingMs(), controller.signal);
+        try {
         const result = await ctx.queue.runGeneration(generationId, () => ctx.model.stream(
           {
             model, messages: [{ role: 'user', content: passF }],
-            temperature: 0.9, top_p: 0.95, max_tokens: focusMaxTokens, stop: [], signal: controller.signal,
+            temperature: 0.9, top_p: 0.95, max_tokens: focusMaxTokens, stop: [], signal: fDeadline.signal,
           },
           (delta) => {
             buffer += delta;
@@ -796,13 +861,16 @@ export function chatRoutes(ctx: Ctx) {
         ), controller.signal);
         passMs.f = Date.now() - tF;
         focusText = sanitizeGeneratedContent(result.text).trim();
+        } finally {
+          fDeadline.done();
+        }
       }
 
       // Pass E — each approved extra, serially (queue concurrency is 1 anyway).
       const extraTexts: Record<string, string> = {};
       for (const e of planPassE(observationEnabled ? { ...planInput, observations: [] } : planInput, plan, narration, speechObservation(focusText, planInput.focus_audience, observationEnabled))) {
         const tE = Date.now();
-        const eDeadline = withDeadline(config.model.timeoutMs, controller.signal);
+        const eDeadline = withCallDeadline(config.model.timeoutMs, turn.remainingMs(), controller.signal);
         try {
           const out = await ctx.queue.runGeneration(generationId, () => ctx.model.complete({
             model, messages: [{ role: 'user', content: fitObservationPass(input => planPassE(input, plan, narration, speechObservation(focusText, input.focus_audience, observationEnabled)).find(item => item.character_id === e.character_id)!.prompt, AUX_MAX_TOKENS, e.name, e.character_id) }],
@@ -812,7 +880,10 @@ export function chatRoutes(ctx: Ctx) {
           const text = sanitizeGeneratedContent(out.text).trim();
           if (text) extraTexts[e.character_id] = text;
         } catch (err) {
-          if (controller.signal.aborted) throw err;
+          if (!isOptionalPassSkip(err, controller)) {
+            if (isTurnDeadlineError(err) || isTurnDeadlineError(eDeadline.signal.reason)) turn.tripDeadline();
+            throw err;
+          }
           req.log.warn({ err, conversationId: conv.id, speaker: e.name }, 'pass E failed; that extra is dropped');
         } finally {
           eDeadline.done();
@@ -856,7 +927,7 @@ export function chatRoutes(ctx: Ctx) {
       // choices failure costs the chips, never the turn.
       let choices: string[] | null = null;
       const tC = Date.now();
-      const cDeadline = withDeadline(PASS_C_TIMEOUT_MS, controller.signal);
+      const cDeadline = withCallDeadline(PASS_C_TIMEOUT_MS, turn.remainingMs(), controller.signal);
       try {
         const out = await ctx.queue.runGeneration(generationId, () => ctx.model.complete({
           model,
@@ -872,6 +943,7 @@ export function chatRoutes(ctx: Ctx) {
         // the shared catch below would answer a stop by rewriting the focus row
         // back to Pass F's raw buffer — thought marker and all — and marking a
         // finished beat 'interrupted'. Stop costs the chips, not the beat.
+        // Turn-total deadline still blocks commit via tryEnterCommit below.
         req.log.warn({ err, conversationId: conv.id }, 'pass C failed; beat keeps its blocks without choices');
       } finally {
         cDeadline.done();
@@ -899,6 +971,11 @@ export function chatRoutes(ctx: Ctx) {
       // cache of it. If the process dies between the two, the next successful turn
       // rewrites the cache from the branch; a missing snapshot would never be
       // backfilled and would leave that turn regenerating off the cache again.
+            const convForGate = loadConversation(ctx, conv.id)!;
+      commitGateOrThrow(turn, {
+        sceneVersionAtStart: baseVersion,
+        currentSceneVersion: currentSceneVersion(JSON.parse(convForGate.scene_json || '{}') as Scene),
+      });
       stampTurnScene(conv.id, emitted[0]?.id, scene, finished.scene);
       run(db, `UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?`,
         JSON.stringify(finished.scene), nowIso(), nowIso(), conv.id);
@@ -913,6 +990,7 @@ export function chatRoutes(ctx: Ctx) {
         estimateTokens(plan.pass_n, 1) + estimateTokens(passF ?? '', 1), null, null, null,
         Date.now() - tBeat, 'beat', 'complete',
         JSON.stringify({
+          ...turnTelemetryBudget(turn, { delta: passMs.delta, n: passMs.n, f: passMs.f, c: passMs.c }),
           beat_log: {
             focus_id: plan.focus.focus_id,
             focus_reason: plan.focus.reason,
@@ -956,22 +1034,38 @@ export function chatRoutes(ctx: Ctx) {
       // ADR-F8h Slice 3 (V2): beat 완료 직후 백그라운드 판정 (non-blocking).
       void fireEndingEvalJob(ctx, conv.id);
     } catch (err) {
-      const aborted = wasAborted(controller, err);
-      const msg = err instanceof ModelError ? err.message : (err as Error)?.name === 'TimeoutError' ? '모델 응답 시간 초과' : (err as Error).message;
+      const term = classifyTurnTermination(controller, err, turn.termination);
+      turn.recordTerminal(term);
+      const termCode = term;
+      const aborted = termCode === 'user_cancelled' || termCode === 'turn_deadline_exceeded' || wasAborted(controller, err);
+      const softStop = termCode === 'user_cancelled';
+      const msg = (termCode === 'user_cancelled' || termCode === 'turn_deadline_exceeded' || termCode === 'model_timeout' || termCode === 'internal_error')
+        ? turnTerminationMessage(termCode)
+        : (err instanceof ModelError ? err.message : (err as Error)?.name === 'TimeoutError' ? turnTerminationMessage('model_timeout') : (err as Error).message);
+      const failCode: GenerationFailureCode =
+        termCode === 'user_cancelled' ? 'user_cancelled'
+        : termCode === 'turn_deadline_exceeded' ? 'turn_deadline_exceeded'
+        : termCode === 'model_timeout' ? 'model_timeout'
+        : termCode === 'internal_error' ? 'internal_error'
+        : generationFailure(err).code;
       if (focusRow) {
         updateMessage(db, focusRow.id, {
           content: buffer.trim(),
           status: aborted ? 'interrupted' : 'error',
-          meta: aborted ? { finish_reason: 'aborted' } : { error: msg },
+          meta: aborted ? { finish_reason: term === 'turn_deadline_exceeded' ? 'turn_deadline_exceeded' : 'aborted' } : { error: msg },
         });
-        if (aborted) {
+        if (softStop) {
           sse.send({ type: 'done', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', focusRow.id)!), usage: null, ttftMs: null, totalMs: Date.now() - tBeat });
         } else {
-          ctx.log.error({ err, generationId }, '비트 생성 실패');
-          retractUnconfirmedSend(userMessage, conv.head_message_id);
-          sse.send({ type: 'error', code: generationFailure(err).code, message: msg, messageId: focusRow.id });
+          if (term === 'internal_error' || failCode === 'generation' || failCode === 'connection' || failCode === 'validation') {
+            ctx.log.error({ err, generationId, termination: term }, '비트 생성 실패');
+          } else {
+            ctx.log.warn({ generationId, termination: term }, '비트 생성 종료');
+          }
+          if (!aborted) retractUnconfirmedSend(userMessage, conv.head_message_id);
+          sse.send({ type: 'error', code: failCode, message: msg, messageId: focusRow.id });
         }
-      } else if (aborted) {
+      } else if (softStop) {
         // abort-before-focus-log-classification: a stop before Pass F has a row
         // is still a user abort. Partial header/narration rows stay as written.
         const closing = emitted[emitted.length - 1];
@@ -982,22 +1076,36 @@ export function chatRoutes(ctx: Ctx) {
             usage: null, ttftMs: null, totalMs: Date.now() - tBeat,
           });
         }
+      } else if (aborted) {
+        const closing = emitted[emitted.length - 1];
+        ctx.log.warn({ generationId, termination: termCode }, '비트 생성 종료');
+        if (closing) {
+          sse.send({ type: 'error', code: failCode, message: msg, messageId: closing.id });
+        } else {
+          sse.send({ type: 'error', code: failCode, message: msg });
+        }
       } else {
-        ctx.log.error({ err, generationId }, '비트 생성 실패');
+        ctx.log.error({ err, generationId, termination: term }, '비트 생성 실패');
         retractUnconfirmedSend(userMessage, conv.head_message_id);
-        sse.send({ type: 'error', code: generationFailure(err).code, message: msg });
+        sse.send({ type: 'error', code: failCode, message: msg });
       }
       logClockObserve(
         conv.id, focusRow?.id ?? emitted[emitted.length - 1]?.id ?? userMessage?.id,
         profileName, aborted ? 'interrupt' : 'fail', Date.now() - tBeat,
         sealClockObserve(clockCore, 'beat', scene, convNow, regenTurnStartId, aborted ? 'interrupt' : 'fail', plan.applied.discarded),
+        turnTelemetryBudget(turn, { delta: passMs.delta, n: passMs.n, f: passMs.f, c: passMs.c }),
+        term,
       );
     } finally {
       sse.close();
     }
     } catch (err) {
-      if (controller.signal.aborted) {
-        if (!reply.raw.headersSent) return reply.code(499).send({ error: '생성이 중단되었습니다' });
+      if (controller.signal.aborted || isTurnDeadlineError(err)) {
+        if (!reply.raw.headersSent) {
+          const term = classifyTurnTermination(controller, err, turn.termination);
+          turn.recordTerminal(term);
+          return reply.code(499).send({ error: turnTerminationMessage((!term || term === 'completed') ? 'user_cancelled' : term) });
+        }
         return;
       }
       if (!reply.raw.headersSent) {
@@ -1007,6 +1115,7 @@ export function chatRoutes(ctx: Ctx) {
       }
       throw err;
     } finally {
+      turn.dispose();
       ctx.queue.unregister(generationId);
     }
   }
@@ -1071,6 +1180,8 @@ export function chatRoutes(ctx: Ctx) {
     // Same contract as generateBeat: lock before the first await (scene-delta).
     const controller = new AbortController();
     ctx.queue.register({ id: generationId, conversationId: conv.id, messageId: '', startedAt: nowIso(), controller });
+    const turn = attachTurnDeadline(ctx, generationId, controller);
+    const baseVersion = currentSceneVersion(scene);
     try {
 
     // Scene delta — identical contract to the beat path, including the allow-list.
@@ -1079,6 +1190,8 @@ export function chatRoutes(ctx: Ctx) {
     const passMs: { delta: number; s: number } = { delta: 0, s: 0 };
     const t0delta = Date.now();
     try {
+      const deltaDeadline = withCallDeadline(config.model.timeoutMs, turn.remainingMs(), controller.signal);
+      try {
       const proposal = await ctx.queue.runGeneration(generationId, () =>
         ctx.model.complete({
           model,
@@ -1087,15 +1200,19 @@ export function chatRoutes(ctx: Ctx) {
           top_p: 0.9,
           max_tokens: SCENE_DELTA_MAX_TOKENS,
           stop: [],
-          signal: controller.signal,
+          signal: deltaDeadline.signal,
         }),
         controller.signal,
       );
       patch = parseSceneDelta(proposal.text);
       clockParse = patch === null ? 'null' : 'ok';
+      } finally {
+        deltaDeadline.done();
+      }
     } catch (err) {
-      if (controller.signal.aborted) {
-        return reply.code(499).send({ error: '생성이 중단되었습니다' });
+      if (controller.signal.aborted || isTurnDeadlineError(err)) {
+        turn.recordTerminal(classifyTurnTermination(controller, err, turn.termination));
+        return reply.code(499).send({ error: turnTerminationMessage(turn.termination ?? 'user_cancelled') });
       }
       clockParse = 'fail';
       req.log.warn({ err, conversationId: conv.id }, 'scene delta proposal failed; scene unchanged');
@@ -1179,10 +1296,13 @@ export function chatRoutes(ctx: Ctx) {
 
       const tS = Date.now();
       let lastPersist = Date.now();
-      const result = await ctx.queue.runGeneration(generationId, () => ctx.model.stream(
+      const sDeadline = withCallDeadline(config.model.timeoutMs, turn.remainingMs(), controller.signal);
+      let result;
+      try {
+      result = await ctx.queue.runGeneration(generationId, () => ctx.model.stream(
         {
           model, messages: built.messages,
-          temperature: 0.9, top_p: 0.95, max_tokens: built.maxTokens, stop: [], signal: controller.signal,
+          temperature: 0.9, top_p: 0.95, max_tokens: built.maxTokens, stop: [], signal: sDeadline.signal,
           audience: { kind: 'public' },
         },
         (delta) => {
@@ -1196,13 +1316,19 @@ export function chatRoutes(ctx: Ctx) {
           }
         },
       ), controller.signal);
+      } finally {
+        sDeadline.done();
+      }
       const supplements: Array<{ audience: SecretSegment['audience']; text: string; observation: { visibility: 'private'; recipient_ids: string[]; observer_ids: string[] } }> = [];
       const scopedRequests = [
         ...(built.narrator_request ? [built.narrator_request] : []),
         ...built.actor_requests,
       ];
       for (const scoped of scopedRequests) {
-        const scopedResult = await ctx.queue.runGeneration(generationId, () => ctx.model.stream(
+        const scopedDeadline = withCallDeadline(config.model.timeoutMs, turn.remainingMs(), controller.signal);
+        let scopedResult;
+        try {
+        scopedResult = await ctx.queue.runGeneration(generationId, () => ctx.model.stream(
           {
             model,
             messages: scoped.messages,
@@ -1210,11 +1336,14 @@ export function chatRoutes(ctx: Ctx) {
             top_p: 0.95,
             max_tokens: scoped.maxTokens,
             stop: [],
-            signal: controller.signal,
+            signal: scopedDeadline.signal,
             audience: scoped.audience,
           },
           () => {},
         ), controller.signal);
+        } finally {
+          scopedDeadline.done();
+        }
         const text = scopedResult.text.trim();
         if (text && text !== 'NO_LINE' && text !== 'NO_NARRATION') {
           supplements.push({
@@ -1290,6 +1419,11 @@ export function chatRoutes(ctx: Ctx) {
       // cache of it. If the process dies between the two, the next successful turn
       // rewrites the cache from the branch; a missing snapshot would never be
       // backfilled and would leave that turn regenerating off the cache again.
+      const convForGate = loadConversation(ctx, conv.id)!;
+      commitGateOrThrow(turn, {
+        sceneVersionAtStart: baseVersion,
+        currentSceneVersion: currentSceneVersion(JSON.parse(convForGate.scene_json || '{}') as Scene),
+      });
       stampTurnScene(conv.id, emitted[0]?.id, scene, finished.scene);
       run(db, `UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?`,
         JSON.stringify(finished.scene), nowIso(), nowIso(), conv.id);
@@ -1303,6 +1437,7 @@ export function chatRoutes(ctx: Ctx) {
         Date.now() - tBeat, 'dialog', 'complete',
         JSON.stringify({
           ...built.budget,
+          ...turnTelemetryBudget(turn, { delta: passMs.delta, s: passMs.s }),
           dialog_log: {
             focus_id: plan.focus.focus_id,
             focus_reason: plan.focus.reason,
@@ -1332,23 +1467,39 @@ export function chatRoutes(ctx: Ctx) {
       // ADR-F8h Slice 3 (V2): dialog 완료 직후 백그라운드 판정 (non-blocking).
       void fireEndingEvalJob(ctx, conv.id);
     } catch (err) {
-      const aborted = wasAborted(controller, err);
+      const term = classifyTurnTermination(controller, err, turn.termination);
+      turn.recordTerminal(term);
+      const termCode = term;
+      const aborted = termCode === 'user_cancelled' || termCode === 'turn_deadline_exceeded' || wasAborted(controller, err);
+      const softStop = termCode === 'user_cancelled';
       const failure = generationFailure(err);
-      const msg = failure.message;
+      const msg = (termCode === 'user_cancelled' || termCode === 'turn_deadline_exceeded' || termCode === 'model_timeout' || termCode === 'internal_error')
+        ? turnTerminationMessage(termCode)
+        : failure.message;
+      const failCode: GenerationFailureCode =
+        termCode === 'user_cancelled' ? 'user_cancelled'
+        : termCode === 'turn_deadline_exceeded' ? 'turn_deadline_exceeded'
+        : termCode === 'model_timeout' ? 'model_timeout'
+        : termCode === 'internal_error' ? 'internal_error'
+        : failure.code;
       if (scriptRow) {
         updateMessage(db, scriptRow.id, {
           content: secretRules.length ? '' : buffer.trim(),
           status: aborted ? 'interrupted' : 'error',
-          meta: aborted ? { finish_reason: 'aborted' } : { error: msg },
+          meta: aborted ? { finish_reason: term === 'turn_deadline_exceeded' ? 'turn_deadline_exceeded' : 'aborted' } : { error: msg },
         });
-        if (aborted) {
+        if (softStop) {
           sse.send({ type: 'done', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', scriptRow.id)!), usage: null, ttftMs: null, totalMs: Date.now() - tBeat });
         } else {
-          ctx.log.error({ ...(secretRules.length ? {} : { err }), generationId }, '대본 생성 실패');
-          retractUnconfirmedSend(userMessage, conv.head_message_id);
-          sse.send({ type: 'error', code: generationFailure(err).code, message: msg, messageId: scriptRow.id });
+          if (term === 'internal_error' || failCode === 'generation' || failCode === 'connection' || failCode === 'validation') {
+            ctx.log.error({ ...(secretRules.length ? {} : { err }), generationId, termination: term }, '대본 생성 실패');
+          } else {
+            ctx.log.warn({ generationId, termination: term }, '대본 생성 종료');
+          }
+          if (!aborted) retractUnconfirmedSend(userMessage, conv.head_message_id);
+          sse.send({ type: 'error', code: failCode, message: msg, messageId: scriptRow.id });
         }
-      } else if (aborted) {
+      } else if (softStop) {
         const closing = emitted[emitted.length - 1];
         if (closing) {
           sse.send({
@@ -1357,22 +1508,31 @@ export function chatRoutes(ctx: Ctx) {
             usage: null, ttftMs: null, totalMs: Date.now() - tBeat,
           });
         }
+      } else if (aborted) {
+        ctx.log.warn({ generationId, termination: termCode }, '대본 생성 종료');
+        sse.send({ type: 'error', code: failCode, message: msg });
       } else {
-        ctx.log.error({ ...(secretRules.length ? {} : { err }), generationId }, '대본 생성 실패');
+        ctx.log.error({ ...(secretRules.length ? {} : { err }), generationId, termination: term }, '대본 생성 실패');
         retractUnconfirmedSend(userMessage, conv.head_message_id);
-        sse.send({ type: 'error', code: generationFailure(err).code, message: msg });
+        sse.send({ type: 'error', code: failCode, message: msg });
       }
       logClockObserve(
         conv.id, scriptRow?.id ?? emitted[emitted.length - 1]?.id ?? userMessage?.id,
         profileName, aborted ? 'interrupt' : 'fail', Date.now() - tBeat,
         sealClockObserve(clockCore, 'dialog', scene, convNow, regenTurnStartId, aborted ? 'interrupt' : 'fail', plan.applied.discarded),
+        turnTelemetryBudget(turn, { delta: passMs.delta, s: passMs.s }),
+        term,
       );
     } finally {
       sse.close();
     }
     } catch (err) {
-      if (controller.signal.aborted) {
-        if (!reply.raw.headersSent) return reply.code(499).send({ error: '생성이 중단되었습니다' });
+      if (controller.signal.aborted || isTurnDeadlineError(err)) {
+        if (!reply.raw.headersSent) {
+          const term = classifyTurnTermination(controller, err, turn.termination);
+          turn.recordTerminal(term);
+          return reply.code(499).send({ error: turnTerminationMessage((!term || term === 'completed') ? 'user_cancelled' : term) });
+        }
         return;
       }
       if (!reply.raw.headersSent) {
@@ -1382,6 +1542,7 @@ export function chatRoutes(ctx: Ctx) {
       }
       throw err;
     } finally {
+      turn.dispose();
       ctx.queue.unregister(generationId);
     }
   }

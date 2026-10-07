@@ -479,7 +479,7 @@ export type SseBudget = {
 };
 
 export type GenerationPhase = 'queued' | 'writing' | 'validating';
-export type GenerationFailureCode = 'connection' | 'timeout' | 'validation' | 'generation';
+export type GenerationFailureCode = 'connection' | 'timeout' | 'model_timeout' | 'turn_deadline_exceeded' | 'user_cancelled' | 'internal_error' | 'validation' | 'generation';
 export type GenerationProgress = { generationId: string; phase: GenerationPhase; startedAt: string };
 
 export type SseEvent =

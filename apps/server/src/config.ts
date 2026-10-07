@@ -32,6 +32,8 @@ export const config = {
     contextTokens: num('CONTEXT_TOKENS', 32768),
     timeoutMs: num('MODEL_TIMEOUT_MS', 180_000),
   },
+  /** Whole-turn deadline for beat + dialog (queue + generate + validate + pre-commit). 1:1 out of scope. */
+  turnTotalDeadlineMs: num('TURN_TOTAL_DEADLINE_MS', 120_000),
   auth: {
     mode: env('AUTH_MODE', 'tailscale') as AuthMode,
     allowedLogin: env('ALLOWED_LOGIN', ''),

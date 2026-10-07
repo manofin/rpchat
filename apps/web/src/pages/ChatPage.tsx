@@ -498,7 +498,7 @@ export function ChatPage({ id }: { id: string }) {
           : shownMessages.map((m) => (
             <MessageView key={m.id} {...messageViewProps(m)} />
           ))}
-        {chat.error && chat.detail && <div className="banner err" style={{ margin: '4px 0' }}>{chat.errorCode ? `${{ connection: '연결 실패', timeout: '시간 초과', validation: '검증 실패', generation: '생성 실패' }[chat.errorCode]} · ` : ''}{chat.error}</div>}
+        {chat.error && chat.detail && <div className="banner err" style={{ margin: '4px 0' }}>{chat.errorCode ? `${{ connection: '연결 실패', timeout: '시간 초과', model_timeout: '모델 시간 초과', turn_deadline_exceeded: '전체 처리 시간 초과', user_cancelled: '취소됨', internal_error: '오류', validation: '검증 실패', generation: '생성 실패' }[chat.errorCode] ?? '오류'} · ` : ''}{chat.error}</div>}
         </div>
       </div>
 
