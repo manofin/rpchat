@@ -304,6 +304,47 @@ const makeOneToOne = async () => {
   return (await post('/api/conversations', { characterId: hayeonId }, 201)).json().id as string;
 };
 
+const makeDialogRoom = async () => {
+  mode = 'warmup';
+  const room = (await post('/api/conversations', {
+    characterId: hayeonId, storyId, mode: 'story',
+    scene: { format: 'dialog', location: '교실', present_ids: [hayeonId, nariId, ids[1]] },
+  }, 201)).json().id as string;
+  await post(`/api/conversations/${room}/messages`, { content: '워밍업.' }, 200);
+  return room;
+};
+
+const headOf = (room: string) =>
+  (db.prepare('SELECT head_message_id FROM conversations WHERE id = ?').get(room) as { head_message_id: string | null }).head_message_id;
+
+const msgSnapshot = (room: string) =>
+  db.prepare('SELECT id, role, content, status, meta_json FROM messages WHERE conversation_id = ? ORDER BY created_at, id')
+    .all(room) as Array<{ id: string; role: string; content: string; status: string; meta_json: string }>;
+
+const assertReclaimed = (room: string, headBefore: string | null, failedContent: string, rowsBefore: number) => {
+  const rows = msgSnapshot(room);
+  assert.equal(headOf(room), headBefore, 'head restored after deadline reclaim');
+  assert.equal(rows.length, rowsBefore, `message count restored; got ${JSON.stringify(rows.map(r => ({ role: r.role, status: r.status, c: r.content.slice(0, 40) })))}`);
+  assert.equal(rows.some(r => r.status === 'interrupted' || r.status === 'error' || r.status === 'streaming'), false,
+    `no interrupted/error/streaming residue: ${JSON.stringify(rows.filter(r => r.status !== 'complete'))}`);
+  assert.equal(rows.some(r => r.content === failedContent), false, 'failed user turn not in tree');
+  // Active path (ancestor chain from head) must not feed partials to next prompt.
+  const pathIds = new Set<string>();
+  let cur = headOf(room);
+  const guard = new Set<string>();
+  while (cur && !guard.has(cur)) {
+    guard.add(cur);
+    pathIds.add(cur);
+    const row = rows.find(r => r.id === cur);
+    if (!row) break;
+    const parent = db.prepare('SELECT parent_id FROM messages WHERE id = ?').get(cur) as { parent_id: string | null } | undefined;
+    cur = parent?.parent_id ?? null;
+  }
+  const pathRows = rows.filter(r => pathIds.has(r.id));
+  assert.equal(pathRows.some(r => r.status === 'interrupted' || r.status === 'error'), false);
+  assert.equal(pathRows.some(r => r.content === failedContent), false);
+};
+
 await t('1:1 request path unchanged: completes without turn_deadline codes; scene keys stable', async () => {
   const room = await makeOneToOne();
   const before = sceneOf(room);
@@ -590,6 +631,84 @@ await t('commit gate freezes conversation scene version at accept, not planning 
       false,
       `${label} must not gate on planning baseVersion`,
     );
+  }
+});
+
+await t('beat turn_deadline_exceeded reclaim: no interrupted partials in tree / next path', async () => {
+  const room = await makeBeatRoom();
+  const headBefore = headOf(room);
+  const rowsBefore = msgSnapshot(room).length;
+  const failedContent = '기한초과 회수검증';
+  const prevDeadline = config.turnTotalDeadlineMs;
+  config.turnTotalDeadlineMs = 30;
+  mode = 'mid-gen';
+  mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  try {
+    const pending = post(`/api/conversations/${room}/messages`, { content: failedContent });
+    for (let i = 0; i < 40; i++) {
+      await new Promise(r => setImmediate(r));
+      if (queue.activeList.length) break;
+    }
+    mock.timers.tick(30);
+    mock.timers.tick(1);
+    const res = await pending;
+    assert.ok(res.statusCode === 200 || res.statusCode === 499, res.body.slice(0, 300));
+    if (res.statusCode === 200) {
+      assert.ok(hasError(res.body) || sseCodes(res.body).includes('turn_deadline_exceeded') || res.body.includes('전체 처리 시간'),
+        res.body.slice(0, 400));
+    }
+    assertReclaimed(room, headBefore, failedContent, rowsBefore);
+  } finally {
+    config.turnTotalDeadlineMs = prevDeadline;
+    mock.timers.reset();
+  }
+});
+
+await t('dialog turn_deadline_exceeded reclaim: no interrupted partials in tree / next path', async () => {
+  const room = await makeDialogRoom();
+  const headBefore = headOf(room);
+  const rowsBefore = msgSnapshot(room).length;
+  const failedContent = '대본 기한초과 회수';
+  const prevDeadline = config.turnTotalDeadlineMs;
+  config.turnTotalDeadlineMs = 30;
+  mode = 'mid-gen';
+  mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  try {
+    const pending = post(`/api/conversations/${room}/messages`, { content: failedContent });
+    for (let i = 0; i < 60; i++) {
+      await new Promise(r => setImmediate(r));
+      if (queue.activeList.length) break;
+    }
+    mock.timers.tick(30);
+    mock.timers.tick(1);
+    const res = await pending;
+    assert.ok(res.statusCode === 200 || res.statusCode === 499, res.body.slice(0, 300));
+    if (res.statusCode === 200) {
+      assert.ok(hasError(res.body) || sseCodes(res.body).includes('turn_deadline_exceeded') || res.body.includes('전체 처리 시간'),
+        res.body.slice(0, 400));
+    }
+    assertReclaimed(room, headBefore, failedContent, rowsBefore);
+  } finally {
+    config.turnTotalDeadlineMs = prevDeadline;
+    mock.timers.reset();
+  }
+});
+
+await t('source: beat+dialog reclaim on deadline (retractUnconfirmedSend), soft-cancel does not', () => {
+  const chat = src('apps/server/src/routes/chat.ts');
+  const beat = chat.slice(chat.indexOf('async function generateBeat'), chat.indexOf('async function generateDialog'));
+  const dialog = chat.slice(chat.indexOf('async function generateDialog'));
+  for (const [label, body] of [['beat', beat], ['dialog', dialog]] as const) {
+    assert.ok(body.includes('if (isDeadline) retractUnconfirmedSend'), `${label} reclaim before-focus deadline`);
+    assert.ok(
+      body.includes('retractUnconfirmedSend(userMessage, conv.head_message_id)'),
+      `${label} retracts on hard fail/deadline`,
+    );
+    // softStop path marks interrupted without reclaim in the same branch
+    assert.ok(body.includes("status: 'interrupted'"), `${label} soft-cancel interrupted`);
+    const softIdx = body.indexOf('if (softStop)');
+    const softBlock = body.slice(softIdx, softIdx + 500);
+    assert.equal(softBlock.includes('retractUnconfirmedSend'), false, `${label} softStop must not reclaim`);
   }
 });
 

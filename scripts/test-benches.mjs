@@ -17,6 +17,7 @@ const files = fs.readdirSync(path.join(root, 'bench'))
   .filter((name) => name.endsWith('.test.ts')).sort();
 const exclusions = {
   'settingsViewport.test.ts': 'Separate browser validation: requires a configured Chrome binary and viewport screenshots.',
+  'settingsBadgeOverflow.test.ts': 'Separate browser validation: requires a configured Chrome binary for ~240px settings-badge render.',
   'partyTurnLiveRo.test.ts': 'Separate private-copy validation: requires an approved RPCHAT_RO_DB and matching private fixture.',
   'characterAssetsWrite.test.ts': 'Source mutation: select this name alone with --allow-source-mutation in a temporary isolated checkout.',
 };
@@ -38,7 +39,7 @@ const MANIFEST_PIN_REASON = 'Not in LOCK-CoreRegressionCI pin list (CI gate scop
 function usage() {
   console.log(`Usage: npm run test:benches -- [name ...] [--output-dir /tmp/evidence] [--timeout-ms 180000] [--list] [--manifest path.json]
 Discovers only top-level bench/*.test.ts. Runs sequentially with temporary DB defaults and no real model.
-Default exclusions: settingsViewport, partyTurnLiveRo, characterAssetsWrite.
+Default exclusions: settingsViewport, settingsBadgeOverflow, partyTurnLiveRo, characterAssetsWrite.
 fixMobileClip and shortcutHub always use --no-browser; their browser portions are not run.
 WARNING: characterAssetsWrite requires a temporary isolated checkout. Select its exact name alone with
 --allow-source-mutation; it temporarily rewrites product source and interruption can prevent restoration.

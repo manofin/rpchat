@@ -2,6 +2,7 @@
  * Gate 2 — settings UI shell. No server writes.
  */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
@@ -96,8 +97,30 @@ t('value row and badge render; empty state is explicit', () => {
   assert.match(value, /앱 버전/);
   assert.match(value, /0\.1\.0/);
   assert.match(badge, /균형/);
+  assert.match(badge, /title="균형"/);
   assert.match(empty, /대화를 찾을 수 없습니다/);
   assert.match(footer, /닫기/);
+});
+
+t('settings-badge ellipsis+title: no mid-break, no uncontrolled overflow', () => {
+  const css = readFileSync(new URL('../apps/web/src/app.css', import.meta.url), 'utf8');
+  const block = css.slice(css.indexOf('.settings-badge {'), css.indexOf('.settings-chevron'));
+  assert.match(block, /white-space:\s*nowrap/);
+  assert.match(block, /overflow:\s*hidden/);
+  assert.match(block, /text-overflow:\s*ellipsis/);
+  assert.doesNotMatch(block, /overflow-wrap:\s*anywhere/);
+  assert.doesNotMatch(block, /word-break:\s*break-word/);
+  const long = 'HP\u00a0100 · ₩\u00a012,000 · 계약 · 침식 · 목표아주긴상태라벨';
+  const html = renderToStaticMarkup(
+    createElement(SettingsNavigationRow, {
+      title: '비트 상태',
+      value: long,
+      href: '/chat/c1/settings/scene',
+    }),
+  );
+  assert.match(html, /settings-badge/);
+  assert.ok(html.includes(`title="${long}"`), html.slice(0, 400));
+  assert.match(html, /aria-label="비트 상태,/);
 });
 
 t('layout uses dedicated settings container, not chat-scroll', () => {
