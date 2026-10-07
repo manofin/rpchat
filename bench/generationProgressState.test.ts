@@ -40,14 +40,14 @@ console.log('ok 1 queue reports real waiting, execution and validation boundarie
 let state = {...initialChatState,generating:true};
 state = reduceChatEvent(state,{type:'progress',generationId:'g',phase:'writing',startedAt:'2026-10-06T01:00:00.000Z'},'room');
 assert.equal(state.generationProgress?.phase,'writing');
-state = reduceChatEvent(state,{type:'error',message:'시간 초과',code:'timeout'},'room');
-assert.equal(state.errorCode,'timeout');assert.equal(state.generating,false);assert.equal(state.generationProgress,null);
+state = reduceChatEvent(state,{type:'error',message:'시간 초과',code:'model_timeout'},'room');
+assert.equal(state.errorCode,'model_timeout');assert.equal(state.generating,false);assert.equal(state.generationProgress,null);
 const settled=state;
 state=reduceChatEvent(state,{type:'progress',generationId:'g',phase:'queued',startedAt:'2026-10-06T01:00:00.000Z'},'room');
 assert.equal(state,settled);
 console.log('ok 2 progress never replaces transcript or reopens a terminal result');
 assert.equal(generationFailure(new PrivateValidationError()).code,'validation');
-assert.equal(generationFailure(Object.assign(new Error('private'),{name:'TimeoutError'})).code,'timeout');
+assert.equal(generationFailure(Object.assign(new Error('private'),{name:'TimeoutError'})).code,'model_timeout');
 assert.equal(generationFailure(Object.assign(new Error('private'),{cause:{code:'ECONNREFUSED'}})).code,'connection');
 assert.equal(generationFailure(new Error('private')).code,'generation');
 assert.ok(!JSON.stringify(generationFailure(new Error('private'))).includes('private'));
