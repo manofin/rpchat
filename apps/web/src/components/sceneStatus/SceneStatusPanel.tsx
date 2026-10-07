@@ -9,6 +9,7 @@ export function SceneStatusPanel({
   scene,
   places,
   characterName,
+  roster,
   hasBeatRoster,
   focusId,
   generating,
@@ -21,6 +22,7 @@ export function SceneStatusPanel({
   scene: Scene;
   places?: SceneCatalogPlace[];
   characterName?: string;
+  roster?: Array<{ id: string; name: string }>;
   hasBeatRoster: boolean;
   focusId?: string | null;
   generating?: boolean;
@@ -34,6 +36,7 @@ export function SceneStatusPanel({
     scene,
     places,
     characterName,
+    roster,
     hasBeatRoster,
     focusId,
     generating,
@@ -41,6 +44,7 @@ export function SceneStatusPanel({
     conversationEnded,
   });
   const uiState = String(spec.elements[spec.root]?.props.uiState || 'default');
+  const summary = String(spec.elements[spec.root]?.props.summary || '');
   const title = String(spec.elements[spec.root]?.props.title || '장면');
   const placeEl = Object.values(spec.elements).find((el) => el.type === 'LocationPill');
   const place = typeof placeEl?.props.name === 'string' ? placeEl.props.name : '';
@@ -64,6 +68,7 @@ export function SceneStatusPanel({
         >
           <span className="scene-status-toggle-title">{title}</span>
           {place ? <span className="scene-status-toggle-place">{place}</span> : null}
+          {summary ? <span className="scene-status-toggle-summary">{summary}</span> : null}
         </button>
       ) : null}
       {collapsed ? null : <SceneStatusRenderer spec={spec} onIntent={onIntent} />}

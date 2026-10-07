@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { get } from '../lib/api';
 import { navigate } from '../lib/router';
 import type { Conversation } from '../types';
-import { relTime } from '../components/view';
+import { ConversationRecency } from '../components/ConversationRecency';
 import { Spinner } from '../components/ui';
 import { conversationMetaLabel, conversationTitleLabel, conversationTitleMatchesMeta } from '../lib/conversationTitleLabel';
 
@@ -56,11 +56,8 @@ export function ChatListRail({
           }}
         >
           <span className="t">{conversationTitleLabel(c)}</span>
-          <span className="p">
-            {meta}
-            {meta && (c.preview || c.last_message_at) ? ' · ' : ''}
-            {relTime(c.last_message_at) || c.preview || ''}
-          </span>
+          {meta && <span className="p">{meta}</span>}
+          <ConversationRecency conversation={c} />
         </button>
         );
       })}

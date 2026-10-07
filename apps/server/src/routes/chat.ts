@@ -1,3 +1,5 @@
+import { generationFailure, PrivateValidationError, type GenerationFailureCode } from '../model/generationFailure.js';
+import type { GenerationPhase } from '../model/queue.js';
 import { sideModeRoutes } from './sideModes.js';
 import { continuationRoutes } from './continuation.js';
 import { responseLengthHint, responseMaxTokens } from '../prompt/responseLength.js';
@@ -77,6 +79,7 @@ type SseBudget = {
 };
 
 type SseEvent =
+  | { type: 'progress'; generationId: string; phase: GenerationPhase; startedAt: string }
   | { type: 'start'; generationId: string; messageId: string; eventVersion: 1; message: ReturnType<typeof messageOut>; userMessage?: ReturnType<typeof messageOut> }
   | { type: 'token'; text: string; messageId: string; eventVersion: 1; events: ChatEvent[] }
   | { type: 'done'; message: ReturnType<typeof messageOut>; usage: unknown; ttftMs: number | null; totalMs: number; budget?: SseBudget }
@@ -84,7 +87,7 @@ type SseEvent =
   // is already append-only and id-deduped on the client, which is exactly the
   // semantics a header / narration / thought / extra / ui row needs.
   | { type: 'aux'; message: ReturnType<typeof messageOut> }
-  | { type: 'error'; message: string; messageId?: string };
+  | { type: 'error'; message: string; messageId?: string; code?: GenerationFailureCode };
 
 function sseBudget(b: { dropped_messages: number; included_messages: number; est_total: number; available: number }): SseBudget {
   return {
@@ -250,6 +253,7 @@ export function chatRoutes(ctx: Ctx) {
     });
     return {
       send: (e) => {
+        if (e.type === 'progress' && reply.request.headers['x-rpchat-generation-progress'] !== '1') return;
         if (open) reply.raw.write(`data: ${JSON.stringify(e)}\n\n`);
       },
       close: () => {
@@ -388,6 +392,7 @@ export function chatRoutes(ctx: Ctx) {
 
     const controller = new AbortController();
     ctx.queue.register({ id: generationId, conversationId: conv.id, messageId: assistant.id, startedAt: nowIso(), controller });
+    ctx.queue.watchProgress(generationId, g => sse.send({ type: 'progress', generationId, phase: g.phase!, startedAt: g.startedAt }));
 
     const estPrompt = built.messages.reduce((n, m) => n + estimateTokens(m.content, 1), 0); // 보정 전 원시 추정
     let buffer = '';
@@ -405,7 +410,7 @@ export function chatRoutes(ctx: Ctx) {
     };
 
     try {
-      await ctx.queue.run(async () => {
+      await ctx.queue.runGeneration(generationId, async () => {
         dumpGenerationPrompt({
           dataDir: config.dataDir,
           generationId,
@@ -459,7 +464,7 @@ export function chatRoutes(ctx: Ctx) {
         updateMessage(db, assistant.id, { content: sanitizeAssistantContent(buffer).trim(), status: 'error', meta: { error: msg } });
         logRow('error', { finish: 'error' });
         retractUnconfirmedSend(userMessage, conv.head_message_id);
-        sse.send({ type: 'error', message: msg, messageId: assistant.id });
+        sse.send({ type: 'error', code: generationFailure(err).code, message: msg, messageId: assistant.id });
       }
     } finally {
       ctx.queue.unregister(generationId);
@@ -566,7 +571,7 @@ export function chatRoutes(ctx: Ctx) {
     const passMs: { delta: number; n: number; f: number; e: number[]; c: number } = { delta: 0, n: 0, f: 0, e: [], c: 0 };
     const t0delta = Date.now();
     try {
-      const proposal = await ctx.queue.run(() =>
+      const proposal = await ctx.queue.runGeneration(generationId, () =>
         ctx.model.complete({
           model,
           messages: [{ role: 'user', content: renderSceneDeltaPrompt({ scene, catalog: { ...catalog, cast }, userText: project(userText, userAudience, GM, observationEnabled) }) }],
@@ -688,6 +693,7 @@ export function chatRoutes(ctx: Ctx) {
 
     const profileName = convNow.profile_name;
     const sse = openSse(reply);
+    ctx.queue.watchProgress(generationId, g => sse.send({ type: 'progress', generationId, phase: g.phase!, startedAt: g.startedAt }));
 
     let head = parentId;
     const emitted: MessageRow[] = [];
@@ -730,7 +736,7 @@ export function chatRoutes(ctx: Ctx) {
       const tN = Date.now();
       const nDeadline = withDeadline(PASS_N_TIMEOUT_MS, controller.signal);
       try {
-        const out = await ctx.queue.run(() => ctx.model.complete({
+        const out = await ctx.queue.runGeneration(generationId, () => ctx.model.complete({
           model, messages: [{ role: 'user', content: fitObservationPass(input => planBeat(input).pass_n, PASS_N_MAX_TOKENS, '') }],
           temperature: 0.8, top_p: 0.95, max_tokens: PASS_N_MAX_TOKENS, stop: [],
           signal: nDeadline.signal,
@@ -774,7 +780,7 @@ export function chatRoutes(ctx: Ctx) {
 
         const tF = Date.now();
         let lastPersist = Date.now();
-        const result = await ctx.queue.run(() => ctx.model.stream(
+        const result = await ctx.queue.runGeneration(generationId, () => ctx.model.stream(
           {
             model, messages: [{ role: 'user', content: passF }],
             temperature: 0.9, top_p: 0.95, max_tokens: focusMaxTokens, stop: [], signal: controller.signal,
@@ -798,7 +804,7 @@ export function chatRoutes(ctx: Ctx) {
         const tE = Date.now();
         const eDeadline = withDeadline(config.model.timeoutMs, controller.signal);
         try {
-          const out = await ctx.queue.run(() => ctx.model.complete({
+          const out = await ctx.queue.runGeneration(generationId, () => ctx.model.complete({
             model, messages: [{ role: 'user', content: fitObservationPass(input => planPassE(input, plan, narration, speechObservation(focusText, input.focus_audience, observationEnabled)).find(item => item.character_id === e.character_id)!.prompt, AUX_MAX_TOKENS, e.name, e.character_id) }],
             temperature: 0.85, top_p: 0.95, max_tokens: AUX_MAX_TOKENS, stop: [],
             signal: eDeadline.signal,
@@ -852,7 +858,7 @@ export function chatRoutes(ctx: Ctx) {
       const tC = Date.now();
       const cDeadline = withDeadline(PASS_C_TIMEOUT_MS, controller.signal);
       try {
-        const out = await ctx.queue.run(() => ctx.model.complete({
+        const out = await ctx.queue.runGeneration(generationId, () => ctx.model.complete({
           model,
           messages: [{ role: 'user', content: passCWith(planInput, finished) }],
           temperature: 0.9, top_p: 0.95, max_tokens: PASS_C_MAX_TOKENS, stop: [],
@@ -963,7 +969,7 @@ export function chatRoutes(ctx: Ctx) {
         } else {
           ctx.log.error({ err, generationId }, '비트 생성 실패');
           retractUnconfirmedSend(userMessage, conv.head_message_id);
-          sse.send({ type: 'error', message: msg, messageId: focusRow.id });
+          sse.send({ type: 'error', code: generationFailure(err).code, message: msg, messageId: focusRow.id });
         }
       } else if (aborted) {
         // abort-before-focus-log-classification: a stop before Pass F has a row
@@ -979,7 +985,7 @@ export function chatRoutes(ctx: Ctx) {
       } else {
         ctx.log.error({ err, generationId }, '비트 생성 실패');
         retractUnconfirmedSend(userMessage, conv.head_message_id);
-        sse.send({ type: 'error', message: msg });
+        sse.send({ type: 'error', code: generationFailure(err).code, message: msg });
       }
       logClockObserve(
         conv.id, focusRow?.id ?? emitted[emitted.length - 1]?.id ?? userMessage?.id,
@@ -1073,7 +1079,7 @@ export function chatRoutes(ctx: Ctx) {
     const passMs: { delta: number; s: number } = { delta: 0, s: 0 };
     const t0delta = Date.now();
     try {
-      const proposal = await ctx.queue.run(() =>
+      const proposal = await ctx.queue.runGeneration(generationId, () =>
         ctx.model.complete({
           model,
           messages: [{ role: 'user', content: renderSceneDeltaPrompt({ scene, catalog: { ...catalog, cast }, userText }) }],
@@ -1117,6 +1123,7 @@ export function chatRoutes(ctx: Ctx) {
     const secretRules = dialogSecretRules(db, convNow, history, plan.applied.state);
     const profileName = convNow.profile_name;
     const sse = openSse(reply);
+    ctx.queue.watchProgress(generationId, g => sse.send({ type: 'progress', generationId, phase: g.phase!, startedAt: g.startedAt }));
 
     let head = parentId;
     const emitted: MessageRow[] = [];
@@ -1172,7 +1179,7 @@ export function chatRoutes(ctx: Ctx) {
 
       const tS = Date.now();
       let lastPersist = Date.now();
-      const result = await ctx.queue.run(() => ctx.model.stream(
+      const result = await ctx.queue.runGeneration(generationId, () => ctx.model.stream(
         {
           model, messages: built.messages,
           temperature: 0.9, top_p: 0.95, max_tokens: built.maxTokens, stop: [], signal: controller.signal,
@@ -1195,7 +1202,7 @@ export function chatRoutes(ctx: Ctx) {
         ...built.actor_requests,
       ];
       for (const scoped of scopedRequests) {
-        const scopedResult = await ctx.queue.run(() => ctx.model.stream(
+        const scopedResult = await ctx.queue.runGeneration(generationId, () => ctx.model.stream(
           {
             model,
             messages: scoped.messages,
@@ -1221,13 +1228,14 @@ export function chatRoutes(ctx: Ctx) {
       }
       passMs.s = Date.now() - tS;
       // 공개 대본과 각 비공개 보충을 따로 검사한 뒤에만 화면·DB로 내보낸다.
+      if (secretRules.length) ctx.queue.setPhase(generationId, 'validating');
       const secretViolations = segmentSecretViolations(
         [{ audience: 'public', text: result.text }, ...supplements.map(({ audience, text }) => ({ audience, text }))],
         plan.speakers, secretRules,
       );
       if (secretViolations.length) {
         ctx.log.warn({ generationId, violations: secretViolations }, 'dialog secret output rejected');
-        throw new ModelError('인물 인식 범위를 벗어난 비공개 대사가 감지되었습니다. 다시 생성해 주세요.');
+        throw new PrivateValidationError();
       }
       const completedScript = [result.text, ...supplements.map(item => item.text)].filter(Boolean).join('\n');
       if (supplements.length || secretRules.length) {
@@ -1325,8 +1333,8 @@ export function chatRoutes(ctx: Ctx) {
       void fireEndingEvalJob(ctx, conv.id);
     } catch (err) {
       const aborted = wasAborted(controller, err);
-      const msg = secretRules.length ? '비공개 대본을 검증하지 못했습니다. 다시 생성해 주세요.'
-        : err instanceof ModelError ? err.message : (err as Error)?.name === 'TimeoutError' ? '모델 응답 시간 초과' : (err as Error).message;
+      const failure = generationFailure(err);
+      const msg = failure.message;
       if (scriptRow) {
         updateMessage(db, scriptRow.id, {
           content: secretRules.length ? '' : buffer.trim(),
@@ -1338,7 +1346,7 @@ export function chatRoutes(ctx: Ctx) {
         } else {
           ctx.log.error({ ...(secretRules.length ? {} : { err }), generationId }, '대본 생성 실패');
           retractUnconfirmedSend(userMessage, conv.head_message_id);
-          sse.send({ type: 'error', message: msg, messageId: scriptRow.id });
+          sse.send({ type: 'error', code: generationFailure(err).code, message: msg, messageId: scriptRow.id });
         }
       } else if (aborted) {
         const closing = emitted[emitted.length - 1];
@@ -1352,7 +1360,7 @@ export function chatRoutes(ctx: Ctx) {
       } else {
         ctx.log.error({ ...(secretRules.length ? {} : { err }), generationId }, '대본 생성 실패');
         retractUnconfirmedSend(userMessage, conv.head_message_id);
-        sse.send({ type: 'error', message: msg });
+        sse.send({ type: 'error', code: generationFailure(err).code, message: msg });
       }
       logClockObserve(
         conv.id, scriptRow?.id ?? emitted[emitted.length - 1]?.id ?? userMessage?.id,
@@ -1517,7 +1525,7 @@ export function chatRoutes(ctx: Ctx) {
     });
 
     app.get('/api/generations/active', async () => ({
-      active: ctx.queue.activeList.map((g) => ({ id: g.id, kind: g.kind ?? 'chat', conversationId: g.conversationId, messageId: g.messageId, startedAt: g.startedAt })),
+      active: ctx.queue.activeList.map((g) => ({ id: g.id, kind: g.kind ?? 'chat', conversationId: g.conversationId, messageId: g.messageId, startedAt: g.startedAt, phase: g.phase })),
       queued: ctx.queue.queued,
     }));
   };

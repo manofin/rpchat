@@ -52,9 +52,9 @@ t('renderUi stamps focus_id; locked rows keep the lock chip', () => {
   assert.equal(LOCK_CHIP, '🔒');
 });
 
-t('BeatUiPanel names lock and focus in the same language as the chip', () => {
+t('BeatUiPanel explains speech eligibility and focus', () => {
   const view = src('apps/web/src/components/view.tsx');
-  assert.match(view, /잠금/);
+  assert.match(view, /이번 턴 대사 없음/);
   assert.match(view, /포커스/);
   assert.match(view, /beat-chip-tag/);
   assert.match(view, /is-focus/);
@@ -86,7 +86,8 @@ t('server ui events preserve locked cast members and focus through the shipped r
   const html = renderChatMessage(m);
   assert.match(html, /beat-chip is-focus/);
   assert.match(html, /beat-chip locked/);
-  for (const label of ['유키', '첸', '포커스', '잠금', '🔒']) assert.ok(html.includes(label), label);
+  for (const label of ['유키', '첸', '포커스', '이번 턴 대사 없음']) assert.ok(html.includes(label), label);
+  assert.ok(!html.includes('잠금') && !html.includes('🔒'), 'speech eligibility must not look like secret protection');
 
   const line = message('안녕.', { block_kind: 'line', speaker_name: '유키', speaker_character_id: 'yuki' });
   const focused = renderChatMessage(line, { focusId: 'yuki' });

@@ -1,3 +1,6 @@
+import { WhisperRecipients } from '../components/WhisperRecipients';
+import { loadAudienceActors, audienceLabel, type AudienceActor } from '../lib/audienceLabels';
+import { GenerationStatus } from '../components/GenerationStatus';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { get, patch, post } from '../lib/api';
 import { back, navigate, useRoute } from '../lib/router';
@@ -120,7 +123,7 @@ export function ChatPage({ id }: { id: string }) {
   const taRef = useRef<HTMLTextAreaElement>(null);
   const stickyRef = useRef(true);
   const contentRef = useRef<HTMLDivElement>(null);
-  useFeedResize(scrollRef, contentRef, stickyRef, id, chat.messages);
+  const { atLatest, jumpLatest } = useFeedResize(scrollRef, contentRef, stickyRef, id, chat.messages, !!chat.detail && !chat.loading, !new URLSearchParams(window.location.search).has('jump'));
 
   // 스크롤 하단 고정 추적
   function onScroll() {
@@ -210,6 +213,20 @@ export function ChatPage({ id }: { id: string }) {
   void dismissTick;
   const hasDraft = summaryRows?.some((s) => s.status !== 'approved') ?? false;
 
+  const [audienceNames, setAudienceNames] = useState<{ room: string; actors: AudienceActor[]; error: boolean } | null>(null);
+  const audienceRoom = chat.detail?.conversation.id;
+  const audienceSnapshot = chat.detail?.conversation.story_participant_ids_snapshot;
+  useEffect(() => {
+    if (!chat.detail) return;
+    let cancelled = false;
+    const detail = chat.detail;
+    setAudienceNames(null);
+    loadAudienceActors(detail, get).then(actors => {
+      if (!cancelled) setAudienceNames({room: detail.conversation.id, actors, error:false});
+    }).catch(() => { if (!cancelled) setAudienceNames({room: detail.conversation.id, actors:[], error:true}); });
+    return () => { cancelled = true; };
+  }, [audienceRoom, audienceSnapshot]);
+  const audienceActors = audienceNames?.room === id ? audienceNames.actors : [];
   const [whisperIds, setWhisperIds] = useState('');
   const [choiceDraft, setChoiceDraft] = useState<{ message_id: string; index: number; recipient_ids: string[]; visibility: 'public' | 'private' } | null>(null);
   useEffect(() => { setChoiceDraft(null); setWhisperIds(''); }, [id]);
@@ -345,6 +362,7 @@ export function ChatPage({ id }: { id: string }) {
     m,
     domId: `msg-${m.id}`,
     charName: char.name,
+    audienceText: audienceLabel(m.meta.observation, audienceActors),
     userName: persona?.name ?? '나',
     sceneFormat: conv.scene.format,
     streaming: chat.streamingId === m.id,
@@ -437,6 +455,7 @@ export function ChatPage({ id }: { id: string }) {
           scene={conv.scene}
           places={chat.detail!.scene_places}
           characterName={char.name}
+          roster={lastUi?.roster}
           hasBeatRoster={hasBeatRoster}
           focusId={lastUi?.focus_id ?? conv.scene.last_beat?.focus_id ?? null}
           generating={generating}
@@ -479,9 +498,11 @@ export function ChatPage({ id }: { id: string }) {
           : shownMessages.map((m) => (
             <MessageView key={m.id} {...messageViewProps(m)} />
           ))}
-        {chat.error && chat.detail && <div className="banner err" style={{ margin: '4px 0' }}>{chat.error}</div>}
+        {chat.error && chat.detail && <div className="banner err" style={{ margin: '4px 0' }}>{chat.errorCode ? `${{ connection: '연결 실패', timeout: '시간 초과', validation: '검증 실패', generation: '생성 실패' }[chat.errorCode]} · ` : ''}{chat.error}</div>}
         </div>
       </div>
+
+      {!atLatest && <button type="button" className="btn sm jump-latest" onClick={jumpLatest}>↓ 최신 메시지로</button>}
 
       {/* 기존 sysline 슬롯: 응답 이어가기 + 요약 제안 (키보드/스크롤 경로 비변경) */}
       {(() => {
@@ -552,11 +573,9 @@ export function ChatPage({ id }: { id: string }) {
         </div>
       )}
 
-      {conv.scene.observation_filter && conv.scene.format !== 'dialog' ? <label>귓속말 수신자 ID (쉼표로 구분, 비우면 공개)
-        <input aria-label="귓속말 수신자" value={whisperIds} onChange={e => setWhisperIds(e.target.value)} disabled={generating || !!choiceDraft} />
-      </label> : null}
+      {conv.scene.observation_filter && conv.scene.format !== 'dialog' ? <WhisperRecipients actors={audienceActors} value={whisperIds} onChange={setWhisperIds} disabled={generating || !!choiceDraft} loading={audienceNames?.room !== id} error={!!audienceNames?.error} /> : null}
       {choiceDraft && <div className="banner warn" aria-label="선택지 공개 범위">
-        <span>비공개 맥락 기반 · 전송 범위를 확인하세요</span>
+        <span>{audienceLabel(choiceDraft.visibility === 'private' ? { visibility:'private',recipient_ids:['user',...choiceDraft.recipient_ids] } : {visibility:'public'}, audienceActors)} · 비공개 맥락 기반 선택지</span>
         <button type="button" className="btn sm" aria-pressed={choiceDraft.visibility === 'public'} disabled={generating} onClick={() => setChoiceDraft({ ...choiceDraft, visibility: 'public' })}>공개</button>
         <button type="button" className="btn sm" aria-pressed={choiceDraft.visibility === 'private'} disabled={generating || !choiceDraft.recipient_ids.length || !conv.scene.observation_filter || conv.scene.format === 'dialog'} onClick={() => setChoiceDraft({ ...choiceDraft, visibility: 'private' })}>귓속말(같은 수신자)</button>
         {!choiceDraft.recipient_ids.length && <span>원래 수신자를 복원할 수 없어 귓속말을 보낼 수 없습니다.</span>}
@@ -571,7 +590,7 @@ export function ChatPage({ id }: { id: string }) {
         {generating && (
           <div className="gen-status" aria-live="polite">
             <span className="gen-dots" aria-hidden="true"><i /><i /><i /></span>
-            {sideMode.generating ? '부가 모드 생성 중…' : '세계관에 반영 중…'}
+            {sideMode.generating ? '부가 모드 생성 중…' : <GenerationStatus progress={chat.generationProgress} />}
           </div>
         )}
         <div className="inputbar">
@@ -646,6 +665,7 @@ export function ChatPage({ id }: { id: string }) {
             scene={conv.scene}
             places={chat.detail!.scene_places}
             characterName={char.name}
+            roster={lastUi?.roster}
             hasBeatRoster={hasBeatRoster}
             focusId={lastUi?.focus_id ?? conv.scene.last_beat?.focus_id ?? null}
             generating={generating}
@@ -702,6 +722,7 @@ function ChoiceChips({
 function MessageView(props: {
   m: Message;
   charName: string;
+  audienceText?: string | null;
   userName: string;
   sceneFormat?: 'beat' | 'dialog';
   streaming: boolean;
@@ -802,6 +823,7 @@ function MessageView(props: {
   const lineFocus = Boolean(!isUser && props.focusId && m.events?.some((event) => event.type === 'dialogue' && event.actorId === props.focusId));
   return (
     <div id={props.domId} className={`msg ${isUser ? 'user' : 'assistant'} ${m.meta.ooc ? 'ooc' : ''}${lineFocus ? ' is-focus' : ''}${portrait ? ' has-portrait' : ''}`}>
+      {props.audienceText && <div className="message-audience">{props.audienceText}</div>}
       {firstDialogue?.actorName ? (
         <SpeakerHeader name={firstDialogue.actorName} avatar={m.meta.speaker_avatar === m.meta.image_url ? undefined : m.meta.speaker_avatar} focused={lineFocus} />
       ) : null}
@@ -838,9 +860,19 @@ function MessageView(props: {
             </span>
           )}
           {m.role === 'assistant' && props.isLastAssistant && <button onClick={props.onRegenerate}>↻ 재생성</button>}
-          <button onClick={() => { setVal(m.content); setEditing(true); }}>✎ 편집</button>
-          <button onClick={props.onBookmark}>{m.bookmarked ? '★' : '☆'}</button>
-          <button onClick={props.onDelete}>🗑</button>
+          <details className="msg-actions" onKeyDown={e => {
+            if (e.key === 'Escape') {
+              e.currentTarget.open = false;
+              e.currentTarget.querySelector('summary')?.focus();
+            }
+          }}>
+            <summary aria-label="메시지 관리">⋯{m.bookmarked ? ' ★' : ''}</summary>
+            <div className="msg-action-items">
+              <button onClick={() => { setVal(m.content); setEditing(true); }}>✎ 편집</button>
+              <button onClick={props.onBookmark} aria-pressed={m.bookmarked}>{m.bookmarked ? '★ 즐겨찾기 해제' : '☆ 즐겨찾기'}</button>
+              <button onClick={props.onDelete}>삭제</button>
+            </div>
+          </details>
           {m.meta.usage?.completion_tokens ? <span className="muted">{m.meta.usage.completion_tokens}t</span> : null}
         </div>
       )}
