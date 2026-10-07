@@ -1,3 +1,5 @@
+import { sceneDisplay } from './sceneDisplay';
+import type { Scene, SceneCatalogPlace } from '../types';
 import { match } from './router';
 import { livingStateLabel, type LivingScene } from './sceneState';
 
@@ -81,19 +83,15 @@ export function isRowNavigable(item: SettingsHubItem): boolean {
   return item.state === 'available' && item.control === 'navigate' && !!item.href;
 }
 
-function startTitleFromScene(scene: { place?: string; time?: string; goal?: string } | undefined): string {
-  const parts = [scene?.place, scene?.time, scene?.goal].filter(Boolean);
-  return parts.join(' · ');
-}
-
 export function summarizeConversationDetail(
   detail: {
+    scene_places?: SceneCatalogPlace[];
     conversation: {
       id: string;
       title: string;
       profile_name: string;
       user_note?: string | null;
-      scene?: { place?: string; time?: string; goal?: string } & LivingScene;
+      scene?: Scene & LivingScene;
       persona_applied_at?: string | null;
     };
     character: { name: string; avatar: string | null; scenario?: string };
@@ -102,7 +100,7 @@ export function summarizeConversationDetail(
   appVersion: string,
 ): SettingsHubSummary {
   const note = detail.conversation.user_note ?? '';
-  const startTitle = startTitleFromScene(detail.conversation.scene) || detail.character.scenario || '';
+  const startTitle = sceneDisplay(detail.conversation.scene, detail.scene_places).text;
   return {
     conversationId: detail.conversation.id,
     title: detail.conversation.title || detail.character.name,

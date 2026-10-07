@@ -1,4 +1,5 @@
-import type { Scene } from '../types';
+import { sceneDisplay } from './sceneDisplay';
+import type { Scene, SceneCatalogPlace } from '../types';
 import {
   parseSceneStatusSpec,
   type CastMember,
@@ -11,6 +12,7 @@ import {
 export type SceneStatusSpecInput = {
   conversationId: string;
   scene: Scene;
+  places?: SceneCatalogPlace[];
   characterName?: string;
   hasBeatRoster: boolean;
   focusId?: string | null;
@@ -19,27 +21,17 @@ export type SceneStatusSpecInput = {
   conversationEnded?: boolean;
 };
 
-function sceneTitle(scene: Scene): string {
-  return (scene.place || scene.location || '').trim() || '장면';
-}
-
-function sceneSummary(scene: Scene): string | undefined {
-  const text = (scene.goal || scene.mood || scene.time || '').trim();
-  return text || undefined;
-}
-
 function sceneProgress(scene: Scene, generating: boolean, conversationEnded: boolean): SceneProgress {
   if (conversationEnded) return 'ended';
   if (generating) return 'active';
-  if (scene.place || scene.location || scene.time) return 'active';
+  if (sceneDisplay(scene).hasScene) return 'active';
   return 'idle';
 }
 
 function panelUiState(input: SceneStatusSpecInput): UiState {
   if (input.loadError) return 'error';
   if (input.generating) return 'refreshing';
-  const s = input.scene;
-  if (!(s.place || s.location || s.time || s.goal || s.mood)) return 'empty';
+  if (!sceneDisplay(input.scene, input.places).hasScene) return 'empty';
   return 'default';
 }
 
@@ -60,14 +52,15 @@ const DEFAULT_ACTIONS: SceneActionItem[] = [
 export function buildSceneStatusSpec(input: SceneStatusSpecInput): SceneStatusSpec {
   const uiState = panelUiState(input);
   const members = castMembers(input);
-  const place = (input.scene.place || input.scene.location || '').trim();
+  const display = sceneDisplay(input.scene, input.places);
+  const place = display.place;
   const elements: SceneStatusSpec['elements'] = {
     root: {
       type: 'SceneStatus',
       props: {
-        title: sceneTitle(input.scene),
+        title: display.title,
         progress: sceneProgress(input.scene, !!input.generating, !!input.conversationEnded),
-        summary: sceneSummary(input.scene),
+        summary: display.summary || undefined,
         uiState,
       },
       children: [],
@@ -115,7 +108,7 @@ export function buildSceneStatusSpec(input: SceneStatusSpecInput): SceneStatusSp
     } else {
       elements.locHint = {
         type: 'EmptyHint',
-        props: { title: '위치가 없습니다.', uiState: 'empty' },
+        props: { title: '장소 미지정', uiState: 'empty' },
         children: [],
       };
       children.push('locHint');

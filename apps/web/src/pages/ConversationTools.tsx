@@ -1,10 +1,7 @@
-import { useEffect, useState } from 'react';
-import { get } from '../lib/api';
+import { useState } from 'react';
 import type { ConversationDetail } from '../types';
 import { Avatar } from '../components/view';
-import { Spinner } from '../components/ui';
 import {
-  SettingsEmptyState,
   SettingsNavigationRow,
   SettingsSection,
   SettingsToggleRow,
@@ -56,40 +53,22 @@ const TOOL_ICON: Record<string, string> = {
 
 export function ConversationTools({
   conversationId,
+  detail,
   onChanged,
   onOpenContextInspector,
 }: {
   conversationId: string;
+  detail: ConversationDetail;
   onChanged: () => void;
   /** Mobile: header CI is CSS-hidden; surface the same drawer from this hub. */
   onOpenContextInspector?: () => void;
 }) {
-  const [detail, setDetail] = useState<ConversationDetail | null>(null);
-  const [missing, setMissing] = useState(false);
   const [leaf, setLeaf] = useState<SettingsLeaf | null>(null);
-
-  useEffect(() => {
-    let live = true;
-    setMissing(false);
-    get<ConversationDetail>(`/api/conversations/${conversationId}`)
-      .then((d) => {
-        if (live) setDetail(d);
-      })
-      .catch(() => {
-        if (live) setMissing(true);
-      });
-    return () => {
-      live = false;
-    };
-  }, [conversationId]);
 
   const goHub = () => {
     setLeaf(null);
     onChanged();
   };
-
-  if (missing) return <SettingsEmptyState message="대화를 찾을 수 없습니다." />;
-  if (!detail) return <Spinner />;
 
   if (leaf === 'guide') return <ConversationGuidePage conversationId={conversationId} onBack={goHub} />;
   if (leaf === 'profile') return <ConversationProfilePage conversationId={conversationId} onBack={goHub} />;

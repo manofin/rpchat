@@ -435,6 +435,7 @@ export function ChatPage({ id }: { id: string }) {
         <SceneStatusPanel
           conversationId={id}
           scene={conv.scene}
+          places={chat.detail!.scene_places}
           characterName={char.name}
           hasBeatRoster={hasBeatRoster}
           focusId={lastUi?.focus_id ?? conv.scene.last_beat?.focus_id ?? null}
@@ -643,6 +644,7 @@ export function ChatPage({ id }: { id: string }) {
           <SceneStatusPanel
             conversationId={id}
             scene={conv.scene}
+            places={chat.detail!.scene_places}
             characterName={char.name}
             hasBeatRoster={hasBeatRoster}
             focusId={lastUi?.focus_id ?? conv.scene.last_beat?.focus_id ?? null}
@@ -655,6 +657,7 @@ export function ChatPage({ id }: { id: string }) {
         ) : null}
         <ConversationTools
           conversationId={id}
+          detail={chat.detail!}
           onChanged={chat.reload}
           onOpenContextInspector={desktop ? undefined : () => { setDrawerTab('budget'); setDrawer(true); setToolsOpen(false); }}
         />

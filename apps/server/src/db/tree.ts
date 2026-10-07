@@ -69,10 +69,25 @@ export function readablePreview(db: DB, headMessageId: string | null | undefined
     seen.add(cur);
     const m: MessageRow | undefined = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', cur);
     if (!m) return '';
-    const kind = parseMessageMeta(m.meta_json).block_kind;
+    const meta = parseMessageMeta(m.meta_json);
+    const kind = meta.block_kind;
     if (kind === 'header') return '';
     if (kind == null || kind === 'narration' || kind === 'line') {
-      return sanitizeGeneratedContent(m.content ?? '').slice(0, 120);
+      if (meta.observation?.visibility === 'private') {
+        const recipients = meta.observation.recipient_ids;
+        if (!Array.isArray(recipients) || recipients.length === 0 || recipients.length > 100
+          || recipients.some(id => typeof id !== 'string' || !id)) return '비공개 내용';
+        const names = [...new Set(recipients)].map(id => {
+          if (id === 'user') return '나';
+          if (id === 'gm') return '서술자';
+          return one<{ name: string }>(db, 'SELECT name FROM characters WHERE id = ?', id)?.name;
+        });
+        if (names.some(name => !name?.trim())) return '비공개 내용';
+        return `${names.sort((a, b) => a === '나' ? -1 : b === '나' ? 1 : 0).join('·')}만 아는 내용`.slice(0, 120);
+      }
+      const body = sanitizeGeneratedContent(m.content ?? '');
+      const speaker = kind === 'line' && typeof meta.speaker_name === 'string' ? meta.speaker_name.trim() : '';
+      return (speaker ? `${speaker}: ${body}` : body).slice(0, 120);
     }
     cur = m.parent_id;
   }

@@ -248,6 +248,7 @@ export interface Scene {
   /** Per-conversation output shape. Absent means the ordinary bubble / beat path. */
   format?: 'beat' | 'dialog';
   location?: string;
+  present_ids?: string[];
   day_index?: number;
   weekday?: string;
   clock_minutes?: number;
@@ -364,6 +365,7 @@ export interface Message {
 }
 
 export interface ConversationDetail {
+  scene_places?: SceneCatalogPlace[];
   conversation: Conversation;
   character: Character;
   persona: Persona | null;

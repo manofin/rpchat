@@ -191,6 +191,43 @@ async function main() {
     }
   });
 
+  await t('latest NPC line has speaker name; private preview has audience only', async () => {
+    const latest = push('conv-party', ui.id, '한소연 최신 대사', { block_kind: 'line', speaker_name: '한소연' });
+    setHead(db, 'conv-party', latest.id);
+    assert.equal(readablePreview(db, latest.id), '한소연: 한소연 최신 대사');
+    const secret = push('conv-dialog', dUi.id, 'PRIVATE-CANARY', {
+      block_kind: 'line', speaker_name: '캐',
+      observation: { visibility: 'private', recipient_ids: ['c1', 'user'], observer_ids: [] },
+    });
+    setHead(db, 'conv-dialog', secret.id);
+    const res = await app.inject({ method: 'GET', url: '/api/conversations?limit=50' });
+    const rows = res.json() as { id: string; preview: string }[];
+    assert.equal(rows.find(r => r.id === 'conv-party')?.preview, '한소연: 한소연 최신 대사');
+    assert.equal(rows.find(r => r.id === 'conv-dialog')?.preview, '나·캐만 아는 내용');
+    assert.doesNotMatch(res.body, /PRIVATE-CANARY/);
+  });
+  await t('private narration, unknown and malformed recipients hide content and IDs', () => {
+    for (const recipients of [['user', 'gm'], ['unknown-id', 'user'], [], null]) {
+      const row = push('conv-dialog', null, 'PRIVATE-BOUNDARY-CANARY', {
+        block_kind: 'narration', observation: { visibility:'private', recipient_ids:recipients, observer_ids:[] },
+      } as MessageMeta);
+      assert.equal(readablePreview(db,row.id), recipients?.includes('gm') ? '나·서술자만 아는 내용' : '비공개 내용');
+    }
+    const long = push('conv-party', null, 'x'.repeat(200), {block_kind:'line',speaker_name:'한소연'});
+    assert.equal(readablePreview(db,long.id).length,120);
+    const malformed = push('conv-party', null, '대사', {block_kind:'line',speaker_name:42} as unknown as MessageMeta);
+    assert.equal(readablePreview(db,malformed.id),'대사');
+  });
+  await t('detail exposes only place names from catalog for scene display', async () => {
+    db.prepare('INSERT INTO stories (id,name,scene_catalog,created_at,updated_at) VALUES (?,?,?,?,?)')
+      .run('story', 'Fixture', JSON.stringify({ places: [{ id: 'pier', name: '제3부두', tags: ['PRIVATE-CATALOG-CANARY'] }], items: ['PRIVATE-ITEM-CANARY'] }), now, now);
+    db.prepare('UPDATE conversations SET story_id = ? WHERE id = ?').run('story', 'conv-party');
+    const res = await app.inject({ method: 'GET', url: '/api/conversations/conv-party' });
+    assert.equal(res.statusCode, 200, res.body);
+    assert.deepEqual(res.json().scene_places, [{ id: 'pier', name: '제3부두' }]);
+    assert.doesNotMatch(res.body, /PRIVATE-(CATALOG|ITEM)-CANARY/);
+  });
+  await app.close();
   db.close();
   fs.rmSync(tmp, { recursive: true, force: true });
   console.log(`passed ${passed}`);

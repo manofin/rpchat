@@ -402,10 +402,15 @@ export function conversationRoutes(ctx: Ctx) {
         keepMessageIds: ctx.queue.activeList.map((g) => g.messageId),
         minAgeMs: 2000,
       });
+      const story = conv.story_id
+        ? one<{ scene_catalog: string }>(db, 'SELECT scene_catalog FROM stories WHERE id = ?', conv.story_id)
+        : undefined;
+      const scenePlaces = (catalogFromStory(story?.scene_catalog ?? '{}').places ?? []).map(({ id, name }) => ({ id, name }));
       const messages = getPath(db, conv).map((m) => messageOut(db, m));
       const active = ctx.queue.activeList.find((g) => g.conversationId === conv.id && g.kind !== 'ending-judge' && g.kind !== 'side-mode');
       return {
         conversation: conversationOut(conv),
+        scene_places: scenePlaces,
         character: characterOut(character),
         persona: persona ? personaOut(persona as PersonaRow) : null,
         messages,
