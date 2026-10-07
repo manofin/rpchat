@@ -575,6 +575,24 @@ await t('dialog path attaches the same deadline helper', () => {
   assert.ok(dialog.includes('turn_deadline_exceeded') || dialog.includes('turnDeadline'));
 });
 
+await t('commit gate freezes conversation scene version at accept, not planning base', () => {
+  const chat = src('apps/server/src/routes/chat.ts');
+  const beat = chat.slice(chat.indexOf('async function generateBeat'), chat.indexOf('async function generateDialog'));
+  const dialog = chat.slice(chat.indexOf('async function generateDialog'));
+  for (const [label, body] of [['beat', beat], ['dialog', dialog]] as const) {
+    assert.ok(body.includes('sceneVersionAtAccept'), `${label} captures accept version`);
+    assert.ok(
+      body.includes('sceneVersionAtStart: sceneVersionAtAccept'),
+      `${label} gate uses accept freeze`,
+    );
+    assert.equal(
+      body.includes('sceneVersionAtStart: baseVersion'),
+      false,
+      `${label} must not gate on planning baseVersion`,
+    );
+  }
+});
+
 console.log(`\n${passed} passed`);
 await app.close();
 db.close();

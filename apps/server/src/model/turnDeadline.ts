@@ -161,7 +161,11 @@ export class TurnDeadline {
   }
 
   /**
-   * Sync commit gate: not turn-deadline-cancelled + scene version unchanged.
+   * Sync commit gate: not turn-deadline-cancelled + scene version unchanged
+   * since accept. Callers must pass the conversation scene_json version frozen
+   * at register/accept as sceneVersionAtStart — not the planning baseVersion
+   * from resolveSceneBase (regen before_delta can be lower than the abandoned
+   * after_delta still cached in scene_json).
    * Head moves during our own multi-block turn, so stale detection uses scene
    * version (scene_json is only written on successful commit).
    * User cancel during Pass C may still commit (caller policy); deadline may not.

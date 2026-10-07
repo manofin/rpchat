@@ -614,6 +614,11 @@ export function chatRoutes(ctx: Ctx) {
     // Lock the conversation before the first await (scene-delta). /messages 409
     // and abort both read this registry; a later register left the wait uncancelable.
     const controller = new AbortController();
+    // Commit gate freezes conversation scene_json version at accept — not planning
+    // baseVersion. On regen, resolveSceneBase returns before_delta (lower) while
+    // scene_json still holds the abandoned turn's after_delta (higher); comparing
+    // planning base to the cache would reject every regenerate.
+    const sceneVersionAtAccept = currentSceneVersion(JSON.parse(convNow.scene_json || '{}') as Scene);
     ctx.queue.register({ id: generationId, conversationId: conv.id, messageId: '', startedAt: nowIso(), controller });
     const turn = attachTurnDeadline(ctx, generationId, controller);
     try {
@@ -973,7 +978,7 @@ export function chatRoutes(ctx: Ctx) {
       // backfilled and would leave that turn regenerating off the cache again.
             const convForGate = loadConversation(ctx, conv.id)!;
       commitGateOrThrow(turn, {
-        sceneVersionAtStart: baseVersion,
+        sceneVersionAtStart: sceneVersionAtAccept,
         currentSceneVersion: currentSceneVersion(JSON.parse(convForGate.scene_json || '{}') as Scene),
       });
       stampTurnScene(conv.id, emitted[0]?.id, scene, finished.scene);
@@ -1179,9 +1184,10 @@ export function chatRoutes(ctx: Ctx) {
 
     // Same contract as generateBeat: lock before the first await (scene-delta).
     const controller = new AbortController();
+    // See generateBeat: gate uses conversation version at accept, not planning base.
+    const sceneVersionAtAccept = currentSceneVersion(JSON.parse(convNow.scene_json || '{}') as Scene);
     ctx.queue.register({ id: generationId, conversationId: conv.id, messageId: '', startedAt: nowIso(), controller });
     const turn = attachTurnDeadline(ctx, generationId, controller);
-    const baseVersion = currentSceneVersion(scene);
     try {
 
     // Scene delta — identical contract to the beat path, including the allow-list.
@@ -1421,7 +1427,7 @@ export function chatRoutes(ctx: Ctx) {
       // backfilled and would leave that turn regenerating off the cache again.
       const convForGate = loadConversation(ctx, conv.id)!;
       commitGateOrThrow(turn, {
-        sceneVersionAtStart: baseVersion,
+        sceneVersionAtStart: sceneVersionAtAccept,
         currentSceneVersion: currentSceneVersion(JSON.parse(convForGate.scene_json || '{}') as Scene),
       });
       stampTurnScene(conv.id, emitted[0]?.id, scene, finished.scene);
