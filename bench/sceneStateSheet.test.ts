@@ -34,7 +34,9 @@ t('hasLivingState is true only when user_sheet / info / hunter exist', () => {
   assert.equal(hasLivingState({ info: { contract: '핏빛' } }), true);
   assert.equal(hasLivingState({ hunter: { quest: '입구' } }), true);
   assert.equal(livingStateLabel({}), '없음');
-  assert.equal(livingStateLabel({ user_sheet: { hp: 100, money: 0 } }), 'HP 100 · ₩ 0');
+  assert.equal(livingStateLabel({ user_sheet: { hp: 100, money: 0 } }), 'HP\u00a0100 · ₩\u00a00');
+  assert.equal(livingStateLabel({ user_sheet: { hp: 100, money: 0 } }).includes('\u00a0'), true);
+  assert.equal(livingStateLabel({ user_sheet: { money: 0 } }), '₩\u00a00');
 });
 
 t('patch sends nested living keys only — never 1:1 renderScene keys', () => {

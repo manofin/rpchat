@@ -54,8 +54,8 @@ export function livingStateLabel(scene: LivingScene | null | undefined): string 
   if (!hasLivingState(scene)) return '없음';
   const parts: string[] = [];
   const sheet = scene?.user_sheet;
-  if (typeof sheet?.hp === 'number') parts.push(`HP ${sheet.hp}`);
-  if (typeof sheet?.money === 'number') parts.push(`₩ ${sheet.money.toLocaleString()}`);
+  if (typeof sheet?.hp === 'number') parts.push(`HP\u00a0${sheet.hp}`);
+  if (typeof sheet?.money === 'number') parts.push(`₩\u00a0${sheet.money.toLocaleString()}`);
   if (scene?.info?.contract) parts.push('계약');
   if (scene?.hunter?.quest) parts.push('퀘스트');
   parts.push(...formatCustomStats(scene?.stats, scene?.stat_defs));

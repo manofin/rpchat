@@ -470,8 +470,9 @@ textarea { resize: none; }
   background: var(--bg-3);
   border-radius: 999px;
   padding: 2px 8px;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  overflow-wrap: break-word;
+  word-break: normal;
+  text-align: right;
 }
 .settings-chevron { flex: 0 0 auto; color: var(--fg-3); }
 .settings-row-status { flex: 0 0 auto; font-size: 12px; color: var(--fg-3); }
