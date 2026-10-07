@@ -52,8 +52,9 @@ export function SettingsSection({ title, children }: { title: string; children: 
   );
 }
 
-export function SettingsBadge({ children }: { children: ReactNode }) {
-  return <span className="settings-badge">{children}</span>;
+export function SettingsBadge({ children, title }: { children: ReactNode; title?: string }) {
+  const tip = title ?? (typeof children === 'string' ? children : undefined);
+  return <span className="settings-badge" title={tip}>{children}</span>;
 }
 
 export function SettingsNavigationRow({
