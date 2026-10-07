@@ -170,9 +170,7 @@ t('/chats hides meta-only .p when label==meta; muted time/preview kept', () => {
   assert.match(chats, /conversationMetaLabel/);
   assert.match(chats, /conversationTitleMatchesMeta/);
   assert.doesNotMatch(chats, /c\.character_name, c\.story_name_snapshot \|\| null/);
-  assert.match(chats, /className=["']p muted["']/);
-  assert.match(chats, /relTime\(c\.last_message_at \|\| c\.created_at\)/);
-  assert.match(chats, /c\.preview \? ` · \$\{c\.preview\}`/);
+  assert.match(chats, /<ConversationRecency conversation=\{c\}/);
   assert.match(chats, /!conversationTitleMatchesMeta\(c\)/);
 });
 
@@ -182,14 +180,13 @@ t('rail omits char·story when label==meta; keeps relTime/preview line', () => {
   assert.match(rail, /conversationTitleMatchesMeta/);
   assert.doesNotMatch(rail, /\[c\.character_name, c\.story_name_snapshot\]\.filter\(Boolean\)\.join\(' · '\)/);
   assert.match(rail, /className=["']p["']/);
-  assert.match(rail, /relTime\(c\.last_message_at\)/);
-  assert.match(rail, /c\.preview/);
+  assert.match(rail, /<ConversationRecency conversation=\{c\}/);
   assert.match(rail, /conversationTitleMatchesMeta\(c\)/);
 });
 
 t('CharacterPage ConversationRow subtitle stays preview', () => {
   const characterPage = src('apps/web/src/pages/CharacterPage.tsx');
-  assert.match(characterPage, /conv\.preview \|\| ['\"]메시지 없음['\"]/);
+  assert.match(characterPage, /<ConversationRecency conversation=\{conv\}/);
   assert.doesNotMatch(characterPage, /conversationTitleMatchesMeta/);
   assert.doesNotMatch(characterPage, /conversationMetaLabel/);
 });

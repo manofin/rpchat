@@ -1,3 +1,4 @@
+import { ConversationRecency } from '../apps/web/src/components/ConversationRecency.js';
 /** Character details and the explicitly opened conversation chooser. No server or live data. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -46,7 +47,7 @@ const filename = new URL('../apps/web/src/pages/CharacterPage.tsx', import.meta.
 const source = ts.createSourceFile(filename.pathname, fs.readFileSync(filename, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 const baseDependencies = {
   React, CharacterDetailView, ConversationChooser, ConversationRow, NewConversationSheet, CharacterEditor,
-  BottomSheet, Spinner, DiscCover, relTime, softHue, characterHeroEmpty, resolveConversationCount,
+  BottomSheet, Spinner, DiscCover, relTime, softHue, ConversationRecency, characterHeroEmpty, resolveConversationCount,
   resolveLastChatAt, conversationTitleLabel, stripDescSectionHeaders, publicTags,
   useUi: () => ({ toast: () => {}, confirm: async () => true }),
   navigate: () => {}, back: () => {},

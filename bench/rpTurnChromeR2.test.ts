@@ -45,7 +45,7 @@ t('generating: composer stays typable; send slot is stop; submit still latched',
   assert.ok(at >= 0, 'composer wrapper must exist');
   const composer = chat.slice(at, at + 1600);
   assert.ok(composer.includes('gen-status'), 'loading copy lives inside composer');
-  assert.ok(composer.includes('세계관에 반영 중'), 'Crack loading copy');
+  assert.ok(composer.includes('<GenerationStatus progress={chat.generationProgress}'), 'main generation shows server progress');
   assert.ok(composer.includes('stop-gen'), 'stop occupies the send slot');
   assert.ok(composer.includes('aria-label="생성 중단"'));
   assert.ok(composer.includes('chat.stop'));

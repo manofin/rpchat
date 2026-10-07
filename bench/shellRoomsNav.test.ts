@@ -1,3 +1,4 @@
+import { ConversationRecency } from '../apps/web/src/components/ConversationRecency.js';
 /** npx tsx bench/shellRoomsNav.test.ts
  * shell-rooms-nav — source locks (no device). Easton verifies real-device keyboard + safe-area.
  */
@@ -70,7 +71,7 @@ function main() {
       { id: 'solo-room', title: '내 제목', character_name: '사서', story_name_snapshot: null, created_at: 't' },
     ];
     const navigations: string[] = [];
-    const deps = { React, exports: {}, useState: () => [rows, () => {}], useEffect: () => {},
+    const deps = { React, ConversationRecency, exports: {}, useState: () => [rows, () => {}], useEffect: () => {},
       useUi: () => ({ toast: () => assert.fail('unexpected toast') }), TopNav: () => null,
       Spinner: () => null, relTime: () => '방금', navigate: (href: string) => navigations.push(href),
       conversationMetaLabel, conversationTitleLabel, conversationTitleMatchesMeta };

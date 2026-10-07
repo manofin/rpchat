@@ -1,3 +1,4 @@
+export type GenerationPhase = 'queued' | 'writing' | 'validating';
 export interface ActiveGeneration {
   id: string;
   kind?: 'chat' | 'ending-judge' | 'side-mode';
@@ -5,6 +6,7 @@ export interface ActiveGeneration {
   messageId: string;
   startedAt: string;
   controller: AbortController;
+  phase?: GenerationPhase;
 }
 
 /**
@@ -16,6 +18,8 @@ export class GenerationQueue {
   private waiting: Array<() => void> = [];
   private active = new Map<string, ActiveGeneration>();
 
+  private listeners = new Map<string, (generation: ActiveGeneration) => void>();
+
   constructor(private readonly concurrency = 1) {}
 
   get queued(): number {
@@ -25,14 +29,30 @@ export class GenerationQueue {
     return [...this.active.values()];
   }
   register(g: ActiveGeneration): void {
-    this.active.set(g.id, g);
+    this.active.set(g.id, { ...g, phase: g.phase ?? 'queued' });
   }
   setMessageId(id: string, messageId: string): void {
     const generation = this.active.get(id);
     if (!generation) throw new Error(`generation not active: ${id}`);
     generation.messageId = messageId;
   }
+  watchProgress(id: string, listener: (generation: ActiveGeneration) => void): void {
+    this.listeners.set(id, listener);
+    const generation = this.active.get(id);
+    if (generation) listener(generation);
+  }
+  setPhase(id: string, phase: GenerationPhase): void {
+    const generation = this.active.get(id);
+    if (!generation) return;
+    generation.phase = phase;
+    this.listeners.get(id)?.(generation);
+  }
+  async runGeneration<T>(id: string, fn: () => Promise<T>, signal?: AbortSignal): Promise<T> {
+    this.setPhase(id, 'queued');
+    return this.run(() => { this.setPhase(id, 'writing'); return fn(); }, signal);
+  }
   unregister(id: string): void {
+    this.listeners.delete(id);
     this.active.delete(id);
   }
   abort(id: string): boolean {

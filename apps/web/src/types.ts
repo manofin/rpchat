@@ -338,6 +338,7 @@ export interface Message {
   events?: ChatEvent[];
   status: MessageStatus;
   meta: {
+    observation?: { visibility: 'public' } | { visibility: 'private'; recipient_ids: string[]; observer_ids?: string[] };
     side_mode?: { mode: 'summary' | 'community'; prompt: string; anchor_message_id: string | null };
     generation_id?: string;
     usage?: { prompt_tokens?: number; completion_tokens?: number } | null;
@@ -370,7 +371,7 @@ export interface ConversationDetail {
   character: Character;
   persona: Persona | null;
   messages: Message[];
-  activeGeneration: { id: string; messageId: string; startedAt: string } | null;
+  activeGeneration: { id: string; messageId: string; startedAt: string; phase?: GenerationPhase } | null;
 }
 
 /** 규칙 기반 기억 판정 (P1-2b). conflict 는 P1-2b-fix 에서 억제되어 실질적으로 duplicate 만 도착한다. */
@@ -477,9 +478,14 @@ export type SseBudget = {
   available: number;
 };
 
+export type GenerationPhase = 'queued' | 'writing' | 'validating';
+export type GenerationFailureCode = 'connection' | 'timeout' | 'validation' | 'generation';
+export type GenerationProgress = { generationId: string; phase: GenerationPhase; startedAt: string };
+
 export type SseEvent =
+  | ({ type: 'progress' } & GenerationProgress)
   | { type: 'start'; generationId: string; messageId: string; eventVersion: 1; message?: Message; userMessage?: Message }
   | { type: 'token'; text: string; eventVersion: 1; messageId: string; events: ChatEvent[] }
   | { type: 'done'; message: Message; usage: unknown; ttftMs: number | null; totalMs: number; budget?: SseBudget }
   | { type: 'aux'; message: Message }
-  | { type: 'error'; message: string; messageId?: string };
+  | { type: 'error'; message: string; messageId?: string; code?: GenerationFailureCode };

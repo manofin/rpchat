@@ -4,7 +4,7 @@ import { navigate } from '../lib/router';
 import type { Conversation } from '../types';
 import { TopNav } from '../components/TopNav';
 import { Spinner, useUi } from '../components/ui';
-import { relTime } from '../components/view';
+import { ConversationRecency } from '../components/ConversationRecency';
 import { conversationMetaLabel, conversationTitleLabel, conversationTitleMatchesMeta } from '../lib/conversationTitleLabel';
 
 /** Global rooms list — resume any conversation without remembering the character path. */
@@ -55,10 +55,7 @@ export function ChatsPage() {
                   {!conversationTitleMatchesMeta(c) && (
                     <div className="p">{conversationMetaLabel(c)}</div>
                   )}
-                  <div className="p muted">
-                    {relTime(c.last_message_at || c.created_at)}
-                    {c.preview ? ` · ${c.preview}` : ''}
-                  </div>
+                  <ConversationRecency conversation={c} />
                 </div>
               </div>
             ))}

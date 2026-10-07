@@ -167,7 +167,7 @@ t('a closed overlay is inert and out of the tab order', () => {
 
 t('S2 turn chrome: generating status, stop wired to useChat.stop, ChoiceChips pencil+send', () => {
   const page = code('apps/web/src/pages/ChatPage.tsx');
-  assert.ok(page.includes('세계관에 반영 중'), 'loading copy matches StoryForge tone');
+  assert.ok(page.includes('<GenerationStatus progress={chat.generationProgress}'), 'main generation shows server progress');
   assert.ok(page.includes('chat.stop'), 'stop uses useChat.stop');
   assert.ok(page.includes("aria-label=\"생성 중단\""), 'send slot becomes stop while generating');
   assert.ok(page.includes('function ChoiceChips'), 'ChoiceChips stays the single chips surface');
