@@ -40,6 +40,7 @@ import type { CharacterRow } from '../types.js';
 import { buildPrompt } from '../prompt/builder.js';
 import { loadStoryRoster, dialogPlanInput } from '../prompt/dialogContext.js';
 import { buildDialogPrompt } from '../prompt/dialogPrompt.js';
+import { parseActorSupplement } from '../prompt/dialogActorSupplement.js';
 import { dialogSecretRules, segmentSecretViolations, type SecretSegment } from '../prompt/dialogSecretOutput.js';
 import { parseInjectInstruction, attachInjectToIcPass, type InjectContext } from '../prompt/injectContext.js';
 import { formatInstructionOverflow, profileInstructionText } from '../prompt/promptPolicy.js';
@@ -1197,6 +1198,8 @@ export function chatRoutes(ctx: Ctx) {
         },
       ), controller.signal);
       const supplements: Array<{ audience: SecretSegment['audience']; text: string; observation: { visibility: 'private'; recipient_ids: string[]; observer_ids: string[] } }> = [];
+      const rawSupplements: SecretSegment[] = [];
+      const actorSupplementDiagnostics: Array<{ actor_id: string; accepted_lines: number; rejected_lines: number; dropped_lines: number }> = [];
       const scopedRequests = [
         ...(built.narrator_request ? [built.narrator_request] : []),
         ...built.actor_requests,
@@ -1215,7 +1218,18 @@ export function chatRoutes(ctx: Ctx) {
           },
           () => {},
         ), controller.signal);
-        const text = scopedResult.text.trim();
+        const rawText = scopedResult.text.trim();
+        let text = rawText;
+        if (rawText && rawText !== 'NO_LINE' && rawText !== 'NO_NARRATION') {
+          rawSupplements.push({ audience: scoped.audience.kind === 'actor' ? `actor:${scoped.audience.actor_id}` : 'narrator', text: rawText });
+          if (scoped.audience.kind === 'actor') {
+            const parsed = parseActorSupplement(rawText, scoped.audience.actor_id, plan.speakers);
+            text = parsed.text;
+            const diagnostic = { actor_id: scoped.audience.actor_id, accepted_lines: parsed.acceptedLines, rejected_lines: parsed.rejectedLines, dropped_lines: parsed.droppedLines };
+            actorSupplementDiagnostics.push(diagnostic);
+            if (parsed.rejectedLines || parsed.droppedLines) ctx.log?.warn({ generationId, ...diagnostic }, 'dialog actor supplement lines excluded');
+          }
+        }
         if (text && text !== 'NO_LINE' && text !== 'NO_NARRATION') {
           supplements.push({
             audience: scoped.audience.kind === 'actor' ? `actor:${scoped.audience.actor_id}` : 'narrator',
@@ -1230,7 +1244,7 @@ export function chatRoutes(ctx: Ctx) {
       // 공개 대본과 각 비공개 보충을 따로 검사한 뒤에만 화면·DB로 내보낸다.
       if (secretRules.length) ctx.queue.setPhase(generationId, 'validating');
       const secretViolations = segmentSecretViolations(
-        [{ audience: 'public', text: result.text }, ...supplements.map(({ audience, text }) => ({ audience, text }))],
+        [{ audience: 'public', text: result.text }, ...rawSupplements, ...supplements.map(({ audience, text }) => ({ audience, text }))],
         plan.speakers, secretRules,
       );
       if (secretViolations.length) {
@@ -1317,6 +1331,7 @@ export function chatRoutes(ctx: Ctx) {
             blocks: scriptBlocks.length,
             choices_count: choices?.length ?? 0,
             pass_ms: passMs,
+            actor_supplements: actorSupplementDiagnostics,
             clock_observe: sealClockObserve(clockCore, 'dialog', scene, convNow, regenTurnStartId, 'success', plan.applied.discarded),
           },
           ...icInstruction.logField,

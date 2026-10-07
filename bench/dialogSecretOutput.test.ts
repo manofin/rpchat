@@ -161,6 +161,82 @@ async function main() {
     assert.ok(firstToken > events.findIndex(e => e.type === 'start'));
     assert.equal(events.at(-1).type, 'done');
   });
+  await check('actor supplement merges continued speech without claiming notebook ownership correction', async () => {
+    const id = await room([cast[0].id]); output = '나리 | 공개 대본은 그대로야.';
+    actorOutput = { 나리: '대사 앞의 서술 제외.\n나리 | 확인할게.\n\n왼손목 부상은 아직 낫지 않았어요.\n사용자 HP가 2씩 깎여요.\n제가 가진 수첩을 돌려주기로 한 약속은 아직 이행되지 않았어요.' };
+    const r = await generate(id);
+    assert.ok(r.body.includes('"type":"done"'));
+    assert.ok(r.body.includes('제가 가진 수첩'));
+    assert.ok(!r.body.includes('대사 앞의 서술 제외'));
+    const rows = assistantRows(id).map(row => ({ ...row, meta: JSON.parse(row.meta_json) }));
+    assert.ok(rows.every(row => !row.content.includes('대사 앞의 서술 제외')));
+    const privateRows = rows.filter(row => row.meta.observation?.visibility === 'private');
+    assert.equal(privateRows.length, 1);
+    assert.equal(privateRows[0].content, '확인할게. 왼손목 부상은 아직 낫지 않았어요. 사용자 HP가 2씩 깎여요. 제가 가진 수첩을 돌려주기로 한 약속은 아직 이행되지 않았어요.');
+    assert.equal(privateRows[0].meta.block_kind, 'line');
+    assert.equal(privateRows[0].meta.speaker_character_id, cast[0].id);
+    const log = db.prepare("SELECT budget_json FROM generation_log WHERE conversation_id = ? AND status = 'complete'").get(id) as any;
+    const diagnostics = JSON.parse(log.budget_json).dialog_log.actor_supplements;
+    assert.deepEqual(diagnostics, [{ actor_id: cast[0].id, accepted_lines: 4, rejected_lines: 1, dropped_lines: 0 }]);
+    assert.ok(!JSON.stringify(diagnostics).includes('제가 가진 수첩'));
+  });
+  await check('actor supplement cannot voice another actor without a registered secret', async () => {
+    const id = await room([cast[0].id]); output = '나리 | 공개 대본은 그대로야.';
+    actorOutput = { 나리: '세라 | 다른 화자 보충 금지.\n다른 화자의 이어지는 대사도 제외.\n나리 | 본인 보충 허용.' };
+    const r = await generate(id);
+    assert.ok(r.body.includes('"type":"done"'));
+    assert.ok(!r.body.includes('다른 화자 보충 금지'));
+    assert.ok(!r.body.includes('다른 화자의 이어지는 대사도 제외'));
+    const rows = assistantRows(id).map(row => ({ ...row, meta: JSON.parse(row.meta_json) }));
+    assert.ok(rows.every(row => !row.content.includes('다른 화자 보충 금지')));
+    assert.equal(rows.filter(row => row.meta.observation?.visibility === 'private').length, 1);
+  });
+  await check('secret checks cover merged continuations, not just original speaker lines', async () => {
+    const id = await room([cast[0].id]);
+    const scene = JSON.parse(sceneOf(id));
+    const anchor = scene.dialog_context.entries[0].anchor_message_id;
+    const hidden = 'GM_ONLY_CONTINUATION_9234';
+    db.prepare(`INSERT INTO memories(id,conversation_id,content,source,status,importance,scope,evidence_message_ids_json,created_at,updated_at)
+      VALUES(?, ?, ?, 'manual', 'pinned', 3, 'conversation', ?, '2026', '2026')`).run(id + '-gm', id, hidden, JSON.stringify([anchor]));
+    await api('PATCH', `/api/conversations/${id}`, { scene: { dialog_context: { version: 1, entries: [
+      ...scene.dialog_context.entries, { memory_id: id + '-gm', anchor_message_id: anchor, kind: 'fact', known_by: [], status: 'active' },
+    ] }, pending_edit: { head_message_id: anchor } } });
+    const before = sceneOf(id);
+    output = '나리 | 공개 대본 유지.'; actorOutput = { 나리: `나리 | 이어지는 말.\n${hidden}` };
+    const r = await generate(id);
+    assert.ok(r.body.includes('"type":"error"'));
+    assert.ok(!r.body.includes('"type":"done"'));
+    assert.ok(!r.body.includes(hidden));
+    assert.ok(!JSON.stringify(assistantRows(id)).includes(hidden));
+    assert.equal(sceneOf(id), before);
+  });
+  await check('actor control preprocessing omits sentinels and thoughts but keeps self action', async () => {
+    const id = await room([cast[0].id]); output = '나리 | 공개 대본 유지.';
+    actorOutput = { 나리: '나리 | 응.\nNO_LINE\n<think>\n세라 | 내부 생각 제외.\n</think>\nNO_NARRATION\n*나리가 고개를 끄덕인다*' };
+    const r = await generate(id);
+    assert.ok(r.body.includes('"type":"done"'));
+    assert.ok(!r.body.includes('NO_LINE'));
+    assert.ok(!r.body.includes('NO_NARRATION'));
+    assert.ok(!r.body.includes('내부 생각 제외'));
+    const rows = assistantRows(id).map(row => ({ ...row, meta: JSON.parse(row.meta_json) }));
+    const privateRows = rows.filter(row => row.meta.observation?.visibility === 'private');
+    assert.equal(privateRows.length, 1);
+    assert.equal(privateRows[0].content, '응. *나리가 고개를 끄덕인다*');
+    assert.equal(privateRows[0].meta.block_kind, 'line');
+    assert.equal(privateRows[0].meta.speaker_character_id, cast[0].id);
+    const log = db.prepare("SELECT budget_json FROM generation_log WHERE conversation_id = ? AND status = 'complete'").get(id) as any;
+    assert.deepEqual(JSON.parse(log.budget_json).dialog_log.actor_supplements,
+      [{ actor_id: cast[0].id, accepted_lines: 2, rejected_lines: 0, dropped_lines: 0 }]);
+  });
+  await check('invalid-only actor supplement is omitted while public narration survives', async () => {
+    const id = await room([cast[0].id]); output = '공개 서술 유지.';
+    actorOutput = { 나리: '제가 가진 수첩은 여기 있습니다.\n세라 | 다른 화자만.' };
+    const r = await generate(id);
+    assert.ok(r.body.includes('"type":"done"'));
+    const rows = assistantRows(id).map(row => ({ ...row, meta: JSON.parse(row.meta_json) }));
+    assert.ok(rows.some(row => row.content === '공개 서술 유지.'));
+    assert.equal(rows.filter(row => row.meta.observation?.visibility === 'private').length, 0);
+  });
   await check('room without private facts keeps live public streaming', async () => {
     const id = await room('public'); output = '나리 | 하나.\n세라 | 둘.';
     const events = sseEvents((await generate(id)).body);
