@@ -64,5 +64,5 @@ const collapsed = renderToStaticMarkup(createElement(SceneStatusPanel, {
 }));
 assert.match(collapsed,/is-collapsed/);
 assert.match(collapsed,/scene-status-toggle-summary/);
-assert.match(collapsed,/09:15.*HP 7.*동행 1명/);
+assert.match(collapsed,/09:15.*HP\s7.*동행 1명/);
 console.log('passed mobile collapsed known scene summary');

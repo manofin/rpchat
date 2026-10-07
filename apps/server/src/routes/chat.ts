@@ -209,11 +209,31 @@ function withDeadline(ms: number, parent: AbortSignal): { signal: AbortSignal; d
   };
 }
 
-/** Optional pass (N/E): local model timeout → skip; remaining-total / parent deadline → rethrow. */
-function isOptionalPassSkip(err: unknown, controller: AbortController): boolean {
-  if (controller.signal.aborted || isTurnDeadlineError(err) || isTurnDeadlineError(controller.signal.reason)) return false;
-  return true;
+
+/** Map turn termination + thrown error to SSE failure code/message.
+ *  Keep LOCK four-terminal codes; preserve validation/connection from generationFailure
+ *  instead of collapsing them into internal_error. */
+function resolveTurnFail(
+  term: import('../model/turnDeadline.js').TurnTerminationReason,
+  err: unknown,
+): { failCode: GenerationFailureCode; message: string } {
+  const failure = generationFailure(err);
+  const failCode: GenerationFailureCode =
+    term === 'user_cancelled' ? 'user_cancelled'
+    : term === 'turn_deadline_exceeded' ? 'turn_deadline_exceeded'
+    : term === 'model_timeout' ? 'model_timeout'
+    : (failure.code === 'validation' || failure.code === 'connection' || failure.code === 'timeout')
+      ? failure.code
+      : term === 'internal_error' ? 'internal_error'
+      : failure.code;
+  const message =
+    failCode === 'user_cancelled' || failCode === 'turn_deadline_exceeded'
+    || failCode === 'model_timeout' || failCode === 'internal_error'
+      ? turnTerminationMessage(failCode)
+      : failure.message;
+  return { failCode, message };
 }
+
 
 function attachTurnDeadline(
   ctx: Ctx,
@@ -630,8 +650,7 @@ export function chatRoutes(ctx: Ctx) {
     const passMs: { delta: number; n: number; f: number; e: number[]; c: number } = { delta: 0, n: 0, f: 0, e: [], c: 0 };
     const t0delta = Date.now();
     try {
-      const deltaDeadline = withCallDeadline(config.model.timeoutMs, turn.remainingMs(), controller.signal);
-      try {
+      // User cancel / turn deadline must reach the model call (partyGenerationLifecycle fence).
       const proposal = await ctx.queue.runGeneration(generationId, () =>
         ctx.model.complete({
           model,
@@ -640,16 +659,14 @@ export function chatRoutes(ctx: Ctx) {
           top_p: 0.9,
           max_tokens: SCENE_DELTA_MAX_TOKENS,
           stop: [],
-          signal: deltaDeadline.signal,
+          signal: controller.signal,
         }),
         controller.signal,
       );
       patch = parseSceneDelta(proposal.text);
       clockParse = patch === null ? 'null' : 'ok';
-      } finally {
-        deltaDeadline.done();
-      }
     } catch (err) {
+      // scene unchanged on proposal failure (no-op); abort/deadline → 499
       if (controller.signal.aborted || isTurnDeadlineError(err)) {
         turn.recordTerminal(classifyTurnTermination(controller, err, turn.termination));
         return reply.code(499).send({ error: turnTerminationMessage(turn.termination ?? 'user_cancelled') });
@@ -808,8 +825,9 @@ export function chatRoutes(ctx: Ctx) {
         }), controller.signal);
         narration = sanitizeGeneratedContent(out.text).trim();
       } catch (err) {
-        if (!isOptionalPassSkip(err, controller)) {
-          if (isTurnDeadlineError(err) || isTurnDeadlineError(nDeadline.signal.reason)) turn.tripDeadline();
+        if (controller.signal.aborted) throw err;
+        if (isTurnDeadlineError(err) || isTurnDeadlineError(nDeadline.signal.reason)) {
+          turn.tripDeadline();
           throw err;
         }
         req.log.warn({ err, conversationId: conv.id }, 'pass N failed; beat continues without narration');
@@ -885,8 +903,9 @@ export function chatRoutes(ctx: Ctx) {
           const text = sanitizeGeneratedContent(out.text).trim();
           if (text) extraTexts[e.character_id] = text;
         } catch (err) {
-          if (!isOptionalPassSkip(err, controller)) {
-            if (isTurnDeadlineError(err) || isTurnDeadlineError(eDeadline.signal.reason)) turn.tripDeadline();
+          if (controller.signal.aborted) throw err;
+          if (isTurnDeadlineError(err) || isTurnDeadlineError(eDeadline.signal.reason)) {
+            turn.tripDeadline();
             throw err;
           }
           req.log.warn({ err, conversationId: conv.id, speaker: e.name }, 'pass E failed; that extra is dropped');
@@ -1041,33 +1060,31 @@ export function chatRoutes(ctx: Ctx) {
     } catch (err) {
       const term = classifyTurnTermination(controller, err, turn.termination);
       turn.recordTerminal(term);
-      const termCode = term;
-      const aborted = termCode === 'user_cancelled' || termCode === 'turn_deadline_exceeded' || wasAborted(controller, err);
-      const softStop = termCode === 'user_cancelled';
-      const msg = (termCode === 'user_cancelled' || termCode === 'turn_deadline_exceeded' || termCode === 'model_timeout' || termCode === 'internal_error')
-        ? turnTerminationMessage(termCode)
-        : (err instanceof ModelError ? err.message : (err as Error)?.name === 'TimeoutError' ? turnTerminationMessage('model_timeout') : (err as Error).message);
-      const failCode: GenerationFailureCode =
-        termCode === 'user_cancelled' ? 'user_cancelled'
-        : termCode === 'turn_deadline_exceeded' ? 'turn_deadline_exceeded'
-        : termCode === 'model_timeout' ? 'model_timeout'
-        : termCode === 'internal_error' ? 'internal_error'
-        : generationFailure(err).code;
+      const aborted = term === 'user_cancelled' || term === 'turn_deadline_exceeded' || wasAborted(controller, err);
+      const softStop = term === 'user_cancelled';
+      const isDeadline = term === 'turn_deadline_exceeded';
+      const { failCode, message: msg } = resolveTurnFail(term, err);
       if (focusRow) {
-        updateMessage(db, focusRow.id, {
-          content: buffer.trim(),
-          status: aborted ? 'interrupted' : 'error',
-          meta: aborted ? { finish_reason: term === 'turn_deadline_exceeded' ? 'turn_deadline_exceeded' : 'aborted' } : { error: msg },
-        });
         if (softStop) {
+          updateMessage(db, focusRow.id, {
+            content: buffer.trim(),
+            status: 'interrupted',
+            meta: { finish_reason: 'aborted' },
+          });
           sse.send({ type: 'done', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', focusRow.id)!), usage: null, ttftMs: null, totalMs: Date.now() - tBeat });
         } else {
-          if (term === 'internal_error' || failCode === 'generation' || failCode === 'connection' || failCode === 'validation') {
-            ctx.log.error({ err, generationId, termination: term }, '비트 생성 실패');
+          updateMessage(db, focusRow.id, {
+            content: buffer.trim(),
+            status: 'error',
+            meta: { error: msg },
+          });
+          if (failCode === 'validation' || failCode === 'model_timeout' || isDeadline) {
+            ctx.log.warn({ generationId, termination: term, code: failCode }, '비트 생성 종료');
           } else {
-            ctx.log.warn({ generationId, termination: term }, '비트 생성 종료');
+            ctx.log.error({ err, generationId }, '비트 생성 실패');
           }
-          if (!aborted) retractUnconfirmedSend(userMessage, conv.head_message_id);
+          // Deadline ≠ soft cancel: reclaim so partial interrupted blocks do not feed next prompt.
+          retractUnconfirmedSend(userMessage, conv.head_message_id);
           sse.send({ type: 'error', code: failCode, message: msg, messageId: focusRow.id });
         }
       } else if (softStop) {
@@ -1082,22 +1099,24 @@ export function chatRoutes(ctx: Ctx) {
           });
         }
       } else if (aborted) {
+        // turn_deadline_exceeded before focus: reclaim partial header/narration (not soft-cancel residue)
+        if (isDeadline) retractUnconfirmedSend(userMessage, conv.head_message_id);
+        ctx.log.warn({ generationId, termination: term }, '비트 생성 종료');
         const closing = emitted[emitted.length - 1];
-        ctx.log.warn({ generationId, termination: termCode }, '비트 생성 종료');
-        if (closing) {
+        if (closing && !isDeadline) {
           sse.send({ type: 'error', code: failCode, message: msg, messageId: closing.id });
         } else {
           sse.send({ type: 'error', code: failCode, message: msg });
         }
       } else {
-        ctx.log.error({ err, generationId, termination: term }, '비트 생성 실패');
+        ctx.log.error({ err, generationId }, '비트 생성 실패');
         retractUnconfirmedSend(userMessage, conv.head_message_id);
         sse.send({ type: 'error', code: failCode, message: msg });
       }
       logClockObserve(
         conv.id, focusRow?.id ?? emitted[emitted.length - 1]?.id ?? userMessage?.id,
-        profileName, aborted ? 'interrupt' : 'fail', Date.now() - tBeat,
-        sealClockObserve(clockCore, 'beat', scene, convNow, regenTurnStartId, aborted ? 'interrupt' : 'fail', plan.applied.discarded),
+        profileName, softStop ? 'interrupt' : 'fail', Date.now() - tBeat,
+        sealClockObserve(clockCore, 'beat', scene, convNow, regenTurnStartId, softStop ? 'interrupt' : 'fail', plan.applied.discarded),
         turnTelemetryBudget(turn, { delta: passMs.delta, n: passMs.n, f: passMs.f, c: passMs.c }),
         term,
       );
@@ -1196,8 +1215,7 @@ export function chatRoutes(ctx: Ctx) {
     const passMs: { delta: number; s: number } = { delta: 0, s: 0 };
     const t0delta = Date.now();
     try {
-      const deltaDeadline = withCallDeadline(config.model.timeoutMs, turn.remainingMs(), controller.signal);
-      try {
+      // User cancel / turn deadline must reach the model call (partyGenerationLifecycle fence).
       const proposal = await ctx.queue.runGeneration(generationId, () =>
         ctx.model.complete({
           model,
@@ -1206,16 +1224,14 @@ export function chatRoutes(ctx: Ctx) {
           top_p: 0.9,
           max_tokens: SCENE_DELTA_MAX_TOKENS,
           stop: [],
-          signal: deltaDeadline.signal,
+          signal: controller.signal,
         }),
         controller.signal,
       );
       patch = parseSceneDelta(proposal.text);
       clockParse = patch === null ? 'null' : 'ok';
-      } finally {
-        deltaDeadline.done();
-      }
     } catch (err) {
+      // scene unchanged on proposal failure (no-op); abort/deadline → 499
       if (controller.signal.aborted || isTurnDeadlineError(err)) {
         turn.recordTerminal(classifyTurnTermination(controller, err, turn.termination));
         return reply.code(499).send({ error: turnTerminationMessage(turn.termination ?? 'user_cancelled') });
@@ -1475,34 +1491,32 @@ export function chatRoutes(ctx: Ctx) {
     } catch (err) {
       const term = classifyTurnTermination(controller, err, turn.termination);
       turn.recordTerminal(term);
-      const termCode = term;
-      const aborted = termCode === 'user_cancelled' || termCode === 'turn_deadline_exceeded' || wasAborted(controller, err);
-      const softStop = termCode === 'user_cancelled';
-      const failure = generationFailure(err);
-      const msg = (termCode === 'user_cancelled' || termCode === 'turn_deadline_exceeded' || termCode === 'model_timeout' || termCode === 'internal_error')
-        ? turnTerminationMessage(termCode)
-        : failure.message;
-      const failCode: GenerationFailureCode =
-        termCode === 'user_cancelled' ? 'user_cancelled'
-        : termCode === 'turn_deadline_exceeded' ? 'turn_deadline_exceeded'
-        : termCode === 'model_timeout' ? 'model_timeout'
-        : termCode === 'internal_error' ? 'internal_error'
-        : failure.code;
+      const aborted = term === 'user_cancelled' || term === 'turn_deadline_exceeded' || wasAborted(controller, err);
+      const softStop = term === 'user_cancelled';
+      const isDeadline = term === 'turn_deadline_exceeded';
+      const { failCode, message: msg } = resolveTurnFail(term, err);
       if (scriptRow) {
-        updateMessage(db, scriptRow.id, {
-          content: secretRules.length ? '' : buffer.trim(),
-          status: aborted ? 'interrupted' : 'error',
-          meta: aborted ? { finish_reason: term === 'turn_deadline_exceeded' ? 'turn_deadline_exceeded' : 'aborted' } : { error: msg },
-        });
         if (softStop) {
+          updateMessage(db, scriptRow.id, {
+            content: secretRules.length ? '' : buffer.trim(),
+            status: 'interrupted',
+            meta: { finish_reason: 'aborted' },
+          });
           sse.send({ type: 'done', message: messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', scriptRow.id)!), usage: null, ttftMs: null, totalMs: Date.now() - tBeat });
         } else {
-          if (term === 'internal_error' || failCode === 'generation' || failCode === 'connection' || failCode === 'validation') {
-            ctx.log.error({ ...(secretRules.length ? {} : { err }), generationId, termination: term }, '대본 생성 실패');
+          updateMessage(db, scriptRow.id, {
+            content: secretRules.length ? '' : buffer.trim(),
+            status: 'error',
+            meta: { error: msg },
+          });
+          if (failCode === 'validation' || failCode === 'model_timeout' || isDeadline) {
+            ctx.log.warn({ generationId, termination: term, code: failCode }, '대본 생성 종료');
+          } else if (secretRules.length) {
+            ctx.log.error({ generationId, termination: term }, '대본 생성 실패');
           } else {
-            ctx.log.warn({ generationId, termination: term }, '대본 생성 종료');
+            ctx.log.error({ err, generationId }, '대본 생성 실패');
           }
-          if (!aborted) retractUnconfirmedSend(userMessage, conv.head_message_id);
+          retractUnconfirmedSend(userMessage, conv.head_message_id);
           sse.send({ type: 'error', code: failCode, message: msg, messageId: scriptRow.id });
         }
       } else if (softStop) {
@@ -1515,17 +1529,18 @@ export function chatRoutes(ctx: Ctx) {
           });
         }
       } else if (aborted) {
-        ctx.log.warn({ generationId, termination: termCode }, '대본 생성 종료');
+        if (isDeadline) retractUnconfirmedSend(userMessage, conv.head_message_id);
+        ctx.log.warn({ generationId, termination: term }, '대본 생성 종료');
         sse.send({ type: 'error', code: failCode, message: msg });
       } else {
-        ctx.log.error({ ...(secretRules.length ? {} : { err }), generationId, termination: term }, '대본 생성 실패');
+        ctx.log.error({ ...(secretRules.length ? {} : { err }), generationId }, '대본 생성 실패');
         retractUnconfirmedSend(userMessage, conv.head_message_id);
         sse.send({ type: 'error', code: failCode, message: msg });
       }
       logClockObserve(
         conv.id, scriptRow?.id ?? emitted[emitted.length - 1]?.id ?? userMessage?.id,
-        profileName, aborted ? 'interrupt' : 'fail', Date.now() - tBeat,
-        sealClockObserve(clockCore, 'dialog', scene, convNow, regenTurnStartId, aborted ? 'interrupt' : 'fail', plan.applied.discarded),
+        profileName, softStop ? 'interrupt' : 'fail', Date.now() - tBeat,
+        sealClockObserve(clockCore, 'dialog', scene, convNow, regenTurnStartId, softStop ? 'interrupt' : 'fail', plan.applied.discarded),
         turnTelemetryBudget(turn, { delta: passMs.delta, s: passMs.s }),
         term,
       );

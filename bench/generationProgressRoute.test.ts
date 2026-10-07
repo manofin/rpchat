@@ -86,7 +86,7 @@ async function main() {
         assert.ok(events.some(e=>e.type==='done'));
         assert.ok(events.findIndex(e=>e.type==='progress'&&e.phase==='validating')<events.findIndex(e=>e.type==='token'));
       } else {
-        const error=events.find(e=>e.type==='error');assert.equal(error?.code,mode);
+        const error=events.find(e=>e.type==='error');assert.equal(error?.code,mode==='timeout'?'model_timeout':mode);
         assert.ok(!error.message.includes(SECRET) && !error.message.includes('unsafe private data'));
         assert.ok(!events.some(e=>e.type==='token'));
       }

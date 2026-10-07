@@ -57,7 +57,7 @@ export function isModelTimeoutError(err: unknown): boolean {
 export type TurnDeadlineOpts = {
   deadlineMs: number;
   controller: AbortController;
-  /** Elapsed clock in ms. Defaults to Date.now() (mockable via mock.timers Date). */
+  /** Elapsed clock in ms. Defaults to Date.now() (mockable via mock.timers Date). Residual: wall-clock, not monotonic. */
   now?: () => number;
   /** Wall clock ISO for telemetry only. */
   wallIso?: () => string;
