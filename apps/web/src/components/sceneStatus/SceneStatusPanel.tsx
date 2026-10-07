@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Scene } from '../../types';
+import type { Scene, SceneCatalogPlace } from '../../types';
 import type { SceneActionIntent } from '../../lib/sceneStatusCatalog';
 import { buildSceneStatusSpec } from '../../lib/sceneStatusSpec';
 import { SceneStatusRenderer } from './SceneStatusRenderer';
@@ -7,6 +7,7 @@ import { SceneStatusRenderer } from './SceneStatusRenderer';
 export function SceneStatusPanel({
   conversationId,
   scene,
+  places,
   characterName,
   hasBeatRoster,
   focusId,
@@ -18,6 +19,7 @@ export function SceneStatusPanel({
 }: {
   conversationId: string;
   scene: Scene;
+  places?: SceneCatalogPlace[];
   characterName?: string;
   hasBeatRoster: boolean;
   focusId?: string | null;
@@ -30,6 +32,7 @@ export function SceneStatusPanel({
   const spec = buildSceneStatusSpec({
     conversationId,
     scene,
+    places,
     characterName,
     hasBeatRoster,
     focusId,
