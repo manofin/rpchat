@@ -41,13 +41,17 @@ async function main(){
  await t('model INFO remains byte-identical even when saved user sheet exists',()=>assert.equal(renderInfoBlock({scene:{format:'dialog',user_sheet:sheet},cast:[],userName:'방문자'}),'[정보]: 방문자\n[계약]: —\n[침식]: —\n[목표]: —\n[인물]: —'));
  await t('actual SSE callback reloads committed scene after successful story/beat/dialog completion',async()=>{
   const hook=fs.readFileSync('apps/web/src/pages/useChat.ts','utf8');
-  const source=ts.createSourceFile('useChat.ts',hook,ts.ScriptTarget.Latest,true);let callback:ts.ArrowFunction|undefined;
-  function visit(node:ts.Node):void{if(ts.isVariableDeclaration(node)&&ts.isIdentifier(node.name)&&node.name.text==='runStream'){assert.ok(node.initializer&&ts.isCallExpression(node.initializer));const fn=node.initializer.arguments[0];assert.ok(ts.isArrowFunction(fn));callback=fn}ts.forEachChild(node,visit)}visit(source);assert.ok(callback);
-  assert.ok(hook.includes("[state.generating, state.detail?.conversation.scene.format, state.detail?.conversation.mode, applyEvent"), "loaded conversation mode and format must refresh the memoized streaming callback");
+  const source=ts.createSourceFile('useChat.ts',hook,ts.ScriptTarget.Latest,true);let callback:ts.ArrowFunction|undefined;let dependencies:ts.Expression|undefined;
+  function visit(node:ts.Node):void{if(ts.isVariableDeclaration(node)&&ts.isIdentifier(node.name)&&node.name.text==='runStream'){assert.ok(node.initializer&&ts.isCallExpression(node.initializer));const fn=node.initializer.arguments[0];assert.ok(ts.isArrowFunction(fn));callback=fn;dependencies=node.initializer.arguments[1]}ts.forEachChild(node,visit)}visit(source);assert.ok(callback);
+  assert.ok(dependencies && ts.isArrayLiteralExpression(dependencies));
+  const dependencyNames=dependencies.elements.map(element=>element.getText(source));
+  assert.ok(dependencyNames.includes("state.detail?.conversation.scene.format"), "loaded conversation format must refresh the memoized streaming callback");
+  assert.ok(dependencyNames.includes("state.detail?.conversation.mode"), "story completion must use current mode");
+  assert.ok(dependencyNames.includes("state.messages"), "draft recovery must use current pre-send message IDs");
   const compiled=ts.transpileModule(`const runStream=${callback.getText(source)};`,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText;
   for(const [format,type,status,expectedReload]of [['dialog','done','complete',1],['beat','done','complete',1],[undefined,'done','complete',0],['dialog','done','interrupted',0],['dialog','token','complete',0]]as const){
    let reloads=0;const received:any[]=[];const scope={revision:0};const abortRef:{current:AbortController|null}={current:null};const event:any={type,message:{status},text:'x'};
-   const deps={state:{generating:false,detail:{conversation:{scene:{format}}}},scope,scopeRef:{current:scope},abortRef,genIdRef:{current:null},AbortController,setStreamConnected:()=>{},patchState:()=>{},applyEvent:(e:any)=>received.push(e),streamPost:async(_p:any,_b:any,cb:any)=>cb(event),reload:async()=>{assert.equal(abortRef.current,null);reloads++;return{messages:[]}}};
+   const deps={state:{generating:false,messages:[],detail:{conversation:{scene:{format}}}},scope,scopeRef:{current:scope},abortRef,genIdRef:{current:null},AbortController,setStreamConnected:()=>{},patchState:()=>{},applyEvent:(e:any)=>received.push(e),streamPost:async(_p:any,_b:any,cb:any)=>cb(event),reload:async()=>{assert.equal(abortRef.current,null);reloads++;return{messages:[]}}};
    const run=new Function(...Object.keys(deps),`${compiled}return runStream;`)(...Object.values(deps));assert.equal(await run('/fixture',{}),true);assert.deepEqual(received,[event]);assert.equal(reloads,expectedReload);
   }
  });

@@ -14,6 +14,7 @@ export type SceneStatusSpecInput = {
   scene: Scene;
   places?: SceneCatalogPlace[];
   characterName?: string;
+  roster?: Array<{ id: string; name: string }>;
   hasBeatRoster: boolean;
   focusId?: string | null;
   generating?: boolean;
@@ -36,6 +37,11 @@ function panelUiState(input: SceneStatusSpecInput): UiState {
 }
 
 function castMembers(input: SceneStatusSpecInput): CastMember[] {
+  if (input.scene.present_ids?.length) {
+    return [...new Set(input.scene.present_ids)].map(id => ({
+      id, name: input.roster?.find(actor => actor.id === id)?.name || '이름을 알 수 없는 동행', active: true,
+    }));
+  }
   const name = (input.characterName || '').trim();
   if (!name) return [];
   const id = input.focusId?.trim() || 'speaker';

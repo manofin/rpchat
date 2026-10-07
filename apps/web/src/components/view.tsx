@@ -59,9 +59,9 @@ export function BeatUiPanel({ ui, selectedRosterId, onRosterSelect }: { ui: Beat
           {(ui.roster ?? []).map((r) => {
             const isFocus = Boolean(ui.focus_id && r.id === ui.focus_id);
             const selectable = Boolean(onRosterSelect && r.image_url && !r.locked);
-            const label = `${r.name}${r.locked ? ' 잠금' : ''}${isFocus && !r.locked ? ' 포커스' : ''}`;
-            const content = <>{r.chip} {r.name}
-              {r.locked ? <span className="beat-chip-tag">잠금</span> : null}
+            const label = `${r.name}${r.locked ? ' 이번 턴 대사 없음' : ''}${isFocus && !r.locked ? ' 포커스' : ''}`;
+            const content = <>{r.locked ? '' : r.chip} {r.name}
+              {r.locked ? <span className="beat-chip-tag">이번 턴 대사 없음</span> : null}
               {isFocus && !r.locked ? <span className="beat-chip-tag">포커스</span> : null}</>;
             const cls = `beat-chip${r.locked ? ' locked' : ''}${isFocus && !r.locked ? ' is-focus' : ''}${selectedRosterId === r.id ? ' is-selected' : ''}`;
             return selectable

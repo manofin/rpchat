@@ -58,3 +58,11 @@ for(const [mode,format,expected] of [['story',undefined,true],['chat','beat',tru
  assert.equal(invoke(state,{type:'done',message:{status:'interrupted'}}),false);
 }
 console.log('passed committed scene resync cases');
+
+const collapsed = renderToStaticMarkup(createElement(SceneStatusPanel, {
+  conversationId:'mobile',scene,hasBeatRoster:false,placement:'mobile',
+}));
+assert.match(collapsed,/is-collapsed/);
+assert.match(collapsed,/scene-status-toggle-summary/);
+assert.match(collapsed,/09:15.*HP 7.*동행 1명/);
+console.log('passed mobile collapsed known scene summary');

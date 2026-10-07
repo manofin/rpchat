@@ -1,4 +1,4 @@
-import type { ConversationDetail, Message, SseBudget, SseEvent } from '../types';
+import type { ConversationDetail, Message, SseBudget, SseEvent, GenerationProgress, GenerationFailureCode } from '../types';
 import { EVENT_CONTRACT_UNAVAILABLE } from './chatEvents';
 
 export interface ChatState {
@@ -7,6 +7,8 @@ export interface ChatState {
   loading: boolean;
   error: string | null;
   generating: boolean;
+  generationProgress?: GenerationProgress | null;
+  errorCode?: GenerationFailureCode | null;
   streamingId: string | null;
   lastBudget: SseBudget | null;
   budgetAtHead: string | null;
@@ -31,6 +33,8 @@ function upsert(messages: Message[], message: Message, selectBranch = false): Me
 
 export function reduceChatEvent(state: ChatState, event: SseEvent, conversationId: string): ChatState {
   switch (event.type) {
+    case 'progress':
+      return state.generating ? { ...state, generationProgress: { generationId: event.generationId, phase: event.phase, startedAt: event.startedAt } } : state;
     case 'start': {
       if (event.message && event.message.conversation_id !== conversationId) return state;
       const existing = state.messages.find((message) => message.id === event.messageId);
@@ -61,6 +65,7 @@ export function reduceChatEvent(state: ChatState, event: SseEvent, conversationI
       return {
         ...state, messages: upsert(state.messages, event.message),
         generating: settlesActive ? false : state.generating,
+        generationProgress: settlesActive ? null : state.generationProgress,
         streamingId: settlesActive ? null : state.streamingId,
         lastBudget: settlesActive && complete && event.budget ? event.budget : state.lastBudget,
         budgetAtHead: settlesActive && complete && event.budget ? event.message.id : state.budgetAtHead,
@@ -77,7 +82,8 @@ export function reduceChatEvent(state: ChatState, event: SseEvent, conversationI
         messages: state.messages.map((message) => message.id === id
           ? { ...message, status: 'error', meta: { ...message.meta, error: event.message } } : message),
         generating: settlesActive ? false : state.generating,
-        streamingId: settlesActive ? null : state.streamingId, error: event.message,
+        generationProgress: settlesActive ? null : state.generationProgress,
+        streamingId: settlesActive ? null : state.streamingId, error: event.message, errorCode: event.code ?? null,
       };
     }
   }

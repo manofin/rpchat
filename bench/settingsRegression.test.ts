@@ -82,7 +82,7 @@ await t('chat SSE FailSend recovery contract remains intact', async () => {
     let notifyReload!: () => void;
     const reloading = new Promise<void>((resolve) => { notifyReload = resolve; });
     const deps = {
-      state: { generating: false }, abortRef, genIdRef: { current: null }, scope, scopeRef,
+      state: { generating: false, messages: [] }, abortRef, genIdRef: { current: null }, scope, scopeRef,
       setStreamConnected: (connected: boolean) => { connections.push(connected); },
       patchState: (patch: { error?: string | null }) => { if (patch.error !== undefined) visibleError = patch.error; }, ApiError, sendOkForComposer, StreamInterruptedError, AbortController,
       applyEvent: (e: Event) => { received.push(e); if (e.type === 'error') visibleError = e.message; },

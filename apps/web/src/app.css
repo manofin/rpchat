@@ -1837,6 +1837,7 @@ button.beat-chip { background: transparent; color: inherit; cursor: pointer; }
 }
 .scene-status-toggle {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   width: 100%;
@@ -1847,6 +1848,13 @@ button.beat-chip { background: transparent; color: inherit; cursor: pointer; }
   color: inherit;
   text-align: left;
   cursor: pointer;
+}
+.scene-status-toggle-summary {
+  flex-basis: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  color: var(--kami-text-muted);
 }
 .scene-status-toggle-title {
   font-size: 13px;
@@ -1946,3 +1954,17 @@ button.beat-chip { background: transparent; color: inherit; cursor: pointer; }
   .story-facts { justify-content: flex-start; }
   .story-section { padding: 28px 18px; }
 }
+
+.conversation-recency { display: block; min-width: 0; max-width: 100%; }
+.conversation-recency > span { display: block; }
+.conversation-recency > .p.conversation-played { white-space: normal; overflow-wrap: anywhere; }
+.jump-latest { align-self: center; flex: 0 0 auto; margin: 4px 0; }
+.msg-actions summary { cursor: pointer; padding: 2px 8px; border-radius: 6px; }
+.msg-actions summary:focus-visible { outline: 2px solid var(--accent); }
+.msg-action-items { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 0; }
+.msg-meta { flex-wrap: wrap; }
+
+.whisper-recipients { margin: 6px 12px; min-width: 0; border: 1px solid var(--bg-3); border-radius: 8px; font-size: 12px; }
+.whisper-recipient { display: flex; gap: 8px; flex-wrap: wrap; overflow-wrap: anywhere; }
+.whisper-recipients p { margin: 6px 0; }
+.message-audience { font-size: 12px; color: var(--fg-2); overflow-wrap: anywhere; margin-bottom: 4px; }

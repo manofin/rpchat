@@ -1,3 +1,4 @@
+import { ConversationRecency } from '../components/ConversationRecency';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { del, get, patch, post } from '../lib/api';
 import { back, navigate } from '../lib/router';
@@ -198,8 +199,7 @@ export function ConversationRow({ conv, onChanged }: { conv: Conversation; onCha
   return <div className="list-item char-conversation-row">
     <button className="char-conversation-open body" onClick={() => navigate(`/chat/${conv.id}`)}>
       <span className="t">{conv.favorite ? '★ ' : ''}{conversationTitleLabel(conv)}</span>
-      <span className="p">{conv.preview || '메시지 없음'}</span>
-      <span className="p muted">{relTime(conv.last_message_at || conv.created_at)}</span>
+      <ConversationRecency conversation={conv} />
     </button>
     <button className="btn ghost icon" disabled={busy} onClick={() => void change('favorite')} aria-label="즐겨찾기" aria-pressed={conv.favorite}>{conv.favorite ? '★' : '☆'}</button>
     <button className="btn ghost icon" disabled={busy} onClick={() => void change('delete')} aria-label="삭제">🗑</button>

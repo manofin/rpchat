@@ -414,7 +414,7 @@ export function conversationRoutes(ctx: Ctx) {
         character: characterOut(character),
         persona: persona ? personaOut(persona as PersonaRow) : null,
         messages,
-        activeGeneration: active ? { id: active.id, messageId: active.messageId, startedAt: active.startedAt } : null,
+        activeGeneration: active ? { id: active.id, messageId: active.messageId, startedAt: active.startedAt, phase: active.phase } : null,
       };
     });
 

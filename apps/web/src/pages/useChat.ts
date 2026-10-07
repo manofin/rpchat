@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { abortGeneration, ApiError, get, patch, post, del, sendOkForComposer, streamPost, StreamInterruptedError } from '../lib/api';
-import type { ConversationDetail, Message, SseEvent } from '../types';
+import type { ConversationDetail, Message, SseEvent, GenerationProgress, GenerationFailureCode } from '../types';
 import { initialChatState, reduceChatEvent, type ChatState } from '../lib/chatStreamState';
 
 export type { ChatState } from '../lib/chatStreamState';
@@ -29,6 +29,7 @@ export function useChat(conversationId: string) {
       if (detail.activeGeneration) genIdRef.current = detail.activeGeneration.id;
       else if (!abortRef.current) genIdRef.current = null;
       setState((current) => ({ ...current, detail, messages: detail.messages, loading: false, error: null,
+        generationProgress: detail.activeGeneration?.phase ? { generationId: detail.activeGeneration.id, phase: detail.activeGeneration.phase, startedAt: detail.activeGeneration.startedAt } : null,
         generating: !!detail.activeGeneration, streamingId: detail.activeGeneration?.messageId ?? null }));
       return detail;
     } catch (error) {
@@ -68,6 +69,25 @@ export function useChat(conversationId: string) {
   }, [state.generating, streamConnected, reload]);
 
   useEffect(() => {
+    if (!state.generating || !streamConnected) return;
+    let cancelled = false;
+    let timer: number;
+    const poll = async () => {
+      const revision = scope.revision;
+      try {
+        const result = await get<{ active: Array<{ id: string; conversationId: string; kind: string; phase?: GenerationProgress['phase']; startedAt: string }> }>('/api/generations/active');
+        const active = result.active.find(g => g.conversationId === conversationId && g.kind === 'chat');
+        if (!cancelled && scopeRef.current === scope && revision === scope.revision && active?.phase) {
+          patchState({ generationProgress: { generationId: active.id, phase: active.phase, startedAt: active.startedAt } });
+        }
+      } catch { /* SSE/reload retains responsibility for transport errors. */ }
+      if (!cancelled) timer = window.setTimeout(poll, 700);
+    };
+    void poll();
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [state.generating, streamConnected, conversationId, patchState, scope]);
+
+  useEffect(() => {
     const onVisibility = () => {
       if (document.visibilityState === 'visible' && !abortRef.current) void reload();
     };
@@ -85,17 +105,19 @@ export function useChat(conversationId: string) {
   const runStream = useCallback(async (path: string, body: unknown) => {
     if (state.generating || abortRef.current) return;
     if (scopeRef.current !== scope) return;
+    const previousMessageIds = new Set(state.messages.map(message => message.id));
     const ctrl = new AbortController();
     abortRef.current = ctrl;
     scope.revision++;
     setStreamConnected(true);
-    patchState({ error: null, generating: true });
+    patchState({ error: null, errorCode: null, generating: true, generationProgress: { generationId: '', phase: 'queued', startedAt: new Date().toISOString() } });
     genIdRef.current = null;
     let failed = false;
     let resync = false;
     let result = true;
     let ambiguousInterrupt = false;
     let requestError: string | null = null;
+    let requestErrorCode: GenerationFailureCode | null = null;
     try {
       await streamPost(path, body, (event) => {
         if (scopeRef.current !== scope || abortRef.current !== ctrl) return;
@@ -106,6 +128,7 @@ export function useChat(conversationId: string) {
         if (event.type === 'error') {
           failed = true;
           requestError = event.message;
+          requestErrorCode = event.code ?? null;
         }
         applyEvent(event);
       }, ctrl.signal);
@@ -119,6 +142,7 @@ export function useChat(conversationId: string) {
         result = true;
       } else {
         requestError = (error as Error).message;
+        requestErrorCode = error instanceof StreamInterruptedError || error instanceof TypeError ? 'connection' : (error as Error).name === 'TimeoutError' ? 'timeout' : null;
         if (error instanceof StreamInterruptedError) {
           ambiguousInterrupt = true;
           result = false;
@@ -136,7 +160,7 @@ export function useChat(conversationId: string) {
     }
     if (resync && scopeRef.current === scope) {
       const detail = await reload();
-      // Interrupt is ambiguous: empty the composer only if this user row is already on the head path. Never auto-resend.
+      // Matching old text is not a receipt: only a newly persisted user row confirms this send.
       if (ambiguousInterrupt && scopeRef.current === scope) {
         const submitted = body && typeof body === 'object' && 'content' in body && typeof (body as { content?: unknown }).content === 'string'
           ? (body as { content: string }).content
@@ -145,13 +169,13 @@ export function useChat(conversationId: string) {
           result = true;
         } else {
           const messages = detail?.messages ?? state.messages ?? [];
-          if ([...messages].reverse().some((m) => m.role === 'user' && m.content === submitted)) result = true;
+          if (messages.some((m) => m.role === 'user' && m.content === submitted && !previousMessageIds.has(m.id))) result = true;
         }
       }
-      if (requestError && scopeRef.current === scope) patchState({ error: requestError });
+      if (requestError && scopeRef.current === scope) patchState({ error: requestError, errorCode: requestErrorCode });
     }
     return scopeRef.current === scope ? result : true;
-  }, [state.generating, state.detail?.conversation.scene.format, state.detail?.conversation.mode, applyEvent, patchState, reload, scope]);
+  }, [state.generating, state.messages, state.detail?.conversation.scene.format, state.detail?.conversation.mode, applyEvent, patchState, reload, scope]);
 
   const send = useCallback((content: string, opts?: { inject_instruction?: string } & { choice?: { message_id: string; index: number; visibility: 'public' | 'private' } } & { observation?: { visibility: 'private'; recipient_ids: string[] } }) => {
     const body = { content, ...opts };

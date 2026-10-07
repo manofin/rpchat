@@ -163,6 +163,7 @@ export function continuationRoutes(ctx: Ctx) {
       reply.hijack();
       reply.raw.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-cache, no-transform' });
       const send = (event: unknown) => { if (!reply.raw.destroyed && !reply.raw.writableEnded) reply.raw.write(`data: ${JSON.stringify(event)}\n\n`); };
+      if (req.headers['x-rpchat-generation-progress'] === '1') ctx.queue.watchProgress(generationId, g => send({ type: 'progress', generationId, phase: g.phase!, startedAt: g.startedAt }));
       const out = (id: string) => messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', id)!);
       send({ type: 'start', generationId, messageId: row.id, eventVersion: 1, message: out(row.id) });
       const streamEvents = createChatEventStream({ ...row, meta: parseMessageMeta(row.meta_json) });
@@ -175,7 +176,7 @@ export function continuationRoutes(ctx: Ctx) {
           totalMs, finish, status, JSON.stringify({ ...built.budget, continuation_of: head.id }), nowIso());
       };
       try {
-        const result = await ctx.queue.run(() => ctx.model.stream({ model: built.model, messages: built.messages,
+        const result = await ctx.queue.runGeneration(generationId, () => ctx.model.stream({ model: built.model, messages: built.messages,
           max_tokens: built.maxTokens, temperature: built.temperature, top_p: built.topP, stop: built.stop, signal: controller.signal, generationId,
           ...(built.scopedRequests.length ? { audience: { kind: 'public' as const } } : {}) }, delta => {
           buffer += delta;
@@ -185,7 +186,7 @@ export function continuationRoutes(ctx: Ctx) {
         if (controller.signal.aborted) throw new Error('aborted');
         const supplements: Array<{ text: string; observation: { visibility: 'private'; recipient_ids: string[]; observer_ids: string[] } }> = [];
         for (const scoped of built.scopedRequests) {
-          const extra = await ctx.queue.run(() => ctx.model.stream({
+          const extra = await ctx.queue.runGeneration(generationId, () => ctx.model.stream({
             model: built.model,
             messages: scoped.messages,
             max_tokens: scoped.maxTokens,

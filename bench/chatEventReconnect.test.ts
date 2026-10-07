@@ -13,7 +13,7 @@ function visit(node: ts.Node) {
   }
   if (ts.isCallExpression(node) && node.expression.getText(source) === 'useEffect') {
     const callback = node.arguments[0]?.getText(source) ?? '';
-    if (callback.includes('streamConnected') && callback.includes('reload')) pollingSource = callback;
+    if (callback.includes('streamConnected') && callback.includes('await reload()')) pollingSource = callback;
   }
   ts.forEachChild(node, visit);
 }

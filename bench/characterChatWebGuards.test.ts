@@ -99,7 +99,8 @@ function callback(name: string, dependencies: Record<string, unknown>, file = 'a
 function streamHarness(
   transport: () => Promise<void>,
   generating = false,
-  reloadedMessages: Array<{ role: string; content: string }> | null = null,
+  reloadedMessages: Array<{ id?: string; role: string; content: string }> | null = null,
+  beforeMessages: Array<{ id: string; role: string; content: string }> = [],
 ) {
   const abortRef: { current: AbortController | null } = { current: null };
   const scope = { conversationId: 'fixture-room', revision: 0, reloadSequence: 0 };
@@ -108,7 +109,7 @@ function streamHarness(
   const connected: boolean[] = [];
   let reloads = 0;
   const runStream = callback('runStream', {
-    state: { generating, messages: [] as Array<{ role: string; content: string }> }, abortRef, scope, scopeRef: { current: scope }, genIdRef: { current: null },
+    state: { generating, messages: beforeMessages }, abortRef, scope, scopeRef: { current: scope }, genIdRef: { current: null },
     AbortController, ApiError, sendOkForComposer, StreamInterruptedError,
     setStreamConnected: (value: boolean) => connected.push(value),
     patchState: (patch: Partial<typeof visible>) => Object.assign(visible, patch),
@@ -218,6 +219,18 @@ t('11 regenerate interrupt without content stays empty; branchEdit follows conte
 
   const present = streamHarness(async () => { throw new StreamInterruptedError(); }, false, [{ role: 'user', content: 'edited' }]);
   assert.equal(await present.runStream('/api/conversations/fixture-room/branch', { messageId: 'm1', content: 'edited' }), true);
+});
+
+t('same historical text is not proof that an interrupted new submission landed', async () => {
+  const old = { id: 'old-user', role: 'user', content: 'same text' };
+  const missing = streamHarness(async () => { throw new StreamInterruptedError(); }, false, [old], [old]);
+  assert.equal(await missing.send('same text'), false, 'restore the unsent repeated draft');
+  assert.equal(missing.requests.length, 1, 'never auto-resend');
+  const fresh = { ...old, id: 'new-user' };
+  const landed = streamHarness(async () => { throw new StreamInterruptedError(); }, false, [old, fresh], [old]);
+  assert.equal(await landed.send('same text'), true, 'new message identity confirms acceptance');
+  const unknown = streamHarness(async () => { throw new StreamInterruptedError(); }, false, null, [old]);
+  assert.equal(await unknown.send('same text'), false, 'failed reload does not prove acceptance');
 });
 
 t('12 no server file changes in this slice', () => {

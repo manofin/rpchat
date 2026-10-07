@@ -59,7 +59,7 @@ t('roster chips become accessible buttons only when a current asset is selectabl
   ] }, selectedRosterId: 'nari', onRosterSelect() {} }));
   assert.equal((html.match(/<button/g) ?? []).length, 1);
   assert.match(html, /aria-pressed="true"/);
-  assert.match(html, /세라 잠금/);
+  assert.match(html, /세라 이번 턴 대사 없음/);
 });
 
 t('current roster authority joins only canonical server metadata', () => {
