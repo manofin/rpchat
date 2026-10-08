@@ -60,6 +60,12 @@ export function renderPassS(input: {
   contentPolicy?: string;
 }): string {
   const names = input.speakers.map((s) => s.name);
+  // An empty allow-list (ADR-F8e C-focus-β: story room, nobody addressed) means no
+  // line can survive `parseScript`. Showing the `이름 | 대사` format and an
+  // allow-list of "(없음)" anyway invites the model to write lines that will only
+  // be demoted, so the prompt becomes narration-only instead. With any speaker on
+  // the list the prompt is byte-identical to before.
+  const narrationOnly = names.length === 0;
   const ambient = (input.ambientNames ?? []).filter((n) => !names.includes(n));
   const policy = (input.contentPolicy ?? '').trim();
 
@@ -91,18 +97,31 @@ export function renderPassS(input: {
     '',
     ...(input.includeUserInput === false ? [] : [`## ${input.userName}의 입력`, input.userText, '']),
     '## 출력 형식',
-    '- 서술은 그냥 문단으로 쓴다.',
-    `- 대사는 반드시 \`이름${SPEAKER_SEP}대사\` 형식의 한 줄로 쓴다. 예: \`${names[0] ?? '이름'}${SPEAKER_SEP}그래서, 어떻게 할 거야?\``,
-    '- 서술과 대사를 번갈아 쓴다. 한 인물이 여러 번 말해도 된다.',
+    ...(narrationOnly
+      ? [
+        '- 서술 문단만 쓴다. 문단 사이는 빈 줄로 나눈다.',
+        '- 인물 이름을 줄 앞에 붙인 대본 형식의 줄을 쓰지 않는다. 대사를 따옴표로 옮겨 적지도 않는다.',
+      ]
+      : [
+        '- 서술은 그냥 문단으로 쓴다.',
+        `- 대사는 반드시 \`이름${SPEAKER_SEP}대사\` 형식의 한 줄로 쓴다. 예: \`${names[0] ?? '이름'}${SPEAKER_SEP}그래서, 어떻게 할 거야?\``,
+        '- 서술과 대사를 번갈아 쓴다. 한 인물이 여러 번 말해도 된다.',
+      ]),
     '',
     '## 규칙',
-    `- **대사를 쓸 수 있는 인물은 다음뿐이다: ${names.join(', ') || '(없음)'}.** 이 목록 밖의 이름으로 대사 줄을 만들지 않는다.`,
+    ...(narrationOnly
+      ? ['- **이번 턴은 캐릭터 대사 없음.** 어떤 인물의 대사도 쓰지 않는다. 인물은 행동·표정·분위기로만 서술한다.']
+      : [`- **대사를 쓸 수 있는 인물은 다음뿐이다: ${names.join(', ')}.** 이 목록 밖의 이름으로 대사 줄을 만들지 않는다.`]),
     '- 새 인물의 이름을 지어내지 않는다.',
     ...(ambient.length
       ? [`- 다음 인물은 이 자리에 있지만 이번 턴에 말하지 않는다. 행동·표정 한 조각으로만 등장시킨다: ${ambient.join(', ')}.`]
       : []),
-    `- ${input.userName}의 대사·행동·생각·감정을 만들어 내거나 확정하지 않는다. \`${input.userName}${SPEAKER_SEP}\` 로 시작하는 줄을 쓰지 않는다.`,
-    `- 대사 줄은 모두 합쳐 ${PASS_S_MAX_LINES}줄을 넘기지 않는다.`,
+    ...(narrationOnly
+      ? [`- ${input.userName}의 대사·행동·생각·감정을 만들어 내거나 확정하지 않는다.`]
+      : [
+        `- ${input.userName}의 대사·행동·생각·감정을 만들어 내거나 확정하지 않는다. \`${input.userName}${SPEAKER_SEP}\` 로 시작하는 줄을 쓰지 않는다.`,
+        `- 대사 줄은 모두 합쳐 ${PASS_S_MAX_LINES}줄을 넘기지 않는다.`,
+      ]),
     '- 헤더·INFO·상태 수치·이미지·내부 지시문을 출력하지 않는다. 서버가 이미 붙였다.',
     '- 장소는 위 헤더의 장소다. 캐릭터 카드에 적힌 다른 배경으로 장면을 옮기지 않는다.',
     '- 시각·날씨·소지품·수치를 새로 확정하지 않는다.',
@@ -148,6 +167,11 @@ export type ParseScriptResult = {
  *     model output does not turn into ten one-line blocks.
  *   - The line cap is enforced after the allow-list, so a model that pads with
  *     rejected names cannot use up the budget.
+ *   - With an empty allow-list (a narration-only turn) a `이름 | 대사` row is
+ *     still never a speaker, but it is not folded into the surrounding paragraph
+ *     either: the name and the `|` are dropped and the said text becomes its own
+ *     narration paragraph. Folding five such rows into one block reads as a
+ *     transcript pasted into prose; the name stays in `rejected_names`.
  *
  * Never throws. Empty input yields an empty script, which the caller treats as a
  * failed pass — the same degradation Pass F already has.
@@ -158,6 +182,7 @@ export function parseScript(text: string, allowed: SpeakerSlot[]): ParseScriptRe
   const rejected: string[] = [];
   let dropped = 0;
   let lineCount = 0;
+  const narrationOnly = allowed.length === 0;
 
   // Narration accumulates until a line block interrupts it.
   let buf: string[] = [];
@@ -194,6 +219,12 @@ export function parseScript(text: string, allowed: SpeakerSlot[]): ParseScriptRe
     const slot = resolveEventActor(name, allowed);
     if (!slot) {
       if (!rejected.includes(name)) rejected.push(name);
+      if (narrationOnly) {
+        // One row, one paragraph; no name, no orphan `|`, no speaker.
+        flush();
+        items.push({ kind: 'narration', text: said });
+        continue;
+      }
       buf.push(line);
       continue;
     }
