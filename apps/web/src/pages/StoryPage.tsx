@@ -1,7 +1,7 @@
 import { STORY_PARTICIPANT_LIMIT } from '@rpchat/contracts/story-limits';
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, del, get, post } from '../lib/api';
-import { activeStoryCast, buildStoryStartRequest } from '../lib/storyStartRequest';
+import { activeStoryCast, buildStoryStartRequest, pickStoryStartCharacter } from '../lib/storyStartRequest';
 import { back, navigate } from '../lib/router';
 import type { Character, Conversation, Story, StoryInjectPreview } from '../types';
 import { StoryEditor } from '../components/StoryEditor';
@@ -288,7 +288,7 @@ export function NewStoryConversationSheet({ id, onClose, onBack, onEdit, onArchi
   }, [id, retry]);
   const hosted = story ? activeStoryCast(story, characters) : [];
   const rosterIds = hosted.map((c) => c.character_id);
-  const startPick = hosted[0]?.character_id ?? '';
+  const startPick = story ? pickStoryStartCharacter({ story, hostedIds: rosterIds, openingId: openingPick }) : '';
   useEffect(() => {
     const seq = ++previewSeq.current;
     setPreview(null);

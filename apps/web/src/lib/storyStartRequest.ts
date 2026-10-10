@@ -20,6 +20,42 @@ export function activeStoryCast(story: Story, characters: Character[]) {
   });
 }
 
+/**
+ * ADR-F8d §4.1 stays: the start character becomes the room owner and the owner
+ * is always in the first scene. The web picks that owner from the SELECTED
+ * opening instead of the roster head: first present_ids entry (front to back)
+ * that is currently hosted. Default = '' → story.opening; an extra id →
+ * openings_extra[].opening_json. Damaged/absent extra, empty present_ids, or
+ * no hosted match → hosted[0] (previous fixed behavior).
+ */
+export function selectStoryOpening(story: Story, openingId?: string): unknown | null {
+  const pick = openingId?.trim();
+  if (!pick) return story.opening ?? null;
+  const hit = (story.openings_extra ?? []).find((e) => e.id === pick);
+  if (!hit) return null;
+  try {
+    const doc = JSON.parse(hit.opening_json) as unknown;
+    return doc && typeof doc === 'object' && !Array.isArray(doc) ? doc : null;
+  } catch {
+    return null;
+  }
+}
+
+export function pickStoryStartCharacter(input: {
+  story: Story;
+  hostedIds: string[];
+  openingId?: string;
+}): string {
+  const hosted = new Set(input.hostedIds);
+  const doc = selectStoryOpening(input.story, input.openingId) as { present_ids?: unknown } | null;
+  if (doc && Array.isArray(doc.present_ids)) {
+    for (const id of doc.present_ids) {
+      if (typeof id === 'string' && hosted.has(id)) return id;
+    }
+  }
+  return input.hostedIds[0] ?? '';
+}
+
 export function buildStoryStartRequest(input: {
   characterId: string;
   storyId: string;
