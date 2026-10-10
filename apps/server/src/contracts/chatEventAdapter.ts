@@ -176,9 +176,12 @@ export function adaptChatEvents(message: EventMessage, options: AdaptOptions = {
     const named = /^\s*(?:\[([^\]\n]{1,24})\]\s*[:：|]|([^|\n]{1,24})\s*\|)\s*(.+)$/.exec(line);
     if (named) {
       const name = (named[1] ?? named[2]).replace(/^[\s>*_`-]+|[\s*_`:：]+$/g, '').trim();
-      const actor = resolveEventActor(name, actors);
-      speak(named[3], { id: actor?.id ?? null, name: actor?.name ?? name });
-      continue;
+      // A surviving ':'/'：' in the name means this is not a speaker line — an INFO pipe like `직업·능력: 미정 | ...` used to invent a fake speaker.
+      if (!/[:：]/.test(name)) {
+        const actor = resolveEventActor(name, actors);
+        speak(named[3], { id: actor?.id ?? null, name: actor?.name ?? name });
+        continue;
+      }
     }
     // Explicit quotation and action markers are the only attribution evidence
     // in old 1:1 prose. Plain prose remains narration instead of inventing speech.
