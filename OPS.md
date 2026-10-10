@@ -74,7 +74,7 @@
 
 Hermes 쪽 세칙 스킬(`lock-gated-execution`)은 **축약·대체하지 않고 참조만** 한다. 그 스킬이 이 레포 계약과 충돌하면 **이 파일과 사용자가 명시한 실행 규칙이 이긴다.**
 
-한 named lock = 한 관심사. 코드 커밋과 운영 문서 커밋을 섞지 않는다. 구현·커밋·push·migration·배포는 각 허용 범위의 lock으로 따로 간다.
+한 named lock = 한 관심사. 코드 커밋과 운영 문서 커밋을 섞지 않는다. 구현·커밋·push·migration·배포는 각 허용 범위의 lock으로 따로 간다. docs 전용 변경은 예외로, lock에 대상 문서 파일(`docs/**`)을 나열하고 BASE 대비 diff가 그 파일들뿐임을 기계로 확인하면 편집 → 커밋 → push → draft PR을 한 lock에 묶을 수 있다. 머지는 사람 게이트라 별도 lock이고, 계약 문서(OPS.md·AGENTS.md·CLAUDE.md·PR 템플릿)는 묶지 않는다.
 
 ## 7. 교정 시
 
