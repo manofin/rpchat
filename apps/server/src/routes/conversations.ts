@@ -1,3 +1,4 @@
+import { STORY_PARTICIPANT_LIMIT } from '@rpchat/contracts/story-limits';
 import { supportsPartyObservation } from '../prompt/dialogContext.js';
 import { PUBLIC, audienceOf, successfulObservationRows } from '../prompt/observation.js';
 import type { FastifyInstance } from 'fastify';
@@ -50,7 +51,7 @@ const sceneSchema = z.object({
       owner_stage: z.string().max(100).optional(),
     }),
   ).optional(),
-  present_ids: z.array(z.string().min(1).max(100)).max(12).optional(),
+  present_ids: z.array(z.string().min(1).max(100)).max(STORY_PARTICIPANT_LIMIT).optional(),
   // f9-beat-render (0012). Server-owned, but they must survive a client PATCH that
   // echoes the whole scene back: zod strips unknown keys, so an unlisted key here
   // would be silently erased on any scene edit.
@@ -132,7 +133,7 @@ const sceneSchema = z.object({
 const createSchema = z.object({
   characterId: z.string().min(1),
   storyId: z.string().min(1).optional(),
-  participantIds: z.array(z.string().min(1).max(100)).max(12).optional(),
+  participantIds: z.array(z.string().min(1).max(100)).max(STORY_PARTICIPANT_LIMIT).optional(),
   personaId: z.string().nullable().optional(),
   title: z.string().max(120).optional(),
   mode: z.enum(['chat', 'story']).default('story'),
@@ -288,6 +289,9 @@ export function conversationRoutes(ctx: Ctx) {
           });
         } else {
           participantIds = [character.id, ...roster.map((r) => r.id).filter((rid) => rid !== character.id)];
+        }
+        if (participantIds.length > STORY_PARTICIPANT_LIMIT) {
+          return reply.code(400).send({ error: `한 대화에는 최대 ${STORY_PARTICIPANT_LIMIT}명이 참여할 수 있습니다.` });
         }
         storyParticipantIdsSnapshot = JSON.stringify(participantIds);
 

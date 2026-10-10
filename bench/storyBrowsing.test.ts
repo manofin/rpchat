@@ -201,7 +201,7 @@ test('preview gate blocks loading, missing, failure and archived cases; retry re
 });
 
 test('empty, over-limit and archived cast never POST and direct readers to participation settings', async () => {
-  const many = Array.from({ length: 13 }, (_, i) => character(`c-${i}`));
+  const many = Array.from({ length: 26 }, (_, i) => character(`c-${i}`));
   const variants = [
     { story: storyFixture({ characters: [] }), characters: [] },
     { story: storyFixture({ characters: many.map((c, sort_order) => ({ story_id: story.id, character_id: c.id, name: c.name, sort_order, role: 'main' })) }), characters: many },

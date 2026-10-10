@@ -1,3 +1,4 @@
+import { STORY_PARTICIPANT_LIMIT } from '@rpchat/contracts/story-limits';
 import { useEffect, useState } from 'react';
 import { ApiError, del, get, post, postBinary, put } from '../lib/api';
 import type { Character, ModelProfile, SceneCatalog, SceneCatalogPlace, Story, StoryEnding, StoryOpening, StoryOpeningExtra } from '../types';
@@ -512,7 +513,7 @@ export function StoryEditor({
           <div className="field"><label>이 비트 목표</label><input value={opening.beat_goal} onChange={(e) => setOpening((p) => ({ ...p, beat_goal: e.target.value }))} maxLength={500} /></div>
           <div className="field">
             <label>참여 캐릭터 추가</label>
-            <div className="hint">캐릭터 추가·빼기는 즉시 반영됩니다. 한 대화에는 최대 12명이 참여할 수 있습니다.</div>
+            <div className="hint">캐릭터 추가·빼기는 즉시 반영됩니다. 한 대화에는 최대 {STORY_PARTICIPANT_LIMIT}명이 참여할 수 있습니다.</div>
             {story ? (
               rosterAvailable.length > 0 ? (
                 <>

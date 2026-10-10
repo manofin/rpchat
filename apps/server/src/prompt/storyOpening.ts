@@ -1,3 +1,4 @@
+import { STORY_PARTICIPANT_LIMIT } from '@rpchat/contracts/story-limits';
 /**
  * ADR-F8d story opening. Parse / PUT-validate / POST-apply.
  * Pure: no DB, no fetch, no model. resolveOpening reads only the conversation row.
@@ -80,7 +81,7 @@ export function parseOpening(raw: string | null | undefined): StoryOpening {
       if (typeof id !== 'string' || !id || seen.has(id)) continue;
       seen.add(id);
       present.push(id);
-      if (present.length >= 12) break;
+      if (present.length >= STORY_PARTICIPANT_LIMIT) break;
     }
   }
 
@@ -157,8 +158,8 @@ export function validateOpeningPut(
       break;
     }
   }
-  if (opening.present_ids.length > 12) {
-    errors.push({ field: 'present_ids', message: 'max 12' });
+  if (opening.present_ids.length > STORY_PARTICIPANT_LIMIT) {
+    errors.push({ field: 'present_ids', message: `max ${STORY_PARTICIPANT_LIMIT}` });
   }
   return errors;
 }

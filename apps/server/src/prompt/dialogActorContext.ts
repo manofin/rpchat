@@ -1,3 +1,4 @@
+import { STORY_PARTICIPANT_LIMIT } from '@rpchat/contracts/story-limits';
 import { z } from 'zod';
 import { type DB, many, one } from '../db/index.js';
 import { getPath } from '../db/tree.js';
@@ -10,7 +11,7 @@ const entrySchema = z.object({
   memory_id: id,
   anchor_message_id: id,
   kind: z.enum(['fact', 'relationship', 'injury', 'promise', 'goal']),
-  known_by: z.union([z.literal('public'), z.array(id).max(12)]),
+  known_by: z.union([z.literal('public'), z.array(id).max(STORY_PARTICIPANT_LIMIT)]),
   subject_id: id.optional(),
   target_id: id.optional(),
   status: z.enum(['active', 'resolved']),
