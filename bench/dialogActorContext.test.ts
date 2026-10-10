@@ -257,7 +257,7 @@ async function main() {
       { version: 1, entries: [{ ...metadata.entries[0], memory_id: 'x'.repeat(101) }] },
       { version: 1, entries: [{ ...metadata.entries[0], anchor_message_id: '' }] },
       { version: 1, entries: [{ ...metadata.entries[0], anchor_message_id: undefined }] },
-      { version: 1, entries: [{ ...metadata.entries[0], known_by: Array.from({ length: 13 }, (_, i) => `id-${i}`) }] },
+      { version: 1, entries: [{ ...metadata.entries[0], known_by: Array.from({ length: 26 }, (_, i) => `id-${i}`) }] },
       { version: 1, entries: [{ ...metadata.entries[0], known_by: [a.id, a.id] }] },
       { version: 1, entries: Array.from({ length: 65 }, (_, i) => ({ ...metadata.entries[0], memory_id: `id-${i}` })) },
     ];

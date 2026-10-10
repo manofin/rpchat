@@ -1,3 +1,4 @@
+import { STORY_PARTICIPANT_LIMIT } from '@rpchat/contracts/story-limits';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
@@ -340,7 +341,7 @@ const storySchema = z.object({
       clock_minutes: z.number().int().optional(),
       beat_goal: z.string().max(500).optional(),
     }).optional(),
-    present_ids: z.array(z.string().min(1).max(100)).max(12).optional(),
+    present_ids: z.array(z.string().min(1).max(100)).max(STORY_PARTICIPANT_LIMIT).optional(),
   }).optional(),
   // ADR-F8f: omit=preserve on PUT (same as opening). Explicit [] clears extras.
   // opening_json on each row is the F8d object *raw string* — not re-serialized.
@@ -372,6 +373,11 @@ const storySchema = z.object({
         if (id) seen.add(id);
         if (!extraOpeningJsonIsObject(row.opening_json)) {
           ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'opening_json must be an F8d object', path: [i, 'opening_json'] });
+        } else {
+          const opening = JSON.parse(row.opening_json) as { present_ids?: unknown };
+          if (Array.isArray(opening.present_ids) && opening.present_ids.length > STORY_PARTICIPANT_LIMIT) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: `max ${STORY_PARTICIPANT_LIMIT} present_ids`, path: [i, 'opening_json'] });
+          }
         }
       });
     })

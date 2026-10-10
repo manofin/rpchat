@@ -1,3 +1,4 @@
+import { STORY_PARTICIPANT_LIMIT } from '@rpchat/contracts/story-limits';
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, del, get, post } from '../lib/api';
 import { activeStoryCast, buildStoryStartRequest } from '../lib/storyStartRequest';
@@ -291,7 +292,7 @@ export function NewStoryConversationSheet({ id, onClose, onBack, onEdit, onArchi
   useEffect(() => {
     const seq = ++previewSeq.current;
     setPreview(null);
-    if (loading || error || !story || !startPick || hosted.length > 12) { setPreviewKind('idle'); return; }
+    if (loading || error || !story || !startPick || hosted.length > STORY_PARTICIPANT_LIMIT) { setPreviewKind('idle'); return; }
     if (story.archived) { setPreviewKind('archived'); return; }
     let cancelled = false;
     setPreviewKind('loading');
@@ -307,7 +308,7 @@ export function NewStoryConversationSheet({ id, onClose, onBack, onEdit, onArchi
     return () => { cancelled = true; };
   }, [id, story, startPick, loading, error, hosted.length, previewRetry]);
 
-  const startReady = Boolean(story && !story.archived && startPick && hosted.length <= 12) && !loading && !error && previewKind === 'ok' && !starting;
+  const startReady = Boolean(story && !story.archived && startPick && hosted.length <= STORY_PARTICIPANT_LIMIT) && !loading && !error && previewKind === 'ok' && !starting;
   async function startChat() {
     if (pending.current || !startReady) return;
     pending.current = true; setStarting(true);
@@ -328,7 +329,7 @@ export function NewStoryConversationSheet({ id, onClose, onBack, onEdit, onArchi
       {error && <div className="story-notice" role="alert"><p>시작 설정을 불러오지 못했습니다.</p><button className="btn sm" onClick={() => setRetry((n) => n + 1)}>다시 시도</button></div>}
       {story && !loading && !error && <>
         {hosted.length === 0 ? <div className="story-notice"><p>함께할 캐릭터를 먼저 등록해 주세요.</p><button className="btn" onClick={onEdit}>참여 캐릭터 설정</button></div>
-          : hosted.length > 12 ? <div className="story-notice" role="alert"><p>한 대화에는 최대 12명이 참여할 수 있습니다. 스토리 수정에서 참여 명단을 줄여 주세요.</p><button className="btn" onClick={onEdit}>참여 캐릭터 설정</button></div>
+          : hosted.length > STORY_PARTICIPANT_LIMIT ? <div className="story-notice" role="alert"><p>한 대화에는 최대 {STORY_PARTICIPANT_LIMIT}명이 참여할 수 있습니다. 스토리 수정에서 참여 명단을 줄여 주세요.</p><button className="btn" onClick={onEdit}>참여 캐릭터 설정</button></div>
           : <>
             <div className="story-start-cast"><h3>함께할 캐릭터</h3><p>{hosted.map((c) => c.name).join(' · ')}</p><button className="btn ghost sm" disabled={starting} onClick={onEdit}>스토리 수정에서 변경</button></div>
             {(story.openings_extra ?? []).length > 0 && <div className="field"><label htmlFor="story-opening-pick">시작 설정</label><select id="story-opening-pick" value={openingPick} disabled={starting} onChange={(e) => setOpeningPick(e.target.value)}><option value="">기본</option>{(story.openings_extra ?? []).map((e) => <option key={e.id} value={e.id}>{e.label}</option>)}</select></div>}

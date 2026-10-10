@@ -21,9 +21,10 @@
  */
 import type { CastMember } from './cast.js';
 import type { Scene } from '../types.js';
+import { STORY_PARTICIPANT_LIMIT } from '@rpchat/contracts/story-limits';
 
 /** Upper bound on scene occupancy. Keeps a bad patch from unbounded growth. */
-export const PRESENCE_MAX = 12;
+export const PRESENCE_MAX = STORY_PARTICIPANT_LIMIT;
 
 export type PresenceMember = CastMember & { home_places?: string[] };
 
