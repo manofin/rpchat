@@ -59,8 +59,13 @@ done / in-progress / blocked. 변화 없으면 **"no change"** — 보고 지어
 
 **영수증 = 기계가 쓴 결과물.** "통과했다"는 문장은 영수증이 아니다.
 - 스위트: `npm run test:benches -- --output-dir /tmp/<slice>` 의 `results.json` 경로와 pass·fail·excluded 수. 제외된 검사는 통과가 아니다.
-- `npm run typecheck` EXIT 코드, 커밋 SHA, `git status --short`.
+- `npm run typecheck` EXIT 코드.
+- 커밋 SHA·parent·`git status --short`·diff·원격 ref는 손으로 옮기지 않는다.
+  `npm run receipt -- --base <BASE> [--results <results.json>] [--remote <url> --ref <ref>…] --out <새 디렉터리>`가
+  만든 디렉터리 경로와 `receipt.json`·`receipt.diff`의 sha256을 낸다. 정본은 파일이고, 본문 요약은 참고용이다.
 - 간헐 실패는 재실행으로 덮지 않는다. 재실행 횟수와 각 결과를 그대로 적는다.
+- `npm run receipt -- --check <디렉터리>`는 생성 직후 대조용이다. 원격 ref까지 다시 계산하므로 나중에 실패하면 ref가 움직였다는 뜻이다.
+  생성이 exit 2로 끝나면 `results.json`의 gitHead가 head와 다른 것이니, 그 영수증으로 다음 단계에 가지 않는다.
 
 ## 짧은 버전
 > 재현. 실행. 증명. 증상 말고 원인. 틀리면 **사건이 아니라 원칙**을 적어라.
