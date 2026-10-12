@@ -1,0 +1,173 @@
+{
+  "version": 1,
+  "base": "7cbb1d0959998022135c6d792f6d846ea3785060",
+  "freeze_scope": "listed files; MANIFEST cannot hash itself; compare its hash in the execution receipt",
+  "estimator": {
+    "function": "estimateTokensRaw",
+    "path": "apps/server/src/prompt/tokens.ts",
+    "calibration": 1,
+    "sha256": "bb5117214ed355a0f88d584f7f55d88ed19d48e43a63c6898b4fa831a92e3a4d",
+    "kind": "heuristic estimate, not a model tokenizer"
+  },
+  "context_tokens": 16384,
+  "context_source": "user-authorized assumption; live process settings not re-read",
+  "output_reservation": {
+    "N": 300,
+    "F": 500,
+    "E": 220
+  },
+  "output_reservation_source": "routes/chat.ts constants at frozen BASE; normal response length",
+  "message_overhead_tokens": 5,
+  "budget_scope": "pure N/F/E prompt strings with synthetic narration and focus output; no model call, history fit or HTTP request capture",
+  "assignmentRules": [
+    {
+      "slot": 0,
+      "state": "active",
+      "audience": {
+        "visibility": "public"
+      },
+      "allowed": [
+        "gm",
+        "synthetic-01",
+        "synthetic-02",
+        "synthetic-03",
+        "synthetic-17",
+        "user"
+      ],
+      "explicitUser": false
+    },
+    {
+      "slot": 1,
+      "state": "active",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "allowed": [
+        "gm"
+      ],
+      "explicitUser": false
+    },
+    {
+      "slot": 2,
+      "state": "active",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "allowed": [
+        "synthetic-01"
+      ],
+      "explicitUser": false
+    },
+    {
+      "slot": 3,
+      "state": "active",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "allowed": [
+        "synthetic-02"
+      ],
+      "explicitUser": false
+    },
+    {
+      "slot": 4,
+      "state": "active",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "allowed": [
+        "synthetic-03"
+      ],
+      "explicitUser": false
+    },
+    {
+      "slot": 5,
+      "state": "active",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "allowed": [
+        "user"
+      ],
+      "explicitUser": true
+    },
+    {
+      "slot": 6,
+      "state": "active",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "allowed": [],
+      "explicitUser": false
+    },
+    {
+      "slot": 7,
+      "state": "closed",
+      "audience": {
+        "visibility": "public"
+      },
+      "allowed": [],
+      "explicitUser": false
+    },
+    {
+      "slot": 8,
+      "state": "active",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "allowed": [
+        "synthetic-01"
+      ],
+      "explicitUser": false
+    }
+  ],
+  "files": {
+    "cast17.json": "58d74542102b14b5226605906fd1786c4951351bb367bc28ed11e5269dc9b380",
+    "events-256.json": "7c2847f756d6cee84ce064a78051b6a9d24e7e87235742cc0ed8b9a684c52bb8",
+    "events-257.json": "a55e0a2fe3b1be69c4678b7d2dacc78caaec18afcd01c594534549848a899d8f",
+    "expected/branch-PENDING.json": "99b57803ba9a87eb03739c7ba10fabc402cc03a97a57999a0e87a50ef45a84ff",
+    "expected/recipients-N0.json": "c61ae3dc851f5ce9ff897174822153c32802a6fc9ab6bbf39069fcb33b121534",
+    "expected/recipients-N1024.json": "7e0921d2d4371526723cd0f2998e1273b66a929504e62df483ba5f151e91961e",
+    "expected/recipients-N17.json": "7cdc08089b42a5853be8e8a04f20f173c893c8efbe070dd0f50d041816d5462f",
+    "expected/recipients-N256.json": "9b69f615dc56754bf5c56510092275a9413f7e9e26fc2cfa551114dd28565e57",
+    "expected/recipients-N257.json": "e6291031ac4ba6ad83d942efc557437d74cc7a09a86ba69395085570d65ddae9",
+    "expected/recipients-canary.json": "1290d0985d19611a2d3290756fbb751170a525a6350e72902eb80815f7c6d1f4",
+    "generate.ts": "90e665b5485e98c41f15f2f3fe558977efdf84cdc50e9466ab6ab859f5a17d1e",
+    "nodes-N0.json": "0c46426ed50481073e72166ffe7390e89cbe49085cfdee1d9e4f94f4eed94d24",
+    "nodes-N1024.json": "e2118c9c3c8e720fd86ca96a02a3b44e728a0d17c09b6a87bcb11236c8d096b3",
+    "nodes-N17.json": "ba4f389173a6402995321ace35708035dbddbc2d240ddbb3afb32af940412681",
+    "nodes-N256.json": "d04fb7ec37fbd48a3734439a712d2c1245963e78bb209d5b27a7fe89d5176e12",
+    "nodes-N257.json": "813128fc95414e2fb1b489ca3b58d2af201adeda60260ccb7ba6f580ddaf9292",
+    "nodes-canary.json": "d70825fc81129f4de5bc5a0593cb4a8430687e25ebc9b6ce4bceff958cfcf4a9"
+  }
+}

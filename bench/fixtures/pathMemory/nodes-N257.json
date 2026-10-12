@@ -1,0 +1,4203 @@
+{
+  "version": 1,
+  "count": 257,
+  "nodes": [
+    {
+      "node_id": "n0001",
+      "ordinal": 1,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0001 여러 어절 합성 물건",
+      "body": "N257_BODY_n0001 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0002",
+      "ordinal": 2,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0002 여러 어절 합성 물건",
+      "body": "N257_BODY_n0002 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0003",
+      "ordinal": 3,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0003 여러 어절 합성 물건",
+      "body": "N257_BODY_n0003 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0004",
+      "ordinal": 4,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0004 여러 어절 합성 물건",
+      "body": "N257_BODY_n0004 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0005",
+      "ordinal": 5,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0005 여러 어절 합성 물건",
+      "body": "N257_BODY_n0005 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0006",
+      "ordinal": 6,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0006 여러 어절 합성 물건",
+      "body": "N257_BODY_n0006 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0007",
+      "ordinal": 7,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0007 여러 어절 합성 물건",
+      "body": "N257_BODY_n0007 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0008",
+      "ordinal": 8,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0008 여러 어절 합성 물건",
+      "body": "N257_BODY_n0008 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0009",
+      "ordinal": 9,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0009 여러 어절 합성 물건",
+      "body": "N257_BODY_n0009 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0010",
+      "ordinal": 10,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0010 여러 어절 합성 물건",
+      "body": "N257_BODY_n0010 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0011",
+      "ordinal": 11,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0011 여러 어절 합성 물건",
+      "body": "N257_BODY_n0011 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0012",
+      "ordinal": 12,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0012 여러 어절 합성 물건",
+      "body": "N257_BODY_n0012 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0013",
+      "ordinal": 13,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0013 여러 어절 합성 물건",
+      "body": "N257_BODY_n0013 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0014",
+      "ordinal": 14,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0014 여러 어절 합성 물건",
+      "body": "N257_BODY_n0014 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0015",
+      "ordinal": 15,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0015 여러 어절 합성 물건",
+      "body": "N257_BODY_n0015 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0016",
+      "ordinal": 16,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0016 여러 어절 합성 물건",
+      "body": "N257_BODY_n0016 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0017",
+      "ordinal": 17,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0017 여러 어절 합성 물건",
+      "body": "N257_BODY_n0017 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0018",
+      "ordinal": 18,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0018 여러 어절 합성 물건",
+      "body": "N257_BODY_n0018 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0019",
+      "ordinal": 19,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0019 여러 어절 합성 물건",
+      "body": "N257_BODY_n0019 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0020",
+      "ordinal": 20,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0020 여러 어절 합성 물건",
+      "body": "N257_BODY_n0020 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0021",
+      "ordinal": 21,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0021 여러 어절 합성 물건",
+      "body": "N257_BODY_n0021 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0022",
+      "ordinal": 22,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0022 여러 어절 합성 물건",
+      "body": "N257_BODY_n0022 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0023",
+      "ordinal": 23,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0023 여러 어절 합성 물건",
+      "body": "N257_BODY_n0023 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0024",
+      "ordinal": 24,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0024 여러 어절 합성 물건",
+      "body": "N257_BODY_n0024 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0025",
+      "ordinal": 25,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0025 여러 어절 합성 물건",
+      "body": "N257_BODY_n0025 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0026",
+      "ordinal": 26,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0026 여러 어절 합성 물건",
+      "body": "N257_BODY_n0026 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0027",
+      "ordinal": 27,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0027 여러 어절 합성 물건",
+      "body": "N257_BODY_n0027 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0028",
+      "ordinal": 28,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0028 여러 어절 합성 물건",
+      "body": "N257_BODY_n0028 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0029",
+      "ordinal": 29,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0029 여러 어절 합성 물건",
+      "body": "N257_BODY_n0029 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0030",
+      "ordinal": 30,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0030 여러 어절 합성 물건",
+      "body": "N257_BODY_n0030 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0031",
+      "ordinal": 31,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0031 여러 어절 합성 물건",
+      "body": "N257_BODY_n0031 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0032",
+      "ordinal": 32,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0032 여러 어절 합성 물건",
+      "body": "N257_BODY_n0032 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0033",
+      "ordinal": 33,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0033 여러 어절 합성 물건",
+      "body": "N257_BODY_n0033 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0034",
+      "ordinal": 34,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0034 여러 어절 합성 물건",
+      "body": "N257_BODY_n0034 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0035",
+      "ordinal": 35,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0035 여러 어절 합성 물건",
+      "body": "N257_BODY_n0035 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0036",
+      "ordinal": 36,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0036 여러 어절 합성 물건",
+      "body": "N257_BODY_n0036 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0037",
+      "ordinal": 37,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0037 여러 어절 합성 물건",
+      "body": "N257_BODY_n0037 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0038",
+      "ordinal": 38,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0038 여러 어절 합성 물건",
+      "body": "N257_BODY_n0038 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0039",
+      "ordinal": 39,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0039 여러 어절 합성 물건",
+      "body": "N257_BODY_n0039 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0040",
+      "ordinal": 40,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0040 여러 어절 합성 물건",
+      "body": "N257_BODY_n0040 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0041",
+      "ordinal": 41,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0041 여러 어절 합성 물건",
+      "body": "N257_BODY_n0041 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0042",
+      "ordinal": 42,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0042 여러 어절 합성 물건",
+      "body": "N257_BODY_n0042 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0043",
+      "ordinal": 43,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0043 여러 어절 합성 물건",
+      "body": "N257_BODY_n0043 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0044",
+      "ordinal": 44,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0044 여러 어절 합성 물건",
+      "body": "N257_BODY_n0044 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0045",
+      "ordinal": 45,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0045 여러 어절 합성 물건",
+      "body": "N257_BODY_n0045 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0046",
+      "ordinal": 46,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0046 여러 어절 합성 물건",
+      "body": "N257_BODY_n0046 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0047",
+      "ordinal": 47,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0047 여러 어절 합성 물건",
+      "body": "N257_BODY_n0047 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0048",
+      "ordinal": 48,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0048 여러 어절 합성 물건",
+      "body": "N257_BODY_n0048 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0049",
+      "ordinal": 49,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0049 여러 어절 합성 물건",
+      "body": "N257_BODY_n0049 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0050",
+      "ordinal": 50,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0050 여러 어절 합성 물건",
+      "body": "N257_BODY_n0050 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0051",
+      "ordinal": 51,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0051 여러 어절 합성 물건",
+      "body": "N257_BODY_n0051 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0052",
+      "ordinal": 52,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0052 여러 어절 합성 물건",
+      "body": "N257_BODY_n0052 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0053",
+      "ordinal": 53,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0053 여러 어절 합성 물건",
+      "body": "N257_BODY_n0053 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0054",
+      "ordinal": 54,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0054 여러 어절 합성 물건",
+      "body": "N257_BODY_n0054 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0055",
+      "ordinal": 55,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0055 여러 어절 합성 물건",
+      "body": "N257_BODY_n0055 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0056",
+      "ordinal": 56,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0056 여러 어절 합성 물건",
+      "body": "N257_BODY_n0056 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0057",
+      "ordinal": 57,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0057 여러 어절 합성 물건",
+      "body": "N257_BODY_n0057 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0058",
+      "ordinal": 58,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0058 여러 어절 합성 물건",
+      "body": "N257_BODY_n0058 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0059",
+      "ordinal": 59,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0059 여러 어절 합성 물건",
+      "body": "N257_BODY_n0059 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0060",
+      "ordinal": 60,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0060 여러 어절 합성 물건",
+      "body": "N257_BODY_n0060 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0061",
+      "ordinal": 61,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0061 여러 어절 합성 물건",
+      "body": "N257_BODY_n0061 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0062",
+      "ordinal": 62,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0062 여러 어절 합성 물건",
+      "body": "N257_BODY_n0062 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0063",
+      "ordinal": 63,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0063 여러 어절 합성 물건",
+      "body": "N257_BODY_n0063 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0064",
+      "ordinal": 64,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0064 여러 어절 합성 물건",
+      "body": "N257_BODY_n0064 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0065",
+      "ordinal": 65,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0065 여러 어절 합성 물건",
+      "body": "N257_BODY_n0065 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0066",
+      "ordinal": 66,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0066 여러 어절 합성 물건",
+      "body": "N257_BODY_n0066 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0067",
+      "ordinal": 67,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0067 여러 어절 합성 물건",
+      "body": "N257_BODY_n0067 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0068",
+      "ordinal": 68,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0068 여러 어절 합성 물건",
+      "body": "N257_BODY_n0068 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0069",
+      "ordinal": 69,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0069 여러 어절 합성 물건",
+      "body": "N257_BODY_n0069 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0070",
+      "ordinal": 70,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0070 여러 어절 합성 물건",
+      "body": "N257_BODY_n0070 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0071",
+      "ordinal": 71,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0071 여러 어절 합성 물건",
+      "body": "N257_BODY_n0071 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0072",
+      "ordinal": 72,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0072 여러 어절 합성 물건",
+      "body": "N257_BODY_n0072 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0073",
+      "ordinal": 73,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0073 여러 어절 합성 물건",
+      "body": "N257_BODY_n0073 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0074",
+      "ordinal": 74,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0074 여러 어절 합성 물건",
+      "body": "N257_BODY_n0074 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0075",
+      "ordinal": 75,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0075 여러 어절 합성 물건",
+      "body": "N257_BODY_n0075 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0076",
+      "ordinal": 76,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0076 여러 어절 합성 물건",
+      "body": "N257_BODY_n0076 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0077",
+      "ordinal": 77,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0077 여러 어절 합성 물건",
+      "body": "N257_BODY_n0077 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0078",
+      "ordinal": 78,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0078 여러 어절 합성 물건",
+      "body": "N257_BODY_n0078 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0079",
+      "ordinal": 79,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0079 여러 어절 합성 물건",
+      "body": "N257_BODY_n0079 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0080",
+      "ordinal": 80,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0080 여러 어절 합성 물건",
+      "body": "N257_BODY_n0080 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0081",
+      "ordinal": 81,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0081 여러 어절 합성 물건",
+      "body": "N257_BODY_n0081 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0082",
+      "ordinal": 82,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0082 여러 어절 합성 물건",
+      "body": "N257_BODY_n0082 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0083",
+      "ordinal": 83,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0083 여러 어절 합성 물건",
+      "body": "N257_BODY_n0083 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0084",
+      "ordinal": 84,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0084 여러 어절 합성 물건",
+      "body": "N257_BODY_n0084 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0085",
+      "ordinal": 85,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0085 여러 어절 합성 물건",
+      "body": "N257_BODY_n0085 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0086",
+      "ordinal": 86,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0086 여러 어절 합성 물건",
+      "body": "N257_BODY_n0086 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0087",
+      "ordinal": 87,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0087 여러 어절 합성 물건",
+      "body": "N257_BODY_n0087 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0088",
+      "ordinal": 88,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0088 여러 어절 합성 물건",
+      "body": "N257_BODY_n0088 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0089",
+      "ordinal": 89,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0089 여러 어절 합성 물건",
+      "body": "N257_BODY_n0089 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0090",
+      "ordinal": 90,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0090 여러 어절 합성 물건",
+      "body": "N257_BODY_n0090 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0091",
+      "ordinal": 91,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0091 여러 어절 합성 물건",
+      "body": "N257_BODY_n0091 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0092",
+      "ordinal": 92,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0092 여러 어절 합성 물건",
+      "body": "N257_BODY_n0092 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0093",
+      "ordinal": 93,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0093 여러 어절 합성 물건",
+      "body": "N257_BODY_n0093 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0094",
+      "ordinal": 94,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0094 여러 어절 합성 물건",
+      "body": "N257_BODY_n0094 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0095",
+      "ordinal": 95,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0095 여러 어절 합성 물건",
+      "body": "N257_BODY_n0095 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0096",
+      "ordinal": 96,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0096 여러 어절 합성 물건",
+      "body": "N257_BODY_n0096 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0097",
+      "ordinal": 97,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0097 여러 어절 합성 물건",
+      "body": "N257_BODY_n0097 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0098",
+      "ordinal": 98,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0098 여러 어절 합성 물건",
+      "body": "N257_BODY_n0098 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0099",
+      "ordinal": 99,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0099 여러 어절 합성 물건",
+      "body": "N257_BODY_n0099 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0100",
+      "ordinal": 100,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0100 여러 어절 합성 물건",
+      "body": "N257_BODY_n0100 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0101",
+      "ordinal": 101,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0101 여러 어절 합성 물건",
+      "body": "N257_BODY_n0101 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0102",
+      "ordinal": 102,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0102 여러 어절 합성 물건",
+      "body": "N257_BODY_n0102 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0103",
+      "ordinal": 103,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0103 여러 어절 합성 물건",
+      "body": "N257_BODY_n0103 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0104",
+      "ordinal": 104,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0104 여러 어절 합성 물건",
+      "body": "N257_BODY_n0104 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0105",
+      "ordinal": 105,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0105 여러 어절 합성 물건",
+      "body": "N257_BODY_n0105 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0106",
+      "ordinal": 106,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0106 여러 어절 합성 물건",
+      "body": "N257_BODY_n0106 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0107",
+      "ordinal": 107,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0107 여러 어절 합성 물건",
+      "body": "N257_BODY_n0107 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0108",
+      "ordinal": 108,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0108 여러 어절 합성 물건",
+      "body": "N257_BODY_n0108 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0109",
+      "ordinal": 109,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0109 여러 어절 합성 물건",
+      "body": "N257_BODY_n0109 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0110",
+      "ordinal": 110,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0110 여러 어절 합성 물건",
+      "body": "N257_BODY_n0110 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0111",
+      "ordinal": 111,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0111 여러 어절 합성 물건",
+      "body": "N257_BODY_n0111 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0112",
+      "ordinal": 112,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0112 여러 어절 합성 물건",
+      "body": "N257_BODY_n0112 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0113",
+      "ordinal": 113,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0113 여러 어절 합성 물건",
+      "body": "N257_BODY_n0113 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0114",
+      "ordinal": 114,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0114 여러 어절 합성 물건",
+      "body": "N257_BODY_n0114 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0115",
+      "ordinal": 115,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0115 여러 어절 합성 물건",
+      "body": "N257_BODY_n0115 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0116",
+      "ordinal": 116,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0116 여러 어절 합성 물건",
+      "body": "N257_BODY_n0116 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0117",
+      "ordinal": 117,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0117 여러 어절 합성 물건",
+      "body": "N257_BODY_n0117 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0118",
+      "ordinal": 118,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0118 여러 어절 합성 물건",
+      "body": "N257_BODY_n0118 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0119",
+      "ordinal": 119,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0119 여러 어절 합성 물건",
+      "body": "N257_BODY_n0119 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0120",
+      "ordinal": 120,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0120 여러 어절 합성 물건",
+      "body": "N257_BODY_n0120 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0121",
+      "ordinal": 121,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0121 여러 어절 합성 물건",
+      "body": "N257_BODY_n0121 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0122",
+      "ordinal": 122,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0122 여러 어절 합성 물건",
+      "body": "N257_BODY_n0122 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0123",
+      "ordinal": 123,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0123 여러 어절 합성 물건",
+      "body": "N257_BODY_n0123 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0124",
+      "ordinal": 124,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0124 여러 어절 합성 물건",
+      "body": "N257_BODY_n0124 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0125",
+      "ordinal": 125,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0125 여러 어절 합성 물건",
+      "body": "N257_BODY_n0125 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0126",
+      "ordinal": 126,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0126 여러 어절 합성 물건",
+      "body": "N257_BODY_n0126 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0127",
+      "ordinal": 127,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0127 여러 어절 합성 물건",
+      "body": "N257_BODY_n0127 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0128",
+      "ordinal": 128,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0128 여러 어절 합성 물건",
+      "body": "N257_BODY_n0128 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0129",
+      "ordinal": 129,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0129 여러 어절 합성 물건",
+      "body": "N257_BODY_n0129 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0130",
+      "ordinal": 130,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0130 여러 어절 합성 물건",
+      "body": "N257_BODY_n0130 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0131",
+      "ordinal": 131,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0131 여러 어절 합성 물건",
+      "body": "N257_BODY_n0131 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0132",
+      "ordinal": 132,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0132 여러 어절 합성 물건",
+      "body": "N257_BODY_n0132 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0133",
+      "ordinal": 133,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0133 여러 어절 합성 물건",
+      "body": "N257_BODY_n0133 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0134",
+      "ordinal": 134,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0134 여러 어절 합성 물건",
+      "body": "N257_BODY_n0134 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0135",
+      "ordinal": 135,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0135 여러 어절 합성 물건",
+      "body": "N257_BODY_n0135 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0136",
+      "ordinal": 136,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0136 여러 어절 합성 물건",
+      "body": "N257_BODY_n0136 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0137",
+      "ordinal": 137,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0137 여러 어절 합성 물건",
+      "body": "N257_BODY_n0137 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0138",
+      "ordinal": 138,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0138 여러 어절 합성 물건",
+      "body": "N257_BODY_n0138 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0139",
+      "ordinal": 139,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0139 여러 어절 합성 물건",
+      "body": "N257_BODY_n0139 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0140",
+      "ordinal": 140,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0140 여러 어절 합성 물건",
+      "body": "N257_BODY_n0140 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0141",
+      "ordinal": 141,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0141 여러 어절 합성 물건",
+      "body": "N257_BODY_n0141 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0142",
+      "ordinal": 142,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0142 여러 어절 합성 물건",
+      "body": "N257_BODY_n0142 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0143",
+      "ordinal": 143,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0143 여러 어절 합성 물건",
+      "body": "N257_BODY_n0143 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0144",
+      "ordinal": 144,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0144 여러 어절 합성 물건",
+      "body": "N257_BODY_n0144 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0145",
+      "ordinal": 145,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0145 여러 어절 합성 물건",
+      "body": "N257_BODY_n0145 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0146",
+      "ordinal": 146,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0146 여러 어절 합성 물건",
+      "body": "N257_BODY_n0146 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0147",
+      "ordinal": 147,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0147 여러 어절 합성 물건",
+      "body": "N257_BODY_n0147 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0148",
+      "ordinal": 148,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0148 여러 어절 합성 물건",
+      "body": "N257_BODY_n0148 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0149",
+      "ordinal": 149,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0149 여러 어절 합성 물건",
+      "body": "N257_BODY_n0149 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0150",
+      "ordinal": 150,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0150 여러 어절 합성 물건",
+      "body": "N257_BODY_n0150 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0151",
+      "ordinal": 151,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0151 여러 어절 합성 물건",
+      "body": "N257_BODY_n0151 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0152",
+      "ordinal": 152,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0152 여러 어절 합성 물건",
+      "body": "N257_BODY_n0152 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0153",
+      "ordinal": 153,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0153 여러 어절 합성 물건",
+      "body": "N257_BODY_n0153 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0154",
+      "ordinal": 154,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0154 여러 어절 합성 물건",
+      "body": "N257_BODY_n0154 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0155",
+      "ordinal": 155,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0155 여러 어절 합성 물건",
+      "body": "N257_BODY_n0155 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0156",
+      "ordinal": 156,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0156 여러 어절 합성 물건",
+      "body": "N257_BODY_n0156 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0157",
+      "ordinal": 157,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0157 여러 어절 합성 물건",
+      "body": "N257_BODY_n0157 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0158",
+      "ordinal": 158,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0158 여러 어절 합성 물건",
+      "body": "N257_BODY_n0158 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0159",
+      "ordinal": 159,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0159 여러 어절 합성 물건",
+      "body": "N257_BODY_n0159 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0160",
+      "ordinal": 160,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0160 여러 어절 합성 물건",
+      "body": "N257_BODY_n0160 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0161",
+      "ordinal": 161,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0161 여러 어절 합성 물건",
+      "body": "N257_BODY_n0161 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0162",
+      "ordinal": 162,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0162 여러 어절 합성 물건",
+      "body": "N257_BODY_n0162 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0163",
+      "ordinal": 163,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0163 여러 어절 합성 물건",
+      "body": "N257_BODY_n0163 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0164",
+      "ordinal": 164,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0164 여러 어절 합성 물건",
+      "body": "N257_BODY_n0164 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0165",
+      "ordinal": 165,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0165 여러 어절 합성 물건",
+      "body": "N257_BODY_n0165 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0166",
+      "ordinal": 166,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0166 여러 어절 합성 물건",
+      "body": "N257_BODY_n0166 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0167",
+      "ordinal": 167,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0167 여러 어절 합성 물건",
+      "body": "N257_BODY_n0167 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0168",
+      "ordinal": 168,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0168 여러 어절 합성 물건",
+      "body": "N257_BODY_n0168 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0169",
+      "ordinal": 169,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0169 여러 어절 합성 물건",
+      "body": "N257_BODY_n0169 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0170",
+      "ordinal": 170,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0170 여러 어절 합성 물건",
+      "body": "N257_BODY_n0170 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0171",
+      "ordinal": 171,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0171 여러 어절 합성 물건",
+      "body": "N257_BODY_n0171 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0172",
+      "ordinal": 172,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0172 여러 어절 합성 물건",
+      "body": "N257_BODY_n0172 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0173",
+      "ordinal": 173,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0173 여러 어절 합성 물건",
+      "body": "N257_BODY_n0173 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0174",
+      "ordinal": 174,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0174 여러 어절 합성 물건",
+      "body": "N257_BODY_n0174 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0175",
+      "ordinal": 175,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0175 여러 어절 합성 물건",
+      "body": "N257_BODY_n0175 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0176",
+      "ordinal": 176,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0176 여러 어절 합성 물건",
+      "body": "N257_BODY_n0176 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0177",
+      "ordinal": 177,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0177 여러 어절 합성 물건",
+      "body": "N257_BODY_n0177 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0178",
+      "ordinal": 178,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0178 여러 어절 합성 물건",
+      "body": "N257_BODY_n0178 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0179",
+      "ordinal": 179,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0179 여러 어절 합성 물건",
+      "body": "N257_BODY_n0179 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0180",
+      "ordinal": 180,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0180 여러 어절 합성 물건",
+      "body": "N257_BODY_n0180 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0181",
+      "ordinal": 181,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0181 여러 어절 합성 물건",
+      "body": "N257_BODY_n0181 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0182",
+      "ordinal": 182,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0182 여러 어절 합성 물건",
+      "body": "N257_BODY_n0182 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0183",
+      "ordinal": 183,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0183 여러 어절 합성 물건",
+      "body": "N257_BODY_n0183 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0184",
+      "ordinal": 184,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0184 여러 어절 합성 물건",
+      "body": "N257_BODY_n0184 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0185",
+      "ordinal": 185,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0185 여러 어절 합성 물건",
+      "body": "N257_BODY_n0185 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0186",
+      "ordinal": 186,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0186 여러 어절 합성 물건",
+      "body": "N257_BODY_n0186 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0187",
+      "ordinal": 187,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0187 여러 어절 합성 물건",
+      "body": "N257_BODY_n0187 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0188",
+      "ordinal": 188,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0188 여러 어절 합성 물건",
+      "body": "N257_BODY_n0188 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0189",
+      "ordinal": 189,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0189 여러 어절 합성 물건",
+      "body": "N257_BODY_n0189 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0190",
+      "ordinal": 190,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0190 여러 어절 합성 물건",
+      "body": "N257_BODY_n0190 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0191",
+      "ordinal": 191,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0191 여러 어절 합성 물건",
+      "body": "N257_BODY_n0191 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0192",
+      "ordinal": 192,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0192 여러 어절 합성 물건",
+      "body": "N257_BODY_n0192 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0193",
+      "ordinal": 193,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0193 여러 어절 합성 물건",
+      "body": "N257_BODY_n0193 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0194",
+      "ordinal": 194,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0194 여러 어절 합성 물건",
+      "body": "N257_BODY_n0194 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0195",
+      "ordinal": 195,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0195 여러 어절 합성 물건",
+      "body": "N257_BODY_n0195 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0196",
+      "ordinal": 196,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0196 여러 어절 합성 물건",
+      "body": "N257_BODY_n0196 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0197",
+      "ordinal": 197,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0197 여러 어절 합성 물건",
+      "body": "N257_BODY_n0197 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0198",
+      "ordinal": 198,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0198 여러 어절 합성 물건",
+      "body": "N257_BODY_n0198 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0199",
+      "ordinal": 199,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0199 여러 어절 합성 물건",
+      "body": "N257_BODY_n0199 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0200",
+      "ordinal": 200,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0200 여러 어절 합성 물건",
+      "body": "N257_BODY_n0200 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0201",
+      "ordinal": 201,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0201 여러 어절 합성 물건",
+      "body": "N257_BODY_n0201 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0202",
+      "ordinal": 202,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0202 여러 어절 합성 물건",
+      "body": "N257_BODY_n0202 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0203",
+      "ordinal": 203,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0203 여러 어절 합성 물건",
+      "body": "N257_BODY_n0203 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0204",
+      "ordinal": 204,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0204 여러 어절 합성 물건",
+      "body": "N257_BODY_n0204 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0205",
+      "ordinal": 205,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0205 여러 어절 합성 물건",
+      "body": "N257_BODY_n0205 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0206",
+      "ordinal": 206,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0206 여러 어절 합성 물건",
+      "body": "N257_BODY_n0206 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0207",
+      "ordinal": 207,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0207 여러 어절 합성 물건",
+      "body": "N257_BODY_n0207 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0208",
+      "ordinal": 208,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0208 여러 어절 합성 물건",
+      "body": "N257_BODY_n0208 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0209",
+      "ordinal": 209,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0209 여러 어절 합성 물건",
+      "body": "N257_BODY_n0209 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0210",
+      "ordinal": 210,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0210 여러 어절 합성 물건",
+      "body": "N257_BODY_n0210 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0211",
+      "ordinal": 211,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0211 여러 어절 합성 물건",
+      "body": "N257_BODY_n0211 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0212",
+      "ordinal": 212,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0212 여러 어절 합성 물건",
+      "body": "N257_BODY_n0212 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0213",
+      "ordinal": 213,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0213 여러 어절 합성 물건",
+      "body": "N257_BODY_n0213 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0214",
+      "ordinal": 214,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0214 여러 어절 합성 물건",
+      "body": "N257_BODY_n0214 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0215",
+      "ordinal": 215,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0215 여러 어절 합성 물건",
+      "body": "N257_BODY_n0215 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0216",
+      "ordinal": 216,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0216 여러 어절 합성 물건",
+      "body": "N257_BODY_n0216 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0217",
+      "ordinal": 217,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0217 여러 어절 합성 물건",
+      "body": "N257_BODY_n0217 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0218",
+      "ordinal": 218,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0218 여러 어절 합성 물건",
+      "body": "N257_BODY_n0218 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0219",
+      "ordinal": 219,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0219 여러 어절 합성 물건",
+      "body": "N257_BODY_n0219 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0220",
+      "ordinal": 220,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0220 여러 어절 합성 물건",
+      "body": "N257_BODY_n0220 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0221",
+      "ordinal": 221,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0221 여러 어절 합성 물건",
+      "body": "N257_BODY_n0221 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0222",
+      "ordinal": 222,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0222 여러 어절 합성 물건",
+      "body": "N257_BODY_n0222 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0223",
+      "ordinal": 223,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0223 여러 어절 합성 물건",
+      "body": "N257_BODY_n0223 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0224",
+      "ordinal": 224,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0224 여러 어절 합성 물건",
+      "body": "N257_BODY_n0224 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0225",
+      "ordinal": 225,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0225 여러 어절 합성 물건",
+      "body": "N257_BODY_n0225 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0226",
+      "ordinal": 226,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0226 여러 어절 합성 물건",
+      "body": "N257_BODY_n0226 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0227",
+      "ordinal": 227,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0227 여러 어절 합성 물건",
+      "body": "N257_BODY_n0227 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0228",
+      "ordinal": 228,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0228 여러 어절 합성 물건",
+      "body": "N257_BODY_n0228 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0229",
+      "ordinal": 229,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0229 여러 어절 합성 물건",
+      "body": "N257_BODY_n0229 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0230",
+      "ordinal": 230,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0230 여러 어절 합성 물건",
+      "body": "N257_BODY_n0230 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0231",
+      "ordinal": 231,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0231 여러 어절 합성 물건",
+      "body": "N257_BODY_n0231 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0232",
+      "ordinal": 232,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0232 여러 어절 합성 물건",
+      "body": "N257_BODY_n0232 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0233",
+      "ordinal": 233,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0233 여러 어절 합성 물건",
+      "body": "N257_BODY_n0233 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0234",
+      "ordinal": 234,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0234 여러 어절 합성 물건",
+      "body": "N257_BODY_n0234 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0235",
+      "ordinal": 235,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0235 여러 어절 합성 물건",
+      "body": "N257_BODY_n0235 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0236",
+      "ordinal": 236,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0236 여러 어절 합성 물건",
+      "body": "N257_BODY_n0236 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0237",
+      "ordinal": 237,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0237 여러 어절 합성 물건",
+      "body": "N257_BODY_n0237 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0238",
+      "ordinal": 238,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0238 여러 어절 합성 물건",
+      "body": "N257_BODY_n0238 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0239",
+      "ordinal": 239,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0239 여러 어절 합성 물건",
+      "body": "N257_BODY_n0239 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0240",
+      "ordinal": 240,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0240 여러 어절 합성 물건",
+      "body": "N257_BODY_n0240 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0241",
+      "ordinal": 241,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0241 여러 어절 합성 물건",
+      "body": "N257_BODY_n0241 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0242",
+      "ordinal": 242,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0242 여러 어절 합성 물건",
+      "body": "N257_BODY_n0242 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0243",
+      "ordinal": 243,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0243 여러 어절 합성 물건",
+      "body": "N257_BODY_n0243 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0244",
+      "ordinal": 244,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0244 여러 어절 합성 물건",
+      "body": "N257_BODY_n0244 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0245",
+      "ordinal": 245,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0245 여러 어절 합성 물건",
+      "body": "N257_BODY_n0245 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0246",
+      "ordinal": 246,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0246 여러 어절 합성 물건",
+      "body": "N257_BODY_n0246 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0247",
+      "ordinal": 247,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0247 여러 어절 합성 물건",
+      "body": "N257_BODY_n0247 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0248",
+      "ordinal": 248,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0248 여러 어절 합성 물건",
+      "body": "N257_BODY_n0248 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0249",
+      "ordinal": 249,
+      "rule_slot": 5,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0249 여러 어절 합성 물건",
+      "body": "N257_BODY_n0249 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "n0250",
+      "ordinal": 250,
+      "rule_slot": 6,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0250 여러 어절 합성 물건",
+      "body": "N257_BODY_n0250 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0251",
+      "ordinal": 251,
+      "rule_slot": 7,
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "N257_LABEL_n0251 여러 어절 합성 물건",
+      "body": "N257_BODY_n0251 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0252",
+      "ordinal": 252,
+      "rule_slot": 8,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0252 여러 어절 합성 물건",
+      "body": "N257_BODY_n0252 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0253",
+      "ordinal": 253,
+      "rule_slot": 0,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0253 여러 어절 합성 물건",
+      "body": "N257_BODY_n0253 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0254",
+      "ordinal": 254,
+      "rule_slot": 1,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0254 여러 어절 합성 물건",
+      "body": "N257_BODY_n0254 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0255",
+      "ordinal": 255,
+      "rule_slot": 2,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0255 여러 어절 합성 물건",
+      "body": "N257_BODY_n0255 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0256",
+      "ordinal": 256,
+      "rule_slot": 3,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0256 여러 어절 합성 물건",
+      "body": "N257_BODY_n0256 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "n0257",
+      "ordinal": 257,
+      "rule_slot": 4,
+      "kind": "knowledge",
+      "state": "active",
+      "label": "N257_LABEL_n0257 여러 어절 합성 물건",
+      "body": "N257_BODY_n0257 승인 여부를 시험하는 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    }
+  ]
+}
