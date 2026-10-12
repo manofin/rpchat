@@ -112,17 +112,140 @@ for (const count of [256, 257]) t(`${count} events counted independently of 17 n
   assert.equal(new Set(f.events.map((e: any) => e.node_id)).size, 17);
   f.events.forEach((e: any, i: number) => { assert.equal(e.sequence, i + 1); assert.equal(e.event_id, `e${String(i + 1).padStart(4, '0')}`); });
 });
-t('branch expectations stay pending D2; T11 and reachability are present', () => {
-  const f = read('expected/branch-PENDING.json');
-  assert.equal(f.D2, null);
-  assert.equal(f.transition_document_sha256, '57dfe772ad3258b09552b348c90734f5920f11ae4aa3ebb1cef90b6ffe2e42ce');
-  assert.deepEqual(f.cases.map((c: any) => c.id), ['T00','T01','T02','T03','T04a','T04b','T05a','T05b','T06a','T06b','T07','T08','T09a','T09b','T10','T11']);
-  for (const c of f.cases) {
-    assert.equal(c.expected, null); assert.equal(c.pending, 'D2(anchor A/C) 결정 후 채움');
-    assert.ok(c.input.operation && c.input.initial_tree.length > 0);
-    assert.ok(['new-navigation-assumption','new-receipt-return','current-navigation-with-new-memory-semantics','new-memory-semantics'].includes(c.reachability));
+const branch = read('expected/branch-A.json');
+t('branch A binds the adopted decisions and documents', () => {
+  assert.equal(branch.D2, 'A'); assert.equal(branch.K2, 'b'); assert.equal(branch.K3, '(i)'); assert.equal(branch.K7, 'a');
+  assert.equal(branch.adr_sha256, '400525a07cd4e57963782f3a2ea22270f509cf2eddb252ec78da20df09a2fe13');
+  assert.equal(branch.transition_document_sha256, '3ca3c85546da1aa70589944a7266579bee333f8752789f1a4221aab75335cfbc');
+  assert.equal(branch.authorship, 'handwritten from transition table column A + K2-b rules; not produced by a reducer/projector');
+});
+t('branch cases cover T00 through T19 without duplicate or pending expectations', () => {
+  assert.deepEqual(branch.cases.map((c: any) => c.id), ['T00','T01','T02','T03','T04a','T04b','T05a','T05b','T06a','T06b','T07','T07b','T08','T09a','T09b','T10','T11','T12','T13','T14','T15','T16','T17','T18','T19']);
+  for (const c of branch.cases) {
+    assert.ok(c.expected && c.basis.length > 0); assert.equal('pending' in c, false);
+    assert.equal(c.expected.reachability, c.reachability);
   }
-  assert.equal(f.cases.find((c: any) => c.id === 'T11').input.precondition, 'leaf-L-before-acceptance');
+});
+// Inspect authored tables for contradictions; do not execute commands or produce a state.
+for (const c of branch.cases) t(`${c.id} authored branch table is self-consistent`, () => {
+  const { input: i, expected: e } = c;
+  for (const row of [...i.initial_tree, ...e.final_tree]) assert.ok(['complete','streaming','error','interrupted'].includes(row.status), `${c.id}: explicit status required`);
+  if (['retry-accept-same-key','retry-accept-different-payload'].includes(i.operation)) {
+    const head = i.initial_tree.find((row: any) => row.id === i.initial_head);
+    assert.ok(head && ((head.role === 'assistant' && head.status === 'complete') || head.internal === true), `${c.id}: K5 c starting head must satisfy K7`);
+  }
+  const auditGates = (entry: any) => {
+    const input = entry.input, expected = entry.expected;
+    if (['accept','accept-at-leaf-LA-then-regenerate-H'].includes(input.operation)) {
+      const head = input.initial_tree.find((r: any) => r.id === input.initial_head); assert.ok(head);
+      const actual = {
+        'K5 a': input.proposal_branch === input.active_branch,
+        'K5 b': input.expected_head === input.initial_head && input.expected_state_token === input.state_token,
+        'K5 c': true,
+        K7: (head.role === 'assistant' && head.status === 'complete') || head.internal === true,
+      };
+      const failed = Object.entries(actual).filter(([, pass]) => !pass).map(([key]) => key);
+      assert.deepEqual(failed, entry.intended_failure ? [entry.intended_failure] : [], `${entry.id}: exactly one intended gate may fail`);
+      assert.deepEqual(entry.gate_table, actual, `${entry.id}: gate table must match inputs`);
+      if (failed.length) {
+        const codes: Record<string, string> = { 'K5 a': 'proposal-branch-mismatch', 'K5 b': 'stale-approval-state', K7: 'approval-not-at-turn-boundary' };
+        assert.equal(expected.rejected?.code, codes[failed[0]], `${entry.id}: failed gate must reject`);
+        assert.equal(expected.rejected.reconfirm, failed[0] !== 'K7');
+      } else assert.equal(expected.rejected, null);
+      if (expected.rejected) {
+        assert.deepEqual(expected.final_tree, input.initial_tree);
+        assert.equal(expected.final_head, input.initial_head);
+      }
+    }
+  };
+  auditGates(c);
+  for (const variant of c.variants ?? []) auditGates(variant);
+  for (const variant of i.mismatch_variants ?? []) auditGates({ ...c, input: { ...i, ...variant } });
+  if (e.rejected) {
+    assert.deepEqual(Object.entries(c.gate_table).filter(([, pass]) => !pass).map(([key]) => key), [c.intended_failure], `${c.id}: rejection table identifies one failure`);
+  }
+  for (const id of i.recorded_approval_heads ?? (i.recorded_approval_head ? [i.recorded_approval_head] : [])) {
+    const row = i.initial_tree.find((r: any) => r.id === id);
+    assert.ok(row && ((row.role === 'assistant' && row.status === 'complete') || row.internal), `${c.id}: historical approval must satisfy K7`);
+  }
+
+  const ids = new Set(e.final_tree.map((r: any) => r.id));
+  assert.equal(ids.size, e.final_tree.length);
+  assert.ok(e.final_head === null ? ids.size === 0 : ids.has(e.final_head));
+  for (const row of e.final_tree) assert.ok(row.parent === null || ids.has(row.parent));
+  assert.deepEqual([...e.preserved_ids].sort(), [...ids].sort());
+  const ancestors = (tree: any[], head: string | null) => {
+    const seen = new Set<string>();
+    while (head !== null) {
+      assert.ok(!seen.has(head), `${c.id}: ancestry cycle`); seen.add(head);
+      const row = tree.find((r: any) => r.id === head); assert.ok(row, `${c.id}: missing ancestor`); head = row.parent;
+    }
+    return seen;
+  };
+  const pathIds = ancestors(e.final_tree, e.final_head);
+  const initialPath = ancestors(i.initial_tree, i.initial_head);
+  const sharedApproval = i.initial_tree.some((r: any) => r.internal && initialPath.has(r.id) && pathIds.has(r.id));
+  assert.equal(i.within_approved_branch, sharedApproval, `${c.id}: within_approved_branch must describe both endpoints`);
+  if (e.siblings) for (const [id, siblings] of Object.entries(e.siblings)) {
+    const row = e.final_tree.find((r: any) => r.id === id); assert.ok(row && !row.internal);
+    const sameParentAndRole = e.final_tree.filter((r: any) => !r.internal && r.parent === row.parent && r.role === row.role).map((r: any) => r.id);
+    assert.deepEqual(siblings, sameParentAndRole, `${c.id}: siblings must share actual parent and role`);
+  }
+  if (i.operation === 'retry-accept-different-payload' && i.payload_hash !== i.stored_payload_hash) {
+    assert.deepEqual(e.rejected, { code: 'idempotency-payload-conflict', reconfirm: false });
+  }
+
+  const final = e.final_tree.find((r: any) => r.id === e.final_head);
+  if (final?.internal) assert.ok(['accept','explicit-return'].includes(i.operation) || (i.operation === 'delete-fallback' && i.within_approved_branch), `${c.id}: forbidden internal final head`);
+  if (i.operation === 'select' || (i.operation === 'delete-fallback' && !i.within_approved_branch)) {
+    const entryPath = ancestors(i.initial_tree, i.target ?? i.initial_head);
+    for (const row of e.final_tree.filter((r: any) => r.internal && pathIds.has(r.id))) assert.ok(entryPath.has(row.id), `${c.id}: general navigation entered internal child`);
+  }
+  if (e.rejected !== null) {
+    assert.deepEqual(e.final_tree, i.initial_tree, `${c.id}: rejected request changed tree`);
+    assert.equal(e.final_head, i.initial_head, `${c.id}: rejected request changed head`);
+  }
+  // Independent invalid-input predicates: removing a rejection cannot bypass this audit.
+  if (i.proposal_branch && i.proposal_branch !== i.active_branch) assert.equal(e.rejected?.code, 'proposal-branch-mismatch');
+  if (i.operation === 'accept' && (('expected_head' in i && i.expected_head !== i.initial_head) || ('expected_state_token' in i && i.expected_state_token !== i.state_token))) {
+    assert.equal(e.rejected?.code, 'stale-approval-state', `${c.id}: stale approval must reject`);
+    assert.equal(e.rejected.reconfirm, true);
+  }
+  const projection = (state: any) => {
+    const internalIds = new Set(state.final_tree.filter((r: any) => r.internal).map((r: any) => r.id));
+    const walk = (value: any): void => {
+      if (typeof value === 'string') assert.ok(!internalIds.has(value), `${c.id}: internal ID in display projection`);
+      else if (value && typeof value === 'object') for (const [key, v] of Object.entries(value)) { assert.ok(!internalIds.has(key)); walk(v); }
+    };
+    walk(state.display_projection);
+    const projected = state.display_projection.messages;
+    assert.ok(state.display_projection.head === null || projected.some((r: any) => r.id === state.display_projection.head));
+    for (const row of projected) assert.ok(row.parent === null || projected.some((r: any) => r.id === row.parent));
+  };
+  projection(e);
+  if (e.after_send) projection(e.after_send);
+});
+t('T07 returns the T01 receipt without moving the current head', () => {
+  const a = branch.cases.find((c: any) => c.id === 'T01');
+  const retry = branch.cases.find((c: any) => c.id === 'T07');
+  assert.deepEqual(retry.expected.receipt, a.expected.receipt);
+  assert.equal(retry.expected.final_head, retry.input.initial_head);
+  assert.deepEqual(retry.expected.final_tree, retry.input.initial_tree);
+});
+t('K2 explicit return and sibling tables preserve internal boundaries', () => {
+  const c = (id: string) => branch.cases.find((x: any) => x.id === id);
+  assert.equal(c('T12').expected.final_head, 'X1'); assert.deepEqual(c('T12').expected.active_effect_ids, ['e1']);
+  assert.equal(c('T13').expected.final_head, 'H'); assert.deepEqual(c('T13').expected.active_effect_ids, []);
+  assert.equal(c('T16').expected.final_head, 'LA');
+  assert.deepEqual(c('T17').expected.siblings, { L: ['L','R'], R: ['L','R'], U: ['U'] });
+});
+t('T18 display head and streamed parent differ from validation state', () => {
+  const e = branch.cases.find((c: any) => c.id === 'T18').expected;
+  assert.equal(e.final_head, 'X'); assert.equal(e.display_projection.head, 'H');
+  assert.equal(e.validation_state.actual_head, e.final_head);
+  assert.equal(e.after_send.display_projection.messages.find((r: any) => r.id === 'U').parent, 'H');
+  assert.equal(e.after_send.validation_state.actual_head, 'U');
+  assert.notEqual(e.validation_state.token, e.after_send.validation_state.token);
 });
 function budgetBaseline(): string {
   const scenario = cast.scenario;
