@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "authorship": "handwritten membership table; not produced by a projector",
+  "recipients": [
+    {
+      "id": "gm",
+      "pass": "N",
+      "node_ids": [
+        "public",
+        "gm-only"
+      ]
+    },
+    {
+      "id": "synthetic-01",
+      "pass": "F",
+      "node_ids": [
+        "public",
+        "focus-only",
+        "focus-observed"
+      ]
+    },
+    {
+      "id": "synthetic-02",
+      "pass": "E",
+      "node_ids": [
+        "public",
+        "extra-one",
+        "shared-extras"
+      ]
+    },
+    {
+      "id": "synthetic-03",
+      "pass": "E",
+      "node_ids": [
+        "public",
+        "extra-two",
+        "shared-extras"
+      ]
+    },
+    {
+      "id": "synthetic-17",
+      "pass": "observer-no-request",
+      "node_ids": [
+        "public"
+      ]
+    },
+    {
+      "id": "user",
+      "pass": "explicit-player-knowledge-no-model-request",
+      "node_ids": [
+        "public",
+        "user-only"
+      ]
+    }
+  ]
+}

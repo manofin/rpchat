@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "source": "generate.ts assignmentRules.allowed column; no projector",
+  "recipients": [
+    {
+      "id": "gm",
+      "pass": "N",
+      "node_ids": [
+        "n0001",
+        "n0002",
+        "n0010",
+        "n0011"
+      ]
+    },
+    {
+      "id": "synthetic-01",
+      "pass": "F",
+      "node_ids": [
+        "n0001",
+        "n0003",
+        "n0009",
+        "n0010",
+        "n0012"
+      ]
+    },
+    {
+      "id": "synthetic-02",
+      "pass": "E",
+      "node_ids": [
+        "n0001",
+        "n0004",
+        "n0010",
+        "n0013"
+      ]
+    },
+    {
+      "id": "synthetic-03",
+      "pass": "E",
+      "node_ids": [
+        "n0001",
+        "n0005",
+        "n0010",
+        "n0014"
+      ]
+    },
+    {
+      "id": "synthetic-17",
+      "pass": "observer-no-request",
+      "node_ids": [
+        "n0001",
+        "n0010"
+      ]
+    },
+    {
+      "id": "user",
+      "pass": "explicit-player-knowledge-no-model-request",
+      "node_ids": [
+        "n0001",
+        "n0006",
+        "n0010",
+        "n0015"
+      ]
+    }
+  ]
+}

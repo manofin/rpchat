@@ -1,0 +1,181 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "node_id": "public",
+      "kind": "knowledge",
+      "state": "active",
+      "label": "LABEL_CANARY_public 접이식 푸른 망원경",
+      "body": "BODY_CANARY_public 이 내용은 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "gm-only",
+      "kind": "knowledge",
+      "state": "active",
+      "label": "LABEL_CANARY_gm-only 접이식 푸른 망원경",
+      "body": "BODY_CANARY_gm-only 이 내용은 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "gm"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "focus-only",
+      "kind": "knowledge",
+      "state": "active",
+      "label": "LABEL_CANARY_focus-only 접이식 푸른 망원경",
+      "body": "BODY_CANARY_focus-only 이 내용은 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "extra-one",
+      "kind": "knowledge",
+      "state": "active",
+      "label": "LABEL_CANARY_extra-one 접이식 푸른 망원경",
+      "body": "BODY_CANARY_extra-one 이 내용은 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "extra-two",
+      "kind": "knowledge",
+      "state": "active",
+      "label": "LABEL_CANARY_extra-two 접이식 푸른 망원경",
+      "body": "BODY_CANARY_extra-two 이 내용은 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "user-only",
+      "kind": "knowledge",
+      "state": "active",
+      "label": "LABEL_CANARY_user-only 접이식 푸른 망원경",
+      "body": "BODY_CANARY_user-only 이 내용은 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "user"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": true
+    },
+    {
+      "node_id": "observed-only",
+      "kind": "knowledge",
+      "state": "active",
+      "label": "LABEL_CANARY_observed-only 접이식 푸른 망원경",
+      "body": "BODY_CANARY_observed-only 이 내용은 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "focus-observed",
+      "kind": "knowledge",
+      "state": "active",
+      "label": "LABEL_CANARY_focus-observed 접이식 푸른 망원경",
+      "body": "BODY_CANARY_focus-observed 이 내용은 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-01"
+        ],
+        "observer_ids": [
+          "synthetic-17"
+        ]
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "closed-public",
+      "kind": "knowledge",
+      "state": "closed",
+      "label": "LABEL_CANARY_closed-public 접이식 푸른 망원경",
+      "body": "BODY_CANARY_closed-public 이 내용은 합성 기억이다.",
+      "audience": {
+        "visibility": "public"
+      },
+      "explicit_user_recipient": false
+    },
+    {
+      "node_id": "shared-extras",
+      "kind": "knowledge",
+      "state": "active",
+      "label": "LABEL_CANARY_shared-extras 접이식 푸른 망원경",
+      "body": "BODY_CANARY_shared-extras 이 내용은 합성 기억이다.",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          "synthetic-02",
+          "synthetic-03"
+        ],
+        "observer_ids": []
+      },
+      "explicit_user_recipient": false
+    }
+  ],
+  "invalid_audience_cases": [
+    {
+      "id": "missing"
+    },
+    {
+      "id": "null",
+      "audience": null
+    },
+    {
+      "id": "bad-visibility",
+      "audience": {
+        "visibility": "gm"
+      }
+    },
+    {
+      "id": "bad-recipient",
+      "audience": {
+        "visibility": "private",
+        "recipient_ids": [
+          17
+        ]
+      }
+    },
+    {
+      "id": "extra-key",
+      "audience": {
+        "visibility": "public",
+        "sender": "user"
+      }
+    }
+  ]
+}
