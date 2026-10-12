@@ -167,16 +167,18 @@ export type ParseScriptResult = {
  *     model output does not turn into ten one-line blocks.
  *   - The line cap is enforced after the allow-list, so a model that pads with
  *     rejected names cannot use up the budget.
- *   - With an empty allow-list (a narration-only turn) a `이름 | 대사` row is
- *     still never a speaker, but it is not folded into the surrounding paragraph
- *     either: the name and the `|` are dropped and the said text becomes its own
- *     narration paragraph. Folding five such rows into one block reads as a
- *     transcript pasted into prose; the name stays in `rejected_names`.
+ *   - With an empty allow-list, only exact room cast names/aliases identify
+ *     `이름 | 대사` rows. They become separate narration paragraphs, never
+ *     speakers. Unknown prefixes stay intact: a pipe can be ordinary prose.
  *
  * Never throws. Empty input yields an empty script, which the caller treats as a
  * failed pass — the same degradation Pass F already has.
  */
-export function parseScript(text: string, allowed: SpeakerSlot[]): ParseScriptResult {
+export function parseScript(
+  text: string,
+  allowed: SpeakerSlot[],
+  roomCast: ReadonlyArray<Pick<SpeakerSlot, 'name' | 'aliases'>> = [],
+): ParseScriptResult {
   const items: ScriptItem[] = [];
   const spoke: string[] = [];
   const rejected: string[] = [];
@@ -207,8 +209,18 @@ export function parseScript(text: string, allowed: SpeakerSlot[]): ParseScriptRe
       continue;
     }
 
-    const name = normalizeName(line.slice(0, sep));
+    const prefix = line.slice(0, sep).trim();
     const said = line.slice(sep + 1).trim();
+    if (narrationOnly) {
+      // Room membership classifies the row; it never grants permission to speak.
+      if (said && roomCast.some(actor => actor.name === prefix || actor.aliases?.includes(prefix))) {
+        if (!rejected.includes(prefix)) rejected.push(prefix);
+        flush();
+        items.push({ kind: 'narration', text: said });
+      } else buf.push(line);
+      continue;
+    }
+    const name = normalizeName(prefix);
     // A pipe inside prose ("A | B 구간") is not a speaker line: the left side has
     // to be short enough to be a name, and there has to be something said.
     if (!name || !said || name.length > 24) {
@@ -219,12 +231,6 @@ export function parseScript(text: string, allowed: SpeakerSlot[]): ParseScriptRe
     const slot = resolveEventActor(name, allowed);
     if (!slot) {
       if (!rejected.includes(name)) rejected.push(name);
-      if (narrationOnly) {
-        // One row, one paragraph; no name, no orphan `|`, no speaker.
-        flush();
-        items.push({ kind: 'narration', text: said });
-        continue;
-      }
       buf.push(line);
       continue;
     }

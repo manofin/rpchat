@@ -274,6 +274,8 @@ export interface MessageMeta {
   chat_event_script?: boolean;
   chat_event_default_actor?: { id: string; name: string };
   chat_event_actors?: Array<{ id: string; name: string; aliases?: string[] }>;
+  /** Room membership for narration-only parsing; does not authorize dialogue. */
+  chat_event_cast?: Array<{ id: string; name: string; aliases?: string[] }>;
   usage?: { prompt_tokens?: number; completion_tokens?: number } | null;
   finish_reason?: string | null;
   choices?: string[];

@@ -167,7 +167,7 @@ t('speakers=[] fallback leaves no orphan `|` and invents no speaker', () => {
 });
 
 t('speakers=[] fallback: plain narration still merges, a lone row is still its own paragraph', () => {
-  const r = parseScript('첫 줄.\n둘째 줄.\n서하린 | 응.\n셋째 줄.', []);
+  const r = parseScript('첫 줄.\n둘째 줄.\n서하린 | 응.\n셋째 줄.', [], CAST);
   assert.deepEqual(r.items, [
     { kind: 'narration', text: '첫 줄.\n둘째 줄.' },
     { kind: 'narration', text: '응.' },

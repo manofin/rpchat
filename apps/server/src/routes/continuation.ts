@@ -70,7 +70,8 @@ export function buildContinuation(ctx: Ctx, conv: ConversationRow, history: Mess
     return { messages: built.messages, budget: built.budget, model: built.model, maxTokens: built.maxTokens,
       temperature: 0.9, topP: 0.95, stop: [],
       scopedRequests: [...(built.narrator_request ? [built.narrator_request] : []), ...built.actor_requests],
-      meta: { chat_event_script: true, chat_event_actors: plan.speakers.map(({ id, name, aliases }) => ({ id, name, aliases })) } as MessageMeta,
+      meta: { chat_event_script: true, chat_event_actors: plan.speakers.map(({ id, name, aliases }) => ({ id, name, aliases })),
+        chat_event_cast: input.cast.map(({ id, name, aliases }) => ({ id, name, aliases })) } as MessageMeta,
       finish: (raw: string) => finishDialogBeat(input, plan, raw).blocks.filter(b => b.kind !== 'info' && b.kind !== 'header' && b.kind !== 'ui').map(b => ({
         text: b.text, meta: { block_kind: b.kind, speaker_character_id: b.speaker_character_id ?? undefined,
           speaker_name: b.speaker_name ?? undefined, image_url: b.asset_path ?? undefined } as MessageMeta,

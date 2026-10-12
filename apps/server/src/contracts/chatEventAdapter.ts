@@ -15,6 +15,7 @@ export type EventMessage = {
     speaker_name?: string;
     ooc?: boolean;
     chat_event_actors?: EventActor[];
+    chat_event_cast?: EventActor[];
     chat_event_script?: boolean;
     chat_event_default_actor?: EventActor;
   };
@@ -164,7 +165,7 @@ export function adaptChatEvents(message: EventMessage, options: AdaptOptions = {
   if (kind === 'narration') { narrate(text); return events; }
   if (kind === 'line') { lineEvents(text); return events; }
   if (script) {
-    for (const item of parseScript(text, actors).items) {
+    for (const item of parseScript(text, actors, meta.chat_event_cast).items) {
       if (item.kind === 'narration') narrate(item.text);
       else lineEvents(item.text, { id: item.character_id, name: item.name });
     }
