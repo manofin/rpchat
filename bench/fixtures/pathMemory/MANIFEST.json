@@ -155,7 +155,6 @@
     "cast17.json": "58d74542102b14b5226605906fd1786c4951351bb367bc28ed11e5269dc9b380",
     "events-256.json": "7c2847f756d6cee84ce064a78051b6a9d24e7e87235742cc0ed8b9a684c52bb8",
     "events-257.json": "a55e0a2fe3b1be69c4678b7d2dacc78caaec18afcd01c594534549848a899d8f",
-    "expected/branch-PENDING.json": "99b57803ba9a87eb03739c7ba10fabc402cc03a97a57999a0e87a50ef45a84ff",
     "expected/recipients-N0.json": "c61ae3dc851f5ce9ff897174822153c32802a6fc9ab6bbf39069fcb33b121534",
     "expected/recipients-N1024.json": "7e0921d2d4371526723cd0f2998e1273b66a929504e62df483ba5f151e91961e",
     "expected/recipients-N17.json": "7cdc08089b42a5853be8e8a04f20f173c893c8efbe070dd0f50d041816d5462f",
@@ -168,6 +167,7 @@
     "nodes-N17.json": "ba4f389173a6402995321ace35708035dbddbc2d240ddbb3afb32af940412681",
     "nodes-N256.json": "d04fb7ec37fbd48a3734439a712d2c1245963e78bb209d5b27a7fe89d5176e12",
     "nodes-N257.json": "813128fc95414e2fb1b489ca3b58d2af201adeda60260ccb7ba6f580ddaf9292",
-    "nodes-canary.json": "d70825fc81129f4de5bc5a0593cb4a8430687e25ebc9b6ce4bceff958cfcf4a9"
+    "nodes-canary.json": "d70825fc81129f4de5bc5a0593cb4a8430687e25ebc9b6ce4bceff958cfcf4a9",
+    "expected/branch-A.json": "2aedfa75e66499e207358699154f34ae47888daad00fdd916d90a67c9823f7af"
   }
 }
