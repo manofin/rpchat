@@ -1309,6 +1309,7 @@ export function chatRoutes(ctx: Ctx) {
         beat_seq: scriptSeq,
         chat_event_script: true,
         chat_event_actors: plan.speakers.map(({ id, name, aliases }) => ({ id, name, aliases })),
+        chat_event_cast: planInput.cast.map(({ id, name, aliases }) => ({ id, name, aliases })),
       });
       ctx.queue.setMessageId(generationId, scriptRow.id);
       setHead(db, conv.id, scriptRow.id);

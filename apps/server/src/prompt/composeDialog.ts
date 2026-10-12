@@ -202,7 +202,7 @@ export function finishDialogBeat(
 ): NormalizedFinishedDialogBeat {
   const scene = plan.applied.state;
   const { content, choices } = extractChoices(scriptText);
-  const parsed = parseScript(sanitizeGeneratedContent(content), plan.speakers);
+  const parsed = parseScript(sanitizeGeneratedContent(content), plan.speakers, input.cast);
 
   const blocks = serializeDialogBeat({
     header: plan.header,
