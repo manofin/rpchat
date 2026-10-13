@@ -114,13 +114,14 @@ for (const count of [256, 257]) t(`${count} events counted independently of 17 n
 });
 const branch = read('expected/branch-A.json');
 t('branch A binds the adopted decisions and documents', () => {
-  assert.equal(branch.D2, 'A'); assert.equal(branch.K2, 'b'); assert.equal(branch.K3, '(i)'); assert.equal(branch.K7, 'a');
-  assert.equal(branch.adr_sha256, '400525a07cd4e57963782f3a2ea22270f509cf2eddb252ec78da20df09a2fe13');
-  assert.equal(branch.transition_document_sha256, '3ca3c85546da1aa70589944a7266579bee333f8752789f1a4221aab75335cfbc');
+  assert.equal(branch.D2, 'A'); assert.equal(branch.K2, 'b'); assert.equal(branch.K3, '(i)'); assert.equal(branch.K7, 'a'); assert.equal(branch.K8, 'a');
+  assert.equal(branch.adr_sha256, '0db1e2c06871ebe1fd798f2b2375118fef5319542deeca456662034371ffd629');
+  assert.equal(branch.transition_document_sha256, '96be33cead1f596cd67f2b41d1a6976e2c0cd95758748e49916a1a9c2aeae7a1');
   assert.equal(branch.authorship, 'handwritten from transition table column A + K2-b rules; not produced by a reducer/projector');
 });
-t('branch cases cover T00 through T19 without duplicate or pending expectations', () => {
-  assert.deepEqual(branch.cases.map((c: any) => c.id), ['T00','T01','T02','T03','T04a','T04b','T05a','T05b','T06a','T06b','T07','T07b','T08','T09a','T09b','T10','T11','T12','T13','T14','T15','T16','T17','T18','T19']);
+t('branch cases cover all 29 cases T00 through T23 without duplicate or pending expectations', () => {
+  assert.deepEqual(branch.cases.map((c: any) => c.id), ['T00','T01','T02','T03','T04a','T04b','T05a','T05b','T06a','T06b','T07','T07b','T08','T09a','T09b','T10','T11','T12','T13','T14','T15','T16','T17','T18','T19','T20','T21','T22','T23']);
+  assert.equal(branch.cases.length, 29);
   for (const c of branch.cases) {
     assert.ok(c.expected && c.basis.length > 0); assert.equal('pending' in c, false);
     assert.equal(c.expected.reachability, c.reachability);
@@ -136,21 +137,31 @@ for (const c of branch.cases) t(`${c.id} authored branch table is self-consisten
   }
   const auditGates = (entry: any) => {
     const input = entry.input, expected = entry.expected;
-    if (['accept','accept-at-leaf-LA-then-regenerate-H'].includes(input.operation)) {
+    if (['accept','accept-at-leaf-LA-then-regenerate-H'].includes(input.operation) || entry.basis?.includes('K8')) {
       const head = input.initial_tree.find((r: any) => r.id === input.initial_head); assert.ok(head);
       const actual = {
         'K5 a': input.proposal_branch === input.active_branch,
         'K5 b': input.expected_head === input.initial_head && input.expected_state_token === input.state_token,
-        'K5 c': true,
+        'K5 c': !input.previous_receipt || input.idempotency_key !== input.previous_receipt.idempotency_key || input.payload_hash === input.stored_payload_hash,
         K7: (head.role === 'assistant' && head.status === 'complete') || head.internal === true,
       };
       const failed = Object.entries(actual).filter(([, pass]) => !pass).map(([key]) => key);
-      assert.deepEqual(failed, entry.intended_failure ? [entry.intended_failure] : [], `${entry.id}: exactly one intended gate may fail`);
+      const intended = Array.isArray(entry.intended_failure) ? entry.intended_failure : entry.intended_failure ? [entry.intended_failure] : [];
+      assert.deepEqual(failed, intended, `${entry.id}: authored failure set must match inputs`);
+      if (typeof entry.intended_failure === 'string') assert.equal(failed.length, 1, `${entry.id}: exactly one intended gate may fail`);
       assert.deepEqual(entry.gate_table, actual, `${entry.id}: gate table must match inputs`);
-      if (failed.length) {
-        const codes: Record<string, string> = { 'K5 a': 'proposal-branch-mismatch', 'K5 b': 'stale-approval-state', K7: 'approval-not-at-turn-boundary' };
-        assert.equal(expected.rejected?.code, codes[failed[0]], `${entry.id}: failed gate must reject`);
-        assert.equal(expected.rejected.reconfirm, failed[0] !== 'K7');
+      const sameReceipt = input.previous_receipt && input.idempotency_key === input.previous_receipt.idempotency_key
+        && input.payload_hash === input.stored_payload_hash;
+      const first = (['K5 c', 'K5 b', 'K5 a', 'K7'] as const).find(key => !actual[key]);
+      if (sameReceipt) {
+        assert.equal(expected.rejected, null, `${entry.id}: K8 c returns receipt before stale check`);
+        assert.deepEqual(expected.receipt, input.previous_receipt);
+        assert.equal(expected.final_head, input.initial_head);
+        assert.deepEqual(expected.final_tree, input.initial_tree);
+      } else if (first) {
+        const codes: Record<string, string> = { 'K5 c': 'idempotency-payload-conflict', 'K5 a': 'proposal-branch-mismatch', 'K5 b': 'stale-approval-state', K7: 'approval-not-at-turn-boundary' };
+        assert.equal(expected.rejected?.code, codes[first], `${entry.id}: K8 first failed gate must reject`);
+        assert.equal(expected.rejected.reconfirm, first === 'K5 a' || first === 'K5 b');
       } else assert.equal(expected.rejected, null);
       if (expected.rejected) {
         assert.deepEqual(expected.final_tree, input.initial_tree);
@@ -162,7 +173,7 @@ for (const c of branch.cases) t(`${c.id} authored branch table is self-consisten
   for (const variant of c.variants ?? []) auditGates(variant);
   for (const variant of i.mismatch_variants ?? []) auditGates({ ...c, input: { ...i, ...variant } });
   if (e.rejected) {
-    assert.deepEqual(Object.entries(c.gate_table).filter(([, pass]) => !pass).map(([key]) => key), [c.intended_failure], `${c.id}: rejection table identifies one failure`);
+    assert.deepEqual(Object.entries(c.gate_table).filter(([, pass]) => !pass).map(([key]) => key), Array.isArray(c.intended_failure) ? c.intended_failure : [c.intended_failure], `${c.id}: rejection table identifies authored failures`);
   }
   for (const id of i.recorded_approval_heads ?? (i.recorded_approval_head ? [i.recorded_approval_head] : [])) {
     const row = i.initial_tree.find((r: any) => r.id === id);
@@ -206,7 +217,7 @@ for (const c of branch.cases) t(`${c.id} authored branch table is self-consisten
     assert.equal(e.final_head, i.initial_head, `${c.id}: rejected request changed head`);
   }
   // Independent invalid-input predicates: removing a rejection cannot bypass this audit.
-  if (i.proposal_branch && i.proposal_branch !== i.active_branch) assert.equal(e.rejected?.code, 'proposal-branch-mismatch');
+  if (!c.basis.includes('K8') && i.proposal_branch && i.proposal_branch !== i.active_branch) assert.equal(e.rejected?.code, 'proposal-branch-mismatch');
   if (i.operation === 'accept' && (('expected_head' in i && i.expected_head !== i.initial_head) || ('expected_state_token' in i && i.expected_state_token !== i.state_token))) {
     assert.equal(e.rejected?.code, 'stale-approval-state', `${c.id}: stale approval must reject`);
     assert.equal(e.rejected.reconfirm, true);

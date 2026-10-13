@@ -168,6 +168,6 @@
     "nodes-N256.json": "d04fb7ec37fbd48a3734439a712d2c1245963e78bb209d5b27a7fe89d5176e12",
     "nodes-N257.json": "813128fc95414e2fb1b489ca3b58d2af201adeda60260ccb7ba6f580ddaf9292",
     "nodes-canary.json": "d70825fc81129f4de5bc5a0593cb4a8430687e25ebc9b6ce4bceff958cfcf4a9",
-    "expected/branch-A.json": "2aedfa75e66499e207358699154f34ae47888daad00fdd916d90a67c9823f7af"
+    "expected/branch-A.json": "290589dad85cda5c9155d292cf95246bb6880f0e45dd70016b148f352b602ea1"
   }
 }

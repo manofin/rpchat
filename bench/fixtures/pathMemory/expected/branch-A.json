@@ -3,8 +3,8 @@
   "D2": "A",
   "K2": "b",
   "K3": "(i)",
-  "adr_sha256": "400525a07cd4e57963782f3a2ea22270f509cf2eddb252ec78da20df09a2fe13",
-  "transition_document_sha256": "3ca3c85546da1aa70589944a7266579bee333f8752789f1a4221aab75335cfbc",
+  "adr_sha256": "0db1e2c06871ebe1fd798f2b2375118fef5319542deeca456662034371ffd629",
+  "transition_document_sha256": "96be33cead1f596cd67f2b41d1a6976e2c0cd95758748e49916a1a9c2aeae7a1",
   "authorship": "handwritten from transition table column A + K2-b rules; not produced by a reducer/projector",
   "notes": [
     "Trees and expected outcomes are authored literals; formatting helpers only serialize these literals.",
@@ -14,10 +14,10 @@
     "L and R are user messages after assistant H. T17 compares same-role user alternatives L/R/U but does not merge their distinct actual parents H/X.",
     "T09b deletes unprotected sibling R while head stays L; stored e1 and X survive although e1 is inactive on L.",
     "within_approved_branch: operation이 시작되는 head가 승인 anchor Xk 또는 그 하위 트리에 있고, operation이 그 하위 트리 안에서 끝나는가. 시작·종료 구조 경로에 공통 승인 anchor가 있으면 true이며, 승인 전의 최초 accept는 false다.",
-    "K5 검사 순서: (c) 같은 멱등 키 조회 → (a) 제안 분기 일치 → (b) 기대 head·상태 토큰 일치. 멱등 재요청은 (a)(b)보다 먼저 기존 결과를 반환한다.",
-    "K5 검사와 K7 검사가 동시에 실패할 때의 우선순서는 문서에 정해져 있지 않다. 이 fixture의 모든 거부 사례는 검사 하나만 실패하도록 구성했으며, 우선순서를 정하지 않는다.",
+    "(이전, review2 당시) K5 검사 순서: (c) 같은 멱등 키 조회 → (a) 제안 분기 일치 → (b) 기대 head·상태 토큰 일치. 멱등 재요청은 (a)(b)보다 먼저 기존 결과를 반환한다. → 현재: K8=[a]로 (c) → (b) → (a) → K7 순서로 결정(path-memory-k8).",
+    "(이전) K5 검사와 K7 검사가 동시에 실패할 때의 우선순서는 문서에 정해져 있지 않다. 이 fixture의 모든 거부 사례는 검사 하나만 실패하도록 구성했으며, 우선순서를 정하지 않는다. → 현재: K8=[a]로 결정(path-memory-k8). 단일 실패 사례는 그대로 두고, 동시 실패 사례 T20~T23을 추가했다.",
     "T07/T07b are receipt lookups; recorded_approval_head describes the original T01 approval, not a new approval; current head LA is also a complete assistant satisfying K7. T12 is explicit return; recorded_approval_heads records the prior X1/X2 approvals.",
-    "gate_table is a handwritten condition table, audited against request inputs for new approvals; it does not execute a reducer or choose precedence. D1 deletion and K5 c replay conflicts are separate operation classes."
+    "gate_table is a handwritten condition table, audited against request inputs for new approvals; it does not execute a reducer or choose precedence. D1 deletion and K5 c replay conflicts are separate operation classes. Precedence itself is fixed by K8=[a] (path-memory-k8) and exercised by T20–T23 against pathMemory/gate.ts."
   ],
   "cases": [
     {
@@ -3650,7 +3650,554 @@
         "K7": false
       },
       "intended_failure": "K7"
+    },
+    {
+      "id": "T20",
+      "basis": [
+        "K8"
+      ],
+      "reachability": "new-memory-semantics",
+      "input": {
+        "initial_tree": [
+          {
+            "id": "P",
+            "parent": null,
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "H",
+            "parent": "P",
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "L",
+            "parent": "H",
+            "role": "user",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "R",
+            "parent": "H",
+            "role": "user",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "LA",
+            "parent": "L",
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "RA",
+            "parent": "R",
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          }
+        ],
+        "initial_head": "RA",
+        "operation": "accept",
+        "within_approved_branch": false,
+        "state_token": "state-T20",
+        "proposal_branch": "LA",
+        "active_branch": "RA",
+        "expected_head": "RA",
+        "expected_state_token": "stale-token",
+        "approval_head": "RA"
+      },
+      "expected": {
+        "final_tree": [
+          {
+            "id": "P",
+            "parent": null,
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "H",
+            "parent": "P",
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "L",
+            "parent": "H",
+            "role": "user",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "R",
+            "parent": "H",
+            "role": "user",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "LA",
+            "parent": "L",
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "RA",
+            "parent": "R",
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          }
+        ],
+        "final_head": "RA",
+        "active_effect_ids": [],
+        "preserved_ids": [
+          "P",
+          "H",
+          "L",
+          "R",
+          "LA",
+          "RA"
+        ],
+        "rejected": {
+          "code": "stale-approval-state",
+          "reconfirm": true
+        },
+        "display_projection": {
+          "head": "RA",
+          "messages": [
+            {
+              "id": "P",
+              "parent": null
+            },
+            {
+              "id": "H",
+              "parent": "P"
+            },
+            {
+              "id": "R",
+              "parent": "H"
+            },
+            {
+              "id": "RA",
+              "parent": "R"
+            }
+          ]
+        },
+        "reachability": "new-memory-semantics"
+      },
+      "gate_table": {
+        "K5 a": false,
+        "K5 b": false,
+        "K5 c": true,
+        "K7": true
+      },
+      "intended_failure": [
+        "K5 a",
+        "K5 b"
+      ]
+    },
+    {
+      "id": "T21",
+      "basis": [
+        "K8"
+      ],
+      "reachability": "new-memory-semantics",
+      "input": {
+        "initial_tree": [
+          {
+            "id": "P",
+            "parent": null,
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "H",
+            "parent": "P",
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "L",
+            "parent": "H",
+            "role": "user",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "R",
+            "parent": "H",
+            "role": "user",
+            "internal": false,
+            "status": "complete"
+          }
+        ],
+        "initial_head": "L",
+        "operation": "accept",
+        "within_approved_branch": false,
+        "state_token": "state-T21",
+        "proposal_branch": "L",
+        "active_branch": "L",
+        "expected_head": "L",
+        "expected_state_token": "stale-token",
+        "approval_head": "L"
+      },
+      "expected": {
+        "final_tree": [
+          {
+            "id": "P",
+            "parent": null,
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "H",
+            "parent": "P",
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "L",
+            "parent": "H",
+            "role": "user",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "R",
+            "parent": "H",
+            "role": "user",
+            "internal": false,
+            "status": "complete"
+          }
+        ],
+        "final_head": "L",
+        "active_effect_ids": [],
+        "preserved_ids": [
+          "P",
+          "H",
+          "L",
+          "R"
+        ],
+        "rejected": {
+          "code": "stale-approval-state",
+          "reconfirm": true
+        },
+        "display_projection": {
+          "head": "L",
+          "messages": [
+            {
+              "id": "P",
+              "parent": null
+            },
+            {
+              "id": "H",
+              "parent": "P"
+            },
+            {
+              "id": "L",
+              "parent": "H"
+            }
+          ]
+        },
+        "reachability": "new-memory-semantics"
+      },
+      "gate_table": {
+        "K5 a": true,
+        "K5 b": false,
+        "K5 c": true,
+        "K7": false
+      },
+      "intended_failure": [
+        "K5 b",
+        "K7"
+      ]
+    },
+    {
+      "id": "T22",
+      "basis": [
+        "K8"
+      ],
+      "reachability": "new-memory-semantics",
+      "input": {
+        "initial_tree": [
+          {
+            "id": "P",
+            "parent": null,
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "H",
+            "parent": "P",
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "L",
+            "parent": "H",
+            "role": "user",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "R",
+            "parent": "H",
+            "role": "user",
+            "internal": false,
+            "status": "complete"
+          }
+        ],
+        "initial_head": "L",
+        "operation": "accept",
+        "within_approved_branch": false,
+        "state_token": "state-T22",
+        "proposal_branch": "R",
+        "active_branch": "L",
+        "expected_head": "L",
+        "expected_state_token": "state-T22",
+        "approval_head": "L"
+      },
+      "expected": {
+        "final_tree": [
+          {
+            "id": "P",
+            "parent": null,
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "H",
+            "parent": "P",
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "L",
+            "parent": "H",
+            "role": "user",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "R",
+            "parent": "H",
+            "role": "user",
+            "internal": false,
+            "status": "complete"
+          }
+        ],
+        "final_head": "L",
+        "active_effect_ids": [],
+        "preserved_ids": [
+          "P",
+          "H",
+          "L",
+          "R"
+        ],
+        "rejected": {
+          "code": "proposal-branch-mismatch",
+          "reconfirm": true
+        },
+        "display_projection": {
+          "head": "L",
+          "messages": [
+            {
+              "id": "P",
+              "parent": null
+            },
+            {
+              "id": "H",
+              "parent": "P"
+            },
+            {
+              "id": "L",
+              "parent": "H"
+            }
+          ]
+        },
+        "reachability": "new-memory-semantics"
+      },
+      "gate_table": {
+        "K5 a": false,
+        "K5 b": true,
+        "K5 c": true,
+        "K7": false
+      },
+      "intended_failure": [
+        "K5 a",
+        "K7"
+      ]
+    },
+    {
+      "id": "T23",
+      "basis": [
+        "K8"
+      ],
+      "reachability": "new-memory-semantics",
+      "input": {
+        "initial_tree": [
+          {
+            "id": "P",
+            "parent": null,
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "H",
+            "parent": "P",
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "L",
+            "parent": "H",
+            "role": "user",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "LA",
+            "parent": "L",
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "X",
+            "parent": "H",
+            "role": "memory-anchor",
+            "internal": true,
+            "status": "complete"
+          }
+        ],
+        "initial_head": "LA",
+        "operation": "retry-accept-same-key",
+        "within_approved_branch": false,
+        "state_token": "state-T23",
+        "proposal_branch": "LA",
+        "active_branch": "LA",
+        "expected_head": "LA",
+        "expected_state_token": "stale-token",
+        "recorded_approval_head": "H",
+        "previous_receipt": {
+          "anchor_id": "X",
+          "effect_id": "e1",
+          "node_id": "n1",
+          "proposal_id": "p1",
+          "idempotency_key": "k1"
+        },
+        "idempotency_key": "k1",
+        "payload_hash": "payload-p1",
+        "stored_payload_hash": "payload-p1"
+      },
+      "expected": {
+        "final_tree": [
+          {
+            "id": "P",
+            "parent": null,
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "H",
+            "parent": "P",
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "L",
+            "parent": "H",
+            "role": "user",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "LA",
+            "parent": "L",
+            "role": "assistant",
+            "internal": false,
+            "status": "complete"
+          },
+          {
+            "id": "X",
+            "parent": "H",
+            "role": "memory-anchor",
+            "internal": true,
+            "status": "complete"
+          }
+        ],
+        "final_head": "LA",
+        "active_effect_ids": [],
+        "preserved_ids": [
+          "P",
+          "H",
+          "L",
+          "LA",
+          "X"
+        ],
+        "rejected": null,
+        "receipt": {
+          "anchor_id": "X",
+          "effect_id": "e1",
+          "node_id": "n1",
+          "proposal_id": "p1",
+          "idempotency_key": "k1"
+        },
+        "display_projection": {
+          "head": "LA",
+          "messages": [
+            {
+              "id": "P",
+              "parent": null
+            },
+            {
+              "id": "H",
+              "parent": "P"
+            },
+            {
+              "id": "L",
+              "parent": "H"
+            },
+            {
+              "id": "LA",
+              "parent": "L"
+            }
+          ]
+        },
+        "reachability": "new-memory-semantics"
+      },
+      "gate_table": {
+        "K5 a": true,
+        "K5 b": false,
+        "K5 c": true,
+        "K7": true
+      },
+      "intended_failure": [
+        "K5 b"
+      ]
     }
   ],
-  "K7": "a"
+  "K7": "a",
+  "K8": "a"
 }
