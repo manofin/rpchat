@@ -13,7 +13,11 @@
     { "name": "authHealthSurface", "group": "AuthConnection" },
     { "name": "chatEventContract", "group": "CoreGate" },
     { "name": "chatEventReconnect", "group": "CoreGate" },
-    { "name": "dependencyAllowlist", "group": "CoreGate" }
+    { "name": "dependencyAllowlist", "group": "CoreGate" },
+    { "name": "pathMemoryReducer", "group": "PathMemory" },
+    { "name": "pathMemoryFixture", "group": "PathMemory" },
+    { "name": "builderDifferential", "group": "PromptBytes" },
+    { "name": "beatByteBaseline", "group": "PromptBytes" }
   ],
   "exclude": []
 }
