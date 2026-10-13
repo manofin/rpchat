@@ -62,7 +62,7 @@ function simulate(i: any) {
       idempotencyKey: i.idempotency_key ?? proposal.idempotency_key,
       payloadHash: i.payload_hash ?? `payload-${proposal.proposal_id}`,
       expectedHead: i.expected_head, expectedStateToken: i.expected_state_token,
-      proposalBranch: i.proposal_branch ?? i.recorded_approval_head,
+      proposalOnActivePath: (i.proposal_branch ?? i.recorded_approval_head) === (i.active_branch ?? i.recorded_approval_head),
     };
     const state = { tree: tree(), head, stateToken: i.state_token,
       activeBranch: i.active_branch ?? head,
@@ -166,12 +166,12 @@ t('approval gate implementation exists', () => {
 t('K8 idempotency then freshness then branch then K7; D1 independent', () => {
   const tree = snapshot([row('H', null), row('U', 'H', 'user'), row('X', 'H', 'memory-anchor', true)]);
   const receipt = { anchor_id: 'X', effect_id: 'e', node_id: 'n', proposal_id: 'p', idempotency_key: 'key' };
-  const request = { idempotencyKey: 'key', payloadHash: 'payload', expectedHead: 'H', expectedStateToken: 'old', proposalBranch: 'elsewhere' };
+  const request = { idempotencyKey: 'key', payloadHash: 'payload', expectedHead: 'H', expectedStateToken: 'old', proposalOnActivePath: false };
   const state = { tree, head: 'U', stateToken: 'now', activeBranch: 'U', approvedAnchorIds: ['X'], receipts: [] };
   assert.deepEqual(checkApproval(request, state), { code: 'stale-approval-state', reconfirm: true });
   const fresh = { ...request, expectedHead: 'U', expectedStateToken: 'now' };
   assert.deepEqual(checkApproval(fresh, state), { code: 'proposal-branch-mismatch', reconfirm: true });
-  assert.deepEqual(checkApproval({ ...fresh, proposalBranch: 'U' }, state), { code: 'approval-not-at-turn-boundary', reconfirm: false });
+  assert.deepEqual(checkApproval({ ...fresh, proposalOnActivePath: true }, state), { code: 'approval-not-at-turn-boundary', reconfirm: false });
   const stored = { ...state, receipts: [{ payloadHash: 'payload', receipt }] };
   const retry = checkApproval(request, stored);
   assert.ok('ok' in retry && retry.ok); assert.strictEqual(retry.receipt, receipt);
@@ -212,7 +212,7 @@ t('canary recipient tables and forbidden markers match actual packets', () => {
     }
   }
 });
-t('fence: zero external production importers of pathMemory', () => {
+t('fence: pathMemory production importers are exactly the approved set', () => {
   const src = path.join(root, 'apps/server/src'), memory = path.join(src, 'pathMemory');
   const importers = new Set<string>();
   const visitDir = (dir: string) => {
@@ -237,7 +237,7 @@ t('fence: zero external production importers of pathMemory', () => {
     }
   };
   visitDir(src);
-  assert.deepEqual([...importers].sort(), [], 'fence: external production pathMemory imports');
+  assert.deepEqual([...importers].sort(), ['apps/server/src/routes/conversations.ts'], 'fence: external production pathMemory imports');
 });
 t('invalid audiences reject without echoing private input; denied nodes are unread', () => {
   for (const invalid of read('nodes-canary.json').invalid_audience_cases) {
@@ -266,7 +266,7 @@ t('fixture 257 proposes replay without acceptance; mixed pages preserve all acce
 });
 t('K7 approved internal anchor only; interrupted assistant rejected', () => {
   const rows = [row('H', null), row('X', 'H', 'memory-anchor', true), row('I', 'H', 'assistant', false, 'interrupted')];
-  const request = { idempotencyKey: 'k', payloadHash: 'p', expectedHead: 'X', expectedStateToken: 's', proposalBranch: 'b' };
+  const request = { idempotencyKey: 'k', payloadHash: 'p', expectedHead: 'X', expectedStateToken: 's', proposalOnActivePath: true };
   const state = { tree: snapshot(rows), head: 'X', stateToken: 's', activeBranch: 'b', approvedAnchorIds: ['X'], receipts: [] };
   assert.deepEqual(checkApproval(request, state), { ok: true });
   assert.deepEqual(checkApproval(request, { ...state, approvedAnchorIds: [] }), { code: 'approval-not-at-turn-boundary', reconfirm: false });

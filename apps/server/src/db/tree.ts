@@ -1,10 +1,10 @@
 import { type DB, many, nowIso, one, run, uid } from './index.js';
-import type { ConversationRow, MessageMeta, MessageRow, MessageStatus } from '../types.js';
+import type { ConversationRow, MessageMeta, MessageRow, MessageStatus, StoredMessageRow } from '../types.js';
 import type { ChatEvent, ChatEventSnapshot } from '@rpchat/contracts/chat-event';
 import { adaptChatEvents, isChatEvent, sanitizeGeneratedContent, stripThoughtContent, type AdaptOptions } from '../contracts/chatEventAdapter.js';
 import { PUBLIC } from '../prompt/observation.js';
 import { objectMessageMeta, parseMessageMeta } from './messageMeta.js';
-import { isSideModeMessage, mainMessageSql } from './sideMode.js';
+import { isMemoryAnchorMessage, isSideModeMessage, mainMessageSql } from './sideMode.js';
 
 export { parseMessageMeta } from './messageMeta.js';
 
@@ -94,14 +94,14 @@ export function readablePreview(db: DB, headMessageId: string | null | undefined
   return '';
 }
 
-/** head 에서 루트까지 거슬러 올라간 활성 경로 (시간순) */
-export function getPath(db: DB, conv: ConversationRow): MessageRow[] {
-  const out: MessageRow[] = [];
+/** head에서 루트까지, 내부 anchor를 포함한 구조 경로. side-mode는 제외. */
+export function getStructuralPath(db: DB, conv: ConversationRow): StoredMessageRow[] {
+  const out: StoredMessageRow[] = [];
   let cur: string | null = conv.head_message_id;
   const guard = new Set<string>();
   while (cur && !guard.has(cur)) {
     guard.add(cur);
-    const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', cur);
+    const m = one<StoredMessageRow>(db, 'SELECT * FROM messages WHERE id = ?', cur);
     if (!m) break;
     if (!isSideModeMessage(m)) out.push(m);
     cur = m.parent_id;
@@ -109,11 +109,16 @@ export function getPath(db: DB, conv: ConversationRow): MessageRow[] {
   return out.reverse();
 }
 
+/** head 에서 루트까지 거슬러 올라간 활성 경로 (시간순). 표시 경로는 내부 anchor를 뺀다. */
+export function getPath(db: DB, conv: ConversationRow): MessageRow[] {
+  return getStructuralPath(db, conv).filter((row): row is MessageRow => !isMemoryAnchorMessage(row));
+}
+
 /** 주어진 메시지에서 "가장 최근 자식" 을 따라 내려간 잎 */
 export function deepestLeaf(db: DB, messageId: string): string {
   let cur = messageId;
   for (let i = 0; i < 10_000; i++) {
-    const child = one<{ id: string }>(db, `SELECT id FROM messages WHERE parent_id = ? AND ${mainMessageSql()} ORDER BY created_at DESC, id DESC LIMIT 1`, cur);
+    const child = one<{ id: string }>(db, `SELECT id FROM messages WHERE parent_id = ? AND ${mainMessageSql()} AND NOT (role = 'memory-anchor' AND json_type(meta_json, '$.memory_anchor') IS NOT NULL) ORDER BY created_at DESC, id DESC LIMIT 1`, cur);
     if (!child) return cur;
     cur = child.id;
   }
@@ -121,8 +126,9 @@ export function deepestLeaf(db: DB, messageId: string): string {
 }
 
 export function setHead(db: DB, convId: string, headId: string | null): void {
-  const target = headId ? one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', headId) : undefined;
+  const target = headId ? one<StoredMessageRow>(db, 'SELECT * FROM messages WHERE id = ?', headId) : undefined;
   if (target && isSideModeMessage(target)) throw new Error('부가 모드 결과는 본편 분기로 선택할 수 없음');
+  if (target) isMemoryAnchorMessage(target);
   run(db, 'UPDATE conversations SET head_message_id = ?, updated_at = ? WHERE id = ?', headId, nowIso(), convId);
 }
 
