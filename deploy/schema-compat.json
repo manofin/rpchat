@@ -25,6 +25,7 @@
     "0021_character_play_guide.sql",
     "0022_summaries_relation_scope.sql",
     "0023_profile_instruction.sql",
-    "0024_role_fact_events.sql"
+    "0024_role_fact_events.sql",
+    "0025_path_memory.sql"
   ]
 }

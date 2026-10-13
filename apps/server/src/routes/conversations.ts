@@ -12,6 +12,8 @@ import {
   generationBlocksDelete,
   interruptOrphanStreaming,
 } from '../db/generation.js';
+import { protectedMessageIds } from '../db/pathMemoryLedger.js';
+import { checkDelete } from '../pathMemory/gate.js';
 import { isSideModeMessage, mainMessageSql, sideModeVisible } from '../db/sideMode.js';
 import { parseMessageMeta, deepestLeaf, getPath, insertMessage, messageOut, readablePreview, setHead, updateMessage } from '../db/tree.js';
 import { buildPrompt, resolvePersona } from '../prompt/builder.js';
@@ -24,7 +26,7 @@ import { catalogFromStory } from '../prompt/sceneCatalog.js';
 import { castFromCharacters, castFromParticipants, withConversationStarter, type PartyTagRow } from '../prompt/tagsCatalog.js';
 import { initialBeatScene, partySuppressesGreeting } from '../prompt/initScene.js';
 import { applyOpeningOverlay, parseOpening } from '../prompt/storyOpening.js';
-import type { CharacterRow, ConversationRow, MessageRow, PersonaRow, Scene, StoryRow } from '../types.js';
+import type { CharacterRow, ConversationRow, MessageRow, PersonaRow, Scene, StoredMessageRow, StoryRow } from '../types.js';
 import { characterOut, personaOut } from './characters.js';
 import { parseEndings, parseOpeningsExtra } from './stories.js';
 import { evalRoomEnding, suggestEndings } from '../endingEval.js';
@@ -630,6 +632,14 @@ export function conversationRoutes(ctx: Ctx) {
       if (m.status === 'streaming') return reply.code(409).send({ error: DELETE_BLOCKED_BY_GENERATION });
       const conv = loadConversation(ctx, m.conversation_id)!;
       const deletedIds = new Set(descendantMessageIds(db, m.id));
+      const protectedIds = protectedMessageIds(db, conv.id);
+      if (protectedIds.length) {
+        const rows = many<StoredMessageRow>(db, 'SELECT * FROM messages WHERE conversation_id = ?', conv.id).map(row => ({
+          id: row.id, parent: row.parent_id, role: row.role, status: row.status, internal: row.role === 'memory-anchor',
+        }));
+        const decision = checkDelete({ order: 'oldest-to-newest', rows }, m.id, protectedIds);
+        if (!('ok' in decision)) return reply.code(409).send({ error: decision.code });
+      }
       if (generationBlocksDelete({
         gens: ctx.queue.activeList,
         conversationId: conv.id,

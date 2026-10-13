@@ -13,7 +13,7 @@ export type ApprovalRequest = Readonly<{
   payloadHash: string;
   expectedHead: string | null;
   expectedStateToken: string;
-  proposalBranch: string;
+  proposalOnActivePath: boolean;
 }>;
 export type ApprovalState = Readonly<{
   tree: MessageTree;
@@ -41,7 +41,7 @@ export function checkApproval(request: ApprovalRequest, state: ApprovalState): A
   if (request.expectedHead !== state.head || request.expectedStateToken !== state.stateToken) {
     return { code: 'stale-approval-state', reconfirm: true };
   }
-  if (request.proposalBranch !== state.activeBranch) {
+  if (!request.proposalOnActivePath) {
     return { code: 'proposal-branch-mismatch', reconfirm: true };
   }
   const head = state.tree.rows.find(row => row.id === state.head);

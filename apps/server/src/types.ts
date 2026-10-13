@@ -267,6 +267,7 @@ export type MessageStatus = 'streaming' | 'complete' | 'interrupted' | 'error';
 export interface MessageMeta {
   continuation_of?: string;
   side_mode?: import('./db/sideMode.js').SideModeMeta;
+  memory_anchor?: { kind: 'approved' };
   observation_text?: string;
   observation?: import('./prompt/observation.js').Audience;
   chat_event_version?: 1;
@@ -330,6 +331,14 @@ export interface MessageRow {
   bookmarked: number;
   created_at: string;
 }
+
+/** DB role for an internal approval anchor. Not part of the shared message contract. */
+export interface MemoryAnchorRow extends Omit<MessageRow, 'role'> {
+  role: 'memory-anchor';
+}
+
+/** A stored messages row, including an internal anchor. Display consumers stay on MessageRow. */
+export type StoredMessageRow = MessageRow | MemoryAnchorRow;
 
 export interface MemoryRow {
   id: string;
