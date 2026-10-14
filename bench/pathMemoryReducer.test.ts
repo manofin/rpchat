@@ -237,7 +237,7 @@ t('fence: pathMemory production importers are exactly the approved set', () => {
     }
   };
   visitDir(src);
-  assert.deepEqual([...importers].sort(), ['apps/server/src/routes/conversations.ts'], 'fence: external production pathMemory imports');
+  assert.deepEqual([...importers].sort(), ['apps/server/src/db/tree.ts', 'apps/server/src/routes/conversations.ts'], 'fence: external production pathMemory imports');
 });
 t('invalid audiences reject without echoing private input; denied nodes are unread', () => {
   for (const invalid of read('nodes-canary.json').invalid_audience_cases) {

@@ -75,3 +75,30 @@ export function projectForDisplay(tree: MessageTree, head: string | null): Displ
     messages: visible.map((row, i) => ({ id: row.id, parent: visible[i - 1]?.id ?? null })),
   };
 }
+
+/** Every row id -> nearest visible ancestor-or-self (null when none). Throws on a missing ancestor or a cycle anywhere in the tree. */
+export function buildDisplayIndex(tree: MessageTree): ReadonlyMap<string, string | null> {
+  const index = indexTree(tree);
+  const out = new Map<string, string | null>();
+  for (const start of tree.rows) {
+    const chain: MessageRow[] = [];
+    const onChain = new Set<string>();
+    let cur: string | null = start.id;
+    let resolved: string | null = null;
+    while (cur !== null) {
+      if (out.has(cur)) { resolved = out.get(cur) as string | null; break; }
+      if (onChain.has(cur)) throw new Error('cyclic message path');
+      const row = index.get(cur);
+      if (!row) throw new Error('missing message ancestor');
+      onChain.add(cur);
+      chain.push(row);
+      cur = row.parent;
+    }
+    for (let i = chain.length - 1; i >= 0; i--) {
+      const row = chain[i]!;
+      if (!row.internal) resolved = row.id;
+      out.set(row.id, resolved);
+    }
+  }
+  return out;
+}

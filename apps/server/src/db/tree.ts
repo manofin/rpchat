@@ -5,6 +5,7 @@ import { adaptChatEvents, isChatEvent, sanitizeGeneratedContent, stripThoughtCon
 import { PUBLIC } from '../prompt/observation.js';
 import { objectMessageMeta, parseMessageMeta } from './messageMeta.js';
 import { isMemoryAnchorMessage, isSideModeMessage, mainMessageSql } from './sideMode.js';
+import type { MessageTree } from '../pathMemory/tree.js';
 
 export { parseMessageMeta } from './messageMeta.js';
 
@@ -69,6 +70,7 @@ export function readablePreview(db: DB, headMessageId: string | null | undefined
     seen.add(cur);
     const m: MessageRow | undefined = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', cur);
     if (!m) return '';
+    if (isMemoryAnchorMessage(m)) { cur = m.parent_id; continue; }
     const meta = parseMessageMeta(m.meta_json);
     const kind = meta.block_kind;
     if (kind === 'header') return '';
@@ -92,6 +94,14 @@ export function readablePreview(db: DB, headMessageId: string | null | undefined
     cur = m.parent_id;
   }
   return '';
+}
+
+/** 표시 투영용 엄격 로더. 대화의 본편 행을 모두 읽고, 표식이 어긋난 행은 예외로 막는다. side-mode 행은 넣지 않는다. */
+export function loadDisplayTree(db: DB, conversationId: string): MessageTree {
+  const rows = many<StoredMessageRow>(db, 'SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at, id', conversationId)
+    .filter((row) => !isSideModeMessage(row))
+    .map((row) => ({ id: row.id, parent: row.parent_id, role: row.role, status: row.status, internal: isMemoryAnchorMessage(row) }));
+  return { order: 'oldest-to-newest', rows };
 }
 
 /** head에서 루트까지, 내부 anchor를 포함한 구조 경로. side-mode는 제외. */
@@ -142,6 +152,7 @@ export function insertMessage(
   meta: MessageMeta,
 ): MessageRow {
   meta = { observation: PUBLIC, ...objectMessageMeta(meta) };
+  if (meta.memory_anchor !== undefined) throw new Error('memory anchor mark not allowed on user or assistant rows');
   const id = uid();
   const t = nowIso();
   const canonical = eventMeta(db, { id, conversation_id: convId, role, content, status }, meta);
@@ -158,6 +169,7 @@ export function insertMessage(
 export function updateMessage(db: DB, id: string, patch: { content?: string; status?: MessageStatus; meta?: MessageMeta; bookmarked?: boolean }): void {
   const cur = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', id);
   if (!cur) return;
+  if (isMemoryAnchorMessage(cur)) throw new Error('memory anchor rows cannot be updated');
   const metaPatch = objectMessageMeta(patch.meta);
   let meta = { ...parseMessageMeta(cur.meta_json), ...metaPatch };
   const status = patch.status ?? cur.status;
