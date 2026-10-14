@@ -19,7 +19,8 @@
     { "name": "builderDifferential", "group": "PromptBytes" },
     { "name": "beatByteBaseline", "group": "PromptBytes" },
     { "name": "pathMemorySchema", "group": "PathMemory" },
-    { "name": "pathMemoryP1Guards", "group": "PathMemory" }
+    { "name": "pathMemoryP1Guards", "group": "PathMemory" },
+    { "name": "pathMemoryNodeReplay", "group": "PathMemory" }
   ],
   "exclude": []
 }
