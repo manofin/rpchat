@@ -17,6 +17,7 @@ import { PROMPT_VERSION, config } from '../config.js';
 import { getSetting, many, nowIso, one, parseJson, run, uid } from '../db/index.js';
 import { interruptOrphanStreaming } from '../db/generation.js';
 import { getPath, insertMessage, messageOut, parseMessageMeta, resolveTurnStart, setHead, updateMessage } from '../db/tree.js';
+import { isMemoryAnchorMessage } from '../db/sideMode.js';
 import { buildSceneSnapshot, resolveSceneBase } from '../db/sceneBase.js';
 import { ModelError } from '../model/adapter.js';
 import {
@@ -1657,6 +1658,7 @@ export function chatRoutes(ctx: Ctx) {
       if (!inj.ok) return reply.code(400).send({ error: inj.error });
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ? AND conversation_id = ?', p.data.messageId, conv.id);
       if (!m) return reply.code(404).send({ error: 'message not found' });
+      if (isMemoryAnchorMessage(m)) return reply.code(409).send({ error: '기억 승인 기록은 재생성할 수 없음' });
       if (m.status === 'streaming') return reply.code(409).send({ error: '생성 중' });
       // assistant 메시지 재생성 = 그 **턴** 전체가 부모 아래 새 형제가 된다.
       // user 메시지(응답 없이 끝난 경우) = 그 아래로 이어서 생성.

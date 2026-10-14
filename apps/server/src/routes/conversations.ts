@@ -14,7 +14,7 @@ import {
 } from '../db/generation.js';
 import { protectedMessageIds } from '../db/pathMemoryLedger.js';
 import { checkDelete } from '../pathMemory/gate.js';
-import { isSideModeMessage, mainMessageSql, sideModeVisible } from '../db/sideMode.js';
+import { isMemoryAnchorMessage, isSideModeMessage, mainMessageSql, sideModeVisible } from '../db/sideMode.js';
 import { parseMessageMeta, deepestLeaf, getPath, insertMessage, messageOut, readablePreview, setHead, updateMessage } from '../db/tree.js';
 import { buildPrompt, resolvePersona } from '../prompt/builder.js';
 import { previewDialog } from '../prompt/dialogPreview.js';
@@ -610,6 +610,7 @@ export function conversationRoutes(ctx: Ctx) {
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', req.params.id);
       if (!m) return reply.code(404).send({ error: 'not found' });
       if (isSideModeMessage(m)) return reply.code(409).send({ error: '부가 모드 결과는 본편 분기로 선택할 수 없음' });
+      if (isMemoryAnchorMessage(m)) return reply.code(409).send({ error: '기억 승인 기록은 본편 분기로 선택할 수 없음' });
       const conv = loadConversation(ctx, m.conversation_id);
       if (!conv) return reply.code(404).send({ error: 'not found' });
       if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '생성 중에는 분기를 바꿀 수 없음' });

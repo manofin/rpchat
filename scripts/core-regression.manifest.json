@@ -18,7 +18,8 @@
     { "name": "pathMemoryFixture", "group": "PathMemory" },
     { "name": "builderDifferential", "group": "PromptBytes" },
     { "name": "beatByteBaseline", "group": "PromptBytes" },
-    { "name": "pathMemorySchema", "group": "PathMemory" }
+    { "name": "pathMemorySchema", "group": "PathMemory" },
+    { "name": "pathMemoryP1Guards", "group": "PathMemory" }
   ],
   "exclude": []
 }
