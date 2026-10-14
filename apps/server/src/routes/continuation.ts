@@ -5,7 +5,8 @@ import { config, PROMPT_VERSION } from '../config.js';
 import { getSetting, nowIso, one, parseJson, run, uid } from '../db/index.js';
 import { readSceneSnapshot } from '../db/sceneBase.js';
 import { getPath, insertMessage, messageOut, parseMessageMeta, resolveTurnStart, setHead, updateMessage } from '../db/tree.js';
-import type { ChatMessage, ConversationRow, MessageMeta, MessageRow, Scene } from '../types.js';
+import { isMemoryAnchorMessage } from '../db/sideMode.js';
+import type { ChatMessage, ConversationRow, MessageMeta, MessageRow, Scene, StoredMessageRow } from '../types.js';
 import { createChatEventStream, sanitizeGeneratedContent } from '../contracts/chatEventAdapter.js';
 import { buildPrompt, loadProfile, resolvePersona } from '../prompt/builder.js';
 import { dialogPlanInput, loadStoryRoster } from '../prompt/dialogContext.js';
@@ -133,6 +134,9 @@ export function continuationRoutes(ctx: Ctx) {
       if (!input.success) return reply.code(400).send({ error: '이어 쓸 메시지를 지정해 주세요.' });
       if (conv.ended_at) return reply.code(409).send({ error: '종료한 대화입니다.' });
       if (ctx.queue.activeList.some(g => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
+      // 실제 head가 기억 승인 anchor면 표시 경로 끝에 붙여 승인 분기를 떠나게 되므로 거부한다(stage-B P1).
+      const structuralHead = conv.head_message_id ? one<StoredMessageRow>(db, 'SELECT * FROM messages WHERE id = ?', conv.head_message_id) : undefined;
+      if (structuralHead && isMemoryAnchorMessage(structuralHead)) return reply.code(409).send({ error: '기억 승인 지점에서는 이어 쓸 수 없습니다.' });
       const history = getPath(db, conv);
       const head = history.at(-1);
       if (!head || head.id !== input.data.messageId || head.role !== 'assistant' || !['complete', 'interrupted'].includes(head.status)) {
