@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { abortGeneration, ApiError, get, patch, post, del, sendOkForComposer, streamPost, StreamInterruptedError } from '../lib/api';
+import { abortGeneration, get, patch, post, del, isUserCancelledRequest, requestFailureCode, sendOkForComposer, streamPost, StreamInterruptedError } from '../lib/api';
 import type { ConversationDetail, Message, SseEvent, GenerationProgress, GenerationFailureCode } from '../types';
 import { initialChatState, reduceChatEvent, type ChatState } from '../lib/chatStreamState';
 
@@ -28,13 +28,17 @@ export function useChat(conversationId: string) {
       if (scopeRef.current !== scope || sequence !== scope.reloadSequence || revision !== scope.revision) return null;
       if (detail.activeGeneration) genIdRef.current = detail.activeGeneration.id;
       else if (!abortRef.current) genIdRef.current = null;
-      setState((current) => ({ ...current, detail, messages: detail.messages, loading: false, error: null,
+      setState((current) => ({ ...current, detail, messages: detail.messages, loading: false,
+        // Recovery polling must not erase a terminal generation failure. A new
+        // send or room change clears it along with errorCode.
+        error: current.errorCode ? current.error : null,
         generationProgress: detail.activeGeneration?.phase ? { generationId: detail.activeGeneration.id, phase: detail.activeGeneration.phase, startedAt: detail.activeGeneration.startedAt } : null,
         generating: !!detail.activeGeneration, streamingId: detail.activeGeneration?.messageId ?? null }));
       return detail;
     } catch (error) {
       if (sequence === scope.reloadSequence && revision === scope.revision) {
-        patchState({ loading: false, error: (error as Error).message });
+        if (scopeRef.current === scope) setState((current) => ({ ...current, loading: false,
+          error: current.errorCode ? current.error : (error as Error).message }));
       }
       return null;
     }
@@ -137,12 +141,12 @@ export function useChat(conversationId: string) {
         resync = true;
       }
     } catch (error) {
-      const aborted = ctrl.signal.aborted || (error instanceof ApiError && error.status === 499);
+      const aborted = ctrl.signal.aborted || isUserCancelledRequest(error);
       if (aborted) {
         result = true;
       } else {
         requestError = (error as Error).message;
-        requestErrorCode = error instanceof StreamInterruptedError || error instanceof TypeError ? 'connection' : (error as Error).name === 'TimeoutError' ? 'timeout' : null;
+        requestErrorCode = requestFailureCode(error);
         if (error instanceof StreamInterruptedError) {
           ambiguousInterrupt = true;
           result = false;

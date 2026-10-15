@@ -21,6 +21,7 @@ export class GenerationQueue {
   private active = new Map<string, ActiveGeneration>();
   /** Early slot release hooks for in-flight run() calls (force-release ≤5s). */
   private slotReleasers = new Map<string, () => void>();
+  private finishing = new Set<string>();
 
   private listeners = new Map<string, (generation: ActiveGeneration) => void>();
 
@@ -58,11 +59,33 @@ export class GenerationQueue {
   }
   async runGeneration<T>(id: string, fn: () => Promise<T>, signal?: AbortSignal): Promise<T> {
     this.setPhase(id, 'queued');
-    return this.run(() => { this.setPhase(id, 'writing'); return fn(); }, signal, id);
+    const pending = this.run(() => { this.setPhase(id, 'writing'); return fn(); }, signal, id);
+    // Only party turns opt in. The raw promise keeps the model slot; the route
+    // must stop waiting even when an adapter ignores cancellation forever.
+    if (!this.active.get(id)?.turnDeadline || !signal) return pending;
+    return new Promise<T>((resolve, reject) => {
+      const aborted = () => reject(signal.reason ?? new Error('aborted'));
+      if (signal.aborted) aborted();
+      else signal.addEventListener('abort', aborted, { once: true });
+      pending.then(value => {
+        if (signal.aborted) aborted(); else resolve(value);
+      }, reject).finally(() => signal.removeEventListener('abort', aborted));
+    });
+  }
+  /** Route cleanup is complete; cancellation keeps the slot until settle/grace. */
+  finishGeneration(id: string): void {
+    const g = this.active.get(id);
+    if (g?.turnDeadline && g.controller.signal.aborted && this.slotReleasers.has(id)) {
+      this.finishing.add(id);
+      return;
+    }
+    this.unregister(id);
   }
   unregister(id: string): void {
     const g = this.active.get(id);
     g?.turnDeadline?.markQueueReleased();
+    g?.turnDeadline?.dispose();
+    this.finishing.delete(id);
     this.listeners.delete(id);
     this.active.delete(id);
     // If still holding the run slot (hang after abort), free it.
@@ -116,6 +139,7 @@ export class GenerationQueue {
       return await fn();
     } finally {
       release();
+      if (slotId && this.finishing.has(slotId)) this.unregister(slotId);
     }
   }
 

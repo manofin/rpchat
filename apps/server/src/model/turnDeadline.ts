@@ -57,7 +57,7 @@ export function isModelTimeoutError(err: unknown): boolean {
 export type TurnDeadlineOpts = {
   deadlineMs: number;
   controller: AbortController;
-  /** Elapsed clock in ms. Defaults to Date.now() (mockable via mock.timers Date). Residual: wall-clock, not monotonic. */
+  /** Elapsed monotonic clock in ms; injectable for deterministic tests. */
   now?: () => number;
   /** Wall clock ISO for telemetry only. */
   wallIso?: () => string;
@@ -106,7 +106,7 @@ export class TurnDeadline {
   constructor(opts: TurnDeadlineOpts) {
     this.deadlineMs = Math.max(0, opts.deadlineMs);
     this.controller = opts.controller;
-    this.now = opts.now ?? (() => Date.now());
+    this.now = opts.now ?? (() => performance.now());
     this.wallIso = opts.wallIso ?? (() => new Date().toISOString());
     this.onForceRelease = opts.onForceRelease;
     this.forceReleaseMs = opts.forceReleaseMs ?? TURN_DEADLINE_FORCE_RELEASE_MS;
@@ -160,25 +160,49 @@ export class TurnDeadline {
     this.armForceRelease();
   }
 
+  /** A required pass timeout ends the turn even if its adapter ignores abort. */
+  requiredCallDeadline(configuredMs: number): ReturnType<typeof withCallDeadline> {
+    const call = withCallDeadline(configuredMs, this.remainingMs(), this.controller.signal);
+    const abort = () => {
+      if (this.controller.signal.aborted || this.disposed || this.terminal === 'completed') return;
+      if (isTurnDeadlineError(call.signal.reason)) this.tripDeadline();
+      else {
+        this.recordTerminal('model_timeout');
+        this.controller.abort(call.signal.reason);
+        this.armForceRelease();
+      }
+    };
+    call.signal.addEventListener('abort', abort, { once: true });
+    return { ...call, done: () => { call.signal.removeEventListener('abort', abort); call.done(); } };
+  }
+
   /**
    * Sync commit gate: not turn-deadline-cancelled + scene version unchanged
    * since accept. Callers must pass the conversation scene_json version frozen
    * at register/accept as sceneVersionAtStart — not the planning baseVersion
    * from resolveSceneBase (regen before_delta can be lower than the abandoned
    * after_delta still cached in scene_json).
-   * Head moves during our own multi-block turn, so stale detection uses scene
-   * version (scene_json is only written on successful commit).
+   * Compare the current head to the caller's last emitted row as well as the
+   * scene version, so a branch selection without a scene change is still stale.
    * User cancel during Pass C may still commit (caller policy); deadline may not.
    * On pass, records `completed` so a later deadline is ignored.
    */
   tryEnterCommit(gate: {
     sceneVersionAtStart: number;
     currentSceneVersion: number;
+    expectedHead?: string | null;
+    currentHead?: string | null;
   }): boolean {
     if (this.terminal === 'completed') return true;
-    if (this.terminal === 'turn_deadline_exceeded') return false;
+    // Synchronous validation can exhaust the budget before the timer is dispatched.
+    if (this.remainingMs() <= 0) {
+      this.tripDeadline();
+      return false;
+    }
+    if (this.terminal && this.terminal !== 'user_cancelled') return false;
     if (isTurnDeadlineError(this.controller.signal.reason)) return false;
     if (gate.currentSceneVersion !== gate.sceneVersionAtStart) return false;
+    if (gate.expectedHead !== gate.currentHead) return false;
     this.recordTerminal('completed');
     this.commitEnteredAt = this.wallIso();
     this.clearDeadlineTimer();

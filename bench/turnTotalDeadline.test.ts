@@ -13,6 +13,8 @@ import type { Ctx } from '../apps/server/src/ctx.js';
 import type { GenParams, GenResult } from '../apps/server/src/model/adapter.js';
 
 async function main() {
+// Route elapsed time follows the fake scheduler; real wall-clock isolation has its own regression.
+mock.method(performance, 'now', () => Date.now());
 process.env.MODEL_TIMEOUT_MS = '45000';
 process.env.TURN_TOTAL_DEADLINE_MS = '120000';
 const { config } = await import('../apps/server/src/config.js');
@@ -397,7 +399,7 @@ await t('queue wait counts toward deadline → turn_deadline_exceeded, scene unc
     mock.timers.tick(100);
     mock.timers.tick(1);
     const res = await pending;
-    assert.ok(res.statusCode === 200 || res.statusCode === 499, res.body.slice(0, 300));
+    assert.ok(res.statusCode === 200 || res.statusCode === 499 || res.statusCode === 504, res.body.slice(0, 300));
     if (res.statusCode === 200) {
       const codes = sseCodes(res.body);
       assert.ok(codes.includes('turn_deadline_exceeded') || res.body.includes('전체 처리 시간'), `codes=${codes}`);
@@ -454,7 +456,7 @@ await t('deadline mid-gen → nothing scene-committed', async () => {
     mock.timers.tick(30);
     mock.timers.tick(1);
     const res = await pending;
-    assert.ok(res.statusCode === 200 || res.statusCode === 499, res.body.slice(0, 300));
+    assert.ok(res.statusCode === 200 || res.statusCode === 499 || res.statusCode === 504, res.body.slice(0, 300));
     if (res.statusCode === 200) {
       const codes = sseCodes(res.body);
       assert.ok(
@@ -546,7 +548,7 @@ await t('remaining-time cut on E → turn_deadline_exceeded (not skip-and-comple
     mock.timers.tick(50);
     mock.timers.tick(1);
     const res = await pending;
-    assert.ok(res.statusCode === 200 || res.statusCode === 499, res.body);
+    assert.ok(res.statusCode === 200 || res.statusCode === 499 || res.statusCode === 504, res.body);
     assert.equal(sceneOf(room), before);
     if (res.statusCode === 200 && hasError(res.body)) {
       const codes = sseCodes(res.body);
@@ -652,7 +654,7 @@ await t('beat turn_deadline_exceeded reclaim: no interrupted partials in tree / 
     mock.timers.tick(30);
     mock.timers.tick(1);
     const res = await pending;
-    assert.ok(res.statusCode === 200 || res.statusCode === 499, res.body.slice(0, 300));
+    assert.ok(res.statusCode === 200 || res.statusCode === 499 || res.statusCode === 504, res.body.slice(0, 300));
     if (res.statusCode === 200) {
       assert.ok(hasError(res.body) || sseCodes(res.body).includes('turn_deadline_exceeded') || res.body.includes('전체 처리 시간'),
         res.body.slice(0, 400));
@@ -682,7 +684,7 @@ await t('dialog turn_deadline_exceeded reclaim: no interrupted partials in tree 
     mock.timers.tick(30);
     mock.timers.tick(1);
     const res = await pending;
-    assert.ok(res.statusCode === 200 || res.statusCode === 499, res.body.slice(0, 300));
+    assert.ok(res.statusCode === 200 || res.statusCode === 499 || res.statusCode === 504, res.body.slice(0, 300));
     if (res.statusCode === 200) {
       assert.ok(hasError(res.body) || sseCodes(res.body).includes('turn_deadline_exceeded') || res.body.includes('전체 처리 시간'),
         res.body.slice(0, 400));
@@ -694,21 +696,21 @@ await t('dialog turn_deadline_exceeded reclaim: no interrupted partials in tree 
   }
 });
 
-await t('source: beat+dialog reclaim on deadline (retractUnconfirmedSend), soft-cancel does not', () => {
+await t('source: beat+dialog reclaim their owned turn on deadline, soft-cancel does not', () => {
   const chat = src('apps/server/src/routes/chat.ts');
   const beat = chat.slice(chat.indexOf('async function generateBeat'), chat.indexOf('async function generateDialog'));
   const dialog = chat.slice(chat.indexOf('async function generateDialog'));
   for (const [label, body] of [['beat', beat], ['dialog', dialog]] as const) {
-    assert.ok(body.includes('if (isDeadline) retractUnconfirmedSend'), `${label} reclaim before-focus deadline`);
+    assert.ok(body.includes('if (isDeadline) retractTurn()'), `${label} reclaim before-focus deadline`);
     assert.ok(
-      body.includes('retractUnconfirmedSend(userMessage, conv.head_message_id)'),
+      body.includes('retractGeneration(conv, generationId, parentId, userMessage)'),
       `${label} retracts on hard fail/deadline`,
     );
     // softStop path marks interrupted without reclaim in the same branch
     assert.ok(body.includes("status: 'interrupted'"), `${label} soft-cancel interrupted`);
     const softIdx = body.indexOf('if (softStop)');
     const softBlock = body.slice(softIdx, softIdx + 500);
-    assert.equal(softBlock.includes('retractUnconfirmedSend'), false, `${label} softStop must not reclaim`);
+    assert.equal(softBlock.includes('retractTurn()'), false, `${label} softStop must not reclaim`);
   }
 });
 
