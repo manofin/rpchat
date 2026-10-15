@@ -1,4 +1,4 @@
-import type { SseEvent } from '../types';
+import type { GenerationFailureCode, SseEvent } from '../types';
 
 export class ApiError extends Error {
   constructor(public status: number, message: string, public body?: unknown) {
@@ -14,10 +14,27 @@ export class StreamInterruptedError extends Error {
   }
 }
 
+export function requestFailureCode(error: unknown): GenerationFailureCode | null {
+  if (error instanceof ApiError && error.body && typeof error.body === 'object' && 'code' in error.body) {
+    const code = error.body.code;
+    switch (code) {
+      case 'connection': case 'timeout': case 'model_timeout': case 'turn_deadline_exceeded':
+      case 'user_cancelled': case 'internal_error': case 'validation': case 'generation': return code;
+    }
+  }
+  return error instanceof StreamInterruptedError || error instanceof TypeError ? 'connection'
+    : error instanceof Error && error.name === 'TimeoutError' ? 'timeout' : null;
+}
+
+export function isUserCancelledRequest(error: unknown): boolean {
+  const code = requestFailureCode(error);
+  return code === 'user_cancelled' || (error instanceof ApiError && error.status === 499 && code === null);
+}
+
 /** true → keep composer empty. false → restore draft (send not confirmed). */
 export function sendOkForComposer(e: unknown, aborted: boolean): boolean {
   if (aborted) return true;
-  if (e instanceof ApiError && e.status === 499) return true;
+  if (isUserCancelledRequest(e)) return true;
   return false;
 }
 
@@ -88,12 +105,14 @@ export async function streamPost(path: string, body: unknown, onEvent: (e: SseEv
   if (!res.ok) {
     const text = await res.text();
     let msg = `${res.status}`;
+    let errorBody: unknown = text;
     try {
-      msg = formatError(JSON.parse(text).error);
+      errorBody = JSON.parse(text);
+      msg = formatError((errorBody as { error?: unknown })?.error ?? msg);
     } catch {
       if (text) msg = text;
     }
-    throw new ApiError(res.status, msg);
+    throw new ApiError(res.status, msg, errorBody);
   }
   if (!res.body) throw new ApiError(500, '스트림 본문 없음');
   const reader = res.body.getReader();

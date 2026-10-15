@@ -279,11 +279,12 @@ async function main() {
     const apiSrc = code('apps/web/src/lib/api.ts');
     assert.equal(apiSrc.includes('e instanceof ApiError ? false : true'), false);
     assert.match(apiSrc, /if \(aborted\) return true;/);
-    assert.match(apiSrc, /e instanceof ApiError && e\.status === 499/);
+    assert.match(apiSrc, /if \(isUserCancelledRequest\(e\)\) return true;/);
     assert.match(apiSrc, /return false;/);
     assert.equal(sendOkForComposer(new ApiError(400, 'rejected'), false), false);
     assert.equal(sendOkForComposer(new Error('network'), false), false);
     assert.equal(sendOkForComposer(new ApiError(499, 'stopped'), false), true);
+    assert.equal(sendOkForComposer(new ApiError(499, 'deadline', { code: 'turn_deadline_exceeded' }), false), false);
     assert.equal(sendOkForComposer(new Error('aborted'), true), true);
     assert.equal(code('apps/web/src/pages/ChatPage.tsx').includes('if (ok === false)'), true);
   });

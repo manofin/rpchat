@@ -7,7 +7,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import ts from 'typescript';
 import type { Message, SseEvent } from '../apps/web/src/types.ts';
-import { ApiError, sendOkForComposer, StreamInterruptedError } from '../apps/web/src/lib/api.ts';
+import { ApiError, isUserCancelledRequest, requestFailureCode, sendOkForComposer, StreamInterruptedError } from '../apps/web/src/lib/api.ts';
 import { WEB_APP_VERSION } from '../apps/web/src/lib/conversationSettings.ts';
 
 const root = join(import.meta.dirname, '..');
@@ -84,7 +84,7 @@ await t('chat SSE FailSend recovery contract remains intact', async () => {
     const deps = {
       state: { generating: false, messages: [] }, abortRef, genIdRef: { current: null }, scope, scopeRef,
       setStreamConnected: (connected: boolean) => { connections.push(connected); },
-      patchState: (patch: { error?: string | null }) => { if (patch.error !== undefined) visibleError = patch.error; }, ApiError, sendOkForComposer, StreamInterruptedError, AbortController,
+      patchState: (patch: { error?: string | null }) => { if (patch.error !== undefined) visibleError = patch.error; }, ApiError, isUserCancelledRequest, requestFailureCode, sendOkForComposer, StreamInterruptedError, AbortController,
       applyEvent: (e: Event) => { received.push(e); if (e.type === 'error') visibleError = e.message; },
       reload: async () => {
         assert.equal(abortRef.current, null, 'release transport before reload so polling can resume');

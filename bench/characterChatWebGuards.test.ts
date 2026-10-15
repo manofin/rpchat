@@ -11,7 +11,7 @@ import { createRequire } from 'node:module';
 import { execSync } from 'node:child_process';
 import ts from 'typescript';
 import { parseSideModeCommand } from '../apps/web/src/lib/responseControls.ts';
-import { ApiError, sendOkForComposer, StreamInterruptedError } from '../apps/web/src/lib/api.ts';
+import { ApiError, isUserCancelledRequest, requestFailureCode, sendOkForComposer, StreamInterruptedError } from '../apps/web/src/lib/api.ts';
 import { resolveShortcutSubmit } from '../apps/web/src/lib/shortcutMacro.ts';
 
 const require2 = createRequire(import.meta.url);
@@ -104,13 +104,13 @@ function streamHarness(
 ) {
   const abortRef: { current: AbortController | null } = { current: null };
   const scope = { conversationId: 'fixture-room', revision: 0, reloadSequence: 0 };
-  const visible = { generating, streamingId: 'previous' as string | null, error: null as string | null };
+  const visible = { generating, streamingId: 'previous' as string | null, error: null as string | null, errorCode: null as string | null };
   const requests: Array<{ path: string; body: unknown }> = [];
   const connected: boolean[] = [];
   let reloads = 0;
   const runStream = callback('runStream', {
     state: { generating, messages: beforeMessages }, abortRef, scope, scopeRef: { current: scope }, genIdRef: { current: null },
-    AbortController, ApiError, sendOkForComposer, StreamInterruptedError,
+    AbortController, ApiError, isUserCancelledRequest, requestFailureCode, sendOkForComposer, StreamInterruptedError,
     setStreamConnected: (value: boolean) => connected.push(value),
     patchState: (patch: Partial<typeof visible>) => Object.assign(visible, patch),
     applyEvent: () => {},
@@ -191,6 +191,41 @@ t('8 composer and choice send use the message endpoint and preserve optional inj
     { path: '/api/conversations/fixture-room/messages', body: { content: 'choice text' } },
     { path: '/api/conversations/fixture-room/messages', body: { content: '', inject_instruction: 'fixture instruction' } },
   ]);
+});
+
+t('typed pre-stream timeout restores draft and preserves its code through recovery', async () => {
+  for (const status of [499, 504]) {
+    const current = streamHarness(async () => { throw new ApiError(status, 'whole turn expired', { code: 'turn_deadline_exceeded' }); });
+    assert.equal(await current.send('retryable draft'), false);
+    assert.equal(current.visible.errorCode, 'turn_deadline_exceeded');
+    assert.equal(current.visible.error, 'whole turn expired');
+    assert.equal(current.reloads(), 1);
+  }
+});
+
+t('recovery polls preserve generation error until a new send, including slot release', async () => {
+  const scope = { revision: 0, reloadSequence: 0 };
+  let active: object | null = { id: 'expired', phase: 'writing', startedAt: '2026-01-01T00:00:00Z' };
+  let fetchFails = false;
+  let state: any = { error: 'whole turn expired', errorCode: 'turn_deadline_exceeded', generating: true };
+  const reload = callback('reload', {
+    scope, scopeRef: { current: scope }, conversationId: 'room', genIdRef: { current: null }, abortRef: { current: null },
+    get: async () => { if (fetchFails) throw new TypeError('Failed to fetch'); return { messages: [], activeGeneration: active }; },
+    setState: (update: (current: any) => any) => { state = update(state); },
+    patchState: (patch: object) => { Object.assign(state, patch); },
+  });
+  await reload();
+  assert.equal(state.generating, true);
+  assert.equal(state.error, 'whole turn expired');
+  fetchFails = true;await reload();
+  assert.equal(state.error, 'whole turn expired', 'a failed poll cannot replace the terminal failure');
+  fetchFails = false;
+  active = null;await reload();
+  assert.equal(state.generating, false);
+  assert.equal(state.error, 'whole turn expired');
+  assert.equal(state.errorCode, 'turn_deadline_exceeded');
+  state.errorCode = null;await reload();
+  assert.equal(state.error, null, 'successful reload still clears ordinary load errors');
 });
 
 t('9 network drop is not composer success; abort and 499 stay empty', () => {

@@ -196,9 +196,11 @@ function main() {
     const catchAt = src.indexOf('} catch', call);
     assert.ok(tryAt > 0 && tryAt < call, 'delta call must sit inside a try block');
     assert.ok(catchAt > call, 'delta call must have a catch');
-    // the catch must leave the turn with no patch rather than rethrow
-    const handler = src.slice(catchAt, catchAt + 300);
-    assert.equal(/throw\b/.test(handler), false, 'catch must not rethrow');
+    // Only cancellation escapes to terminal cleanup. Ordinary delta failures remain no-op.
+    const handler = src.slice(catchAt, src.indexOf('passMs.delta =', catchAt));
+    const abortGuard = 'if (controller.signal.aborted || isTurnDeadlineError(err)) throw err;';
+    assert.ok(handler.includes(abortGuard), 'abort/deadline must reach terminal cleanup');
+    assert.equal(/throw\b/.test(handler.replace(abortGuard, '')), false, 'non-terminal delta failure must not rethrow');
     assert.ok(/scene unchanged/.test(handler), 'the failure must be logged as a no-op, not swallowed silently');
     // `patch` starts null, so a failed call simply never assigns it
     const decl = src.slice(0, call);
