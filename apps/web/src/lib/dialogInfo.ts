@@ -10,7 +10,16 @@ export function savedDialogStateRows(message: Pick<Message, 'role' | 'status'> &
   const snapshot = message.meta.scene_state;
   if (!object(snapshot) || snapshot.schema_version !== 1 || !object(snapshot.before_delta) || !object(snapshot.after_delta)) return [];
   const scene = snapshot.after_delta;
-  if (scene.format !== 'dialog' || !object(scene.user_sheet)) return [];
+  if (scene.format !== 'dialog') return [];
+  if (object(scene.adventure) && scene.adventure.version === 1) {
+    const a = scene.adventure;
+    return [
+      { label: '소지금', value: `${a.balance} ${a.currency}` },
+      { label: '등록', value: object(a.registration) ? `${a.registration.organization} 등록 완료` : '미등록' },
+      { label: '경지·경험치', value: `${a.rank || '미정'} · ${a.experience}` },
+    ];
+  }
+  if (!object(scene.user_sheet)) return [];
   const sheet = scene.user_sheet;
   const rows: DialogStateRow[] = [];
   for (const [key, label] of [['hp', '체력'], ['money', '소지금']] as const) {

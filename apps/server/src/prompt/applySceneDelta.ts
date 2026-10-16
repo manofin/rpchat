@@ -93,6 +93,7 @@ function cloneScene(s: Scene): Scene {
     flags: s.flags ? s.flags.map((f) => ({ ...f })) : undefined,
     present_ids: s.present_ids ? [...s.present_ids] : undefined,
   };
+  if (s.adventure) out.adventure = JSON.parse(JSON.stringify(s.adventure));
   if (s.dialog_context) out.dialog_context = JSON.parse(JSON.stringify(s.dialog_context));
   // f9-beat-render: the 0012 keys are nested. A shallow spread would let a caller
   // mutate the *input* scene through the returned clone, which is exactly the bug
@@ -428,8 +429,16 @@ export function applySceneDelta(
     }
   }
 
-  applyHudDeltas(next, patch, catalog, applied, ignored);
-  applyProgression(next, patch, catalog, applied, ignored);
+  const confirmedKeys = ['money_delta', 'inventory_add', 'inventory_remove', 'quest_set', 'quest_clear', 'grade_up'];
+  const resources = { ...patch };
+  if (state.adventure) {
+    for (const key of confirmedKeys) {
+      if (key in resources) ignored.push({ key, reason: 'human_confirmation_required' });
+      delete resources[key];
+    }
+  }
+  applyHudDeltas(next, resources, catalog, applied, ignored);
+  applyProgression(next, resources, catalog, applied, ignored);
 
   if ('flags' in patch) {
     const v = patch.flags;

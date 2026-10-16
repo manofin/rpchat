@@ -1,3 +1,4 @@
+import { AdventurePage } from './AdventurePage';
 import { useEffect, useState, type ReactNode } from 'react';
 import { get, patch } from '../lib/api';
 import { back } from '../lib/router';
@@ -28,6 +29,8 @@ function SceneStateView({
   onChange,
   onSave,
   onBack,
+  onAdventure,
+  confirmed,
 }: {
   draft: SceneStateDraft;
   pending: boolean;
@@ -35,6 +38,8 @@ function SceneStateView({
   onChange: (next: SceneStateDraft) => void;
   onSave: () => void;
   onBack: () => void;
+  onAdventure?: () => void;
+  confirmed?: import('@rpchat/contracts/adventure').AdventureState;
 }) {
   const set = <K extends keyof SceneStateDraft>(key: K, value: SceneStateDraft[K]) => {
     onChange({ ...draft, [key]: value });
@@ -48,6 +53,7 @@ function SceneStateView({
         </button>
       )}
     >
+      {onAdventure && <button className="btn" onClick={onAdventure}>등록·의뢰·소지품 확인</button>}
       {error ? <div className="banner err">{error}</div> : null}
       <p className="sub" style={{ padding: '0 4px 8px' }}>
         서버 정본(`scene_json`)만 고칩니다. 호감 축은 필드가 없어 이 시트에 만들지 않습니다.
@@ -58,17 +64,17 @@ function SceneStateView({
           <Field label="HP">
             <input inputMode="numeric" value={draft.hp} disabled={pending} onChange={(e) => set('hp', e.target.value)} />
           </Field>
-          <Field label="₩">
-            <input inputMode="numeric" value={draft.money} disabled={pending} onChange={(e) => set('money', e.target.value)} />
+          <Field label={confirmed?.currency ?? "₩"}>
+            <input inputMode="numeric" value={confirmed ? String(confirmed.balance) : draft.money} disabled={pending || !!confirmed} onChange={(e) => set('money', e.target.value)} />
           </Field>
           <Field label="장비 (줄마다 하나)">
             <textarea value={draft.gear} disabled={pending} onChange={(e) => set('gear', e.target.value)} />
           </Field>
           <Field label="보유 (줄마다 하나)">
-            <textarea value={draft.inventory} disabled={pending} onChange={(e) => set('inventory', e.target.value)} />
+            <textarea value={confirmed ? confirmed.items.map(i => `${i.name} × ${i.quantity} (${i.owner})`).join('\n') : draft.inventory} disabled={pending || !!confirmed} onChange={(e) => set('inventory', e.target.value)} />
           </Field>
           <Field label="특수 (줄마다 하나)">
-            <textarea value={draft.traits} disabled={pending} onChange={(e) => set('traits', e.target.value)} />
+            <textarea value={confirmed ? confirmed.skills.join('\n') : draft.traits} disabled={pending || !!confirmed} onChange={(e) => set('traits', e.target.value)} />
           </Field>
         </section>
       ) : null}
@@ -99,13 +105,13 @@ function SceneStateView({
             <input value={draft.traitName} disabled={pending} onChange={(e) => set('traitName', e.target.value)} />
           </Field>
           <Field label="특성 등급">
-            <input value={draft.traitGrade} disabled={pending} onChange={(e) => set('traitGrade', e.target.value)} />
+            <input value={confirmed ? confirmed.rank : draft.traitGrade} disabled={pending || !!confirmed} onChange={(e) => set('traitGrade', e.target.value)} />
           </Field>
           <Field label="가호">
             <input value={draft.patronName} disabled={pending} onChange={(e) => set('patronName', e.target.value)} />
           </Field>
           <Field label="퀘스트">
-            <input value={draft.quest} disabled={pending} onChange={(e) => set('quest', e.target.value)} />
+            <input value={confirmed ? confirmed.quests.filter(q => !['declined', 'settled'].includes(q.stage)).map(q => q.title).join(', ') : draft.quest} disabled={pending || !!confirmed} onChange={(e) => set('quest', e.target.value)} />
           </Field>
           <Field label="일정">
             <input value={draft.schedule} disabled={pending} onChange={(e) => set('schedule', e.target.value)} />
@@ -114,7 +120,7 @@ function SceneStateView({
             <input value={draft.situation} disabled={pending} onChange={(e) => set('situation', e.target.value)} />
           </Field>
           <Field label="스킬 (줄마다 하나)">
-            <textarea value={draft.skills} disabled={pending} onChange={(e) => set('skills', e.target.value)} />
+            <textarea value={confirmed ? confirmed.skills.join('\n') : draft.skills} disabled={pending || !!confirmed} onChange={(e) => set('skills', e.target.value)} />
           </Field>
         </section>
       ) : null}
@@ -147,6 +153,9 @@ export function ConversationSceneStatePage({
   conversationId: string;
   onBack?: () => void;
 }) {
+  const [detail, setDetail] = useState<ConversationDetail | null>(null);
+  const [adventureOpen, setAdventureOpen] = useState(false);
+  const [refresh, setRefresh] = useState(0);
   const [draft, setDraft] = useState<SceneStateDraft | null>(null);
   const [empty, setEmpty] = useState(false);
   const [missing, setMissing] = useState(false);
@@ -163,6 +172,7 @@ export function ConversationSceneStatePage({
     get<ConversationDetail>(`/api/conversations/${conversationId}`)
       .then((d) => {
         if (!live) return;
+        setDetail(d);
         const scene = d.conversation.scene as Scene;
         if (!hasLivingState(scene)) {
           setEmpty(true);
@@ -176,7 +186,7 @@ export function ConversationSceneStatePage({
     return () => {
       live = false;
     };
-  }, [conversationId]);
+  }, [conversationId, refresh]);
 
   async function onSave() {
     if (!draft || pending) return;
@@ -197,6 +207,8 @@ export function ConversationSceneStatePage({
     }
   }
 
+  if (adventureOpen && detail) return <AdventurePage key={conversationId} detail={detail} onBack={() => { setAdventureOpen(false); setRefresh(v => v + 1); }} />;
+
   if (missing) {
     return (
       <SettingsPageLayout header={<SettingsPageHeader title="장면 상태" onBack={goBack} />}>
@@ -208,6 +220,7 @@ export function ConversationSceneStatePage({
   if (empty) {
     return (
       <SettingsPageLayout header={<SettingsPageHeader title="장면 상태" onBack={goBack} />}>
+        {detail?.conversation.story_id && <button className="btn" onClick={() => setAdventureOpen(true)}>등록·의뢰·소지품 확인</button>}
         <SettingsEmptyState message="이 대화에는 아직 비트 상태(HP·계약·퀘스트)가 없습니다. 호감 축은 scene에 필드가 없어 만들지 않습니다." />
       </SettingsPageLayout>
     );
@@ -226,6 +239,8 @@ export function ConversationSceneStatePage({
       draft={draft}
       pending={pending}
       error={error}
+      confirmed={detail?.conversation.scene.adventure}
+      onAdventure={detail?.conversation.story_id ? () => setAdventureOpen(true) : undefined}
       onChange={setDraft}
       onSave={() => void onSave()}
       onBack={goBack}

@@ -430,6 +430,8 @@ export function conversationRoutes(ctx: Ctx) {
       const p = patchSchema.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
       const d = p.data;
+      const rawScene = (req.body as { scene?: Record<string, unknown> })?.scene;
+      if (rawScene && Object.hasOwn(rawScene, 'adventure')) return reply.code(400).send({ error: '확인 기록은 상태 확인 메뉴에서만 변경할 수 있습니다.' });
       const requestedScene = { ...parseJson<Scene>(conv.scene_json, {}), ...d.scene };
       if (requestedScene.observation_filter && !supportsPartyObservation(db, conv)) return reply.code(400).send({ error: '관찰 필터는 참여자가 둘 이상인 party 방에서만 지원합니다' });
       if (requestedScene.observation_filter && requestedScene.format === 'dialog') return reply.code(400).send({ error: '관찰 필터는 beat 형식에서만 지원합니다. dialog로 바꾸려면 필터를 먼저 끄세요.' });
@@ -600,6 +602,7 @@ export function conversationRoutes(ctx: Ctx) {
       if (m.status === 'streaming') return reply.code(409).send({ error: '생성 중인 메시지는 수정 불가' });
       const p = msgPatch.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
+      if (p.data.content !== undefined && parseMessageMeta(m.meta_json).adventure_receipt) return reply.code(409).send({ error: '확인 기록의 내용은 수정할 수 없습니다. 해당 기록을 삭제하고 다시 확인해 주세요.' });
       updateMessage(db, m.id, { content: p.data.content, bookmarked: p.data.bookmarked, status: p.data.content !== undefined && m.status === 'interrupted' ? 'complete' : undefined });
       return messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', m.id)!);
     });
@@ -628,8 +631,16 @@ export function conversationRoutes(ctx: Ctx) {
 
     // 잎 메시지 삭제 (중단된 응답 버리기 등). head 는 부모로.
     app.delete<{ Params: { id: string } }>('/api/messages/:id', async (req, reply) => {
-      const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', req.params.id);
+      let m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', req.params.id);
       if (!m) return reply.code(404).send({ error: 'not found' });
+      // A confirmation is one visible action/receipt turn. Delete both halves so
+      // a cancelled action cannot linger as an apparently confirmed user claim.
+      const actionReceipt = parseMessageMeta(m.meta_json).adventure_receipt;
+      if (actionReceipt && m.role === 'assistant') {
+        const parent = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ? AND conversation_id = ?', m.parent_id, m.conversation_id);
+        if (!parent || parent.role !== 'user' || parseMessageMeta(parent.meta_json).adventure_receipt?.key !== actionReceipt.key) return reply.code(409).send({ error: '확인 기록의 연결을 검증하지 못했습니다.' });
+        m = parent;
+      }
       if (m.status === 'streaming') return reply.code(409).send({ error: DELETE_BLOCKED_BY_GENERATION });
       const conv = loadConversation(ctx, m.conversation_id)!;
       const deletedIds = new Set(descendantMessageIds(db, m.id));

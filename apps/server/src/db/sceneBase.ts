@@ -105,6 +105,31 @@ export function readSceneSnapshot(meta: MessageMeta): SceneSnapshot | null {
 /** Ancestor walk bound. A turn is 5–6 rows; this only has to clear one turn. */
 const BASE_WALK_LIMIT = 64;
 
+/** A conversation cache must never carry another branch's confirmed actions
+ * into a legacy/missing snapshot. Only records on this parent chain count. */
+function adventureFallback(db: DB, headId: string | null, scene: Scene): Scene {
+  if (!scene.adventure) return scene;
+  const next = freezeCopy(scene);
+  delete next.adventure;
+  const seen = new Set<string>();
+  let id = headId;
+  for (let n = 0; id && n < BASE_WALK_LIMIT && !seen.has(id); n++) {
+    seen.add(id);
+    const row: MessageRow | undefined = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', id);
+    if (!row) break;
+    const meta = parseMessageMeta(row.meta_json);
+    const source = row.role === 'user' && meta.adventure_before
+      ? meta.adventure_before : readSceneSnapshot(meta)?.after_delta;
+    if (source) {
+      if (source.adventure) next.adventure = freezeCopy(source.adventure);
+      return next;
+    }
+    id = row.parent_id;
+  }
+  return next;
+}
+
+
 /**
  * The scene a generation about to start should plan against.
  *
@@ -123,7 +148,7 @@ export function resolveSceneBase(db: DB, args: {
   const edited = freezeCopy(args.conversationScene);
   delete edited.pending_edit;
   const fallback = (hops: number): SceneBase => ({
-    scene: pending ? edited : args.conversationScene, source: 'conversation', hops,
+    scene: adventureFallback(db, args.parentId, pending ? edited : args.conversationScene), source: 'conversation', hops,
   });
 
   if (args.regenTurnStartId) {
@@ -181,7 +206,7 @@ export function materializeSceneAtHead(
   db: DB,
   opts: { headId: string | null; fallback: Scene },
 ): Scene {
-  const strippedFallback = withoutPending(opts.fallback);
+  const strippedFallback = adventureFallback(db, opts.headId, withoutPending(opts.fallback));
   if (!opts.headId) return strippedFallback;
   const seen = new Set<string>();
   let cur: string | null = opts.headId;

@@ -235,6 +235,8 @@ export interface DialogKnowledgeView {
 }
 
 export interface Scene {
+  scene_version?: number;
+  adventure?: import('@rpchat/contracts/adventure').AdventureState;
   dialog_context?: { version: 1; entries: DialogKnowledgeEntry[] };
   response_length?: ResponseLength;
   observation_filter?: boolean;
@@ -255,6 +257,7 @@ export interface Scene {
   user_sheet?: {
     hp?: number | null;
     money?: number | null;
+    money_unit?: string;
     gear?: string[];
     inventory?: string[];
     traits?: string[];
@@ -338,6 +341,7 @@ export interface Message {
   events?: ChatEvent[];
   status: MessageStatus;
   meta: {
+    adventure_receipt?: { key: string };
     observation?: { visibility: 'public' } | { visibility: 'private'; recipient_ids: string[]; observer_ids?: string[] };
     side_mode?: { mode: 'summary' | 'community'; prompt: string; anchor_message_id: string | null };
     generation_id?: string;

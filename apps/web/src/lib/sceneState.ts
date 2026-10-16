@@ -32,6 +32,7 @@ export type SceneHunter = {
 };
 
 export type LivingScene = {
+  adventure?: import('@rpchat/contracts/adventure').AdventureState;
   user_sheet?: UserSheet | null;
   info?: SceneInfo | null;
   hunter?: SceneHunter | null;
@@ -43,7 +44,8 @@ export type LivingScene = {
 export function hasLivingState(scene: LivingScene | null | undefined): boolean {
   if (!scene) return false;
   return Boolean(
-    scene.user_sheet
+    scene.adventure
+    || scene.user_sheet
     || scene.info
     || scene.hunter
     || (scene.stats && Object.keys(scene.stats).length),
@@ -55,7 +57,8 @@ export function livingStateLabel(scene: LivingScene | null | undefined): string 
   const parts: string[] = [];
   const sheet = scene?.user_sheet;
   if (typeof sheet?.hp === 'number') parts.push(`HP\u00a0${sheet.hp}`);
-  if (typeof sheet?.money === 'number') parts.push(`₩\u00a0${sheet.money.toLocaleString()}`);
+  if (scene?.adventure) parts.push(`${scene.adventure.balance.toLocaleString()}\u00a0${scene.adventure.currency}`);
+  else if (typeof sheet?.money === 'number') parts.push(`₩\u00a0${sheet.money.toLocaleString()}`);
   if (scene?.info?.contract) parts.push('계약');
   if (scene?.hunter?.quest) parts.push('퀘스트');
   parts.push(...formatCustomStats(scene?.stats, scene?.stat_defs));

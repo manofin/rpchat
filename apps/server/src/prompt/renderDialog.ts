@@ -137,6 +137,12 @@ export function renderInfoRows(input: {
     rows.push({ label, value: clean(row?.value) || EMPTY_FIELD });
   }
 
+  if (scene.adventure) {
+    const a = scene.adventure;
+    rows.push({ label: '확인 소지금', value: `${a.balance} ${a.currency}` },
+      { label: '확인 등록', value: a.registration ? `${a.registration.organization} 등록 완료` : '미등록' },
+      { label: '확인 경지·경험치', value: `${a.rank || '미정'} · ${a.experience}` });
+  }
   rows.push({ label: '인물', value: renderCastRow(scene, cast) });
   return rows;
 }
