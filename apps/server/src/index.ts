@@ -1,3 +1,4 @@
+import { adventureRoutes } from './routes/adventure.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import Fastify from 'fastify';
@@ -92,6 +93,7 @@ async function main() {
   await app.register(characterRoutes(ctx));
   await app.register(storyRoutes(ctx));
   await app.register(conversationRoutes(ctx));
+  await app.register(adventureRoutes(ctx));
   await app.register(chatRoutes(ctx));
   await app.register(memoryRoutes(ctx));
   await app.register(roleFactRoutes(ctx));

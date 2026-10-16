@@ -20,7 +20,7 @@ export function SpeakerHeader({ name, avatar, focused }: { name: string; avatar?
 export type BeatUiData = {
   location_badge?: string | null;
   user_sheet?: {
-    hp?: number | null; money?: number | null;
+    hp?: number | null; money?: number | null; money_unit?: string;
     gear?: string[]; inventory?: string[]; traits?: string[];
   } | null;
   custom_stats?: Array<{ label: string; value: number }>;
@@ -34,7 +34,7 @@ export function BeatUiPanel({ ui, selectedRosterId, onRosterSelect }: { ui: Beat
   const stats: string[] = [];
   if (sheet) {
     if (typeof sheet.hp === 'number') stats.push(`HP\u00a0${sheet.hp}`);
-    if (typeof sheet.money === 'number') stats.push(`₩\u00a0${sheet.money.toLocaleString()}`);
+    if (typeof sheet.money === 'number') stats.push(sheet.money_unit ? `${sheet.money.toLocaleString()}\u00a0${sheet.money_unit}` : `₩\u00a0${sheet.money.toLocaleString()}`);
     if (sheet.gear?.length) stats.push(`장비 ${sheet.gear.join(', ')}`);
     if (sheet.inventory?.length) stats.push(`보유 ${sheet.inventory.join(', ')}`);
     if (sheet.traits?.length) stats.push(`특수 ${sheet.traits.join(', ')}`);

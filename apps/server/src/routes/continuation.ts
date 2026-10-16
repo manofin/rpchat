@@ -3,7 +3,8 @@ import { z } from 'zod';
 import type { Ctx } from '../ctx.js';
 import { config, PROMPT_VERSION } from '../config.js';
 import { getSetting, nowIso, one, parseJson, run, uid } from '../db/index.js';
-import { readSceneSnapshot } from '../db/sceneBase.js';
+import { materializeSceneAtHead, readSceneSnapshot } from '../db/sceneBase.js';
+import { adventureStateIssue, INVALID_ADVENTURE_MESSAGE } from '../adventure/state.js';
 import { getPath, insertMessage, messageOut, parseMessageMeta, resolveTurnStart, setHead, updateMessage } from '../db/tree.js';
 import { isMemoryAnchorMessage } from '../db/sideMode.js';
 import type { ChatMessage, ConversationRow, MessageMeta, MessageRow, Scene, StoredMessageRow } from '../types.js';
@@ -143,12 +144,21 @@ export function continuationRoutes(ctx: Ctx) {
         return reply.code(409).send({ error: '현재 마지막 응답에서만 이어 쓸 수 있습니다.' });
       }
       const headMeta = parseMessageMeta(head.meta_json);
+      if (headMeta.adventure_receipt) return reply.code(409).send({ error: '확인 기록에는 이어 쓸 대사가 없습니다. 새 메시지를 입력해 주세요.' });
       if (headMeta.beat_seq !== undefined || headMeta.chat_event_script) {
         const turn = resolveTurnStart(db, head);
         const start = turn.kind === 'multi' ? one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', turn.startId) : undefined;
         if (!start || start.status !== 'complete' || !readSceneSnapshot(parseMessageMeta(start.meta_json))) {
           return reply.code(409).send({ error: '중단된 새 턴은 재생성으로 복구해 주세요. 이어쓰기는 완료된 턴에만 덧붙일 수 있습니다.' });
         }
+      }
+      const continuationScene = materializeSceneAtHead(db, {
+        headId: conv.head_message_id,
+        fallback: parseJson<Scene>(conv.scene_json, {}),
+      });
+      if (adventureStateIssue(continuationScene.adventure) === 'invalid') {
+        req.log.warn({ code: 'invalid_adventure_state', conversationId: conv.id, headId: conv.head_message_id }, 'invalid adventure state refused');
+        return reply.code(409).send({ error: INVALID_ADVENTURE_MESSAGE, code: 'invalid_adventure_state' });
       }
       let built: ReturnType<typeof buildContinuation>;
       try { built = buildContinuation(ctx, conv, history); }

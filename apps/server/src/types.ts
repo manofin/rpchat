@@ -111,6 +111,7 @@ export interface LoreEntryRow {
 }
 
 export interface Scene {
+  adventure?: import('@rpchat/contracts/adventure').AdventureState;
   response_length?: import('./prompt/responseLength.js').ResponseLength;
   observation_filter?: boolean;
   observation_legacy_classified?: boolean;
@@ -145,6 +146,7 @@ export interface Scene {
   user_sheet?: {
     hp?: number | null;
     money?: number | null;
+    money_unit?: string;
     gear?: string[];
     inventory?: string[];
     traits?: string[];
@@ -265,6 +267,8 @@ export interface ConversationRow {
 export type MessageStatus = 'streaming' | 'complete' | 'interrupted' | 'error';
 
 export interface MessageMeta {
+  adventure_receipt?: { key: string; hash: string; action: import('@rpchat/contracts/adventure').AdventureAction };
+  adventure_before?: Scene;
   continuation_of?: string;
   side_mode?: import('./db/sideMode.js').SideModeMeta;
   memory_anchor?: { kind: 'approved' };

@@ -23,6 +23,7 @@ export function eventUiData(event: ChatEvent): BeatUiData | null {
     user_sheet: sheet ? {
       hp: typeof sheet.hp === 'number' ? sheet.hp : null,
       money: typeof sheet.money === 'number' ? sheet.money : null,
+      ...(typeof sheet.money_unit === 'string' ? { money_unit: sheet.money_unit } : {}),
       gear: stringList(sheet.gear), inventory: stringList(sheet.inventory), traits: stringList(sheet.traits),
     } : null,
     custom_stats: Array.isArray(data.custom_stats) ? data.custom_stats.flatMap((value) => {

@@ -1,0 +1,51 @@
+{
+  "source": "E/prompt-baseline/run-a",
+  "helper_sha256": "8c805c9364d55d96db5c0a3c9d53431c3796724f1f7d80d9f621095913693669",
+  "calls": [
+    {
+      "label": "one-to-one",
+      "sha256": "7f4d40895b386d64e5ab8e98f8616c1c5e315dfc8904f118d25555cfa3ae7f64",
+      "bytes": 3628
+    },
+    {
+      "label": "scene-delta",
+      "sha256": "52b4d7d5f0c580837447296f84f01a576bf13ff4aae822b0813739864251486c",
+      "bytes": 1814
+    },
+    {
+      "label": "beat-N",
+      "sha256": "c2ee23599603db7d1630f58f946a75832c14ed41ad010940182352782d71626e",
+      "bytes": 1657
+    },
+    {
+      "label": "beat-F",
+      "sha256": "7cef0f6efbf17daef030988aa10dd44bb2c4e2529dbc62a8ef974cdc87d73a60",
+      "bytes": 1291
+    },
+    {
+      "label": "beat-E",
+      "sha256": "11b61bcacee62b75c643e282eb3a3890a2d6801160bce9586009c7671c686cfb",
+      "bytes": 1157
+    },
+    {
+      "label": "beat-C",
+      "sha256": "65a10a6d85c0e4868058f27e76e70a49de369c351f160ee83733b389940fedd6",
+      "bytes": 1411
+    },
+    {
+      "label": "scene-delta",
+      "sha256": "47c1012aa1be1284c1028083eb95390ab9aa875f171d578e7b489bd47ce534f1",
+      "bytes": 1779
+    },
+    {
+      "label": "dialog-public",
+      "sha256": "16d7e4f6112e09f9805e181a59d1fb79a49c3df892addb9da43ab3d8a4cbabad",
+      "bytes": 4157
+    },
+    {
+      "label": "dialog-actor",
+      "sha256": "9a5827ee1a99c14bd1d46a9906c3a8249ecb9d848214ecde59944ee8b2f6822d",
+      "bytes": 680
+    }
+  ]
+}

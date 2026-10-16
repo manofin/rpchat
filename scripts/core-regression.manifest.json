@@ -21,7 +21,13 @@
     { "name": "pathMemorySchema", "group": "PathMemory" },
     { "name": "pathMemoryP1Guards", "group": "PathMemory" },
     { "name": "pathMemoryNodeReplay", "group": "PathMemory" },
-    { "name": "pathMemoryDbProjection", "group": "PathMemory" }
+    { "name": "pathMemoryDbProjection", "group": "PathMemory" },
+    { "name": "adventureState", "group": "Adventure" },
+    { "name": "adventureRoutes", "group": "Adventure" },
+    { "name": "adventureGeneration", "group": "Adventure" },
+    { "name": "adventurePromptCompatibility", "group": "Adventure" },
+    { "name": "adventureDeadlineRecovery", "group": "Adventure" },
+    { "name": "adventureInvalidState", "group": "Adventure" }
   ],
   "exclude": []
 }

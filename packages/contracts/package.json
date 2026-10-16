@@ -4,7 +4,15 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./chat-event": { "types": "./chat-event.d.ts" },
-    "./story-limits": { "types": "./story-limits.d.ts", "default": "./story-limits.js" }
+    "./chat-event": {
+      "types": "./chat-event.d.ts"
+    },
+    "./story-limits": {
+      "types": "./story-limits.d.ts",
+      "default": "./story-limits.js"
+    },
+    "./adventure": {
+      "types": "./adventure.d.ts"
+    }
   }
 }

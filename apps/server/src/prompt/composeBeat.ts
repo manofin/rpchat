@@ -21,6 +21,7 @@ import { project, inheritedAudience, type Audience, GM } from './observation.js'
  *
  * Pure: no DB, no fetch, no model.
  */
+import { renderAdventureState } from '../adventure/state.js';
 import { type ApplySceneDeltaResult, type PartyCatalog } from './applySceneDelta.js';
 import { approveExtras, type ApprovedExtra } from './approveExtras.js';
 import { approveStoryExtras } from './approveStoryExtras.js';
@@ -271,6 +272,7 @@ export function planBeat(input: BeatPlanInput): BeatPlan {
     header,
     ui,
     pass_n: renderPassN({
+      confirmedState: renderAdventureState(scene.adventure),
       focusCard,
       cast: input.cast,
       scene,
@@ -290,6 +292,7 @@ export function planBeat(input: BeatPlanInput): BeatPlan {
     }),
     pass_f: focusCard
       ? renderPassF({
+          confirmedState: renderAdventureState(scene.adventure),
           focusCard,
           userName: userNameOf(input),
           userText: observedInput(input, focus.focus_id!),
@@ -312,6 +315,7 @@ export function planBeat(input: BeatPlanInput): BeatPlan {
 export function passFWith(input: BeatPlanInput, plan: BeatPlan, narration: string): string | null {
   if (!plan.focus.focus_id) return null;
   return renderPassF({
+    confirmedState: renderAdventureState(plan.applied.state.adventure),
     focusCard: cardFor(plan.focus.focus_id, input),
     userName: userNameOf(input),
     userText: observedInput(input, plan.focus.focus_id),
@@ -352,6 +356,7 @@ export function planPassE(input: BeatPlanInput, plan: BeatPlan, narration: strin
     name: extra.name,
     duty: extra.duty,
     prompt: renderPassE({
+      confirmedState: renderAdventureState(plan.applied.state.adventure),
       card: cardFor(extra.character_id, input),
       duty: extra.duty,
       focusName,

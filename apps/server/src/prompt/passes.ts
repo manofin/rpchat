@@ -99,9 +99,10 @@ function presentPeopleLines(cast: CastMember[], scene: Scene, userName: string):
   ];
 }
 
-function sceneLines(scene: Scene, header: string | null): string[] {
+function sceneLines(scene: Scene, header: string | null, confirmedState?: string | null): string[] {
   const out: string[] = [];
   if (header) out.push(`- 헤더(서버 확정, 다시 쓰지 말 것): ${header}`);
+  if (confirmedState) out.push(confirmedState);
   if (scene.beat_goal) out.push(`- 이 턴이 끝나야 하는 것: ${scene.beat_goal}`);
   return out;
 }
@@ -131,6 +132,7 @@ export function renderPassN(input: {
   focusCard: PassCard | null;
   cast: CastMember[];
   scene: Scene;
+  confirmedState?: string | null;
   header: string | null;
   userText: string;
   userName?: string;
@@ -153,7 +155,7 @@ export function renderPassN(input: {
     '',
     ...(input.focusCard ? [cardBlock(input.focusCard, '이번 턴의 중심 인물'), ''] : []),
     '## 장면',
-    ...sceneLines(input.scene, input.header),
+    ...sceneLines(input.scene, input.header, input.confirmedState),
     ...presentPeopleLines(input.cast, input.scene, userName),
     `- 이번 턴에 몸짓으로 존재감만 드러낼 사람: ${ambient}`,
     '',
@@ -221,6 +223,7 @@ export function renderPassF(input: {
   userName: string;
   userText: string;
   scene: Scene;
+  confirmedState?: string | null;
   header: string | null;
   narration: string;
   cast: CastMember[];
@@ -233,7 +236,7 @@ export function renderPassF(input: {
     cardBlock(input.focusCard, '캐릭터'),
     '',
     '## 장면',
-    ...sceneLines(input.scene, input.header),
+    ...sceneLines(input.scene, input.header, input.confirmedState),
     ...presentPeopleLines(input.cast, input.scene, input.userName),
     ...(input.narration.trim() ? ['', '## 방금 서술된 것 (이미 화면에 있다. 다시 쓰지 말 것)', input.narration.trim()] : []),
     '',
@@ -274,6 +277,7 @@ export function renderPassE(input: {
   userText: string;
   cast: CastMember[];
   scene: Scene;
+  confirmedState?: string | null;
   facts?: string[];
 }): string {
   const facts = (input.facts ?? []).filter((f) => f.trim());
@@ -288,6 +292,7 @@ export function renderPassE(input: {
     ...(input.narration.trim() ? [input.narration.trim()] : []),
     `${input.userName}: ${input.userText}`,
     `${input.focusName}: ${input.focusText}`,
+    ...(input.confirmedState ? ['', input.confirmedState] : []),
     ...(facts.length ? ['', '## 확정 사실 (서버가 정한 것. 바꾸거나 새로 지어내지 말 것)', ...facts.map((f) => `- ${f}`)] : []),
     '',
     '## 규칙',

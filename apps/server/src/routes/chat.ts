@@ -44,6 +44,7 @@ import type { PassCard } from '../prompt/passes.js';
 import type { CharacterRow } from '../types.js';
 import { buildPrompt } from '../prompt/builder.js';
 import { loadStoryRoster, dialogPlanInput } from '../prompt/dialogContext.js';
+import { adventureStateIssue, INVALID_ADVENTURE_MESSAGE } from '../adventure/state.js';
 import { buildDialogPrompt } from '../prompt/dialogPrompt.js';
 import { parseActorSupplement } from '../prompt/dialogActorSupplement.js';
 import { dialogSecretRules, segmentSecretViolations, type SecretSegment } from '../prompt/dialogSecretOutput.js';
@@ -461,6 +462,16 @@ export function chatRoutes(ctx: Ctx) {
       return generateBeat(req, reply, conv, parentId, convNow, partyCast, partyRoster, generationId, userMessage, regenTurnStartId ?? null, inject);
     }
 
+    if (adventureStateIssue((JSON.parse(convNow.scene_json || '{}') as Scene).adventure) === 'invalid') {
+      refuseBeforeGeneration(userMessage, conv);
+      req.log.warn({ code: 'invalid_adventure_state', conversationId: conv.id, headId: conv.head_message_id }, 'invalid adventure state refused');
+      return reply.code(409).send({ error: INVALID_ADVENTURE_MESSAGE, code: 'invalid_adventure_state' });
+    }
+    if ((JSON.parse(convNow.scene_json || '{}') as Scene).adventure) {
+      refuseBeforeGeneration(userMessage, conv);
+      return reply.code(409).send({ error: '확인 상태를 사용하는 스토리에는 활성 참여자가 두 명 이상 필요합니다.' });
+    }
+
     const history = getPath(db, convNow);
 
     let built;
@@ -634,6 +645,11 @@ export function chatRoutes(ctx: Ctx) {
     });
     const roomPolicy = JSON.parse(convNow.scene_json || '{}') as Scene;
     const scene = { ...sceneBase.scene, observation_filter: roomPolicy.observation_filter, observation_legacy_classified: roomPolicy.observation_legacy_classified, response_length: roomPolicy.response_length };
+    if (adventureStateIssue(scene.adventure) === 'invalid') {
+      refuseBeforeGeneration(userMessage, conv);
+      req.log.warn({ code: 'invalid_adventure_state', conversationId: conv.id, headId: conv.head_message_id }, 'invalid adventure state refused');
+      return reply.code(409).send({ error: INVALID_ADVENTURE_MESSAGE, code: 'invalid_adventure_state' });
+    }
     // f9-place-catalog: places/arcs/stages come from the Story layer, so the GM can
     // move the scene somewhere no cast member currently stands. Read live because
     // this is a server-side validation allow-list, not narrative text.
@@ -1216,6 +1232,11 @@ export function chatRoutes(ctx: Ctx) {
     });
     const roomPolicy = JSON.parse(convNow.scene_json || '{}') as Scene;
     const scene: Scene = { ...sceneBase.scene, observation_filter: roomPolicy.observation_filter, observation_legacy_classified: roomPolicy.observation_legacy_classified, response_length: roomPolicy.response_length };
+    if (adventureStateIssue(scene.adventure) === 'invalid') {
+      refuseBeforeGeneration(userMessage, conv);
+      req.log.warn({ code: 'invalid_adventure_state', conversationId: conv.id, headId: conv.head_message_id }, 'invalid adventure state refused');
+      return reply.code(409).send({ error: INVALID_ADVENTURE_MESSAGE, code: 'invalid_adventure_state' });
+    }
     const userText = userTextFrom(db, parentId, userMessage);
     const history = getPath(db, convNow);
     const lastUser = history.at(-1)?.role === 'user' ? history.at(-1)! : null;
@@ -1683,6 +1704,7 @@ export function chatRoutes(ctx: Ctx) {
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ? AND conversation_id = ?', p.data.messageId, conv.id);
       if (!m) return reply.code(404).send({ error: 'message not found' });
       if (isMemoryAnchorMessage(m)) return reply.code(409).send({ error: '기억 승인 기록은 재생성할 수 없음' });
+      if (parseMessageMeta(m.meta_json).adventure_receipt) return reply.code(409).send({ error: '상태 확인 기록은 재생성할 수 없습니다.' });
       if (m.status === 'streaming') return reply.code(409).send({ error: '생성 중' });
       // assistant 메시지 재생성 = 그 **턴** 전체가 부모 아래 새 형제가 된다.
       // user 메시지(응답 없이 끝난 경우) = 그 아래로 이어서 생성.
@@ -1729,6 +1751,7 @@ export function chatRoutes(ctx: Ctx) {
       }
       const m = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ? AND conversation_id = ?', p.data.messageId, conv.id);
       if (!m || m.role !== 'user') return reply.code(404).send({ error: 'user message not found' });
+      if (parseMessageMeta(m.meta_json).adventure_receipt) return reply.code(409).send({ error: '상태 확인 기록은 문장 편집으로 분기할 수 없습니다.' });
       if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '이 대화에서 이미 생성 중' });
       let observation;
       try { observation = validatedAudience(conv, p.data.observation ?? audienceOf(m)); }

@@ -26,6 +26,6 @@ export function sideModeLabel(mode: SideMode): string {
 
 export function continuationTarget(messages: Message[]): Message | null {
   const last = messages.at(-1);
-  if (!last || last.role !== 'assistant' || !['complete', 'interrupted'].includes(last.status) || last.meta.side_mode) return null;
+  if (!last || last.role !== 'assistant' || !['complete', 'interrupted'].includes(last.status) || last.meta.side_mode || last.meta.adventure_receipt) return null;
   return last;
 }

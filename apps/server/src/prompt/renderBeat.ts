@@ -183,7 +183,8 @@ export function renderUi(input: {
 
   return {
     location_badge: scene.location ?? scene.place ?? null,
-    user_sheet: scene.user_sheet ?? null,
+    user_sheet: scene.adventure ? { ...scene.user_sheet, money: scene.adventure.balance, money_unit: scene.adventure.currency,
+      inventory: scene.adventure.items.map(i => `${i.name} × ${i.quantity}${i.ownership === 'loan' ? ` (대여: ${i.owner})` : ''}`), traits: scene.adventure.skills } : scene.user_sheet ?? null,
     custom_stats: (scene.stat_defs ?? []).flatMap((d) => {
       const v = scene.stats?.[d.id];
       return typeof v === 'number' ? [{ label: d.label, value: v }] : [];

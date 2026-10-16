@@ -859,7 +859,7 @@ function MessageView(props: {
               <button onClick={props.onSwipeRight} aria-label="다음 응답">›</button>
             </span>
           )}
-          {m.role === 'assistant' && props.isLastAssistant && <button onClick={props.onRegenerate}>↻ 재생성</button>}
+          {m.role === 'assistant' && props.isLastAssistant && !m.meta.adventure_receipt && <button onClick={props.onRegenerate}>↻ 재생성</button>}
           <details className="msg-actions" onKeyDown={e => {
             if (e.key === 'Escape') {
               e.currentTarget.open = false;
@@ -868,7 +868,7 @@ function MessageView(props: {
           }}>
             <summary aria-label="메시지 관리">⋯{m.bookmarked ? ' ★' : ''}</summary>
             <div className="msg-action-items">
-              <button onClick={() => { setVal(m.content); setEditing(true); }}>✎ 편집</button>
+              {!m.meta.adventure_receipt && <button onClick={() => { setVal(m.content); setEditing(true); }}>✎ 편집</button>}
               <button onClick={props.onBookmark} aria-pressed={m.bookmarked}>{m.bookmarked ? '★ 즐겨찾기 해제' : '☆ 즐겨찾기'}</button>
               <button onClick={props.onDelete}>삭제</button>
             </div>

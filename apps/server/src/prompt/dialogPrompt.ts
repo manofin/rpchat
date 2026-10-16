@@ -1,3 +1,4 @@
+import { renderAdventureState } from '../adventure/state.js';
 import { responseLengthHint, responseMaxTokens } from './responseLength.js';
 import { type DB, many } from '../db/index.js';
 import { parseMessageMeta } from '../db/messageMeta.js';
@@ -63,6 +64,8 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
   const responseScene = JSON.parse(conv.scene_json || '{}') as Scene;
   const maxTokens = responseMaxTokens(responseScene, DIALOG_MAX_TOKENS);
   passS += responseLengthHint(responseScene);
+  const confirmed = renderAdventureState((scene ?? responseScene).adventure);
+  if (confirmed) passS += `\n\n${confirmed}`;
   const cal = getCalibration(db);
   const persona = resolvePersona(db, conv);
   const userName = persona?.name || '나';
@@ -165,7 +168,7 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
   if (estTotal > available) budget.instruction_overflow = {
     profile: profile.name, instruction_tokens: profileBlock ? estimateTokens(profileBlock, cal) : 0, required: estTotal, available,
   };
-  const attachScopedInstruction = (prompt: string) => attachInjectToIcPass(prompt, inject.instruction, {
+  const attachScopedInstruction = (prompt: string) => attachInjectToIcPass([prompt, confirmed].filter(Boolean).join('\n\n'), inject.instruction, {
     promptTokenBudget: available,
     calibration: cal,
     allowRecentNarrationShrink: false,
