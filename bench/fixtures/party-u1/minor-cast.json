@@ -1,0 +1,27 @@
+[
+  {
+    "id": "minor-1",
+    "name": "정원조연1",
+    "role": "관찰 구역 1 담당. MINOR_1"
+  },
+  {
+    "id": "minor-2",
+    "name": "정원조연2",
+    "role": "관찰 구역 2 담당. MINOR_2"
+  },
+  {
+    "id": "minor-3",
+    "name": "정원조연3",
+    "role": "관찰 구역 3 담당. MINOR_3"
+  },
+  {
+    "id": "minor-4",
+    "name": "정원조연4",
+    "role": "관찰 구역 4 담당. MINOR_4"
+  },
+  {
+    "id": "minor-5",
+    "name": "정원조연5",
+    "role": "관찰 구역 5 담당. MINOR_5"
+  }
+]

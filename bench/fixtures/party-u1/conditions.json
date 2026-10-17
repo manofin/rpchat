@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "authorship": "synthetic fixture; no live cards or story text copied",
+  "contextTokens": 16384,
+  "outputReserveTokens": 500,
+  "calibration": 1,
+  "storySettingFile": "story-setting.txt",
+  "minorCastFile": "minor-cast.json",
+  "sceneState": "가상 유리정원, 낮. 확인된 소지금은 100 단위이며 아직 사용하지 않았다.",
+  "userName": "참가자",
+  "conditions": [
+    {
+      "id": "cast17-speakers1",
+      "participantCount": 17,
+      "castFile": "cast-17.json",
+      "allowedSpeakerIds": [
+        "actor-01"
+      ],
+      "userText": "오늘의 정원 관찰 기록을 비교해 주세요. 확인되지 않은 사건은 추측이라고 밝혀 주세요."
+    },
+    {
+      "id": "cast17-speakers3",
+      "participantCount": 17,
+      "castFile": "cast-17.json",
+      "allowedSpeakerIds": [
+        "actor-01",
+        "actor-03",
+        "actor-05"
+      ],
+      "userText": "오늘의 정원 관찰 기록을 비교해 주세요. 확인되지 않은 사건은 추측이라고 밝혀 주세요."
+    },
+    {
+      "id": "cast25-speakers1",
+      "participantCount": 25,
+      "castFile": "cast-25.json",
+      "allowedSpeakerIds": [
+        "actor-01"
+      ],
+      "userText": "오늘의 정원 관찰 기록을 비교해 주세요. 확인되지 않은 사건은 추측이라고 밝혀 주세요."
+    },
+    {
+      "id": "cast25-speakers3",
+      "participantCount": 25,
+      "castFile": "cast-25.json",
+      "allowedSpeakerIds": [
+        "actor-01",
+        "actor-03",
+        "actor-05"
+      ],
+      "userText": "오늘의 정원 관찰 기록을 비교해 주세요. 확인되지 않은 사건은 추측이라고 밝혀 주세요."
+    }
+  ]
+}
