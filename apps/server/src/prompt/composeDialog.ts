@@ -41,6 +41,7 @@ import type { Scene } from '../types.js';
 export const MAX_DIALOG_SPEAKERS = 3;
 
 export type DialogPlanInput = {
+  omit_cards?: boolean;
   conversation_id?: string;
   scene: Scene;
   patch?: unknown;
@@ -157,6 +158,7 @@ export function planDialogBeat(input: DialogPlanInput): DialogPlan {
     header,
     info,
     pass_s: renderPassS({
+      omitCards: input.omit_cards,
       speakers,
       cast: input.cast,
       scene,

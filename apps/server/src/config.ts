@@ -21,6 +21,7 @@ export type AuthMode = 'tailscale' | 'token' | 'none';
 export const PROMPT_VERSION = '2026.08.22-r1+story+compact+roster+opening';
 
 export const config = {
+  partyContext: process.env.RPCHAT_PARTY_CONTEXT === '1',
   port: num('PORT', 8787),
   host: env('HOST', '127.0.0.1'),
   dataDir: path.resolve(env('DATA_DIR', './data')),

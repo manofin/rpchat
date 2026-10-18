@@ -129,6 +129,7 @@ function sceneLines(scene: Scene, header: string | null, confirmedState?: string
  * finished blocks.
  */
 export function renderPassN(input: {
+  partyContextBlock?: string | null;
   focusCard: PassCard | null;
   cast: CastMember[];
   scene: Scene;
@@ -153,7 +154,7 @@ export function renderPassN(input: {
   return [
     '너는 장면 서술자다. 이번 턴에 새로 달라진 것만 쓴다 — 인물의 행동·반응, 공간에서 바뀐 것, 주변 사람들의 기척. 어떤 인물의 대사도 쓰지 않는다.',
     '',
-    ...(input.focusCard ? [cardBlock(input.focusCard, '이번 턴의 중심 인물'), ''] : []),
+    ...(input.partyContextBlock != null ? [input.partyContextBlock, ''] : input.focusCard ? [cardBlock(input.focusCard, '이번 턴의 중심 인물'), ''] : []),
     '## 장면',
     ...sceneLines(input.scene, input.header, input.confirmedState),
     ...presentPeopleLines(input.cast, input.scene, userName),
@@ -219,6 +220,7 @@ function observationLabel(row: NarrationObservation): string {
  * was dialogue" instead of losing the turn (A-6).
  */
 export function renderPassF(input: {
+  partyContextBlock?: string | null;
   focusCard: PassCard;
   userName: string;
   userText: string;
@@ -233,7 +235,7 @@ export function renderPassF(input: {
   return [
     `너는 '${input.focusCard.name}' 한 명만 연기한다.`,
     '',
-    cardBlock(input.focusCard, '캐릭터'),
+    input.partyContextBlock ?? cardBlock(input.focusCard, '캐릭터'),
     '',
     '## 장면',
     ...sceneLines(input.scene, input.header, input.confirmedState),
@@ -268,6 +270,7 @@ export function renderPassF(input: {
  * not from the model deciding where a free desk is.
  */
 export function renderPassE(input: {
+  partyContextBlock?: string | null;
   card: PassCard;
   duty: string;
   focusName: string;
@@ -284,7 +287,7 @@ export function renderPassE(input: {
   return [
     `너는 '${input.card.name}' 한 명만 연기한다. 이번 턴에 끼어들 근거는 네 직무다: ${input.duty}.`,
     '',
-    cardBlock(input.card, '캐릭터'),
+    input.partyContextBlock ?? cardBlock(input.card, '캐릭터'),
     '',
     ...presentPeopleLines(input.cast, input.scene, input.userName),
     '',

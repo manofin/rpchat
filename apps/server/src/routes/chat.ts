@@ -26,7 +26,7 @@ import {
 } from '../prompt/composeBeat.js';
 import type { CastMember } from '../prompt/cast.js';
 import {
-  finishDialogBeat, planDialogBeat,
+  finishDialogBeat, planDialogBeat, MAX_DIALOG_SPEAKERS,
 } from '../prompt/composeDialog.js';
 import type { PartyTagRow } from '../prompt/tagsCatalog.js';
 import { catalogFromStory } from '../prompt/sceneCatalog.js';
@@ -45,7 +45,9 @@ import type { CharacterRow } from '../types.js';
 import { buildPrompt } from '../prompt/builder.js';
 import { loadStoryRoster, dialogPlanInput } from '../prompt/dialogContext.js';
 import { adventureStateIssue, INVALID_ADVENTURE_MESSAGE } from '../adventure/state.js';
-import { buildDialogPrompt } from '../prompt/dialogPrompt.js';
+import { buildDialogPrompt, DIALOG_MAX_TOKENS } from '../prompt/dialogPrompt.js';
+import { buildWireBlock, preparePartyContextWire, preflightWire, wirePresentIds, wireLog, wireOverflowBody,
+  PARTY_CONTEXT_SHARE, PartyContextOverflowError, type WireRequest } from '../prompt/partyContextWire.js';
 import { parseActorSupplement } from '../prompt/dialogActorSupplement.js';
 import { dialogSecretRules, segmentSecretViolations, type SecretSegment } from '../prompt/dialogSecretOutput.js';
 import { parseInjectInstruction, attachInjectToIcPass, type InjectContext } from '../prompt/injectContext.js';
@@ -657,6 +659,18 @@ export function chatRoutes(ctx: Ctx) {
       db, 'SELECT scene_catalog FROM stories WHERE id = ?', convNow.story_id,
     );
     const catalog = catalogFromStory(storyCatalogRow?.scene_catalog ?? '{}');
+    const wireSource = preparePartyContextWire(db, convNow, cast, resolvePersona(db, convNow)?.name || '나', config.partyContext);
+    const wireRequests: WireRequest[] = [];
+    try {
+      preflightWire(wireSource, 1, {
+        inputLimitTokens: Math.floor(icPromptBudget(Math.max(PASS_N_MAX_TOKENS, focusMaxTokens, AUX_MAX_TOKENS)) * PARTY_CONTEXT_SHARE),
+        outputReserveTokens: Math.max(PASS_N_MAX_TOKENS, focusMaxTokens, AUX_MAX_TOKENS), calibration: injectCal,
+      });
+    } catch (error) {
+      if (!(error instanceof PartyContextOverflowError)) throw error;
+      refuseBeforeGeneration(userMessage, conv);
+      return reply.code(422).send(wireOverflowBody(error));
+    }
     const baseVersion = currentSceneVersion(scene);
     const userText = userTextFrom(db, parentId, userMessage);
     const sourceUser = userMessage ?? (parentId ? one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', parentId) : undefined);
@@ -769,7 +783,24 @@ export function chatRoutes(ctx: Ctx) {
       ...storyFocusPlanFields(convNow),
     };
     planInput.narration_audience = observationEnabled ? actorAudience(planInput, GM) : PUBLIC;
-    const plan = planBeat(observationEnabled ? { ...planInput, observations: [] } : planInput);
+    let plan = planBeat(observationEnabled ? { ...planInput, observations: [] } : planInput);
+    if (wireSource) {
+      const presentIds = wirePresentIds(cast, plan.applied.state);
+      const blocks: Record<string, string> = {};
+      const add = (pass: string, key: string, allowed: string[], reserve: number) => {
+        const built = buildWireBlock(wireSource, allowed, presentIds, {
+          inputLimitTokens: Math.floor(icPromptBudget(reserve) * PARTY_CONTEXT_SHARE),
+          outputReserveTokens: reserve, calibration: injectCal,
+        });
+        blocks[key] = built.block;
+        wireRequests.push({ pass, diagnostics: built.diagnostics });
+      };
+      add('N', '__narration__', plan.focus.focus_id ? [plan.focus.focus_id] : [], PASS_N_MAX_TOKENS);
+      if (plan.focus.focus_id) add('F', plan.focus.focus_id, [plan.focus.focus_id], focusMaxTokens);
+      for (const extra of plan.approved_extras) add(`E:${extra.character_id}`, extra.character_id, [extra.character_id], AUX_MAX_TOKENS);
+      planInput.party_context_blocks = blocks;
+      plan = planBeat(observationEnabled ? { ...planInput, observations: [] } : planInput);
+    }
     planInput.focus_audience = observationEnabled && plan.focus.focus_id ? actorAudience(planInput, plan.focus.focus_id) : PUBLIC;
 
     // scene-commit-on-success (ADR-F9c §2): the applied scene is NOT written here.
@@ -1061,6 +1092,7 @@ export function chatRoutes(ctx: Ctx) {
         Date.now() - tBeat, 'beat', 'complete',
         JSON.stringify({
           ...turnTelemetryBudget(turn, { delta: passMs.delta, n: passMs.n, f: passMs.f, c: passMs.c }),
+          ...(wireSource ? { party_context: wireLog(wireRequests) } : {}),
           beat_log: {
             focus_id: plan.focus.focus_id,
             focus_reason: plan.focus.reason,
@@ -1171,6 +1203,11 @@ export function chatRoutes(ctx: Ctx) {
     }
     } catch (err) {
       if (!reply.raw.headersSent) {
+        if (err instanceof PartyContextOverflowError) {
+          refuseBeforeGeneration(userMessage, conv);
+          req.log.error({ code: err.code, conversationId: conv.id }, 'party context exceeded maximum preflight');
+          return reply.code(422).send(wireOverflowBody(err));
+        }
         const term = classifyTurnTermination(controller, err, turn.termination);
         turn.recordTerminal(term);
         const softStop = term === 'user_cancelled';
@@ -1243,6 +1280,18 @@ export function chatRoutes(ctx: Ctx) {
     const seed = lastUser?.parent_id ?? (lastUser ? null : parentId);
     const initialInput = dialogPlanInput(db, convNow, scene, userText, seed)!;
     const catalog = initialInput.catalog;
+    const wireSource = preparePartyContextWire(db, convNow, initialInput.cast, initialInput.user_name || '나', config.partyContext);
+    try {
+      const reserve = responseMaxTokens(JSON.parse(convNow.scene_json || '{}') as Scene, DIALOG_MAX_TOKENS);
+      preflightWire(wireSource, MAX_DIALOG_SPEAKERS, {
+        inputLimitTokens: Math.floor(Math.max(0, config.model.contextTokens - reserve - 64) * PARTY_CONTEXT_SHARE),
+        outputReserveTokens: reserve, calibration: getCalibration(db),
+      });
+    } catch (error) {
+      if (!(error instanceof PartyContextOverflowError)) throw error;
+      refuseBeforeGeneration(userMessage, conv);
+      return reply.code(422).send(wireOverflowBody(error));
+    }
     const preflight = buildDialogPrompt(db, convNow, history, planDialogBeat(initialInput).pass_s, userText,
       config.model.contextTokens, model, inject, scene);
     if (preflight.budget.instruction_overflow) {
@@ -1292,9 +1341,12 @@ export function chatRoutes(ctx: Ctx) {
     const clockCore: ClockObserveCore = heldClock.observe;
     patch = heldClock.patch ?? null;
 
-    const planInput = { ...initialInput, patch: patch ?? undefined };
+    const planInput = { ...initialInput, patch: patch ?? undefined, ...(wireSource ? { omit_cards: true } : {}) };
     const plan = planDialogBeat(planInput);
-    const built = buildDialogPrompt(db, convNow, history, plan.pass_s, userText, config.model.contextTokens, model, inject, plan.applied.state);
+    const built = buildDialogPrompt(db, convNow, history, plan.pass_s, userText, config.model.contextTokens, model, inject, plan.applied.state,
+      wireSource ? { source: wireSource, allowedIds: plan.speakers.map(sp => sp.id),
+        presentIds: wirePresentIds(planInput.cast, plan.applied.state),
+        legacyPassS: planDialogBeat({ ...planInput, omit_cards: false }).pass_s } : null);
     if (built.budget.instruction_overflow) {
       refuseBeforeGeneration(userMessage, conv);
       return reply.code(422).send({ error: formatInstructionOverflow(built.budget.instruction_overflow) });
@@ -1523,6 +1575,7 @@ export function chatRoutes(ctx: Ctx) {
         JSON.stringify({
           ...built.budget,
           ...turnTelemetryBudget(turn, { delta: passMs.delta, s: passMs.s }),
+          ...(wireSource && built.party_context_diagnostics ? { party_context: wireLog([{ pass: 'S', diagnostics: built.party_context_diagnostics }]) } : {}),
           dialog_log: {
             focus_id: plan.focus.focus_id,
             focus_reason: plan.focus.reason,
@@ -1613,6 +1666,11 @@ export function chatRoutes(ctx: Ctx) {
     }
     } catch (err) {
       if (!reply.raw.headersSent) {
+        if (err instanceof PartyContextOverflowError) {
+          refuseBeforeGeneration(userMessage, conv);
+          req.log.error({ code: err.code, conversationId: conv.id }, 'party context exceeded maximum preflight');
+          return reply.code(422).send(wireOverflowBody(err));
+        }
         const term = classifyTurnTermination(controller, err, turn.termination);
         turn.recordTerminal(term);
         const softStop = term === 'user_cancelled';

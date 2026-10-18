@@ -48,6 +48,7 @@ export type SpeakerSlot = {
  * in its own rule, and the user's voice is fenced off separately from the cast's.
  */
 export function renderPassS(input: {
+  omitCards?: boolean;
   speakers: SpeakerSlot[];
   cast: CastMember[];
   scene: Scene;
@@ -89,7 +90,7 @@ export function renderPassS(input: {
   return [
     '너는 이 장면의 서술자다. 아래 인물들이 등장하는 한 장면을 대본으로 쓴다.',
     '',
-    ...(cards.length ? ['## 등장인물', ...cards, ''] : []),
+    ...(!input.omitCards && cards.length ? ['## 등장인물', ...cards, ''] : []),
     '## 장면 (서버가 확정했다. 다시 출력하지 말 것)',
     ...(input.header ? [input.header] : []),
     ...(input.info ? [input.info] : []),

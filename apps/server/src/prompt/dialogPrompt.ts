@@ -22,6 +22,10 @@ import { extractChoices, renderPersona, renderProfileInstruction } from './templ
 import { sanitizeGeneratedContent } from '../contracts/chatEventAdapter.js';
 import { estimateMessageTokens, estimateTokens, getCalibration, truncateToTokens } from './tokens.js';
 
+import { buildWireBlock, PARTY_CONTEXT_SHARE, type WireSource } from './partyContextWire.js';
+
+export type DialogWireContext = { source: WireSource; allowedIds: string[]; presentIds: string[]; legacyPassS: string };
+
 export const DIALOG_MAX_TOKENS = 900;
 const REPLY_MARGIN = 64;
 const SHARE = { fixed: 0.25, lore: 0.15, memory: 0.15 };
@@ -59,7 +63,7 @@ export function dialogHistory(db: DB, history: MessageRow[], opts: { includePriv
 
 /** Pass S owns its output contract; only selection policy is shared with 1:1. */
 export function buildDialogPrompt(db: DB, conv: ConversationRow, history: MessageRow[], passS: string, userText: string,
-  contextTokens: number, model: string, inject: InjectContext = { instruction: null }, scene?: Scene) {
+  contextTokens: number, model: string, inject: InjectContext = { instruction: null }, scene?: Scene, wire?: DialogWireContext | null) {
   const profile = loadProfile(db, conv.profile_name);
   const responseScene = JSON.parse(conv.scene_json || '{}') as Scene;
   const maxTokens = responseMaxTokens(responseScene, DIALOG_MAX_TOKENS);
@@ -74,9 +78,11 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
   // Attach uses the existing party hook; final role/message overhead is counted below.
   const scoped = scene?.dialog_context !== undefined;
   if (scoped) passS += `\n\n${ACTOR_CONTEXT_RULES}`;
-  const mandatory = attachInjectToIcPass(passS, inject.instruction, {
+  // One attach family: the legacy S estimate below reuses this exact call (parameter keeps the passS name).
+  const attachMandatory = (passS: string) => attachInjectToIcPass(passS, inject.instruction, {
     promptTokenBudget: Number.MAX_SAFE_INTEGER, calibration: cal, profileInstruction: profileBlock,
   }).prompt;
+  const mandatory = attachMandatory(passS);
   const current: ChatMessage = { role: 'user', content: userText.trim() ? userText : '(장면을 이어서 진행한다.)' };
   const available = Math.max(0, contextTokens - maxTokens - REPLY_MARGIN);
   const mandatoryEst = estimateMessageTokens(mandatory, cal) + estimateMessageTokens(current.content, cal);
@@ -92,13 +98,16 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
   const staticPrefix = [personaText, noteText].filter(Boolean).join('\n\n');
   const storyRoom = Math.max(0, fixedCap - estimateTokens(staticPrefix, cal) - 4);
   const resolvedStory = resolveStory(conv);
+  const wired = wire ? buildWireBlock(wire.source, wire.allowedIds, wire.presentIds, {
+    inputLimitTokens: Math.floor(available * PARTY_CONTEXT_SHARE), outputReserveTokens: maxTokens, calibration: cal,
+  }) : null;
   let storyCap = storyRoom;
-  let story = computeStoryInjection(resolvedStory, storyCap, 0, cal, '', userName);
+  let story = wired ? null : computeStoryInjection(resolvedStory, storyCap, 0, cal, '', userName);
   while (story && story.estTokens > storyRoom && storyCap > 0) {
     storyCap = Math.max(0, storyCap - (story.estTokens - storyRoom));
     story = computeStoryInjection(resolvedStory, storyCap, 0, cal, '', userName);
   }
-  const storyText = story && story.estTokens <= storyRoom ? story.text : '';
+  const storyText = wired?.block ?? (story && story.estTokens <= storyRoom ? story.text : '');
   const staticText = [staticPrefix, storyText].filter(Boolean).join('\n\n');
   sections.push({ name: '페르소나+유저노트+스토리 설정', kind: 'story', est_tokens: estimateTokens(staticText, cal), budget: fixedCap,
     note: [personaText !== personaRaw ? '페르소나 절단' : '', noteRaw && !noteText ? '유저노트 제외' : '', story?.note ?? ''].filter(Boolean).join('; ') || undefined });
@@ -108,7 +117,21 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
   const scanHistory = currentRow ? [...filtered, { ...currentRow, content: userText }] : filtered;
   // The preview's synthetic row can match an old DB id; it is never branch provenance.
   const pathIds = promptPathIds(history);
-  const actorCap = scoped ? Math.floor(memoryCap / 2) : 0;
+  // S's duplicate card removal must not enlarge private packets; U2 is separate.
+  let privateMemoryCap = memoryCap;
+  if (wire && scoped) {
+    let legacy = wire.legacyPassS + responseLengthHint(responseScene);
+    if (confirmed) legacy += `
+
+${confirmed}`;
+    legacy += `
+
+${ACTOR_CONTEXT_RULES}`;
+    const legacyMandatory = attachMandatory(legacy);
+    const legacyEst = estimateMessageTokens(legacyMandatory, cal) + estimateMessageTokens(current.content, cal);
+    privateMemoryCap = Math.floor(Math.max(0, available - legacyEst - 16) * SHARE.memory);
+  }
+  const actorCap = scoped ? Math.floor(privateMemoryCap / 2) : 0;
   const actors = scoped ? loadStoryRoster(db, conv).map(({ id, name }) => ({ id, name })) : [];
   const assigned = scoped ? buildActorContext(db, conv, pathIds, scene!.dialog_context, actors, actorCap, cal) : null;
   const publicActorText = assigned ? renderPublicActorContext(assigned.packet) : '';
@@ -190,6 +213,7 @@ export function buildDialogPrompt(db: DB, conv: ConversationRow, history: Messag
     : null;
   return {
     messages, budget, profile, model, maxTokens, stop: [], isOoc: false as const,
+    ...(wired ? { party_context_diagnostics: wired.diagnostics } : {}),
     actor_requests: actorRequests,
     narrator_request: narratorRequest,
     ...(assigned ? { actor_context: assigned.packet } : {}),

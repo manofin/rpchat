@@ -44,6 +44,8 @@ import type { CastMember } from './cast.js';
 import type { Scene } from '../types.js';
 
 export type BeatPlanInput = {
+  /** N has a separate output reservation from the speaking passes. */
+  party_context_blocks?: Record<string, string> | null;
   /** Only used to seed ambient selection; absent is fine for an isolated plan. */
   conversation_id?: string;
   observation_enabled?: boolean;
@@ -272,6 +274,7 @@ export function planBeat(input: BeatPlanInput): BeatPlan {
     header,
     ui,
     pass_n: renderPassN({
+      partyContextBlock: input.party_context_blocks?.['__narration__'],
       confirmedState: renderAdventureState(scene.adventure),
       focusCard,
       cast: input.cast,
@@ -292,6 +295,7 @@ export function planBeat(input: BeatPlanInput): BeatPlan {
     }),
     pass_f: focusCard
       ? renderPassF({
+          partyContextBlock: input.party_context_blocks?.[focus.focus_id!],
           confirmedState: renderAdventureState(scene.adventure),
           focusCard,
           userName: userNameOf(input),
@@ -315,6 +319,7 @@ export function planBeat(input: BeatPlanInput): BeatPlan {
 export function passFWith(input: BeatPlanInput, plan: BeatPlan, narration: string): string | null {
   if (!plan.focus.focus_id) return null;
   return renderPassF({
+    partyContextBlock: input.party_context_blocks?.[plan.focus.focus_id],
     confirmedState: renderAdventureState(plan.applied.state.adventure),
     focusCard: cardFor(plan.focus.focus_id, input),
     userName: userNameOf(input),
@@ -356,6 +361,7 @@ export function planPassE(input: BeatPlanInput, plan: BeatPlan, narration: strin
     name: extra.name,
     duty: extra.duty,
     prompt: renderPassE({
+      partyContextBlock: input.party_context_blocks?.[extra.character_id],
       confirmedState: renderAdventureState(plan.applied.state.adventure),
       card: cardFor(extra.character_id, input),
       duty: extra.duty,
