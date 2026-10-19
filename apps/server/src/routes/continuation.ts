@@ -17,7 +17,7 @@ import { storyCastForGenerate } from '../prompt/composeBeat.js';
 import { previewDraftMessage } from '../prompt/promptHistory.js';
 import { attachInjectToIcPass } from '../prompt/injectContext.js';
 import { profileInstructionText } from '../prompt/promptPolicy.js';
-import { renderPassF, renderPassN } from '../prompt/passes.js';
+import { renderPassF, renderPassN, type NarrationObservation } from '../prompt/passes.js';
 import { renderProfileInstruction, renderScene } from '../prompt/templates.js';
 import { responseLengthHint, responseMaxTokens } from '../prompt/responseLength.js';
 import { estimateMessageTokens, getCalibration } from '../prompt/tokens.js';
@@ -95,18 +95,39 @@ export function buildContinuation(ctx: Ctx, conv: ConversationRow, history: Mess
   const maxTokens = responseMaxTokens(scene, 500);
   const available = config.model.contextTokens - maxTokens - 64;
   const eligible = enabled ? successfulObservationRows(history) : history;
-  const candidates = eligible.filter(row => row.id !== target.id).map(row => ({ row,
+  const candidates = eligible.filter(row => row.id !== target.id && (card ||
+    !['ui','header','panel','thought'].includes(parseMessageMeta(row.meta_json).block_kind ?? ''))).map(row => ({ row,
     text: project(observationText(row, enabled, observer), audienceOf(row), observer, enabled),
   })).filter(item => item.text.trim());
   const selected = [...candidates];
   const rawInstruction = profileInstructionText(profile);
   const userName = resolvePersona(db, conv)?.name || '나';
   const instruction = rawInstruction ? renderProfileInstruction(rawInstruction, '## 서술 지침', speaker?.name ?? '', userName) : null;
+  const sceneText = renderScene(scene);
+  const currentUserId = [...history].reverse().find(row => row.role === 'user')?.id;
+  const narrationObservation = (row: MessageRow, text: string): NarrationObservation => {
+    const audience = audienceOf(row);
+    const canReadBody = !enabled || audience?.visibility === 'public' ||
+      (audience?.visibility === 'private' && audience.recipient_ids.includes(GM));
+    // An observer receipt does not authorize the private speaker's identity.
+    if (!canReadBody) return { text, kind: 'unknown' };
+    const meta = parseMessageMeta(row.meta_json);
+    const kind = row.role === 'user' ? 'user' : meta.block_kind === 'narration' ? 'narration' :
+      meta.block_kind === 'line' ? 'dialogue' : 'unknown';
+    return { text, kind, speakerName: kind === 'dialogue'
+      ? meta.speaker_name || cast.find(c => c.id === meta.speaker_character_id)?.name : undefined };
+  };
   const render = (): string => {
-    const context = [renderScene(scene), ...selected.map(item => item.text)].filter(Boolean).join('\n\n');
+    const context = [sceneText, ...selected.map(item => item.text)].filter(Boolean).join('\n\n');
+    const currentInput = selected.find(item => item.row.id === currentUserId && narrationObservation(item.row, item.text).kind === 'user');
+    const targetObservation = narrationObservation(target, targetText);
     const core = card ? renderPassF({ focusCard: card, userName, userText: continuationInput, scene, header: null,
       narration: context, cast, contentPolicy: getSetting(db, 'content_policy', '') })
-      : renderPassN({ focusCard: null, cast, scene, header: null, userText: continuationInput, ambientNames: [], recentNarrations: [context] });
+      : renderPassN({ focusCard: null, cast, scene, header: null, userName, userText: currentInput?.text ?? '', ambientNames: [],
+        observations: [...selected.filter(item => item !== currentInput).map(item => narrationObservation(item.row, item.text)),
+          ...(targetObservation.kind === 'narration' ? [] : [targetObservation])],
+        recentNarrations: targetObservation.kind === 'narration' ? [targetText] : [],
+      }) + (sceneText ? `\n\n## 현재 장면 (서버 상태)\n${sceneText}` : '');
     return attachInjectToIcPass(core + responseLengthHint(scene) + `\n\n${CONTINUE}`, null, {
       promptTokenBudget: Number.MAX_SAFE_INTEGER, calibration: cal, profileInstruction: instruction,
     }).prompt;
