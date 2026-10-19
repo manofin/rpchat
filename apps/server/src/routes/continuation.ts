@@ -123,8 +123,11 @@ export function buildContinuation(ctx: Ctx, conv: ConversationRow, history: Mess
     const targetObservation = narrationObservation(target, targetText);
     const core = card ? renderPassF({ focusCard: card, userName, userText: continuationInput, scene, header: null,
       narration: context, cast, contentPolicy: getSetting(db, 'content_policy', '') })
-      : renderPassN({ focusCard: null, cast, scene, header: null, userName, userText: currentInput?.text ?? '', ambientNames: [],
-        observations: [...selected.filter(item => item !== currentInput).map(item => narrationObservation(item.row, item.text)),
+      // #78 note ①: the latest user input was answered by the target; keep it in its chronological
+      // place as already-answered history (never as 현재 사용자 발화).
+      : renderPassN({ focusCard: null, cast, scene, header: null, userName, userText: '', ambientNames: [], continuation: true,
+        observations: [...selected.map(item => item === currentInput
+          ? { ...narrationObservation(item.row, item.text), answeredInput: true } : narrationObservation(item.row, item.text)),
           ...(targetObservation.kind === 'narration' ? [] : [targetObservation])],
         recentNarrations: targetObservation.kind === 'narration' ? [targetText] : [],
       }) + (sceneText ? `\n\n## 현재 장면 (서버 상태)\n${sceneText}` : '');
