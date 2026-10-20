@@ -1,3 +1,4 @@
+import { PartyMetrics, type CallMetric, type CallStatus } from '../model/partyMetrics.js';
 import { classifyTurnTermination, generationFailure, PrivateValidationError, turnTerminationMessage, type GenerationFailureCode } from '../model/generationFailure.js';
 import type { GenerationPhase } from '../model/queue.js';
 import {
@@ -283,6 +284,19 @@ function turnTelemetryBudget(
   return { turn_deadline: turn.telemetry(stageMs) };
 }
 
+export function logPartyOverflowAfterDelta(
+  metrics: PartyMetrics | null,
+  log: (budget: Record<string, unknown>, reason: string) => void,
+  budget: Record<string, unknown>,
+): void {
+  if (metrics) log({ ...budget, party_metrics: metrics.finish('party_context_overflow') }, 'party_context_overflow');
+}
+
+function metricFailure(controller: AbortController, err: unknown, turn: TurnDeadline): CallStatus {
+  const term = classifyTurnTermination(controller, err, turn.termination);
+  return term === 'turn_deadline_exceeded' ? 'deadline' : term === 'user_cancelled' ? 'aborted' : 'error';
+}
+
 export function chatRoutes(ctx: Ctx) {
   const { db } = ctx;
 
@@ -318,7 +332,7 @@ export function chatRoutes(ctx: Ctx) {
     );
   };
 
-  function openSse(reply: FastifyReply): { send: (e: SseEvent) => void; close: () => void; isOpen: () => boolean } {
+  function openSse(reply: FastifyReply, metrics?: PartyMetrics | null): { send: (e: SseEvent) => void; close: () => void; isOpen: () => boolean } {
     reply.hijack();
     reply.raw.writeHead(200, {
       'content-type': 'text/event-stream; charset=utf-8',
@@ -334,7 +348,10 @@ export function chatRoutes(ctx: Ctx) {
     return {
       send: (e) => {
         if (e.type === 'progress' && reply.request.headers['x-rpchat-generation-progress'] !== '1') return;
-        if (open) reply.raw.write(`data: ${JSON.stringify(e)}\n\n`);
+        if (open) {
+          reply.raw.write(`data: ${JSON.stringify(e)}\n\n`);
+          if (metrics) notePartyOutput(metrics, e);
+        }
       },
       close: () => {
         if (open) {
@@ -698,6 +715,7 @@ export function chatRoutes(ctx: Ctx) {
     const sceneVersionAtAccept = currentSceneVersion(JSON.parse(convNow.scene_json || '{}') as Scene);
     ctx.queue.register({ id: generationId, conversationId: conv.id, messageId: '', startedAt: nowIso(), controller });
     const turn = attachTurnDeadline(ctx, generationId, controller);
+    const metrics = wireSource ? new PartyMetrics(turn.acceptedAtIso, () => turn.elapsedMs()) : null;
     const retractTurn = () => retractGeneration(conv, generationId, parentId, userMessage);
     try {
 
@@ -707,12 +725,15 @@ export function chatRoutes(ctx: Ctx) {
     let clockParse: ClockParseStatus = 'null';
     const passMs: { delta: number; n: number; f: number; e: number[]; c: number } = { delta: 0, n: 0, f: 0, e: [], c: 0 };
     const t0delta = Date.now();
+    let deltaMetric: CallMetric | undefined;
     try {
       // User cancel / turn deadline must reach the model call (partyGenerationLifecycle fence).
+      const deltaPrompt = renderSceneDeltaPrompt({ scene, catalog: { ...catalog, cast }, userText: project(userText, userAudience, GM, observationEnabled) });
+      deltaMetric = metrics?.start('delta', estimateMessageTokens(deltaPrompt, getCalibration(db)), SCENE_DELTA_MAX_TOKENS);
       const proposal = await ctx.queue.runGeneration(generationId, () =>
         ctx.model.complete({
           model,
-          messages: [{ role: 'user', content: renderSceneDeltaPrompt({ scene, catalog: { ...catalog, cast }, userText: project(userText, userAudience, GM, observationEnabled) }) }],
+          messages: [{ role: 'user', content: deltaPrompt }],
           temperature: 0.2,
           top_p: 0.9,
           max_tokens: SCENE_DELTA_MAX_TOKENS,
@@ -721,9 +742,11 @@ export function chatRoutes(ctx: Ctx) {
         }),
         controller.signal,
       );
+      if (metrics && deltaMetric) metrics.end(deltaMetric, proposal);
       patch = parseSceneDelta(proposal.text);
       clockParse = patch === null ? 'null' : 'ok';
     } catch (err) {
+      if (metrics && deltaMetric) metrics.fail(deltaMetric, metricFailure(controller, err, turn));
       // Let the outer pre-stream failure path reclaim and record the turn.
       if (controller.signal.aborted || isTurnDeadlineError(err)) throw err;
       clockParse = 'fail';
@@ -846,7 +869,7 @@ export function chatRoutes(ctx: Ctx) {
     };
 
     const profileName = convNow.profile_name;
-    const sse = openSse(reply);
+    const sse = openSse(reply, metrics);
     ctx.queue.watchProgress(generationId, g => sse.send({ type: 'progress', generationId, phase: g.phase!, startedAt: g.startedAt }));
 
     let head = parentId;
@@ -888,16 +911,21 @@ export function chatRoutes(ctx: Ctx) {
       // Pass N — narration, crowd, camera. Failure costs the block, not the turn.
       let narration = '';
       const tN = Date.now();
+      let nMetric: CallMetric | undefined;
       const nDeadline = withCallDeadline(PASS_N_TIMEOUT_MS, turn.remainingMs(), controller.signal);
       try {
+        const nPrompt = fitObservationPass(input => planBeat(input).pass_n, PASS_N_MAX_TOKENS, '');
+        nMetric = metrics?.start('N', estimateMessageTokens(nPrompt, injectCal), PASS_N_MAX_TOKENS);
         const out = await ctx.queue.runGeneration(generationId, () => ctx.model.complete({
-          model, messages: [{ role: 'user', content: fitObservationPass(input => planBeat(input).pass_n, PASS_N_MAX_TOKENS, '') }],
+          model, messages: [{ role: 'user', content: nPrompt }],
           temperature: 0.8, top_p: 0.95, max_tokens: PASS_N_MAX_TOKENS, stop: [],
           signal: nDeadline.signal,
         }), controller.signal);
         nDeadline.signal.throwIfAborted();
+        if (metrics && nMetric) metrics.end(nMetric, out);
         narration = sanitizeGeneratedContent(out.text).trim();
       } catch (err) {
+        if (metrics && nMetric) metrics.fail(nMetric, metricFailure(controller, err, turn));
         if (controller.signal.aborted) throw err;
         if (isTurnDeadlineError(err) || isTurnDeadlineError(nDeadline.signal.reason)) {
           turn.tripDeadline();
@@ -940,6 +968,7 @@ export function chatRoutes(ctx: Ctx) {
         const tF = Date.now();
         let lastPersist = Date.now();
         const fDeadline = turn.requiredCallDeadline(config.model.timeoutMs);
+        const fDeadlineMetric = metrics?.start('F', estimateMessageTokens(passF, injectCal), focusMaxTokens);
         try {
         const result = await ctx.queue.runGeneration(generationId, () => ctx.model.stream(
           {
@@ -956,8 +985,12 @@ export function chatRoutes(ctx: Ctx) {
             }
           },
         ), controller.signal);
+        if (metrics && fDeadlineMetric) metrics.end(fDeadlineMetric, result);
         passMs.f = Date.now() - tF;
         focusText = sanitizeGeneratedContent(result.text).trim();
+        } catch (err) {
+          if (metrics && fDeadlineMetric) metrics.fail(fDeadlineMetric, metricFailure(controller, err, turn));
+          throw err;
         } finally {
           fDeadline.done();
         }
@@ -967,17 +1000,22 @@ export function chatRoutes(ctx: Ctx) {
       const extraTexts: Record<string, string> = {};
       for (const e of planPassE(observationEnabled ? { ...planInput, observations: [] } : planInput, plan, narration, speechObservation(focusText, planInput.focus_audience, observationEnabled))) {
         const tE = Date.now();
+        let eMetric: CallMetric | undefined;
         const eDeadline = withCallDeadline(config.model.timeoutMs, turn.remainingMs(), controller.signal);
         try {
+          const ePrompt = fitObservationPass(input => planPassE(input, plan, narration, speechObservation(focusText, input.focus_audience, observationEnabled)).find(item => item.character_id === e.character_id)!.prompt, AUX_MAX_TOKENS, e.name, e.character_id);
+          eMetric = metrics?.start('E:' + e.character_id, estimateMessageTokens(ePrompt, injectCal), AUX_MAX_TOKENS);
           const out = await ctx.queue.runGeneration(generationId, () => ctx.model.complete({
-            model, messages: [{ role: 'user', content: fitObservationPass(input => planPassE(input, plan, narration, speechObservation(focusText, input.focus_audience, observationEnabled)).find(item => item.character_id === e.character_id)!.prompt, AUX_MAX_TOKENS, e.name, e.character_id) }],
+            model, messages: [{ role: 'user', content: ePrompt }],
             temperature: 0.85, top_p: 0.95, max_tokens: AUX_MAX_TOKENS, stop: [],
             signal: eDeadline.signal,
           }), controller.signal);
           eDeadline.signal.throwIfAborted();
+          if (metrics && eMetric) metrics.end(eMetric, out);
           const text = sanitizeGeneratedContent(out.text).trim();
           if (text) extraTexts[e.character_id] = text;
         } catch (err) {
+          if (metrics && eMetric) metrics.fail(eMetric, metricFailure(controller, err, turn));
           if (controller.signal.aborted) throw err;
           if (isTurnDeadlineError(err) || isTurnDeadlineError(eDeadline.signal.reason)) {
             turn.tripDeadline();
@@ -1026,17 +1064,22 @@ export function chatRoutes(ctx: Ctx) {
       // choices failure costs the chips, never the turn.
       let choices: string[] | null = null;
       const tC = Date.now();
+      let cMetric: CallMetric | undefined;
       const cDeadline = withCallDeadline(PASS_C_TIMEOUT_MS, turn.remainingMs(), controller.signal);
       try {
+        const cPrompt = passCWith(planInput, finished);
+        cMetric = metrics?.start('C', estimateMessageTokens(cPrompt, injectCal), PASS_C_MAX_TOKENS);
         const out = await ctx.queue.runGeneration(generationId, () => ctx.model.complete({
           model,
-          messages: [{ role: 'user', content: passCWith(planInput, finished) }],
+          messages: [{ role: 'user', content: cPrompt }],
           temperature: 0.9, top_p: 0.95, max_tokens: PASS_C_MAX_TOKENS, stop: [],
           signal: cDeadline.signal,
         }), controller.signal);
         cDeadline.signal.throwIfAborted();
+        if (metrics && cMetric) metrics.end(cMetric, out);
         choices = parseChoicesPass(out.text);
       } catch (err) {
+        if (metrics && cMetric) metrics.fail(cMetric, metricFailure(controller, err, turn));
         // Deliberately no `if (aborted) throw` here, unlike Pass N and Pass E. Those
         // run while the turn is still being written, so an abort there really is an
         // interrupted turn. By Pass C every block is persisted and on screen, and
@@ -1116,6 +1159,7 @@ export function chatRoutes(ctx: Ctx) {
             clock_observe: sealClockObserve(clockCore, 'beat', scene, convNow, regenTurnStartId, 'success', plan.applied.discarded),
           },
           ...icInstruction.logField,
+          ...(metrics ? { party_metrics: metrics.finish('completed') } : {}),
         }),
         nowIso(),
       );
@@ -1195,7 +1239,7 @@ export function chatRoutes(ctx: Ctx) {
         conv.id, focusRow?.id ?? emitted[emitted.length - 1]?.id ?? userMessage?.id,
         profileName, softStop ? 'interrupt' : 'fail', Date.now() - tBeat,
         sealClockObserve(clockCore, 'beat', scene, convNow, regenTurnStartId, softStop ? 'interrupt' : 'fail', plan.applied.discarded),
-        turnTelemetryBudget(turn, { delta: passMs.delta, n: passMs.n, f: passMs.f, c: passMs.c }),
+        { ...turnTelemetryBudget(turn, { delta: passMs.delta, n: passMs.n, f: passMs.f, c: passMs.c }), ...(metrics ? { party_metrics: metrics.finish(term) } : {}) },
         term,
       );
     } finally {
@@ -1204,6 +1248,10 @@ export function chatRoutes(ctx: Ctx) {
     } catch (err) {
       if (!reply.raw.headersSent) {
         if (err instanceof PartyContextOverflowError) {
+          logPartyOverflowAfterDelta(metrics, (budget, reason) => logClockObserve(
+            conv.id, null, convNow.profile_name, 'fail', turn.elapsedMs(),
+            sealClockObserve(holdClockProposal(null, userText, 'fail').observe, 'beat', scene, convNow,
+              regenTurnStartId, 'fail', true), budget, reason), turnTelemetryBudget(turn));
           refuseBeforeGeneration(userMessage, conv);
           req.log.error({ code: err.code, conversationId: conv.id }, 'party context exceeded maximum preflight');
           return reply.code(422).send(wireOverflowBody(err));
@@ -1215,7 +1263,7 @@ export function chatRoutes(ctx: Ctx) {
         const failure = resolveTurnFail(term, err);
         logClockObserve(conv.id, null, convNow.profile_name, softStop ? 'interrupt' : 'fail', turn.elapsedMs(),
           sealClockObserve(holdClockProposal(null, userText, 'fail').observe, 'beat', scene, convNow,
-            regenTurnStartId, softStop ? 'interrupt' : 'fail', true), turnTelemetryBudget(turn), term);
+            regenTurnStartId, softStop ? 'interrupt' : 'fail', true), { ...turnTelemetryBudget(turn), ...(metrics ? { party_metrics: metrics.finish(term) } : {}) }, term);
         return reply.code(softStop ? 499 : term === 'turn_deadline_exceeded' || term === 'model_timeout' ? 504 : 500)
           .send({ error: failure.message, code: failure.failCode });
       }
@@ -1239,6 +1287,12 @@ export function chatRoutes(ctx: Ctx) {
    *   delta   → scene unchanged, turn continues
    *   Pass S  → status='error', same as Pass F on the beat path
    */
+  function notePartyOutput(metrics: PartyMetrics, e: SseEvent): void {
+    if ((e.type === 'token' && e.text.length > 0) ||
+      (e.type === 'aux' && e.message.role !== 'user' &&
+        ['narration', 'line', 'thought'].includes(e.message.meta?.block_kind ?? ''))) metrics.output();
+  }
+
   async function generateDialog(
     req: FastifyRequest,
     reply: FastifyReply,
@@ -1305,6 +1359,7 @@ export function chatRoutes(ctx: Ctx) {
     const sceneVersionAtAccept = currentSceneVersion(JSON.parse(convNow.scene_json || '{}') as Scene);
     ctx.queue.register({ id: generationId, conversationId: conv.id, messageId: '', startedAt: nowIso(), controller });
     const turn = attachTurnDeadline(ctx, generationId, controller);
+    const metrics = wireSource ? new PartyMetrics(turn.acceptedAtIso, () => turn.elapsedMs()) : null;
     const retractTurn = () => retractGeneration(conv, generationId, parentId, userMessage);
     try {
 
@@ -1313,12 +1368,15 @@ export function chatRoutes(ctx: Ctx) {
     let clockParse: ClockParseStatus = 'null';
     const passMs: { delta: number; s: number } = { delta: 0, s: 0 };
     const t0delta = Date.now();
+    let deltaMetric: CallMetric | undefined;
     try {
       // User cancel / turn deadline must reach the model call (partyGenerationLifecycle fence).
+      const deltaPrompt = renderSceneDeltaPrompt({ scene, catalog: { ...catalog, cast }, userText });
+      deltaMetric = metrics?.start('delta', estimateMessageTokens(deltaPrompt, getCalibration(db)), SCENE_DELTA_MAX_TOKENS);
       const proposal = await ctx.queue.runGeneration(generationId, () =>
         ctx.model.complete({
           model,
-          messages: [{ role: 'user', content: renderSceneDeltaPrompt({ scene, catalog: { ...catalog, cast }, userText }) }],
+          messages: [{ role: 'user', content: deltaPrompt }],
           temperature: 0.2,
           top_p: 0.9,
           max_tokens: SCENE_DELTA_MAX_TOKENS,
@@ -1327,9 +1385,11 @@ export function chatRoutes(ctx: Ctx) {
         }),
         controller.signal,
       );
+      if (metrics && deltaMetric) metrics.end(deltaMetric, proposal);
       patch = parseSceneDelta(proposal.text);
       clockParse = patch === null ? 'null' : 'ok';
     } catch (err) {
+      if (metrics && deltaMetric) metrics.fail(deltaMetric, metricFailure(controller, err, turn));
       // Let the outer pre-stream failure path reclaim and record the turn.
       if (controller.signal.aborted || isTurnDeadlineError(err)) throw err;
       clockParse = 'fail';
@@ -1360,7 +1420,7 @@ export function chatRoutes(ctx: Ctx) {
 
     const secretRules = dialogSecretRules(db, convNow, history, plan.applied.state);
     const profileName = convNow.profile_name;
-    const sse = openSse(reply);
+    const sse = openSse(reply, metrics);
     ctx.queue.watchProgress(generationId, g => sse.send({ type: 'progress', generationId, phase: g.phase!, startedAt: g.startedAt }));
 
     let head = parentId;
@@ -1420,7 +1480,8 @@ export function chatRoutes(ctx: Ctx) {
       let lastPersist = Date.now();
       const sDeadline = turn.requiredCallDeadline(config.model.timeoutMs);
       let result;
-      try {
+      const sDeadlineMetric = metrics?.start('S', built.messages.reduce((n, m) => n + estimateMessageTokens(m.content, getCalibration(db)), 0), built.maxTokens);
+        try {
       result = await ctx.queue.runGeneration(generationId, () => ctx.model.stream(
         {
           model, messages: built.messages,
@@ -1439,7 +1500,11 @@ export function chatRoutes(ctx: Ctx) {
           }
         },
       ), controller.signal);
-      } finally {
+        if (metrics && sDeadlineMetric) metrics.end(sDeadlineMetric, result);
+      } catch (err) {
+          if (metrics && sDeadlineMetric) metrics.fail(sDeadlineMetric, metricFailure(controller, err, turn));
+          throw err;
+        } finally {
         sDeadline.done();
       }
       const supplements: Array<{ audience: SecretSegment['audience']; text: string; observation: { visibility: 'private'; recipient_ids: string[]; observer_ids: string[] } }> = [];
@@ -1452,6 +1517,7 @@ export function chatRoutes(ctx: Ctx) {
       for (const scoped of scopedRequests) {
         const scopedDeadline = turn.requiredCallDeadline(config.model.timeoutMs);
         let scopedResult;
+        const scopedDeadlineMetric = metrics?.start('scoped:' + (scoped.audience.kind === 'actor' ? scoped.audience.actor_id : 'narrator'), scoped.messages.reduce((n, m) => n + estimateMessageTokens(m.content, getCalibration(db)), 0), scoped.maxTokens);
         try {
         scopedResult = await ctx.queue.runGeneration(generationId, () => ctx.model.stream(
           {
@@ -1466,6 +1532,10 @@ export function chatRoutes(ctx: Ctx) {
           },
           () => {},
         ), controller.signal);
+        if (metrics && scopedDeadlineMetric) metrics.end(scopedDeadlineMetric, scopedResult);
+        } catch (err) {
+          if (metrics && scopedDeadlineMetric) metrics.fail(scopedDeadlineMetric, metricFailure(controller, err, turn));
+          throw err;
         } finally {
           scopedDeadline.done();
         }
@@ -1594,6 +1664,7 @@ export function chatRoutes(ctx: Ctx) {
             clock_observe: sealClockObserve(clockCore, 'dialog', scene, convNow, regenTurnStartId, 'success', plan.applied.discarded),
           },
           ...icInstruction.logField,
+          ...(metrics ? { party_metrics: metrics.finish('completed') } : {}),
         }),
         nowIso(),
       );
@@ -1658,7 +1729,7 @@ export function chatRoutes(ctx: Ctx) {
         conv.id, scriptRow?.id ?? emitted[emitted.length - 1]?.id ?? userMessage?.id,
         profileName, softStop ? 'interrupt' : 'fail', Date.now() - tBeat,
         sealClockObserve(clockCore, 'dialog', scene, convNow, regenTurnStartId, softStop ? 'interrupt' : 'fail', plan.applied.discarded),
-        turnTelemetryBudget(turn, { delta: passMs.delta, s: passMs.s }),
+        { ...turnTelemetryBudget(turn, { delta: passMs.delta, s: passMs.s }), ...(metrics ? { party_metrics: metrics.finish(term) } : {}) },
         term,
       );
     } finally {
@@ -1667,6 +1738,10 @@ export function chatRoutes(ctx: Ctx) {
     } catch (err) {
       if (!reply.raw.headersSent) {
         if (err instanceof PartyContextOverflowError) {
+          logPartyOverflowAfterDelta(metrics, (budget, reason) => logClockObserve(
+            conv.id, null, convNow.profile_name, 'fail', turn.elapsedMs(),
+            sealClockObserve(holdClockProposal(null, userText, 'fail').observe, 'dialog', scene, convNow,
+              regenTurnStartId, 'fail', true), budget, reason), turnTelemetryBudget(turn));
           refuseBeforeGeneration(userMessage, conv);
           req.log.error({ code: err.code, conversationId: conv.id }, 'party context exceeded maximum preflight');
           return reply.code(422).send(wireOverflowBody(err));
@@ -1678,7 +1753,7 @@ export function chatRoutes(ctx: Ctx) {
         const failure = resolveTurnFail(term, err);
         logClockObserve(conv.id, null, convNow.profile_name, softStop ? 'interrupt' : 'fail', turn.elapsedMs(),
           sealClockObserve(holdClockProposal(null, userText, 'fail').observe, 'dialog', scene, convNow,
-            regenTurnStartId, softStop ? 'interrupt' : 'fail', true), turnTelemetryBudget(turn), term);
+            regenTurnStartId, softStop ? 'interrupt' : 'fail', true), { ...turnTelemetryBudget(turn), ...(metrics ? { party_metrics: metrics.finish(term) } : {}) }, term);
         return reply.code(softStop ? 499 : term === 'turn_deadline_exceeded' || term === 'model_timeout' ? 504 : 500)
           .send({ error: failure.message, code: failure.failCode });
       }
