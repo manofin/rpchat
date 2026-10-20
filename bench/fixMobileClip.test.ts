@@ -9,6 +9,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
 import ts from 'typescript';
 
 let passed = 0;
@@ -111,26 +112,93 @@ t('overflow-y / --app-height / visualViewport / keyboard paths stay locked', () 
     'viewport.ts must be untouched',
   );
   assert.match(src('apps/web/src/lib/viewport.ts'), /visualViewport/);
-  function scrollKeyboardNodes(text: string): string[] {
+  function scrollKeyboardNodes(text: string) {
     const file = ts.createSourceFile('ChatPage.tsx', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
     const printer = ts.createPrinter({ removeComments: true });
     const nodes: string[] = [];
+    let jumpEffect: ts.CallExpression | undefined;
     function visit(node: ts.Node) {
       const named = (ts.isFunctionDeclaration(node) || ts.isVariableDeclaration(node))
         && node.name && ['onScroll', 'grow', 'scrollRef', 'taRef', 'stickyRef'].includes(node.name.getText(file));
       const effect = ts.isCallExpression(node)
         && ['useEffect', 'useLayoutEffect'].includes(node.expression.getText(file))
         && /scrollRef|stickyRef|visualViewport|^grow$/.test(node.arguments[0]?.getText(file) ?? '');
-      if (named || effect) nodes.push(printer.printNode(ts.EmitHint.Unspecified, node, file));
+      if (effect && /\bjump\b/.test(node.arguments[0]?.getText(file) ?? '')) {
+        assert.equal(jumpEffect, undefined, 'exactly one message jump effect must be guarded');
+        jumpEffect = node;
+      } else if (named || effect) nodes.push(printer.printNode(ts.EmitHint.Unspecified, node, file));
       ts.forEachChild(node, visit);
     }
     visit(file);
-    assert.equal(nodes.length, 9, 'all refs, scroll/grow functions and four effects must stay guarded');
-    return nodes;
+    assert.equal(nodes.length, 8, 'all refs, scroll/grow functions and the three unchanged effects must stay guarded');
+    assert.ok(jumpEffect, 'message jump effect must remain present');
+    return { nodes, callback: jumpEffect.arguments[0].getText(file), dependencies: jumpEffect.arguments[1].getText(file) };
   }
   const basePage = execFileSync('git', ['show', 'origin/master:apps/web/src/pages/ChatPage.tsx'], { cwd: appRoot, encoding: 'utf8' });
   const page = src('apps/web/src/pages/ChatPage.tsx');
-  assert.deepEqual(scrollKeyboardNodes(page), scrollKeyboardNodes(basePage), 'scroll/keyboard functions and effects must remain identical');
+  const current = scrollKeyboardNodes(page);
+  assert.deepEqual(current.nodes, scrollKeyboardNodes(basePage).nodes, 'unrelated scroll/keyboard functions and effects must remain identical');
+  // The source-preview change deliberately extends only the jump effect.
+  // Execute its actual callback: existing-message scrolling remains protected.
+  function jumpRun(jump: string | null, loading: boolean, visible: boolean, messages: unknown[] = []) {
+    const source: Array<string | null> = [];
+    const scroll: unknown[] = [];
+    const classes: string[] = [];
+    const routes: unknown[] = [];
+    const timers: Array<{ fn: () => void; ms: number }> = [];
+    const lookups: string[] = [];
+    const stickyRef = { current: true };
+    const element = {
+      scrollIntoView: (options: unknown) => scroll.push(options),
+      classList: { add: (name: string) => classes.push(`add:${name}`), remove: (name: string) => classes.push(`remove:${name}`) },
+    };
+    const context = {
+      jump, chat: { loading, messages }, id: 'room', stickyRef,
+      document: { getElementById: (id: string) => { lookups.push(id); return visible ? element : null; } },
+      setSourceMessageId: (id: string | null) => source.push(id),
+      setTimeout: (fn: () => void, ms: number) => { timers.push({ fn, ms }); return timers.length; },
+      navigate: (...args: unknown[]) => routes.push(args),
+      window: { location: { pathname: '/chat/room' } },
+      post: () => assert.fail('source lookup must not write or switch branches'),
+      patch: () => assert.fail('source lookup must not write or switch branches'),
+    };
+    const code = ts.transpileModule(`const callback = ${current.callback}; callback();`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
+    vm.runInNewContext(code, context);
+    return { source, scroll, classes, routes, timers, lookups, stickyRef };
+  }
+  const active = jumpRun('message', false, true, [{}]);
+  assert.deepEqual(active.source, [null]);
+  assert.deepEqual(active.lookups, ['msg-message']);
+  assert.equal(active.stickyRef.current, false);
+  assert.equal(JSON.stringify(active.scroll), '[{"block":"center"}]');
+  assert.deepEqual(active.classes, ['add:jump-flash']);
+  assert.equal(JSON.stringify(active.routes), '[["/chat/room",{"replace":true}]]');
+  assert.equal(active.timers.length, 1);
+  assert.equal(active.timers[0].ms, 1600);
+  active.timers[0].fn();
+  assert.deepEqual(active.classes, ['add:jump-flash', 'remove:jump-flash']);
+  for (const messages of [[], [{}]]) {
+    const missing = jumpRun('other-branch', false, false, messages);
+    assert.deepEqual(missing.source, ['other-branch']);
+    assert.deepEqual(missing.scroll, []);
+    assert.deepEqual(missing.routes, []);
+    assert.equal(missing.stickyRef.current, true);
+  }
+  const loading = jumpRun('message', true, true, [{}]);
+  assert.deepEqual(loading.lookups, []);
+  assert.deepEqual(loading.source, []);
+  const cleared = jumpRun(null, false, false);
+  assert.deepEqual(cleared.source, [null]);
+  assert.deepEqual(cleared.lookups, []);
+  function dependencies(messages: unknown[], id: string) {
+    return vm.runInNewContext(current.dependencies, { jump: 'message', chat: { loading: false, messages }, id }) as unknown[];
+  }
+  const firstMessages = [{}];
+  const before = dependencies(firstMessages, 'room-a');
+  const switched = dependencies([{}], 'room-a');
+  const otherRoom = dependencies(firstMessages, 'room-b');
+  assert.ok(before.some((value, i) => !Object.is(value, switched[i])), 'same-length branch replacement must rerun source lookup');
+  assert.ok(before.some((value, i) => !Object.is(value, otherRoom[i])), 'changing rooms must rerun source lookup');
   assert.match(page, /ref=\{scrollRef\} onScroll=\{onScroll\}/);
   assert.match(page, /ref=\{taRef\}/);
 });

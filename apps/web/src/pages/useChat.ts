@@ -125,10 +125,9 @@ export function useChat(conversationId: string) {
     try {
       await streamPost(path, body, (event) => {
         if (scopeRef.current !== scope || abortRef.current !== ctrl) return;
-        // The committed turn snapshot is stamped after its INFO row was streamed.
-        if (event.type === 'done' && event.message.status === 'complete'
-          && (state.detail?.conversation.mode === 'story' || state.detail?.conversation.scene.format === 'beat'
-            || state.detail?.conversation.scene.format === 'dialog')) resync = true;
+        // The server head may be an internal row absent from the visible stream.
+        // Reload after EOF to read the final head and committed scene together.
+        if (event.type === 'done' && event.message.status === 'complete') resync = true;
         if (event.type === 'error') {
           failed = true;
           requestError = event.message;
@@ -235,10 +234,19 @@ export function useChat(conversationId: string) {
   }, [scope]);
 
   const deleteMessage = useCallback(async (messageId: string) => {
+    if (scopeRef.current !== scope) return;
+    const revision = scope.revision;
     const r = await del<{ messages: Message[] }>(`/api/messages/${messageId}`);
+    if (scopeRef.current !== scope) return;
+    if (scope.revision !== revision) {
+      // A newer stream owns its snapshot and will reload at completion.
+      if (!abortRef.current) await reload();
+      return;
+    }
     scope.revision++;
     patchState({ messages: r.messages });
-  }, [patchState, scope]);
+    await reload();
+  }, [patchState, reload, scope]);
 
   const toggleBookmark = useCallback(async (messageId: string, val: boolean) => {
     const updated = await patch<Message>(`/api/messages/${messageId}`, { bookmarked: val });

@@ -410,6 +410,8 @@ export interface Summary {
   tier?: 'scene' | 'episode' | 'whole' | 'state';
   status: 'draft' | 'approved';
   created_at: string;
+  branch_scope?: 'current' | 'other' | 'unlinked';
+  branch_head_id?: string | null;
 }
 
 export interface ModelProfile {

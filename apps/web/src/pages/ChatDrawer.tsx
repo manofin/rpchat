@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
-import { del, get, patch, post } from '../lib/api';
+import { useEffect, useRef, useState } from 'react';
+import { api, del, get, patch, post } from '../lib/api';
 import { navigate } from '../lib/router';
 import { readShortcuts, resolveShortcutSubmit } from '../lib/shortcutMacro';
-import { currentApprovedState, diffWords, priorApprovedWhole } from '../lib/summaryDiff';
-import type { BudgetReport, Memory, PromptPreview, Summary } from '../types';
+import { currentApprovedState, diffWords, priorApprovedWhole, summaryBranchLabel } from '../lib/summaryDiff';
+import { useSummaryRows } from '../lib/useSummaryRows';
+import type { BudgetReport, Memory, Message, PromptPreview, Summary } from '../types';
 import { BottomSheet, useUi } from '../components/ui';
+import { MessageSourcePreview } from '../components/MessageSourcePreview';
 
 function DiffText({ before, after }: { before: string; after: string }) {
   const segments = diffWords(before, after);
@@ -21,7 +23,8 @@ function DiffText({ before, after }: { before: string; after: string }) {
 
 type Tab = 'budget' | 'memory' | 'summary';
 
-export function ChatDrawer({ open, conversationId, draft, onClose, onApplied, initialTab }: { open: boolean; conversationId: string; draft: string; onClose: () => void; onApplied: () => void; initialTab?: Tab }) {
+export function ChatDrawer({ open, conversationId, draft, onClose, onApplied, initialTab, headMessageId, revision = 0 }: { open: boolean; conversationId: string; draft: string; onClose: () => void; onApplied: () => void; initialTab?: Tab; headMessageId?: string | null; revision?: string | number }) {
+  const viewKey = JSON.stringify([conversationId, headMessageId]);
   const [tab, setTab] = useState<Tab>(initialTab ?? 'budget');
   useEffect(() => {
     if (open && initialTab) setTab(initialTab);
@@ -34,15 +37,15 @@ export function ChatDrawer({ open, conversationId, draft, onClose, onApplied, in
         <button className={tab === 'summary' ? 'active' : ''} onClick={() => setTab('summary')}>요약</button>
       </div>
       <div className="sheet-body">
-        {tab === 'budget' && <BudgetTab conversationId={conversationId} draft={draft} open={open} />}
-        {tab === 'memory' && <MemoryTab conversationId={conversationId} open={open} onApplied={onApplied} onClose={onClose} />}
-        {tab === 'summary' && <SummaryTab conversationId={conversationId} open={open} onApplied={onApplied} onClose={onClose} />}
+        {tab === 'budget' && <BudgetTab key={viewKey} revision={revision} conversationId={conversationId} draft={draft} open={open} />}
+        {tab === 'memory' && <MemoryTab key={viewKey} revision={revision} conversationId={conversationId} open={open} onApplied={onApplied} onClose={onClose} />}
+        {tab === 'summary' && <SummaryTab key={viewKey} headMessageId={headMessageId} revision={revision} conversationId={conversationId} open={open} onApplied={onApplied} onClose={onClose} />}
       </div>
     </BottomSheet>
   );
 }
 
-function BudgetTab({ conversationId, draft, open }: { conversationId: string; draft: string; open: boolean }) {
+function BudgetTab({ conversationId, draft, open, revision }: { conversationId: string; draft: string; open: boolean; revision?: string | number }) {
   const [preview, setPreview] = useState<PromptPreview | null>(null);
   const [showRaw, setShowRaw] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -60,7 +63,7 @@ function BudgetTab({ conversationId, draft, open }: { conversationId: string; dr
     get<PromptPreview>(`/api/conversations/${conversationId}/prompt-preview${q}`)
       .then((p) => { if (active) setPreview(p); }).catch((e) => { if (active) setErr((e as Error).message); });
     return () => { active = false; };
-  }, [open, conversationId, draft]);
+  }, [open, conversationId, draft, revision]);
 
   if (err) return <div className="banner err">{err}</div>;
   if (!preview) return <div className="muted small">계산 중…</div>;
@@ -185,27 +188,56 @@ function DebugList({ label, items, empty }: { label: string; items: string[]; em
   );
 }
 
-export function MemoryTab({ conversationId, open, onApplied, onClose }: { conversationId: string; open: boolean; onApplied: () => void; onClose: () => void }) {
+export function MemoryTab({ conversationId, open, onApplied, onClose, revision }: { conversationId: string; open: boolean; onApplied: () => void; onClose: () => void; revision?: string | number }) {
   const ui = useUi();
   const [pinned, setPinned] = useState<Memory[]>([]);
   const [candidates, setCandidates] = useState<Memory[]>([]);
   const [text, setText] = useState('');
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [source, setSource] = useState<{ conversationId: string; messageId: string } | null>(null);
+  const [sourceError, setSourceError] = useState<string | null>(null);
+  const sourceRequest = useRef<AbortController | null>(null);
 
-  function jumpToEvidence(m: Memory) {
+  async function jumpToEvidence(m: Memory) {
     const eid = m.evidence_message_ids?.[0];
     if (!eid) return;
-    // SearchPage 와 동일 패턴. 같은 대화에선 pathname 불변이라 popstate 만으로는 ChatPage 가 안 다시 그린다 — onClose 가 리렌더를 만든다.
-    navigate(`/chat/${conversationId}?jump=${eid}`);
-    onClose();
+    sourceRequest.current?.abort();
+    const controller = new AbortController();
+    sourceRequest.current = controller;
+    setSourceError(null);
+    try {
+      const message = await api<Message>(`/api/messages/${encodeURIComponent(eid)}`, { signal: controller.signal });
+      if (controller.signal.aborted) return;
+      setSource({ conversationId: message.conversation_id, messageId: message.id });
+    } catch (error) {
+      if (!controller.signal.aborted) setSourceError(error instanceof Error ? error.message : '원문을 불러오지 못했습니다.');
+    }
   }
+  useEffect(() => {
+    setSource(null); setSourceError(null);
+    return () => { sourceRequest.current?.abort(); };
+  }, [conversationId, open]);
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const memoryRequest = useRef<AbortController | null>(null);
   async function load() {
-    const r = await get<{ pinned: Memory[]; candidates: Memory[] }>(`/api/conversations/${conversationId}/memories`);
-    setPinned(r.pinned);
-    setCandidates(r.candidates);
+    memoryRequest.current?.abort();
+    const controller = new AbortController();
+    memoryRequest.current = controller;
+    setLoadError(null);
+    try {
+      const r = await api<{ pinned: Memory[]; candidates: Memory[] }>(`/api/conversations/${conversationId}/memories`, { signal: controller.signal });
+      if (controller.signal.aborted) return;
+      setPinned(r.pinned);
+      setCandidates(r.candidates);
+    } catch (e) {
+      if (!controller.signal.aborted) setLoadError((e as Error).message);
+    }
   }
-  useEffect(() => { if (open) load(); }, [open, conversationId]);
+  useEffect(() => {
+    if (open) void load();
+    return () => { memoryRequest.current?.abort(); };
+  }, [open, conversationId, revision]);
 
   async function setStatus(id: string, status: 'pinned' | 'rejected') {
     if (status === 'pinned') {
@@ -273,6 +305,9 @@ export function MemoryTab({ conversationId, open, onApplied, onClose }: { conver
 
   return (
     <div>
+      {sourceError && <div className="banner err" role="alert">{sourceError}</div>}
+      <MessageSourcePreview conversationId={source?.conversationId ?? conversationId} messageId={source?.messageId ?? null} onClose={() => setSource(null)} />
+      {loadError && <div className="banner err" role="alert">{loadError}<button className="btn sm" onClick={() => void load()}>다시 불러오기</button></div>}
       <div className="row" style={{ marginBottom: 10 }}>
         <input value={text} onChange={(e) => setText(e.target.value)} placeholder="기억할 사실을 직접 추가" onKeyDown={(e) => e.key === 'Enter' && add()} style={{ flex: 1, background: 'var(--bg-2)', border: '1px solid var(--bg-3)', borderRadius: 10, padding: '9px 12px', minHeight: 40 }} />
         <button className="btn sm primary" onClick={add}>추가</button>
@@ -334,101 +369,84 @@ export function MemoryTab({ conversationId, open, onApplied, onClose }: { conver
   );
 }
 
-export function SummaryTab({ conversationId, open, onApplied, onClose }: { conversationId: string; open: boolean; onApplied: () => void; onClose: () => void }) {
+export function SummaryTab({ conversationId, open, onApplied, onClose, headMessageId, revision = 0 }: { conversationId: string; open: boolean; onApplied: () => void; onClose: () => void; headMessageId?: string | null; revision?: string | number }) {
   const ui = useUi();
-  const [summaries, setSummaries] = useState<Summary[]>([]);
+  const { summaries: loaded, error, reload } = useSummaryRows(conversationId, open, headMessageId, revision);
+  const summaries = loaded ?? [];
   const [busy, setBusy] = useState(false);
   const [edit, setEdit] = useState<{ id: string; content: string } | null>(null);
   const [stateHistoryOpen, setStateHistoryOpen] = useState(false);
+  const active = useRef(false);
+  useEffect(() => { active.current = open; return () => { active.current = false; }; }, [open]);
 
-  function jumpToCover(s: Summary) {
-    const eid = s.covers_until_message_id;
-    if (!eid) return;
-    navigate(`/chat/${conversationId}?jump=${eid}`);
+  function jumpToCover(messageId: string) {
+    navigate(`/chat/${conversationId}?jump=${encodeURIComponent(messageId)}`);
     onClose();
   }
 
-  async function load() {
-    setSummaries(await get<Summary[]>(`/api/conversations/${conversationId}/summaries`));
-  }
-  useEffect(() => { if (open) load(); }, [open, conversationId]);
-
-  async function generate() {
+  async function change(action: () => Promise<unknown>, message?: string) {
+    if (busy) return;
     setBusy(true);
     try {
-      const r = await post<{ summary: Summary; state?: Summary | null; candidates: Memory[]; inputMessages: number }>(`/api/conversations/${conversationId}/summarize`, {});
-      ui.toast(`요약 초안 — 상태 + 장면 + 전체 + 기억 ${r.candidates.length}`);
-      await load();
+      await action();
+      if (!active.current) return;
+      setEdit(null);
+      reload();
+      onApplied();
+      if (message) ui.toast(message);
     } catch (e) {
-      ui.toast((e as Error).message, 'err');
+      if (active.current) ui.toast((e as Error).message, 'err');
     } finally {
-      setBusy(false);
+      if (active.current) setBusy(false);
     }
   }
-  async function approve(id: string) {
-    await patch(`/api/summaries/${id}`, { status: 'approved' });
-    await load();
-    onApplied();
-    ui.toast('요약 승인됨 — 이후 프롬프트에 반영');
-  }
-  async function saveEdit() {
-    if (!edit) return;
-    await patch(`/api/summaries/${edit.id}`, { content: edit.content });
-    setEdit(null);
-    await load();
-    onApplied();
+  async function generate() {
+    await change(async () => {
+      const r = await post<{ candidates: Memory[] }>(`/api/conversations/${conversationId}/summarize`, {});
+      if (active.current) ui.toast(`요약 초안과 기억 후보 ${r.candidates.length}개가 저장되었습니다.`);
+    });
   }
   async function remove(id: string) {
-    if (!(await ui.confirm('요약을 삭제할까요?', { danger: true, okLabel: '삭제' }))) return;
-    await del(`/api/summaries/${id}`);
-    await load();
-    onApplied();
-  }
-  async function rollup() {
-    try { await post(`/api/conversations/${conversationId}/rollup-episode`, {}); await load(); onApplied(); ui.toast('에피소드 초안 생성 — 승인하면 장면이 접힙니다'); }
-    catch (e) { ui.toast((e as Error).message, 'err'); }
-  }
-  async function restore(id: string) {
-    await post(`/api/summaries/${id}/restore`, {});
-    await load();
-    onApplied();
-    ui.toast('이전 상태로 복원됨 — 새 체크포인트로 저장');
+    if (!(await ui.confirm('요약을 삭제할까요?', { danger: true, okLabel: '삭제' })) || !active.current) return;
+    await change(() => del(`/api/summaries/${id}`));
   }
 
   const stateRows = summaries.filter((s) => s.tier === 'state');
   const sceneRows = summaries.filter((s) => s.tier === 'scene');
   const episodeRows = summaries.filter((s) => s.tier === 'episode');
   const wholeRows = summaries.filter((s) => s.tier !== 'state' && s.tier !== 'scene' && s.tier !== 'episode');
-  const foldableScenes = summaries.filter((s) => s.tier === 'scene' && s.status === 'approved' && !s.rolled_up_into).length;
+  const foldableScenes = sceneRows.filter((s) => s.branch_scope === 'current' && s.status === 'approved' && !s.rolled_up_into).length;
 
-  function renderCard(s: Summary, kind: '상태' | '전체' | '장면' | '에피소드', opts?: { onRestore?: () => void; diffBefore?: string | null }) {
+  function renderCard(s: Summary, kind: '상태' | '전체' | '장면' | '에피소드', opts?: { restore?: boolean; diffBefore?: string | null }) {
     return (
-      <div className="card" key={s.id} style={{ marginBottom: 10 }}>
-        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 6 }}>
-          <span className="row" style={{ gap: 6 }}>
+      <div className="card" key={s.id} data-summary-id={s.id} style={{ marginBottom: 10 }}>
+        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
+          <span className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
             <span className="tag" style={{ background: 'var(--bg-3)', color: 'var(--fg-2)' }}>{kind}</span>
-            <span className={`tag`} style={{ background: s.status === 'approved' ? 'rgba(44,156,145,0.16)' : 'var(--bg-3)', color: s.status === 'approved' ? 'var(--role-teal-text)' : 'var(--fg-2)' }}>{s.status === 'approved' ? '승인됨' : '초안'}</span>
+            <span className="tag" style={{ background: s.status === 'approved' ? 'rgba(44,156,145,0.16)' : 'var(--bg-3)', color: s.status === 'approved' ? 'var(--role-teal-text)' : 'var(--fg-2)' }}>{s.status === 'approved' ? '승인됨' : '초안'}</span>
+            <span className="tag">{summaryBranchLabel(s)}</span>
           </span>
           <span className="small muted">{new Date(s.created_at).toLocaleString('ko-KR')}</span>
         </div>
         {edit?.id === s.id ? (
           <>
-            <textarea value={edit.content} onChange={(e) => setEdit({ id: s.id, content: e.target.value })} style={{ width: '100%', minHeight: 120, background: 'var(--bg)', border: '1px solid var(--bg-3)', borderRadius: 8, padding: 10 }} />
-            <div className="row end" style={{ gap: 8, marginTop: 8 }}><button className="btn sm" onClick={() => setEdit(null)}>취소</button><button className="btn sm primary" onClick={saveEdit}>저장</button></div>
+            <textarea aria-label="요약 내용" value={edit.content} onChange={(e) => setEdit({ id: s.id, content: e.target.value })} style={{ width: '100%', minHeight: 120, background: 'var(--bg)', border: '1px solid var(--bg-3)', borderRadius: 8, padding: 10 }} />
+            <div className="row end" style={{ gap: 8, marginTop: 8 }}><button className="btn sm" disabled={busy} onClick={() => setEdit(null)}>취소</button><button className="btn sm primary" disabled={busy} onClick={() => change(() => patch(`/api/summaries/${s.id}`, { content: edit.content }))}>저장</button></div>
           </>
         ) : (
           <>
             {opts?.diffBefore != null ? (
-              <DiffText before={opts.diffBefore} after={s.content} />
+              <><div className="small muted" style={{ marginBottom: 4 }}>현재 분기의 이전 승인 내용과 비교</div><DiffText before={opts.diffBefore} after={s.content} /></>
             ) : (
-              <div style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{s.content}</div>
+              <div style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 14 }}>{s.content}</div>
             )}
-            <div className="row end" style={{ gap: 6, marginTop: 8 }}>
-              {s.covers_until_message_id && <button className="btn sm ghost" onClick={() => jumpToCover(s)}>원본</button>}
-              {opts?.onRestore && <button className="btn sm ghost" onClick={opts.onRestore}>복원</button>}
-              <button className="btn sm ghost" onClick={() => remove(s.id)}>삭제</button>
-              <button className="btn sm" onClick={() => setEdit({ id: s.id, content: s.content })}>편집</button>
-              {s.status !== 'approved' && <button className="btn sm primary" onClick={() => approve(s.id)}>승인</button>}
+            <div className="row end" style={{ gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+              {s.covers_from_message_id && s.covers_from_message_id !== s.covers_until_message_id && <button className="btn sm ghost" onClick={() => jumpToCover(s.covers_from_message_id!)}>범위 시작</button>}
+              {s.covers_until_message_id && <button className="btn sm ghost" onClick={() => jumpToCover(s.covers_until_message_id!)}>범위 끝 원문</button>}
+              {opts?.restore && <button className="btn sm ghost" disabled={busy} onClick={() => change(() => post(`/api/summaries/${s.id}/restore`, {}), '이전 상태를 새 체크포인트로 저장했습니다.')}>복원</button>}
+              <button className="btn sm ghost" disabled={busy} onClick={() => remove(s.id)}>삭제</button>
+              <button className="btn sm" disabled={busy} onClick={() => setEdit({ id: s.id, content: s.content })}>편집</button>
+              {s.status !== 'approved' && <button className="btn sm primary" disabled={busy} onClick={() => change(() => patch(`/api/summaries/${s.id}`, { status: 'approved' }), '승인됨. 현재 분기와 맥락 예산에 따라 사용됩니다.')}>승인</button>}
             </div>
           </>
         )}
@@ -436,34 +454,32 @@ export function SummaryTab({ conversationId, open, onApplied, onClose }: { conve
     );
   }
 
+  const current = currentApprovedState(summaries);
+  const drafts = stateRows.filter((s) => s.status !== 'approved');
+  const history = stateRows.filter((s) => s.status === 'approved' && s.branch_scope === 'current' && s.id !== current?.id);
+  const otherStates = stateRows.filter((s) => s.status === 'approved' && s.branch_scope !== 'current');
   return (
     <div>
-      <button className="btn primary block" disabled={busy} onClick={generate}>{busy ? '요약 생성 중… (모델 호출)' : '지금까지 대화 요약하기'}</button>
-      {foldableScenes >= 5 && <button className="btn sm block" onClick={rollup}>에피소드로 묶기 ({foldableScenes})</button>}
-      <div className="small muted" style={{ margin: '8px 0 14px' }}>요약과 자동 추출 기억은 <b>초안</b>으로 저장되며, 승인해야 프롬프트에 들어갑니다. 마지막 승인 이후의 새 메시지만 요약합니다.</div>
-      {summaries.length === 0 && <div className="muted small">아직 요약이 없습니다.</div>}
-      {(() => {
-        const current = currentApprovedState(summaries);
-        const drafts = stateRows.filter((s) => s.status !== 'approved');
-        const history = stateRows.filter((s) => s.status === 'approved' && s.id !== current?.id).sort((a, b) => b.created_at.localeCompare(a.created_at));
-        return (
-          <>
-            {drafts.map((s) => renderCard(s, '상태', { diffBefore: current?.content ?? null }))}
-            {current && renderCard(current, '상태')}
-            {history.length > 0 && (
-              <>
-                <button className="btn sm ghost block" style={{ marginBottom: 10 }} onClick={() => setStateHistoryOpen((v) => !v)}>
-                  {stateHistoryOpen ? '이전 상태 이력 숨기기' : `이전 상태 이력 보기 (${history.length})`}
-                </button>
-                {stateHistoryOpen && history.map((s) => renderCard(s, '상태', { onRestore: () => restore(s.id), diffBefore: current?.content ?? null }))}
-              </>
-            )}
-          </>
-        );
-      })()}
-      {episodeRows.map((s) => renderCard(s, '에피소드'))}
-      {sceneRows.map((s) => renderCard(s, '장면'))}
-      {wholeRows.map((s) => renderCard(s, '전체', { diffBefore: priorApprovedWhole(summaries, s)?.content ?? null }))}
+      <button className="btn primary block" disabled={busy || loaded === null} onClick={generate}>{busy ? '처리 중…' : '지금까지 대화 요약하기'}</button>
+      {foldableScenes >= 5 && <button className="btn sm block" disabled={busy} onClick={() => change(() => post(`/api/conversations/${conversationId}/rollup-episode`, {}), '에피소드 초안 생성 — 승인하면 장면이 접힙니다')}>에피소드로 묶기 ({foldableScenes})</button>}
+      <div className="small muted" style={{ margin: '8px 0 14px' }}>요약은 초안으로 저장됩니다. 승인된 요약도 현재 분기와 맥락 예산에 따라 선택됩니다. 실제 포함 여부는 컨텍스트 탭에서 확인하세요. 원문 버튼은 요약 범위를 보여 주며, 각 문장의 사실 확인을 뜻하지 않습니다.</div>
+      {error ? <div className="banner err" role="alert">{error}<button className="btn sm" onClick={reload}>다시 불러오기</button></div> : loaded === null ? <div className="muted small" role="status">요약을 불러오는 중…</div> : <>
+        <div className="section-title">현재 분기의 승인 상태</div>
+        {current ? renderCard(current, '상태') : <div className="muted small" style={{ marginBottom: 12 }}>현재 분기에서 확인된 승인 상태가 없습니다.</div>}
+        {drafts.length > 0 && <div className="section-title">상태 초안</div>}
+        {drafts.map((s) => renderCard(s, '상태', { diffBefore: s.branch_scope === 'current' ? current?.content ?? null : null }))}
+        {history.length > 0 && <>
+          <button className="btn sm ghost block" style={{ marginBottom: 10 }} onClick={() => setStateHistoryOpen((v) => !v)}>
+            {stateHistoryOpen ? '이전 상태 이력 숨기기' : `현재 분기의 이전 상태 이력 (${history.length})`}
+          </button>
+          {stateHistoryOpen && history.map((s) => renderCard(s, '상태', { restore: true, diffBefore: current?.content ?? null }))}
+        </>}
+        {otherStates.length > 0 && <div className="section-title">다른 분기 · 근거 미확인 상태</div>}
+        {otherStates.map((s) => renderCard(s, '상태', { restore: true }))}
+        {episodeRows.map((s) => renderCard(s, '에피소드'))}
+        {sceneRows.map((s) => renderCard(s, '장면'))}
+        {wholeRows.map((s) => renderCard(s, '전체', { diffBefore: priorApprovedWhole(summaries, s)?.content ?? null }))}
+      </>}
     </div>
   );
 }

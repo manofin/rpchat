@@ -13,6 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import Fastify from 'fastify';
 import { openMigratedDb } from '../apps/server/src/db/index.ts';
+import { insertMessage, setHead } from '../apps/server/src/db/tree.ts';
 import { GenerationQueue } from '../apps/server/src/model/queue.ts';
 import type { GenParams, GenResult } from '../apps/server/src/model/adapter.ts';
 import { characterRoutes } from '../apps/server/src/routes/characters.ts';
@@ -122,10 +123,13 @@ async function main() {
 
   function insertScene(convId: string, id: string, content: string) {
     const t0 = new Date().toISOString();
+    const conv = db.prepare('SELECT head_message_id FROM conversations WHERE id = ?').get(convId) as { head_message_id: string | null };
+    const source = insertMessage(db, convId, conv.head_message_id, 'assistant', content, 'complete');
+    setHead(db, convId, source.id);
     db.prepare(
       `INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier)
-       VALUES (?, ?, ?, NULL, NULL, 'approved', ?, 'scene')`,
-    ).run(id, convId, content, t0);
+       VALUES (?, ?, ?, ?, ?, 'approved', ?, 'scene')`,
+    ).run(id, convId, content, source.id, source.id, t0);
   }
 
   const charRes = await api('POST', '/api/characters', {

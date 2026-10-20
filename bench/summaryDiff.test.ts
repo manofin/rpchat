@@ -3,7 +3,7 @@
  * No DB, no server, no UI. Diff is display-only: this file never touches approve/PATCH/restore payloads.
  */
 import assert from 'node:assert/strict';
-import { currentApprovedState, diffWords, priorApprovedWhole } from '../apps/web/src/lib/summaryDiff.ts';
+import { currentApprovedState, diffWords, priorApprovedWhole, summaryBranchLabel } from '../apps/web/src/lib/summaryDiff.ts';
 import type { Summary } from '../apps/web/src/types.ts';
 
 let passed = 0;
@@ -65,7 +65,7 @@ t('both empty — no segments', () => {
 });
 
 function row(id: string, tier: Summary['tier'], status: Summary['status'], created_at: string, content = id): Summary {
-  return { id, conversation_id: 'c1', content, covers_until_message_id: null, tier, status, created_at };
+  return { id, conversation_id: 'c1', content, covers_until_message_id: null, tier, status, created_at, branch_scope: 'current', branch_head_id: 'A' };
 }
 
 t('currentApprovedState — no approved state row exists yet', () => {
@@ -107,6 +107,35 @@ t('priorApprovedWhole — later approved wholes (same or after target) are not c
   const target = row('w1', 'whole', 'draft', '2026-09-01T00:00:00Z');
   const rows = [target, row('w2', 'whole', 'approved', '2026-09-02T00:00:00Z')];
   assert.equal(priorApprovedWhole(rows, target), null);
+});
+
+t('A → B → A selects only the approved state on the selected branch', () => {
+  const a = row('A', 'state', 'approved', '2026-09-01');
+  const b = row('B', 'state', 'approved', '2026-09-02');
+  const select = (id: string) => currentApprovedState([a, b].map((s) => ({ ...s, branch_scope: s.id === id ? 'current' : 'other', branch_head_id: id })))?.id;
+  assert.deepEqual(['A', 'B', 'A'].map(select), ['A', 'B', 'A']);
+});
+
+t('no current approved state: other, unlinked, old response, and draft never become a fallback', () => {
+  const rows: Summary[] = [
+    { ...row('other', 'state', 'approved', '2026-09-06'), branch_scope: 'other' },
+    { ...row('unlinked', 'state', 'approved', '2026-09-05'), branch_scope: 'unlinked' },
+    { ...row('legacy', 'state', 'approved', '2026-09-04'), branch_scope: undefined },
+    row('current-draft', 'state', 'draft', '2026-09-03'),
+  ];
+  assert.equal(currentApprovedState(rows), null);
+  assert.deepEqual(rows.slice(0, 3).map(summaryBranchLabel), ['다른 분기', '근거 미연결', '분기 미확인']);
+});
+
+t('whole comparison uses a shared current ancestor and excludes newer sibling branch history', () => {
+  const target = row('target', 'whole', 'draft', '2026-09-05');
+  const shared = row('shared', 'whole', 'approved', '2026-09-01');
+  const other: Summary = { ...row('other', 'whole', 'approved', '2026-09-04'), branch_scope: 'other' };
+  assert.equal(priorApprovedWhole([shared, other, target], target)?.id, 'shared');
+  for (const branch_scope of ['other', 'unlinked', undefined] as const) {
+    assert.equal(priorApprovedWhole([shared, other], { ...target, branch_scope }), null);
+  }
+  assert.equal(priorApprovedWhole([other], target), null);
 });
 
 console.log(`${passed} passed`);

@@ -67,6 +67,19 @@ async function main() {
     assert.deepEqual(v.actors.map((x: any) => x.id), [a.id, b.id]);
     assert.deepEqual(v.entries, []); assert.equal(v.memories.length, 2); assert.equal(sceneJson(), before);
   });
+  await t('GET includes stored evidence IDs and preserves all conversation, memory, summary and message rows', async () => {
+    const snapshot = () => ['conversations', 'memories', 'summaries', 'messages']
+      .map(table => db.prepare(`SELECT * FROM ${table} ORDER BY id`).all());
+    const before = snapshot();
+    const v = await view();
+    const linked = v.memories.find((m: any) => m.id === secret.id);
+    const unlinked = v.memories.find((m: any) => m.id === promise.id);
+    assert.deepEqual(linked.evidence_message_ids, [root.id]);
+    assert.deepEqual(unlinked.evidence_message_ids, []);
+    assert.equal(linked.evidence_message_ids_json, JSON.stringify([root.id]), 'Existing raw field remains available');
+    assert.deepEqual(snapshot(), before);
+    assert.equal(modelCalls, 0);
+  });
   await t('explicit narrator-only assignment reserves the memory from generic publishing', async () => {
     await save(secret, entry(secret));
     const p = await preview();
