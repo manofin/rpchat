@@ -1,0 +1,269 @@
+{
+  "authorship": "Handwritten size and expected-outcome table; one large card only; Hangul text; no reducer or projector output.",
+  "conditions": [
+    {
+      "size": "small",
+      "format": "beat",
+      "participants": 3,
+      "settingChars": 100,
+      "cardChars": 100,
+      "minorChars": 20,
+      "limit": 7910,
+      "reject": false,
+      "minorStatus": "included_full"
+    },
+    {
+      "size": "small",
+      "format": "beat",
+      "participants": 17,
+      "settingChars": 100,
+      "cardChars": 100,
+      "minorChars": 20,
+      "limit": 7910,
+      "reject": false,
+      "minorStatus": "included_full"
+    },
+    {
+      "size": "small",
+      "format": "beat",
+      "participants": 25,
+      "settingChars": 100,
+      "cardChars": 100,
+      "minorChars": 20,
+      "limit": 7910,
+      "reject": false,
+      "minorStatus": "included_full"
+    },
+    {
+      "size": "small",
+      "format": "dialog",
+      "participants": 3,
+      "settingChars": 100,
+      "cardChars": 100,
+      "minorChars": 20,
+      "limit": 7710,
+      "reject": false,
+      "minorStatus": "included_full"
+    },
+    {
+      "size": "small",
+      "format": "dialog",
+      "participants": 17,
+      "settingChars": 100,
+      "cardChars": 100,
+      "minorChars": 20,
+      "limit": 7710,
+      "reject": false,
+      "minorStatus": "included_full"
+    },
+    {
+      "size": "small",
+      "format": "dialog",
+      "participants": 25,
+      "settingChars": 100,
+      "cardChars": 100,
+      "minorChars": 20,
+      "limit": 7710,
+      "reject": false,
+      "minorStatus": "included_full"
+    },
+    {
+      "size": "large",
+      "format": "beat",
+      "participants": 3,
+      "settingChars": 4000,
+      "cardChars": 1000,
+      "minorChars": 20,
+      "limit": 7910,
+      "reject": false,
+      "minorStatus": "included_full"
+    },
+    {
+      "size": "large",
+      "format": "beat",
+      "participants": 17,
+      "settingChars": 4000,
+      "cardChars": 1000,
+      "minorChars": 20,
+      "limit": 7910,
+      "reject": false,
+      "minorStatus": "included_full"
+    },
+    {
+      "size": "large",
+      "format": "beat",
+      "participants": 25,
+      "settingChars": 4000,
+      "cardChars": 1000,
+      "minorChars": 20,
+      "limit": 7910,
+      "reject": false,
+      "minorStatus": "included_full"
+    },
+    {
+      "size": "large",
+      "format": "dialog",
+      "participants": 3,
+      "settingChars": 4000,
+      "cardChars": 1000,
+      "minorChars": 20,
+      "limit": 7710,
+      "reject": false,
+      "minorStatus": "included_full"
+    },
+    {
+      "size": "large",
+      "format": "dialog",
+      "participants": 17,
+      "settingChars": 4000,
+      "cardChars": 1000,
+      "minorChars": 20,
+      "limit": 7710,
+      "reject": false,
+      "minorStatus": "included_full"
+    },
+    {
+      "size": "large",
+      "format": "dialog",
+      "participants": 25,
+      "settingChars": 4000,
+      "cardChars": 1000,
+      "minorChars": 20,
+      "limit": 7710,
+      "reject": false,
+      "minorStatus": "included_full"
+    },
+    {
+      "size": "boundary-in",
+      "format": "beat",
+      "participants": 3,
+      "settingChars": 8000,
+      "cardChars": 2500,
+      "minorChars": 20000,
+      "limit": 7910,
+      "reject": false,
+      "minorStatus": "omitted"
+    },
+    {
+      "size": "boundary-in",
+      "format": "beat",
+      "participants": 17,
+      "settingChars": 8000,
+      "cardChars": 2500,
+      "minorChars": 20000,
+      "limit": 7910,
+      "reject": false,
+      "minorStatus": "omitted"
+    },
+    {
+      "size": "boundary-in",
+      "format": "beat",
+      "participants": 25,
+      "settingChars": 8000,
+      "cardChars": 2500,
+      "minorChars": 20000,
+      "limit": 7910,
+      "reject": false,
+      "minorStatus": "omitted"
+    },
+    {
+      "size": "boundary-in",
+      "format": "dialog",
+      "participants": 3,
+      "settingChars": 8000,
+      "cardChars": 2500,
+      "minorChars": 20000,
+      "limit": 7710,
+      "reject": false,
+      "minorStatus": "omitted"
+    },
+    {
+      "size": "boundary-in",
+      "format": "dialog",
+      "participants": 17,
+      "settingChars": 8000,
+      "cardChars": 2500,
+      "minorChars": 20000,
+      "limit": 7710,
+      "reject": false,
+      "minorStatus": "omitted"
+    },
+    {
+      "size": "boundary-in",
+      "format": "dialog",
+      "participants": 25,
+      "settingChars": 8000,
+      "cardChars": 2500,
+      "minorChars": 20000,
+      "limit": 7710,
+      "reject": false,
+      "minorStatus": "omitted"
+    },
+    {
+      "size": "boundary-over",
+      "format": "beat",
+      "participants": 3,
+      "settingChars": 8000,
+      "cardChars": 6000,
+      "minorChars": 20,
+      "limit": 7910,
+      "reject": true,
+      "minorStatus": null
+    },
+    {
+      "size": "boundary-over",
+      "format": "beat",
+      "participants": 17,
+      "settingChars": 8000,
+      "cardChars": 6000,
+      "minorChars": 20,
+      "limit": 7910,
+      "reject": true,
+      "minorStatus": null
+    },
+    {
+      "size": "boundary-over",
+      "format": "beat",
+      "participants": 25,
+      "settingChars": 8000,
+      "cardChars": 6000,
+      "minorChars": 20,
+      "limit": 7910,
+      "reject": true,
+      "minorStatus": null
+    },
+    {
+      "size": "boundary-over",
+      "format": "dialog",
+      "participants": 3,
+      "settingChars": 8000,
+      "cardChars": 6000,
+      "minorChars": 20,
+      "limit": 7710,
+      "reject": true,
+      "minorStatus": null
+    },
+    {
+      "size": "boundary-over",
+      "format": "dialog",
+      "participants": 17,
+      "settingChars": 8000,
+      "cardChars": 6000,
+      "minorChars": 20,
+      "limit": 7710,
+      "reject": true,
+      "minorStatus": null
+    },
+    {
+      "size": "boundary-over",
+      "format": "dialog",
+      "participants": 25,
+      "settingChars": 8000,
+      "cardChars": 6000,
+      "minorChars": 20,
+      "limit": 7710,
+      "reject": true,
+      "minorStatus": null
+    }
+  ]
+}
