@@ -19,6 +19,7 @@
     { "name": "builderDifferential", "group": "PromptBytes" },
     { "name": "beatByteBaseline", "group": "PromptBytes" },
     { "name": "narrationContinuationIdentity", "group": "PromptBytes" },
+    { "name": "continuationAnsweredHistory", "group": "PromptBytes" },
     { "name": "pathMemorySchema", "group": "PathMemory" },
     { "name": "pathMemoryP1Guards", "group": "PathMemory" },
     { "name": "pathMemoryNodeReplay", "group": "PathMemory" },

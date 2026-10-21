@@ -86,14 +86,14 @@ async function main() {
     await test('narration continuation preserves persona and stored user/NPC/narrator sources',()=>{
       const f=fixture('identity');const p=prompt(f.id);
       assert.ok(p.includes("'플레이어 하나'은 사용자다."));
-      assert.ok(p.includes('## 현재 사용자 발화\n[사용자: 플레이어 하나] PLAYER_WRIST_INPUT'));
+      assert.ok(p.split('## 이미 답한 기록')[1].split('\n\n')[0].includes('[사용자: 플레이어 하나] PLAYER_WRIST_INPUT'));
       assert.ok(p.includes('[사용자] OLD_USER_PROMISE'));
       assert.ok(p.includes('[Mira Vale] "NPC_REPLY"'));
       assert.ok(p.includes('[서술자] OLD_NARRATION'));
       assert.ok(p.includes('[화자 미상] LEGACY_UNKNOWN'));
       assert.ok(p.includes('[서술자] TARGET_ALREADY_SHOWN'));
-      const userSection=p.split('## 현재 사용자 발화\n')[1].split('\n\n')[0];
-      assert.ok(!userSection.includes('TARGET_ALREADY_SHOWN') && !userSection.includes('직전 응답'));
+      const record=p.split('## 이미 답한 기록')[1].split('\n\n')[0];assert.ok(!p.includes('## 현재 사용자 발화'));
+      assert.ok(!record.includes('TARGET_ALREADY_SHOWN') && !record.includes('직전 응답'));
     });
     await test('private nonrecipient bodies and observer speaker identity are filtered before attribution',()=>{
       const f=fixture('private');
@@ -114,7 +114,7 @@ async function main() {
     await test('a hidden current input does not promote an older user utterance to current',()=>{
       const f=fixture('hidden-current');
       run(db,'UPDATE messages SET meta_json=? WHERE id=?',JSON.stringify({generation_id:f.id,observation:{visibility:'private',recipient_ids:['a'],observer_ids:['gm']}}),`${f.id}-user`);
-      const p=prompt(f.id);const current=p.split('## 현재 사용자 발화\n')[1].split('\n\n')[0];
+      const p=prompt(f.id);assert.ok(!p.includes('## 현재 사용자 발화'));const current=p.split('\n').filter(l=>l.startsWith('[사용자: ')).join('\n');
       assert.ok(!p.includes('PLAYER_WRIST_INPUT'));
       assert.ok(!current.includes('OLD_USER_PROMISE'));
       assert.ok(p.includes('[사용자] OLD_USER_PROMISE'));

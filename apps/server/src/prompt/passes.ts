@@ -146,11 +146,19 @@ export function renderPassN(input: {
    * still gets the full establishing shot: there is nothing to repeat yet.
    */
   recentNarrations?: string[];
+  /**
+   * LOCK-78-Followup (#78). Default off; the beat path never sets it, so its bytes are unchanged.
+   * Continuation only: the latest user input was already answered. It arrives inside `observations`
+   * (flagged `answeredInput`) in its chronological place and `userText` is ignored, so nothing is
+   * presented as `## 현재 사용자 발화` and the pass is told to continue after the target.
+   */
+  continuation?: boolean;
 }): string {
   const ambient = input.ambientNames.length ? input.ambientNames.join(', ') : '(없음)';
   const recent = (input.recentNarrations ?? []).map((s) => s.trim()).filter(Boolean);
   const userName = input.userName?.trim() || '나';
   const observations = (input.observations ?? []).filter(row => row.text.trim());
+  if (input.continuation) return renderPassNContinuation(input, { ambient, recent, userName, observations });
   return [
     '너는 장면 서술자다. 이번 턴에 새로 달라진 것만 쓴다 — 인물의 행동·반응, 공간에서 바뀐 것, 주변 사람들의 기척. 어떤 인물의 대사도 쓰지 않는다.',
     '',
@@ -194,7 +202,75 @@ export type NarrationObservation = {
   kind: 'user' | 'narration' | 'dialogue' | 'unknown';
   speakerName?: string;
   text: string;
+  /** Continuation only: the user input this turn already answered; labelled with the user's name. */
+  answeredInput?: boolean;
 };
+
+/** The user label a pronoun fallback gets when no persona exists (continuation.ts, partyChannel.ts). */
+const UNNAMED_USER = '나';
+
+/**
+ * Continuation people lines. A named persona keeps the shared line byte-for-byte. With no persona
+ * the label is the first-person pronoun itself, so `'나'은 사용자다` gave the model no third-person
+ * referent: re-narrated first-person input lost its owner and drifted to the NPC (#78, T3 shape).
+ */
+function continuationPeopleLines(cast: CastMember[], scene: Scene, userName: string): string[] {
+  if (userName !== UNNAMED_USER) return presentPeopleLines(cast, scene, userName);
+  return [
+    rosterSentence(cast, scene),
+    "- 사용자는 이름이 없다. 사용자 입력 속 '나'·'내'·'제'는 사용자 자신이다. 서술자도, 위 목록의 인물도 아니다.",
+    "- 서술에서 사용자를 가리킬 때는 '당신'이라고 쓴다. 사용자의 몸·부상·일·약속을 다른 인물의 것으로 옮기지 않는다.",
+  ];
+}
+
+/**
+ * Pass N for `/continue` (narration target). The input was answered by the target itself, so it is
+ * history, not this turn's news: everything is one chronological record, then the target, then rules.
+ */
+function renderPassNContinuation(
+  input: Parameters<typeof renderPassN>[0],
+  d: { ambient: string; recent: string[]; userName: string; observations: NarrationObservation[] },
+): string {
+  const label = (row: NarrationObservation) => row.kind === 'user' && row.answeredInput
+    ? `[사용자: ${speakerLabel(d.userName)}]` : observationLabel(row);
+  const hasUserRecord = d.observations.some(row => row.kind === 'user');
+  return [
+    '너는 장면 서술자다. 이미 화면에 나온 서술의 마지막 부분에서 이어 쓴다 — 인물의 행동·반응, 공간에서 바뀐 것, 주변 사람들의 기척. 어떤 인물의 대사도 쓰지 않는다.',
+    '',
+    ...(input.partyContextBlock != null ? [input.partyContextBlock, ''] : input.focusCard ? [cardBlock(input.focusCard, '이번 턴의 중심 인물'), ''] : []),
+    '## 장면',
+    ...sceneLines(input.scene, input.header, input.confirmedState),
+    ...continuationPeopleLines(input.cast, input.scene, d.userName),
+    `- 이번 턴에 몸짓으로 존재감만 드러낼 사람: ${d.ambient}`,
+    '',
+    ...(d.observations.length
+      ? ['## 이미 답한 기록 (시간순, 오래된 것부터. 모두 이미 응답이 끝났다)', ...d.observations.map(row => `${label(row)} ${row.text}`), '']
+      : []),
+    ...(d.recent.length
+      ? ['## 이어 쓸 직전 서술 (화면에 남아 있다. 다시 쓰지 말고 이 뒤에서 이어 쓴다)', ...d.recent.map(text => `[서술자] ${text}`), '']
+      : []),
+    '## 규칙',
+    `- ${PASS_N_MAX_SENTENCES}문장 이내. 서술문만 쓴다.`,
+    ...(hasUserRecord ? ['- 위 "이미 답한 기록"의 사용자 입력에는 이미 응답했다. 그 입력에 다시 답하거나 다시 서술하지 않는다.'] : []),
+    d.recent.length ? '- "이어 쓸 직전 서술"의 마지막 문장 바로 뒤에서 이어 쓴다.' : '- "이미 답한 기록"의 마지막 부분 바로 뒤에서 이어 쓴다.',
+    ...(d.recent.length
+      ? [
+          '- 위 "이어 쓸 직전 서술"에서 이미 세워진 배경·날씨·조명·공간의 분위기를 다시 소개하지 않는다. 같은 장소가 이어지는 중이면 장소를 처음 보여주듯 쓰지 않는다.',
+          '- 위 서술의 문장을 그대로 옮기거나, 같은 구도를 표현만 바꿔 되풀이하지 않는다.',
+        ]
+      : []),
+    '- 시점·카메라 표현은 장면을 이해하는 데 실제로 도움이 될 때만 쓴다. 매 턴 쓰지 않아도 된다.',
+    '- **어떤 인물의 대사도 쓰지 않는다.** 큰따옴표 대사, `이름|` 형식, `이름:` 형식 전부 금지.',
+    '- 위 "몸짓으로 존재감만" 목록의 인물은 행동·표정 한 조각으로만 등장시킨다. 말하게 하지 않는다.',
+    '- 그 목록에 없는 인물을 새로 등장시키거나 이름을 지어내지 않는다.',
+    '- 헤더·시각·날씨·장소·수치·선택지·이미지·상태 패널을 출력하지 않는다. 서버가 이미 붙였다.',
+    '- 지금 장소는 헤더의 장소다. 캐릭터 카드에 적힌 다른 배경으로 장면을 옮겨 쓰지 않는다.',
+    '- 사용자의 다음 행동·대사·생각을 만들어 내지 않는다.',
+    '- 한국어로 답한다.',
+    '',
+    '서술:',
+  ].join('\n');
+}
 
 function speakerLabel(name: string): string {
   return name.replace(/[\r\n\[\]]/g, ' ').trim();
