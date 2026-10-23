@@ -17,6 +17,7 @@ export interface ActiveGeneration {
  */
 export class GenerationQueue {
   private running = 0;
+  private pendingRuns = 0;
   private waiting: Array<() => void> = [];
   private active = new Map<string, ActiveGeneration>();
   /** Early slot release hooks for in-flight run() calls (force-release ≤5s). */
@@ -26,6 +27,12 @@ export class GenerationQueue {
   private listeners = new Map<string, (generation: ActiveGeneration) => void>();
 
   constructor(private readonly concurrency = 1) {}
+
+  /** Includes unregistered calls and callbacks still settling after force-release. */
+  get load(): { busy: boolean; running: number; queued: number; pending: number } {
+    return { busy: this.pendingRuns > 0, running: this.running,
+      queued: this.waiting.length, pending: this.pendingRuns };
+  }
 
   get queued(): number {
     return this.waiting.length;
@@ -109,6 +116,15 @@ export class GenerationQueue {
   }
 
   async run<T>(fn: () => Promise<T>, signal?: AbortSignal, slotId?: string): Promise<T> {
+    this.pendingRuns++;
+    try {
+      return await this.runSlot(fn, signal, slotId);
+    } finally {
+      this.pendingRuns--;
+    }
+  }
+
+  private async runSlot<T>(fn: () => Promise<T>, signal?: AbortSignal, slotId?: string): Promise<T> {
     if (signal?.aborted) throw new Error('aborted before start');
     if (this.running >= this.concurrency) {
       await new Promise<void>((resolve, reject) => {

@@ -23,6 +23,7 @@ export const PROMPT_VERSION = '2026.08.22-r1+story+compact+roster+opening';
 export const config = {
   partyContext: process.env.RPCHAT_PARTY_CONTEXT === '1',
   port: num('PORT', 8787),
+  busySignalPort: num('BUSY_SIGNAL_PORT', 0), // disabled unless explicitly enabled
   host: env('HOST', '127.0.0.1'),
   dataDir: path.resolve(env('DATA_DIR', './data')),
   logLevel: env('LOG_LEVEL', 'info'),
@@ -52,6 +53,10 @@ export const config = {
 
 export function validateConfig(): string[] {
   const problems: string[] = [];
+  if (!Number.isInteger(config.busySignalPort) || config.busySignalPort < 0 || config.busySignalPort > 65535)
+    problems.push('BUSY_SIGNAL_PORT must be 0 (disabled) or an integer from 1 to 65535');
+  if (config.busySignalPort !== 0 && config.busySignalPort === config.port)
+    problems.push('BUSY_SIGNAL_PORT must differ from PORT');
   const a = config.auth;
   if (!['tailscale', 'token', 'none'].includes(a.mode)) problems.push(`AUTH_MODE 값이 잘못됨: ${a.mode}`);
   if (a.mode === 'tailscale' && !a.allowedLogin) problems.push('AUTH_MODE=tailscale 에는 ALLOWED_LOGIN 이 필요');

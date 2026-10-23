@@ -11,6 +11,7 @@ import { interruptOrphanStreaming } from './db/generation.js';
 import { seed } from './db/seed.js';
 import { ModelClient } from './model/adapter.js';
 import { GenerationQueue } from './model/queue.js';
+import { startBusySignal } from './model/busySignal.js';
 import { registerAuthHook } from './auth.js';
 import type { Ctx, ModelHealth } from './ctx.js';
 import { healthRoutes } from './routes/health.js';
@@ -152,6 +153,12 @@ async function main() {
   if (!h.ok) app.log.warn(`모델 서버 연결 실패: ${h.error} — 앱은 뜨지만 전송은 비활성화됨`);
   if (!resolvedModel) app.log.warn('MODEL_NAME 미설정이고 /v1/models 도 응답하지 않아 모델 이름을 해석하지 못함');
 
+  if (config.busySignalPort !== 0) {
+    const busySignal = await startBusySignal(queue, config.busySignalPort);
+    app.addHook('onClose', async () => {
+      await new Promise<void>((resolve, reject) => busySignal.close(err => err ? reject(err) : resolve()));
+    });
+  }
   await app.listen({ port: config.port, host: config.host });
 
   const shutdown = async (sig: string) => {
