@@ -39,18 +39,28 @@ export function diffWords(before: string, after: string): DiffSegment[] {
   return segments;
 }
 
-/** state is a single rolling baseline — always the latest approved row, regardless of the target's own timestamp (restore candidates predate it). */
+/** A missing branch classification is unverified, never an implicit current baseline. */
 export function currentApprovedState(summaries: Summary[]): Summary | null {
-  const rows = summaries.filter((s) => s.tier === 'state' && s.status === 'approved');
+  const rows = summaries.filter((s) => s.tier === 'state' && s.status === 'approved' && s.branch_scope === 'current');
   if (rows.length === 0) return null;
   return rows.reduce((latest, s) => (s.created_at > latest.created_at ? s : latest));
 }
 
 /** whole is self-referential (each new whole is generated from the prior approved whole as `prev`) — diff against the nearest earlier approved whole, never the row itself. */
 export function priorApprovedWhole(summaries: Summary[], target: Summary): Summary | null {
+  if (target.branch_scope !== 'current') return null;
   const rows = summaries.filter(
-    (s) => s.tier === 'whole' && s.status === 'approved' && s.id !== target.id && s.created_at < target.created_at,
+    (s) => s.tier === 'whole' && s.status === 'approved' && s.branch_scope === 'current' && s.id !== target.id && s.created_at < target.created_at,
   );
   if (rows.length === 0) return null;
   return rows.reduce((latest, s) => (s.created_at > latest.created_at ? s : latest));
+}
+
+export function summaryBranchLabel(summary: Summary): string {
+  switch (summary.branch_scope) {
+    case 'current': return '현재 분기';
+    case 'other': return '다른 분기';
+    case 'unlinked': return '근거 미연결';
+    default: return '분기 미확인';
+  }
 }

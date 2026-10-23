@@ -9,6 +9,7 @@ import { isOocMessage, loadProfile, resolvePersona } from '../prompt/builder.js'
 import { renderSummaryPrompt, renderEpisodePrompt, stateToBullets } from '../prompt/templates.js';
 import { estimateTokens, getCalibration, truncateToTokens } from '../prompt/tokens.js';
 import { classify } from '../memory/conflict.js';
+import { summaryScopeForConversation } from '../memory/summaryScope.js';
 import { evidenceIdsForSlice, isSummarizeBlocked, sceneCoverRange } from './summarizeContract.js';
 import type { CharacterRow, MemoryRow, SummaryRow, MessageRow } from '../types.js';
 import { loadConversation } from './conversations.js';
@@ -178,8 +179,11 @@ export function memoryRoutes(ctx: Ctx) {
 
     // ---- 요약 ----
     app.get<{ Params: { id: string } }>('/api/conversations/:id/summaries', async (req, reply) => {
-      if (!loadConversation(ctx, req.params.id)) return reply.code(404).send({ error: 'not found' });
-      return many<SummaryRow>(db, 'SELECT * FROM summaries WHERE conversation_id = ? ORDER BY created_at DESC', req.params.id);
+      const conv = loadConversation(ctx, req.params.id);
+      if (!conv) return reply.code(404).send({ error: 'not found' });
+      const scope = summaryScopeForConversation(db, conv);
+      return many<SummaryRow>(db, 'SELECT * FROM summaries WHERE conversation_id = ? ORDER BY created_at DESC, id DESC', conv.id)
+        .map(row => ({ ...row, branch_scope: scope(row), branch_head_id: conv.head_message_id }));
     });
 
     app.patch<{ Params: { id: string } }>('/api/summaries/:id', async (req, reply) => {
@@ -240,9 +244,11 @@ export function memoryRoutes(ctx: Ctx) {
       const userName = persona?.name || '나';
       const profile = loadProfile(db, 'summary');
       const cal = getCalibration(db);
-      const prev = one<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'whole' AND status = 'approved' ORDER BY created_at DESC LIMIT 1`, conv.id);
-
       const path = getPath(db, conv).filter((m) => m.status !== 'error' && m.content.trim() && !isOocMessage(m));
+      const pathIds = new Set(path.map(m => m.id));
+      const scope = summaryScopeForConversation(db, conv);
+      const prev = many<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'whole' AND status = 'approved' ORDER BY created_at DESC, id DESC`, conv.id)
+        .find(row => scope(row) === 'current' && pathIds.has(row.covers_until_message_id!));
       let start = 0;
       if (prev?.covers_until_message_id) {
         const idx = path.findIndex((m) => m.id === prev.covers_until_message_id);
@@ -346,8 +352,13 @@ export function memoryRoutes(ctx: Ctx) {
       if (ctx.queue.activeList.some((g) => g.conversationId === conv.id)) return reply.code(409).send({ error: '생성 중에는 묶을 수 없음' });
       const THRESHOLD = 5;
       const force = req.query.force === '1';
-      const scenes = many<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'scene' AND status = 'approved' AND rolled_up_into IS NULL ORDER BY created_at ASC`, conv.id);
-      const targets = scenes.slice(0, THRESHOLD);
+      const scope = summaryScopeForConversation(db, conv);
+      const scenes = many<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'scene' AND status = 'approved' AND rolled_up_into IS NULL ORDER BY created_at ASC, id ASC`, conv.id)
+        .filter(row => scope(row) === 'current');
+      const pathOrder = new Map(getPath(db, conv).map((row, index) => [row.id, index]));
+      const targets = scenes.slice(0, THRESHOLD).sort((a, b) =>
+        pathOrder.get(a.covers_from_message_id ?? a.covers_until_message_id!)! - pathOrder.get(b.covers_from_message_id ?? b.covers_until_message_id!)!
+        || pathOrder.get(a.covers_until_message_id!)! - pathOrder.get(b.covers_until_message_id!)!);
       if (targets.length === 0) return reply.code(400).send({ error: '묶을 장면 없음' });
       if (targets.length < THRESHOLD && !force) return reply.code(400).send({ error: `묶을 장면이 부족 (${targets.length}/${THRESHOLD})` });
 
@@ -374,8 +385,10 @@ export function memoryRoutes(ctx: Ctx) {
 
       const epId = uid();
       const t = nowIso();
-      const coversFrom = targets[0].covers_from_message_id ?? targets[0].covers_until_message_id;
-      const coversUntil = targets[targets.length - 1].covers_until_message_id;
+      const starts = targets.map(row => row.covers_from_message_id ?? row.covers_until_message_id!);
+      const ends = targets.map(row => row.covers_until_message_id!);
+      const coversFrom = starts.reduce((first, id) => pathOrder.get(id)! < pathOrder.get(first)! ? id : first);
+      const coversUntil = ends.reduce((last, id) => pathOrder.get(id)! > pathOrder.get(last)! ? id : last);
       db.transaction(() => {
         run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier, rel_character_id, rel_persona_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', epId, conv.id, episodeText, coversUntil, coversFrom, 'draft', t, 'episode', conv.character_id, conv.persona_id);
         run(db, `UPDATE summaries SET rolled_up_into = ? WHERE id IN (${targets.map(() => '?').join(',')})`, epId, ...targets.map((s) => s.id));

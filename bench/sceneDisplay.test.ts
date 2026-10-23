@@ -41,7 +41,7 @@ for (const generating of [true,false]) {
 console.log('passed scene display boundary cases');
 
 // Execute the production stream callback: successful legacy party/beat and dialog
-// must all re-read the committed scene; 1:1 keeps its existing behavior.
+// must all re-read the committed scene; 1:1 also needs its authoritative head.
 const source = ts.createSourceFile('useChat.ts',fs.readFileSync('apps/web/src/pages/useChat.ts','utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
 let callback='';
 function visit(node:any) {
@@ -52,7 +52,7 @@ visit(source);
 assert.ok(callback);
 const js=ts.transpileModule(callback,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
 const invoke=new Function('state','event',`const scope={},ctrl={},scopeRef={current:scope},abortRef={current:ctrl};let resync=false,failed=false,requestError=null;const applyEvent=()=>{};const cb=${js};cb(event);return resync;`);
-for(const [mode,format,expected] of [['story',undefined,true],['chat','beat',true],['chat','dialog',true],['chat',undefined,false]]) {
+for(const [mode,format,expected] of [['story',undefined,true],['chat','beat',true],['chat','dialog',true],['chat',undefined,true]]) {
  const state={detail:{conversation:{mode,scene:{format}}}};
  assert.equal(invoke(state,{type:'done',message:{status:'complete'}}),expected);
  assert.equal(invoke(state,{type:'done',message:{status:'interrupted'}}),false);

@@ -150,7 +150,7 @@ await t('chat SSE FailSend recovery contract remains intact', async () => {
     { type: 'token', text: 'text', messageId: message.id, eventVersion: 1, events: message.events! },
     { type: 'done', message, usage: null, ttftMs: 1, totalMs: 2 },
   ];
-  assert.deepEqual(await scenario(ordinary), { value: true, calls: ['return'], visibleError: null }, 'successful stream');
+  assert.deepEqual(await scenario(ordinary), { value: true, calls: ['reload', 'return'], visibleError: null }, 'successful stream refreshes the authoritative head');
   assert.deepEqual(await scenario([...ordinary, { type: 'error', message: 'failed' }]),
     { value: false, calls: ['reload', 'return'], visibleError: 'failed' }, 'SSE error remains visible after reload retracts the send and restores composer');
   for (const [error, abort, expected] of [

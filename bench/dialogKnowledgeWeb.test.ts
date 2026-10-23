@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { KnowledgeForm, knowledgeLabel } from '../apps/web/src/components/DialogKnowledgeEditor.js';
+import { KnowledgeEntryDetails, KnowledgeForm, knowledgeLabel } from '../apps/web/src/components/DialogKnowledgeEditor.js';
 import { ConversationMemoryPage } from '../apps/web/src/pages/ConversationMemoryPage.js';
 import { UiProvider } from '../apps/web/src/components/ui.js';
 import type { DialogKnowledgeEntry, DialogKnowledgeView, Memory } from '../apps/web/src/types.js';
@@ -52,10 +52,37 @@ t('saving disables the whole form; labels never expose internal IDs', () => {
   assert.equal(knowledgeLabel({ memory_id: 'secret-internal-id', anchor_message_id: 'head', kind: 'injury', known_by: ['a'], subject_id: 'user', status: 'active' }, view.actors), '부상 · 나리');
 });
 
-t('scope wording describes character recognition, not model request isolation', () => {
+t('scope wording describes recognition without claiming complete model isolation or guaranteed inclusion', () => {
   const html = form();
   assert.ok(html.includes('인물 인식 범위'));
   assert.ok(html.includes('인식 범위 저장'));
-  assert.ok(html.includes('인물별로 모델 요청을 분리하는 기능은 아닙니다.'));
+  assert.ok(html.includes('이미 대화에서 공개한 내용은 되돌리지 않습니다.'));
+  assert.ok(html.includes('실제 응답 반영은 맥락과 예산에 따라 달라질 수 있습니다.'));
+  assert.ok(!html.includes('인물별로 모델 요청을 분리하는 기능은 아닙니다.'));
   assert.ok(!html.includes('비밀'));
+});
+
+t('card distinguishes subject, recipient, state, assignment location and original evidence', () => {
+  const entry: DialogKnowledgeEntry = { memory_id: memory.id, anchor_message_id: 'assignment', kind: 'promise', known_by: ['a'], status: 'active', subject_id: 'user', target_id: 'b' };
+  const html = renderToStaticMarkup(React.createElement(KnowledgeEntryDetails, {
+    memory: { ...memory, evidence_message_ids: ['original'] }, view, entry, onOpenSource() {},
+  }));
+  assert.ok(html.includes('주체: 사용자 → 대상: 세라'));
+  assert.ok(html.includes('기억을 아는 인물: 나리 · 인식 상태: 유지'));
+  assert.ok(html.includes('인식 범위를 지정한 위치'));
+  assert.ok(html.includes('기억 근거 1 원문'));
+  assert.ok(!html.includes('assignment')); assert.ok(!html.includes('original'));
+});
+
+t('off-branch assignments and missing evidence stay explicit without exposing internal IDs', () => {
+  const entry: DialogKnowledgeEntry = { memory_id: memory.id, anchor_message_id: 'assignment', kind: 'fact', known_by: ['deleted-actor'], status: 'active' };
+  const html = renderToStaticMarkup(React.createElement(KnowledgeEntryDetails, {
+    memory: { ...memory, evidence_message_ids: [] },
+    view: { ...view, excluded: [{ memory_id: memory.id, reason: 'assignment-off-branch' }] },
+    entry, onOpenSource() {},
+  }));
+  assert.ok(html.includes('다른 분기에서 지정한 인식 범위입니다.'));
+  assert.ok(html.includes('연결된 기억 근거가 없습니다.'));
+  assert.ok(html.includes('찾을 수 없는 인물'));
+  assert.ok(!html.includes('deleted-actor'));
 });

@@ -29,7 +29,12 @@ export function dialogKnowledgeRoutes(ctx: Ctx) {
         enabled: scene.format === 'dialog' && actors.length > 0,
         headMessageId: conv.head_message_id,
         userName: resolvePersona(ctx.db, conv)?.name || '사용자',
-        actors, memories, entries: parsed.success ? parsed.data.entries : [],
+        actors,
+        memories: memories.map(memory => ({
+          ...memory,
+          evidence_message_ids: parseJson<string[]>(memory.evidence_message_ids_json, []),
+        })),
+        entries: parsed.success ? parsed.data.entries : [],
         excluded: assigned.packet.excluded,
         invalidContract: !parsed.success,
       };

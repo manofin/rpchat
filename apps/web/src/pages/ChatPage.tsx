@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { get, patch, post } from '../lib/api';
 import { back, navigate, useRoute } from '../lib/router';
 import { NAV_TABS } from '../lib/navTabs';
-import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, ResponseLength, StoryEnding, Summary } from '../types';
+import type { Character, Conversation, ConversationDetail, Health, Message, ModelProfile, Persona, ResponseLength, StoryEnding } from '../types';
 import {
   Avatar, BeatUiPanel, renderContent, SpeakerHeader,
 } from '../components/view';
@@ -34,6 +34,8 @@ import { SideModePanel } from '../components/SideModePanel';
 import { ResponseLengthSelect } from '../components/ResponseLengthSelect';
 import { buildResponseLengthPatch, continuationTarget, parseSideModeCommand, type SideMode } from '../lib/responseControls';
 import { ChatDrawer } from './ChatDrawer';
+import { MessageSourcePreview } from '../components/MessageSourcePreview';
+import { useSummaryRows } from '../lib/useSummaryRows';
 import { ChatListRail } from './ChatListRail';
 import { ConversationTools } from './ConversationTools';
 import { outputProfileLabel } from '../lib/conversationSettings';
@@ -70,8 +72,11 @@ export function ChatPage({ id }: { id: string }) {
   const path = useRoute();
   const [listOpen, setListOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(desktop);
-  const [summaryRows, setSummaryRows] = useState<Summary[] | null>(null);
   const [summaryTick, setSummaryTick] = useState(0);
+  const [sourceMessageId, setSourceMessageId] = useState<string | null>(null);
+  const summaryHead = chat.detail?.conversation.head_message_id;
+  const summaryRevision = `${chat.detail?.conversation.updated_at ?? ''}:${summaryTick}`;
+  const { summaries: summaryRows } = useSummaryRows(id, !generating && !chat.loading, summaryHead, summaryRevision);
   const [dismissTick, setDismissTick] = useState(0);
   const [endingOpen, setEndingOpen] = useState(false);
   const [endingPick, setEndingPick] = useState('');
@@ -118,7 +123,7 @@ export function ChatPage({ id }: { id: string }) {
     }
   }
 
-  useEffect(() => { setSummaryRows(null); }, [id]);
+  useEffect(() => { setSourceMessageId(null); }, [id]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const stickyRef = useRef(true);
@@ -138,17 +143,21 @@ export function ChatPage({ id }: { id: string }) {
   // 검색 결과 → 해당 메시지로 점프 (/chat/:id?jump=<messageId>)
   const jump = new URLSearchParams(window.location.search).get('jump');
   useEffect(() => {
-    if (!jump || chat.loading || chat.messages.length === 0) return;
+    if (!jump) { setSourceMessageId(null); return; }
+    if (chat.loading) return;
     const el = document.getElementById(`msg-${jump}`);
     if (el) {
+      setSourceMessageId(null);
       stickyRef.current = false;
       el.scrollIntoView({ block: 'center' });
       el.classList.add('jump-flash');
       setTimeout(() => el.classList.remove('jump-flash'), 1600);
       navigate(window.location.pathname, { replace: true });
+    } else {
+      setSourceMessageId(jump);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jump, chat.loading, chat.messages.length]);
+  }, [jump, chat.loading, chat.messages, id]);
 
   useEffect(() => {
     const vv = window.visualViewport;
@@ -189,15 +198,6 @@ export function ChatPage({ id }: { id: string }) {
     if (desktop || !toolsOpen) return;
     setListOpen(false);
   }, [toolsOpen, desktop]);
-
-  useEffect(() => {
-    if (generating || chat.loading) return;
-    let cancelled = false;
-    get<Summary[]>(`/api/conversations/${id}/summaries`)
-      .then((rows) => { if (!cancelled) setSummaryRows(rows); })
-      .catch(() => { if (!cancelled) setSummaryRows([]); });
-    return () => { cancelled = true; };
-  }, [id, generating, chat.loading, chat.messages.length, summaryTick]);
 
   const bannerStorage = sessionBannerKv();
   const bannerLocal = localBannerKv();
@@ -637,7 +637,8 @@ export function ChatPage({ id }: { id: string }) {
       </BottomSheet>
 
       <SideModePanel open={sideOpen} mode={sideTab} onModeChange={setSideTab} onClose={() => setSideOpen(false)} messages={sideMode.messages} loading={sideMode.loading} generating={sideMode.generating} disabled={generating} error={sideMode.error} onGenerate={sideMode.generate} onStop={() => void sideMode.stop()} onReload={() => void sideMode.reload()} />
-      <ChatDrawer open={drawer} conversationId={id} draft={draft} initialTab={drawerTab} onClose={() => { setDrawer(false); setDrawerTab(undefined); }} onApplied={() => { setSummaryTick((n) => n + 1); }} />
+      <MessageSourcePreview conversationId={id} messageId={sourceMessageId} onClose={() => { setSourceMessageId(null); navigate(window.location.pathname, { replace: true }); }} />
+      <ChatDrawer open={drawer} conversationId={id} headMessageId={summaryHead} revision={summaryRevision} draft={draft} initialTab={drawerTab} onClose={() => { setDrawer(false); setDrawerTab(undefined); }} onApplied={() => { setSummaryTick((n) => n + 1); }} />
       <ConversationSettings open={settings} conversationId={id} generating={generating} onClose={() => setSettings(false)} onChanged={chat.reload} onOpenMemory={() => { setSettings(false); setDrawerTab(undefined); setDrawer(true); }} />
       </div>
 

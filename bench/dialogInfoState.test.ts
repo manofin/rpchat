@@ -49,7 +49,7 @@ async function main(){
   assert.ok(dependencyNames.includes("state.detail?.conversation.mode"), "story completion must use current mode");
   assert.ok(dependencyNames.includes("state.messages"), "draft recovery must use current pre-send message IDs");
   const compiled=ts.transpileModule(`const runStream=${callback.getText(source)};`,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText;
-  for(const [format,type,status,expectedReload]of [['dialog','done','complete',1],['beat','done','complete',1],[undefined,'done','complete',0],['dialog','done','interrupted',0],['dialog','token','complete',0]]as const){
+  for(const [format,type,status,expectedReload]of [['dialog','done','complete',1],['beat','done','complete',1],[undefined,'done','complete',1],['dialog','done','interrupted',0],['dialog','token','complete',0]]as const){
    let reloads=0;const received:any[]=[];const scope={revision:0};const abortRef:{current:AbortController|null}={current:null};const event:any={type,message:{status},text:'x'};
    const deps={state:{generating:false,messages:[],detail:{conversation:{scene:{format}}}},scope,scopeRef:{current:scope},abortRef,genIdRef:{current:null},AbortController,setStreamConnected:()=>{},patchState:()=>{},applyEvent:(e:any)=>received.push(e),streamPost:async(_p:any,_b:any,cb:any)=>cb(event),reload:async()=>{assert.equal(abortRef.current,null);reloads++;return{messages:[]}}};
    const run=new Function(...Object.keys(deps),`${compiled}return runStream;`)(...Object.values(deps));assert.equal(await run('/fixture',{}),true);assert.deepEqual(received,[event]);assert.equal(reloads,expectedReload);
