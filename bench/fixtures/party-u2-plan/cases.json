@@ -1,0 +1,285 @@
+[
+  {
+    "doc_case": "1-A",
+    "snapshot": { "snapshot_id": "snap-1a", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-B",
+    "snapshot": { "snapshot_id": "snap-1b", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta"] },
+      { "id": "whisper", "kind": "dialogue_output", "role": "input_response", "segments": [{ "id": "seg-1", "recipients": { "visibility": "private", "recipient_ids": ["user", "a"] } }], "context": [{ "item_id": "card-a", "source": "story", "required": false, "allowed_override": { "visibility": "private", "recipient_ids": ["user", "a"] } }], "predecessors": ["delta"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-C",
+    "snapshot": { "snapshot_id": "snap-1c", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta"] },
+      { "id": "x", "kind": "dialogue_output", "role": "auxiliary", "segments": [{ "id": "seg-1", "recipients": { "visibility": "private", "recipient_ids": ["a"] } }], "context": [], "predecessors": [] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-D",
+    "snapshot": { "snapshot_id": "snap-1d", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta", "x"] },
+      { "id": "x", "kind": "dialogue_output", "role": "auxiliary", "segments": [{ "id": "seg-1", "recipients": { "visibility": "private", "recipient_ids": ["a"] } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": [] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-E",
+    "snapshot": { "snapshot_id": "snap-1e", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": ["g"] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta"] },
+      { "id": "g", "kind": "dialogue_output", "role": "auxiliary", "segments": [{ "id": "seg-1", "recipients": { "visibility": "private", "recipient_ids": ["gm"] } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": [] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-F",
+    "snapshot": { "snapshot_id": "snap-1f", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta"] },
+      { "id": "x", "kind": "dialogue_output", "role": "auxiliary", "segments": [{ "id": "seg-1", "recipients": { "visibility": "private", "recipient_ids": ["a", "b"] } }], "context": [], "predecessors": [] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-G",
+    "snapshot": { "snapshot_id": "snap-1g", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta"] },
+      { "id": "x", "kind": "dialogue_output", "role": "auxiliary", "segments": [{ "id": "seg-1", "recipients": { "visibility": "private", "recipient_ids": ["a"] } }], "context": [], "predecessors": [] },
+      { "id": "y", "kind": "dialogue_output", "role": "auxiliary", "segments": [{ "id": "seg-1", "recipients": { "visibility": "private", "recipient_ids": ["a"] } }], "context": [], "predecessors": ["x"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-H",
+    "snapshot": { "snapshot_id": "snap-1g", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "y", "kind": "dialogue_output", "role": "auxiliary", "segments": [{ "id": "seg-1", "recipients": { "visibility": "private", "recipient_ids": ["a"] } }], "context": [], "predecessors": ["x"] },
+      { "id": "x", "kind": "dialogue_output", "role": "auxiliary", "segments": [{ "id": "seg-1", "recipients": { "visibility": "private", "recipient_ids": ["a"] } }], "context": [], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta"] },
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-I",
+    "snapshot": { "snapshot_id": "snap-1i", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta"] },
+      { "id": "whisper", "kind": "dialogue_output", "role": "input_response", "segments": [{ "id": "seg-1", "recipients": { "visibility": "private", "recipient_ids": ["user", "a"] } }], "context": [{ "item_id": "card-a", "source": "story", "required": false, "allowed_override": { "visibility": "private", "recipient_ids": ["user", "a"] } }], "predecessors": ["delta", "x"] },
+      { "id": "x", "kind": "dialogue_output", "role": "auxiliary", "segments": [{ "id": "seg-1", "recipients": { "visibility": "private", "recipient_ids": ["a"] } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": [] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-J",
+    "snapshot": { "snapshot_id": "snap-1j", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta"] },
+      { "id": "z", "kind": "dialogue_output", "role": "auxiliary", "segments": [{ "id": "seg-1", "recipients": { "visibility": "private", "recipient_ids": ["user", "a"] } }], "context": [], "predecessors": [] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-K",
+    "snapshot": { "snapshot_id": "snap-1k", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta", "missing"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-L",
+    "snapshot": { "snapshot_id": "snap-1l", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta"] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-2", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-M",
+    "snapshot": { "snapshot_id": "snap-1m", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta"] },
+      { "id": "p", "kind": "internal_control", "state_effects": [], "declared_scope": { "visibility": "public" }, "context": [], "predecessors": ["q"] },
+      { "id": "q", "kind": "internal_control", "state_effects": [], "declared_scope": { "visibility": "public" }, "context": [], "predecessors": ["p"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-N",
+    "snapshot": { "snapshot_id": "snap-1n", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-O",
+    "snapshot": { "snapshot_id": "snap-1o", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [{ "id": "r1", "generation_id": "gen-past", "observation": { "visibility": "private", "recipient_ids": ["user", "a"] } }], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }, { "item_id": "r1", "source": "path", "required": false }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-P",
+    "snapshot": { "snapshot_id": "snap-1p", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-Q",
+    "snapshot": { "snapshot_id": "snap-1q", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta"] },
+      { "id": "q", "kind": "internal_control", "state_effects": [], "declared_scope": { "visibility": "private", "recipient_ids": ["a"] }, "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "x", "kind": "dialogue_output", "role": "auxiliary", "segments": [{ "id": "seg-1", "recipients": { "visibility": "private", "recipient_ids": ["a"] } }], "context": [], "predecessors": ["q"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-R",
+    "snapshot": { "snapshot_id": "snap-1r", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [{ "id": "mem-a", "allowed": { "visibility": "private", "recipient_ids": ["a"] } }] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta", "y"] },
+      { "id": "x", "kind": "internal_control", "state_effects": [], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "mem-a", "source": "approved", "required": false }], "predecessors": [] },
+      { "id": "y", "kind": "internal_control", "state_effects": [], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["x"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-S",
+    "snapshot": { "snapshot_id": "snap-1s", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta", "x"] },
+      { "id": "x", "kind": "internal_control", "state_effects": [], "declared_scope": { "visibility": "private", "recipient_ids": ["user", "a"] }, "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": [] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "1-T",
+    "snapshot": { "snapshot_id": "snap-1t", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta", "y"] },
+      { "id": "x", "kind": "internal_control", "state_effects": [], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "y", "kind": "internal_control", "state_effects": [], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["x"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "3-G-ga",
+    "snapshot": { "snapshot_id": "snap-3g", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [{ "id": "r1", "generation_id": "gen-past", "observation": { "visibility": "private", "recipient_ids": ["user", "c"] } }], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": ["delta"] },
+      { "id": "whisper2", "kind": "dialogue_output", "role": "input_response", "segments": [{ "id": "seg-1", "recipients": { "visibility": "private", "recipient_ids": ["user", "c"] } }], "context": [{ "item_id": "r1", "source": "path", "required": false }], "predecessors": ["delta"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "3-G-na",
+    "snapshot": { "snapshot_id": "snap-3g", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [{ "id": "r1", "generation_id": "gen-past", "observation": { "visibility": "private", "recipient_ids": ["user", "c"] } }], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }, { "item_id": "r1", "source": "path", "required": false }], "predecessors": ["delta"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "3-H-ga",
+    "snapshot": { "snapshot_id": "snap-3h", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [{ "id": "r2", "generation_id": "gen-past", "observation": { "visibility": "private" } }], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }, { "item_id": "r2", "source": "path", "required": false }], "predecessors": ["delta"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "3-H-na",
+    "snapshot": { "snapshot_id": "snap-3h", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [{ "id": "r2", "generation_id": "gen-past", "observation": { "visibility": "private" } }], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }, { "item_id": "r2", "source": "path", "required": true }], "predecessors": ["delta"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "3-I",
+    "snapshot": { "snapshot_id": "snap-3i", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [{ "id": "mem-x" }] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }, { "item_id": "mem-x", "source": "approved", "required": false }], "predecessors": ["delta"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "3-J",
+    "snapshot": { "snapshot_id": "snap-3j", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": true }], "predecessors": ["delta"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "3-K",
+    "snapshot": { "snapshot_id": "snap-3k", "participants": ["a", "b"], "observation_filter": false, "present_ids": ["a", "b"], "path": [{ "id": "r3", "generation_id": "gen-past" }], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }, { "item_id": "r3", "source": "path", "required": false }], "predecessors": ["delta"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "3-L",
+    "snapshot": { "snapshot_id": "snap-3k", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [{ "id": "r3", "generation_id": "gen-past" }], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }, { "item_id": "r3", "source": "path", "required": false }], "predecessors": ["delta"] }
+    ],
+    "options": { "own_generation_id": null }
+  },
+  {
+    "doc_case": "3-M",
+    "snapshot": { "snapshot_id": "snap-3m", "participants": ["a", "b"], "observation_filter": true, "present_ids": ["a", "b"], "path": [], "approved_items": [] },
+    "candidates": [
+      { "id": "delta", "kind": "internal_control", "state_effects": ["scene"], "declared_scope": { "visibility": "public" }, "context": [{ "item_id": "setting", "source": "story", "required": true, "allowed_override": { "visibility": "public" } }], "predecessors": [] },
+      { "id": "script", "kind": "dialogue_output", "role": "public_script", "segments": [{ "id": "seg-1", "recipients": { "visibility": "public" } }], "context": [{ "item_id": "setting", "source": "story", "required": false, "allowed_override": { "visibility": "public" } }, { "item_id": "r-out", "source": "path", "required": false }], "predecessors": ["delta"] }
+    ],
+    "options": { "own_generation_id": null }
+  }
+]
