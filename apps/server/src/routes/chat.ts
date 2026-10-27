@@ -750,7 +750,8 @@ export function chatRoutes(ctx: Ctx) {
     } catch (err) {
       if (metrics && deltaMetric) metrics.fail(deltaMetric, metricFailure(controller, err, turn));
       // Let the outer pre-stream failure path reclaim and record the turn.
-      if (outputGuard || controller.signal.aborted || isTurnDeadlineError(err)) throw err;
+      if (controller.signal.aborted || isTurnDeadlineError(err)) throw err;
+      if (outputGuard) throw err;
       clockParse = 'fail';
       req.log.warn({ err, conversationId: conv.id }, 'scene delta proposal failed; scene unchanged');
     }
@@ -1439,7 +1440,8 @@ export function chatRoutes(ctx: Ctx) {
     } catch (err) {
       if (metrics && deltaMetric) metrics.fail(deltaMetric, metricFailure(controller, err, turn));
       // Let the outer pre-stream failure path reclaim and record the turn.
-      if (outputGuard || controller.signal.aborted || isTurnDeadlineError(err)) throw err;
+      if (controller.signal.aborted || isTurnDeadlineError(err)) throw err;
+      if (outputGuard) throw err;
       clockParse = 'fail';
       req.log.warn({ err, conversationId: conv.id }, 'scene delta proposal failed; scene unchanged');
     }

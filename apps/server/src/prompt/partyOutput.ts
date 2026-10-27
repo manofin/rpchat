@@ -19,8 +19,8 @@ export const partyOutputEnabled = () => process.env.RPCHAT_PARTY_OUTPUT === '1';
 export function partyOutputMutationBlocked(ctx: Ctx, conversationId?: string | null, characterId?: string | null): boolean {
   if (!partyOutputEnabled()) return false;
   return ctx.queue.activeList.some(g => {
-    const conv = one<ConversationRow>(ctx.db,'SELECT * FROM conversations WHERE id=?',g.conversationId);
-    return conv && supportsPartyObservation(ctx.db,conv) && (conv.id===conversationId || Boolean(characterId && conv.character_id===characterId));
+    const conv = one<ConversationRow>(ctx.db, 'SELECT * FROM conversations WHERE id=?', g.conversationId);
+    return conv && supportsPartyObservation(ctx.db, conv) && (conv.id === conversationId || Boolean(characterId && (conv.character_id === characterId || loadStoryRoster(ctx.db, conv).some(c => c.id === characterId))));
   });
 }
 
@@ -33,7 +33,7 @@ export function userVisibleRequests<T extends { audience: NonNullable<GenParams[
     return [{ ...request, outputAudience: audience }];
   });
 }
-class OutputRequestError extends Error {}
+class OutputRequestError extends Error { }
 export type OutputRequest = {
   pass: string;
   params: Omit<GenParams, 'signal'>;
@@ -59,9 +59,11 @@ export class OutputPermissionGuard {
     const { db } = this.ctx;
     const c = one<ConversationRow>(db, 'SELECT * FROM conversations WHERE id = ?', this.conv.id);
     const messages = this.sourceIds.map(id => one(db, 'SELECT id,parent_id,content,status,meta_json FROM messages WHERE id = ?', id));
-    return JSON.stringify({ scene: c?.scene_json, participants: c?.story_participant_ids_snapshot, character: c?.character_id,
+    return JSON.stringify({
+      scene: c?.scene_json, participants: c?.story_participant_ids_snapshot, character: c?.character_id,
       messages, memories: many(db, "SELECT * FROM memories WHERE conversation_id = ? OR (scope = 'character' AND character_id IN (SELECT value FROM json_each(?))) ORDER BY id", this.conv.id, JSON.stringify(this.characterIds)),
-      summaries: many(db, 'SELECT * FROM summaries WHERE conversation_id = ? ORDER BY id', this.conv.id) });
+      summaries: many(db, 'SELECT * FROM summaries WHERE conversation_id = ? ORDER BY id', this.conv.id)
+    });
   }
   check(head: string | null): void {
     const current = one<{ head_message_id: string | null }>(this.ctx.db, 'SELECT head_message_id FROM conversations WHERE id = ?', this.conv.id);
@@ -120,9 +122,11 @@ export class PartyOutput {
     let row: MessageRow | undefined;
     let stream: ReturnType<typeof createChatEventStream> | undefined;
     const script = !req.gate.singleActor && req.gate.allowed.length > 0;
-    const meta: MessageMeta = { observation: req.audience,
+    const meta: MessageMeta = {
+      observation: req.audience,
       ...(script ? { chat_event_script: true, chat_event_actors: req.gate.allowed, chat_event_cast: req.gate.roomCast }
-      : { block_kind: req.gate.singleActor ? 'line' : 'narration', speaker_character_id: req.gate.singleActor?.id, speaker_name: req.gate.singleActor?.name }) };
+        : { block_kind: req.gate.singleActor ? 'line' : 'narration', speaker_character_id: req.gate.singleActor?.id, speaker_name: req.gate.singleActor?.name })
+    };
     const text = () => units.map(u => (u.break_before ? '\n' : '') + (script && u.kind === 'line' ? `${u.name} | ${u.text}` : u.text)).join('\n') + (units.length ? '\n' : '');
     const publish = (added: VerifiedUnit[]) => {
       if (!added.length) return;
@@ -148,11 +152,11 @@ export class PartyOutput {
       stream = createChatEventStream({ ...row, meta });
       if (!this.startedId) {
         this.startedId = row.id; this.o.ctx.queue.setMessageId(this.o.generationId, row.id);
-        this.send({type:'start', generationId:this.o.generationId,messageId:row.id,eventVersion:1,message:this.out(row.id)});
+        this.send({ type: 'start', generationId: this.o.generationId, messageId: row.id, eventVersion: 1, message: this.out(row.id) });
       }
     }
     const deadline = withCallDeadline(req.timeoutMs, this.o.turn.remainingMs(), this.o.controller.signal);
-    const metric = this.o.metrics?.start(req.pass, req.params.messages.reduce((n,m) => n + estimateMessageTokens(m.content, getCalibration(this.o.ctx.db)),0),req.gate.outputMaxTokens);
+    const metric = this.o.metrics?.start(req.pass, req.params.messages.reduce((n, m) => n + estimateMessageTokens(m.content, getCalibration(this.o.ctx.db)), 0), req.gate.outputMaxTokens);
     try {
       const result = await this.o.ctx.queue.runGeneration(this.o.generationId, () => this.o.ctx.model.stream({ ...req.params, signal: deadline.signal }, delta => {
         deadline.signal.throwIfAborted(); publish(gate.push(delta));
@@ -184,15 +188,15 @@ export class PartyOutput {
   async choices(params: GenParams, timeoutMs: number): Promise<string[] | null> {
     if (!this.bodyCount) throw new PrivateValidationError();
     const deadline = withCallDeadline(timeoutMs, this.o.turn.remainingMs(), this.o.controller.signal);
-    const metric=this.o.metrics?.start('C',params.messages.reduce((n,m)=>n+estimateMessageTokens(m.content,getCalibration(this.o.ctx.db)),0),params.max_tokens!);
+    const metric = this.o.metrics?.start('C', params.messages.reduce((n, m) => n + estimateMessageTokens(m.content, getCalibration(this.o.ctx.db)), 0), params.max_tokens!);
     try {
       const result = await this.o.ctx.queue.runGeneration(this.o.generationId, () => this.o.ctx.model.complete({ ...params, signal: deadline.signal }), this.o.controller.signal);
       deadline.signal.throwIfAborted();
-      if(metric)this.o.metrics?.end(metric,result);
+      if (metric) this.o.metrics?.end(metric, result);
       const gate = createLineGate({ allowed: [], roomCast: [], userName: '', allowNarration: false, outputMaxTokens: params.max_tokens! });
       gate.push(result.text); return gate.end(result.finishReason === 'stop' ? 'stop' : 'length').choices;
     } catch (err) {
-      if(metric)this.o.metrics?.fail(metric,this.o.controller.signal.aborted?'aborted':'error');
+      if (metric) this.o.metrics?.fail(metric, this.o.controller.signal.aborted ? 'aborted' : 'error');
       if (isTurnDeadlineError(deadline.signal.reason)) this.o.turn.tripDeadline();
       if (this.o.controller.signal.aborted) throw err;
       return null;
@@ -203,64 +207,64 @@ export class PartyOutput {
     const heldIds: string[] = [];
     this.atomic(() => {
       if (!this.o.turn.tryEnterCommit({ sceneVersionAtStart: 0, currentSceneVersion: 0, expectedHead: this.head, currentHead: this.head })) throw new PrivateValidationError();
-      for (const h of this.held) heldIds.push(this.insert(h.content,'complete',h.meta).id);
+      for (const h of this.held) heldIds.push(this.insert(h.content, 'complete', h.meta).id);
       if (tail) heldIds.push(this.insert(tail.content, 'complete', tail.meta).id);
-      if (choices?.length && this.head) updateMessage(this.o.ctx.db,this.head,{ meta: { choices } });
-      if (scene && this.o.commitScene) this.o.commitScene(this.rows[0],scene);
-      this.log('complete','completed');
+      if (choices?.length && this.head) updateMessage(this.o.ctx.db, this.head, { meta: { choices } });
+      if (scene && this.o.commitScene) this.o.commitScene(this.rows[0], scene);
+      this.log('complete', 'completed');
     });
     this.completed = true; this.done = true;
     this.held.length = 0;
-    for (const id of heldIds) this.send({ type:'aux', message:this.out(id) });
+    for (const id of heldIds) this.send({ type: 'aux', message: this.out(id) });
     this.closeDone();
   }
   private log(status: string, termination: 'completed' | 'user_cancelled' | 'internal_error' | 'turn_deadline_exceeded' | 'model_timeout') {
     run(this.o.ctx.db, `INSERT INTO generation_log (id,conversation_id,message_id,profile_name,prompt_version,est_prompt_tokens,total_ms,finish_reason,status,budget_json,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-      uid(),this.o.conv.id,this.head,this.o.conv.profile_name,PROMPT_VERSION,0,this.o.turn.elapsedMs(),this.o.format,status,
-      JSON.stringify({...this.o.budget,turn_deadline:this.o.turn.telemetry(),party_output_version:1,...(this.o.metrics?{party_metrics:this.o.metrics.finish(termination)}:{})}),nowIso());
+      uid(), this.o.conv.id, this.head, this.o.conv.profile_name, PROMPT_VERSION, 0, this.o.turn.elapsedMs(), this.o.format, status,
+      JSON.stringify({ ...this.o.budget, turn_deadline: this.o.turn.telemetry(), party_output_version: 1, ...(this.o.metrics ? { party_metrics: this.o.metrics.finish(termination) } : {}) }), nowIso());
   }
   private closeDone() {
     if (!this.head) return;
-    const id=this.startedId && this.rows.includes(this.startedId)?this.startedId:this.head;
-    this.send({ type:'aux', message:this.out(this.head) });
-    this.send({ type:'done', message:this.out(id),usage:null,ttftMs:null,totalMs:this.o.turn.elapsedMs() });
+    const id = this.startedId && this.rows.includes(this.startedId) ? this.startedId : this.head;
+    this.send({ type: 'aux', message: this.out(this.head) });
+    this.send({ type: 'done', message: this.out(id), usage: null, ttftMs: null, totalMs: this.o.turn.elapsedMs() });
   }
   failure(err: unknown) {
     if (this.done) return;
-    const term=classifyTurnTermination(this.o.controller,err,this.o.turn.termination);
+    const term = classifyTurnTermination(this.o.controller, err, this.o.turn.termination);
     this.o.turn.recordTerminal(term);
-    const keep=term==='user_cancelled' && this.publicRows.size>0;
-    this.held.length=0;
+    const keep = term === 'user_cancelled' && this.publicRows.size > 0;
+    this.held.length = 0;
     if (keep) {
-      this.o.ctx.db.transaction(()=>{
-        const empty=this.rows.filter(id=>!this.publicRows.has(id) && one<MessageRow>(this.o.ctx.db,'SELECT * FROM messages WHERE id=?',id)?.status==='streaming');
-        for(const id of empty.reverse()) {
-          const row=one<MessageRow>(this.o.ctx.db,'SELECT * FROM messages WHERE id=?',id)!;
-          if(this.head===id){this.head=row.parent_id;setHead(this.o.ctx.db,this.o.conv.id,this.head);}
-          run(this.o.ctx.db,'DELETE FROM messages WHERE id=?',id);
-          this.rows.splice(this.rows.indexOf(id),1);
+      this.o.ctx.db.transaction(() => {
+        const empty = this.rows.filter(id => !this.publicRows.has(id) && one<MessageRow>(this.o.ctx.db, 'SELECT * FROM messages WHERE id=?', id)?.status === 'streaming');
+        for (const id of empty.reverse()) {
+          const row = one<MessageRow>(this.o.ctx.db, 'SELECT * FROM messages WHERE id=?', id)!;
+          if (this.head === id) { this.head = row.parent_id; setHead(this.o.ctx.db, this.o.conv.id, this.head); }
+          run(this.o.ctx.db, 'DELETE FROM messages WHERE id=?', id);
+          this.rows.splice(this.rows.indexOf(id), 1);
         }
-        if(this.startedId&&!this.rows.includes(this.startedId))this.startedId=null;
-        for (const id of this.rows) updateMessage(this.o.ctx.db,id,{status:'interrupted',meta:{finish_reason:'aborted'}});
+        if (this.startedId && !this.rows.includes(this.startedId)) this.startedId = null;
+        for (const id of this.rows) updateMessage(this.o.ctx.db, id, { status: 'interrupted', meta: { finish_reason: 'aborted' } });
       })();
       this.closeDone();
     } else {
-      const removed=[...this.rows,...(this.o.userMessage?[this.o.userMessage.id]:[])];
-      this.o.ctx.db.transaction(()=>{
-        const current=one<{head_message_id:string|null}>(this.o.ctx.db,'SELECT head_message_id FROM conversations WHERE id=?',this.o.conv.id);
-        if (current?.head_message_id===this.head) setHead(this.o.ctx.db,this.o.conv.id,this.o.restoreHead);
-        const foreignChild=removed.length && one(this.o.ctx.db,'SELECT id FROM messages WHERE parent_id IN (SELECT value FROM json_each(?)) AND id NOT IN (SELECT value FROM json_each(?)) LIMIT 1',JSON.stringify(removed),JSON.stringify(removed));
-        if (!foreignChild) for (const id of [...removed].reverse()) run(this.o.ctx.db,'DELETE FROM messages WHERE id=? AND conversation_id=?',id,this.o.conv.id);
+      const removed = [...this.rows, ...(this.o.userMessage ? [this.o.userMessage.id] : [])];
+      this.o.ctx.db.transaction(() => {
+        const current = one<{ head_message_id: string | null }>(this.o.ctx.db, 'SELECT head_message_id FROM conversations WHERE id=?', this.o.conv.id);
+        if (current?.head_message_id === this.head) setHead(this.o.ctx.db, this.o.conv.id, this.o.restoreHead);
+        const foreignChild = removed.length && one(this.o.ctx.db, 'SELECT id FROM messages WHERE parent_id IN (SELECT value FROM json_each(?)) AND id NOT IN (SELECT value FROM json_each(?)) LIMIT 1', JSON.stringify(removed), JSON.stringify(removed));
+        if (!foreignChild) for (const id of [...removed].reverse()) run(this.o.ctx.db, 'DELETE FROM messages WHERE id=? AND conversation_id=?', id, this.o.conv.id);
       })();
-      this.send({type:'retract',generationId:this.o.generationId,messageIds:removed});
-      this.send({type:'error',code:term==='user_cancelled'?'user_cancelled':'validation',message:term==='user_cancelled'?'생성을 중단했습니다.':'이번 응답을 저장하지 못했습니다. 이전 장면으로 돌아갑니다.'});
+      this.send({ type: 'retract', generationId: this.o.generationId, messageIds: removed });
+      this.send({ type: 'error', code: term === 'user_cancelled' ? 'user_cancelled' : 'validation', message: term === 'user_cancelled' ? '생성을 중단했습니다.' : '이번 응답을 저장하지 못했습니다. 이전 장면으로 돌아갑니다.' });
     }
-    this.log(keep?'interrupted':'error',term); this.done=true;
+    this.log(keep ? 'interrupted' : 'error', term); this.done = true;
   }
-  async run(fn: (output: PartyOutput)=>Promise<void>) {
-    this.o.reply.hijack();this.o.reply.raw.writeHead(200,{'content-type':'text/event-stream; charset=utf-8','cache-control':'no-cache, no-transform'});
-    if(this.o.userMessage)this.send({type:'aux',message:messageOut(this.o.ctx.db,this.o.userMessage)});
-    this.o.ctx.queue.watchProgress(this.o.generationId,g=>this.send({type:'progress',generationId:g.id,phase:g.phase,startedAt:g.startedAt}));
-    try {await fn(this);} catch(err){this.failure(err);} finally {if(!this.o.reply.raw.destroyed&&!this.o.reply.raw.writableEnded)this.o.reply.raw.end();}
+  async run(fn: (output: PartyOutput) => Promise<void>) {
+    this.o.reply.hijack(); this.o.reply.raw.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-cache, no-transform' });
+    if (this.o.userMessage) this.send({ type: 'aux', message: messageOut(this.o.ctx.db, this.o.userMessage) });
+    this.o.ctx.queue.watchProgress(this.o.generationId, g => this.send({ type: 'progress', generationId: g.id, phase: g.phase, startedAt: g.startedAt }));
+    try { await fn(this); } catch (err) { this.failure(err); } finally { if (!this.o.reply.raw.destroyed && !this.o.reply.raw.writableEnded) this.o.reply.raw.end(); }
   }
 }
