@@ -1,7 +1,7 @@
 /**
  * U3 출력 경계 — 다대일 대화 출력의 줄 단위 검증기(순수 모듈).
  *
- * 결정 근거: planning_documents/party-unification-U3-decisions.md v1 §2·§3.
+ * 결정 근거: planning_documents/party-unification-U3-decisions.md v4 §4·§5·§6.
  * 모델 델타를 받아 완성된 줄만 검증하고, 검증을 통과한 단위만 돌려준다.
  * 호출부는 이 결과만 저장·전송한다. 원문 버퍼·제거된 줄은 밖으로 나가지 않는다.
  *
@@ -21,8 +21,6 @@ import { CHAT_SCRIPT_MAX_LINES, type EventActor } from '../contracts/chatActor.j
 import { sanitizeGeneratedContent } from '../contracts/chatEventAdapter.js';
 import { extractChoices } from './templates.js';
 
-export const LINE_GATE_MAX_LINE_CHARS = 4000;
-export const LINE_GATE_MAX_BUFFER_CHARS = 64000;
 /** 화자 모양으로 볼 접두 이름의 최대 길이. 더 길면 `|`가 든 서술로 본다. */
 export const LINE_GATE_MAX_NAME_CHARS = 24;
 const SENTINELS = ['NO_LINE', 'NO_NARRATION'];
@@ -36,8 +34,9 @@ export type LineGateConfig = {
   /** Pass S·narrator 보충은 true, actor 보충은 false(D9). */
   allowNarration: boolean;
   maxLines?: number;
-  maxLineChars?: number;
-  maxBufferChars?: number;
+  outputMaxTokens: number;
+  /** beat F·E: 접두 없는 줄도 이 인물의 대사다. */
+  singleActor?: EventActor;
 };
 
 type UnitBody =
@@ -53,12 +52,11 @@ export type RemovalReason =
   | 'unknown_speaker'
   | 'quarantine'
   | 'narration_not_allowed'
-  | 'line_cap'
-  | 'overlong';
+  | 'line_cap';
 
 export const REMOVAL_REASONS: readonly RemovalReason[] = [
   'user_voice', 'ambiguous_speaker', 'forbidden_speaker', 'unknown_speaker',
-  'quarantine', 'narration_not_allowed', 'line_cap', 'overlong',
+  'quarantine', 'narration_not_allowed', 'line_cap',
 ];
 
 export type EndReason = 'stop' | 'length' | 'timeout' | 'abort' | 'error';
@@ -74,6 +72,8 @@ export type GateTerminal = {
   sentinels: number;
   /** 정상 종료(stop)이고 gate_error가 아닐 때만 채운다. 노출 규칙은 호출부 결정(U3 §6). */
   choices: string[] | null;
+  choices_status: ChoiceValidation['status'] | 'none';
+  request_failed: boolean;
   /** push·end로 낸 단위 전체 수. gate_error 전에 이미 낸 단위도 센다(호출부가 철회한다). */
   unit_count: number;
   line_count: number;
@@ -105,10 +105,51 @@ function matchIds(key: string, actors: EventActor[]): string[] {
   return [...new Set(ids)];
 }
 
+/** 선택지와 본문에서 같은 화자 모양 문법을 쓴다. */
+function speakerShape(line: string): { name: string; said: string } | null {
+  const sep = line.indexOf('|');
+  const name = sep > 0 ? normalizeName(line.slice(0, sep).trim()) : '';
+  const said = sep > 0 ? line.slice(sep + 1).trim() : '';
+  return name && said && name.length <= LINE_GATE_MAX_NAME_CHARS ? { name, said } : null;
+}
+
+export type ChoiceValidation =
+  | { status: 'valid'; items: string[] }
+  | { status: 'invalid'; items: [] };
+
+export function validateChoices(items: string[]): ChoiceValidation {
+  const cleaned = items.map((item) => item.trim()).filter(Boolean);
+  if (!cleaned.length || cleaned.some((item) => item.split(/\r?\n/).some((line) => speakerShape(line) !== null))) {
+    return { status: 'invalid', items: [] };
+  }
+  return { status: 'valid', items: cleaned.slice(0, 3) };
+}
+
+function terminalChoices(raw: string): ChoiceValidation | { status: 'none'; items: [] } {
+  const parsed = extractChoices(raw).choices;
+  if (!parsed) {
+    return /<choices/i.test(raw) || /```(?:json|choices)?\s*\[[\s\S]*?\]\s*```\s*$/i.test(raw)
+      ? { status: 'invalid', items: [] } : { status: 'none', items: [] };
+  }
+  // extractChoices caps at three; inspect the complete selected array before truncating.
+  const candidates = [...raw.matchAll(/<choices>\s*(\[[\s\S]*?\])\s*<\/choices>/gi)];
+  const fence = raw.match(/```(?:json|choices)?\s*(\[[\s\S]*?\])\s*```\s*$/i);
+  if (fence && fence.index !== undefined) candidates.push({ ...fence, index: fence.index } as RegExpExecArray);
+  for (const match of candidates.reverse()) {
+    if (JSON.stringify(extractChoices(raw.slice(match.index)).choices) !== JSON.stringify(parsed)) continue;
+    try {
+      const values: unknown = JSON.parse(match[1]);
+      if (Array.isArray(values)) return validateChoices(values.map((item) => String(item)));
+    } catch { /* The existing extractor remains authoritative for parseability. */ }
+  }
+  return validateChoices(parsed);
+}
+
 export function createLineGate(config: LineGateConfig): LineGate {
-  const maxLines = config.maxLines ?? CHAT_SCRIPT_MAX_LINES;
-  const maxLineChars = config.maxLineChars ?? LINE_GATE_MAX_LINE_CHARS;
-  const maxBufferChars = config.maxBufferChars ?? LINE_GATE_MAX_BUFFER_CHARS;
+  const maxLines = config.singleActor ? Infinity : config.maxLines ?? CHAT_SCRIPT_MAX_LINES;
+  if (!Number.isInteger(config.outputMaxTokens) || config.outputMaxTokens <= 0) throw new Error('invalid output token limit');
+  const maxBufferChars = Math.max(4000, 8 * config.outputMaxTokens);
+  const allowed = config.singleActor ? [config.singleActor] : config.allowed;
   const userKey = fold(config.userName);
 
   let raw = '';
@@ -145,16 +186,11 @@ export function createLineGate(config: LineGateConfig): LineGate {
       sentinels++;
       return;
     }
-    if (line.length > maxLineChars) {
-      remove('overlong', false);
-      return;
-    }
-    const sep = line.indexOf('|');
-    const name = sep > 0 ? normalizeName(line.slice(0, sep).trim()) : '';
-    const said = sep > 0 ? line.slice(sep + 1).trim() : '';
-    if (name && said && name.length <= LINE_GATE_MAX_NAME_CHARS) {
+    const shape = speakerShape(line);
+    if (shape) {
+      const { name, said } = shape;
       const key = fold(name);
-      const allowedIds = matchIds(key, config.allowed);
+      const allowedIds = matchIds(key, allowed);
       if (key === userKey) return remove('user_voice', true);
       if (allowedIds.length > 1) return remove('ambiguous_speaker', true);
       if (allowedIds.length === 1) {
@@ -162,7 +198,7 @@ export function createLineGate(config: LineGateConfig): LineGate {
           quarantine = false;
           return remove('line_cap', false);
         }
-        const actor = config.allowed.find((a) => a.id === allowedIds[0])!;
+        const actor = allowed.find((a) => a.id === allowedIds[0])!;
         quarantine = false;
         lineCount++;
         emit(out, { kind: 'line', actor_id: actor.id, name: actor.name, text: said });
@@ -172,6 +208,12 @@ export function createLineGate(config: LineGateConfig): LineGate {
       return remove('unknown_speaker', true);
     }
     if (quarantine) return remove('quarantine', false);
+    if (config.singleActor) {
+      if (lineCount >= maxLines) return remove('line_cap', false);
+      lineCount++;
+      emit(out, { kind: 'line', actor_id: config.singleActor.id, name: config.singleActor.name, text: line });
+      return;
+    }
     if (!config.allowNarration) return remove('narration_not_allowed', false);
     emit(out, { kind: 'narration', text: line });
   };
@@ -220,13 +262,13 @@ export function createLineGate(config: LineGateConfig): LineGate {
       if (closed) throw new Error('line gate closed');
       closed = true;
       const out: VerifiedUnit[] = [];
-      let choices: string[] | null = null;
+      let choices: ChoiceValidation | { status: 'none'; items: [] } = { status: 'none', items: [] };
       if (!errorCode && reason === 'stop') {
         const rest = fresh(raw, false);
         if (rest === null) fail('gate_nonmonotonic');
         else {
           for (const line of rest) classify(line, out);
-          choices = extractChoices(raw).choices;
+          choices = terminalChoices(raw);
         }
       }
       raw = '';
@@ -244,7 +286,9 @@ export function createLineGate(config: LineGateConfig): LineGate {
         error_code: errorCode,
         removed: { ...removed },
         sentinels,
-        choices: status === 'gate_error' ? null : choices,
+        choices: errorCode || choices.status !== 'valid' ? null : choices.items,
+        choices_status: errorCode ? 'none' : choices.status,
+        request_failed: reason === 'abort' ? false : Boolean(errorCode) || reason === 'timeout' || reason === 'error' || (seq === 0 && removals > 0),
         unit_count: seq,
         line_count: lineCount,
       };

@@ -13,6 +13,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   createLineGate,
+  validateChoices,
   REMOVAL_REASONS,
   type EndReason,
   type GateTerminal,
@@ -37,7 +38,7 @@ const PARTIAL = 'SYNTH_UNFINISHED_OUTPUT_20261025';
 
 const HARIN = { id: 'actor-harin', name: '하린', aliases: ['하린이'] };
 const NARIN = { id: 'actor-narin', name: '나린' };
-const base: LineGateConfig = { allowed: [HARIN], roomCast: [HARIN, NARIN], userName: '서윤', allowNarration: true };
+const base: LineGateConfig = { allowed: [HARIN], roomCast: [HARIN, NARIN], userName: '서윤', allowNarration: true, outputMaxTokens: 900 };
 
 type Run = { pushed: VerifiedUnit[][]; term: GateTerminal; all: VerifiedUnit[] };
 function run(deltas: string[], reason: EndReason = 'stop', config: LineGateConfig = base): Run {
@@ -236,25 +237,19 @@ t('choices are withheld from units and returned only on stop', () => {
 });
 
 t('buffer overflow closes the gate with gate_error and emits nothing after', () => {
-  const gate = createLineGate({ ...base, maxBufferChars: 40 });
+  const gate = createLineGate(base);
   equal(shape(gate.push(`하린 | ${GOOD}\n`)), [`하린|${GOOD}`]);
-  equal(gate.push(`하린 | ${'가'.repeat(40)}\n`), []);
+  equal(gate.push(`하린 | ${'가'.repeat(7200)}\n`), []);
   equal(gate.push('하린 | 이후\n'), []);
   const term = gate.end('stop');
   equal([term.status, term.error_code, term.units, term.choices, term.unit_count], ['gate_error', 'gate_buffer_overflow', [], null, 1]);
-});
-
-t('overlong single line is removed', () => {
-  const r = run([`하린 | ${'가'.repeat(30)}\n하린 | 짧다\n`], 'stop', { ...base, maxLineChars: 20 });
-  equal(shape(r.all), ['하린|짧다']);
-  equal(removedOnly(r.term), { overlong: 1 });
 });
 
 t('diagnostics carry counts only: no removed text, no forbidden names, no actor ids', () => {
   const r = run([`나린 | ${BAD}\n금지인물 | ${BAD}\n서윤 | ${BAD}\n`]);
   const serialized = JSON.stringify(r);
   for (const needle of [BAD, '나린', '금지인물', '서윤', NARIN.id]) truth(!serialized.includes(needle), needle);
-  equal(Object.keys(r.term).sort(), ['choices', 'error_code', 'line_count', 'removed', 'sentinels', 'status', 'unit_count', 'units']);
+  equal(Object.keys(r.term).sort(), ['choices', 'choices_status', 'error_code', 'line_count', 'removed', 'request_failed', 'sentinels', 'status', 'unit_count', 'units']);
 });
 
 t('calls after end throw', () => {
@@ -280,6 +275,120 @@ t('module boundary: pure imports only', () => {
   const file = path.join(path.dirname(fileURLToPath(import.meta.url)), '../apps/server/src/prompt/partyLineGate.ts');
   const imports = [...fs.readFileSync(file, 'utf8').matchAll(/^import .* from '([^']+)';$/gm)].map((m) => m[1]).sort();
   equal(imports, ['../contracts/chatActor.js', '../contracts/chatEventAdapter.js', './templates.js']);
+});
+
+
+t('v4-V1 exact 7200 buffer boundary', () => {
+  const r = run(['가'.repeat(7199) + '\n']);
+  equal(r.term.status, 'ok');
+});
+t('v4-V2 over 7200 buffer boundary', () => {
+  const r = run(['가'.repeat(7200) + '\n']);
+  equal([r.term.status, r.term.error_code], ['gate_error', 'gate_buffer_overflow']);
+});
+t('v4-V3 minimum 4000 buffer boundary', () => {
+  for (const [length, expected] of [[4000, 'ok'], [4001, 'gate_error']] as const) {
+    const r = run(['가'.repeat(length - 1) + '\n'], 'stop', { ...base, outputMaxTokens: 300 });
+    equal(r.term.status, expected);
+    if (length === 4001) equal(r.term.error_code, 'gate_buffer_overflow');
+  }
+});
+t('v4-V4 long 14400 buffer boundary', () => {
+  for (const [length, expected] of [[14400, 'ok'], [14401, 'gate_error']] as const) {
+    equal(run(['가'.repeat(length - 1) + '\n'], 'stop', { ...base, outputMaxTokens: 1800 }).term.status, expected);
+  }
+});
+t('v4-V5 invalid output token limits throw', () => {
+  for (const outputMaxTokens of [0, -1, 1.5, NaN]) {
+    assertions++; assert.throws(() => createLineGate({ ...base, outputMaxTokens }));
+  }
+});
+t('v4-V6 long line below request buffer survives', () => {
+  const r = run(['가'.repeat(5000) + '\n']);
+  equal(r.all.length, 1);
+  equal(r.all[0].kind, 'narration');
+  equal(r.all[0].text.length, 5000);
+  equal(r.term.removed, zero);
+});
+const fixed: LineGateConfig = { ...base, singleActor: HARIN };
+t('v4-V7 fixed actor accepts plain named decorated and alias lines', () => {
+  const r = run(['안녕.\n하린 | 반가워\n**하린** | 둘\n하린이 | 셋\n'], 'stop', fixed);
+  equal(r.all.map(u => u.kind === 'line' ? [u.actor_id, u.name, u.text] : null), [
+    ['actor-harin', '하린', '안녕.'], ['actor-harin', '하린', '반가워'],
+    ['actor-harin', '하린', '둘'], ['actor-harin', '하린', '셋'],
+  ]);
+  equal(r.all.filter(u => u.kind === 'narration').length, 0);
+});
+t('v4-V8 fixed actor rejects other unknown user and quarantined lines', () => {
+  const r = run([`나린 | ${BAD}\n${BAD} 이어짐\n\n괜찮아.\n금지인물 | ${BAD}\n서윤 | ${BAD}\n`], 'stop', fixed);
+  equal(shape(r.all), ['하린|괜찮아.']);
+  equal(r.all[0].kind === 'line' && r.all[0].actor_id, 'actor-harin');
+  equal(r.term.removed, { ...zero, forbidden_speaker: 1, quarantine: 1, unknown_speaker: 1, user_voice: 1 });
+  for (const value of [BAD, '나린', '금지인물', '서윤', 'actor-narin']) truth(!JSON.stringify(r).includes(value));
+});
+t('v4-V9 fixed actor has no dialogue line cap', () => {
+  const r = run([Array.from({ length: 13 }, (_, i) => `줄${i + 1}\n`).join('')], 'stop', fixed);
+  equal(r.all.length, 13);
+  equal(r.term.removed.line_cap, 0);
+});
+t('v4-V10 fixed actor discards hidden tail', () => {
+  const r = run(['말한다.\n속마음: 비밀\n'], 'stop', fixed);
+  equal(shape(r.all), ['하린|말한다.']);
+  truth(!JSON.stringify(r).includes('비밀'));
+});
+t('v4-V11 fixed actor CRLF split invariance', () => {
+  const text = `첫말.\r\n나린 | ${BAD}\r\n이어짐\r\n\r\n하린 | 끝말`;
+  const whole = run([text], 'stop', fixed);
+  equal(whole.all.map(u => u.text), ['첫말.', '끝말']);
+  const splits = Array.from({ length: text.length + 1 }, (_, i) => [text.slice(0, i), text.slice(i)]);
+  splits.push([...text]);
+  for (const deltas of splits) {
+    const r = run(deltas, 'stop', fixed);
+    equal(r.all, whole.all);
+    equal({ ...r.term, units: [] }, { ...whole.term, units: [] });
+  }
+});
+t('v4-V12 choices validation leaves body intact', () => {
+  const cases: Array<[string, string, string[] | null]> = [
+    ['<choices>["가","나","다"]</choices>', 'valid', ['가', '나', '다']],
+    ['<choices>["가","나"', 'invalid', null],
+    ['<choices>[]</choices>', 'invalid', null],
+    ['<choices>["가","나린 | 대사","다"]</choices>', 'invalid', null],
+    ['<choices>["가","하린 | 대사","다"]</choices>', 'invalid', null],
+    ['', 'none', null],
+    ['<choices>["가","나","다","라"]</choices>', 'valid', ['가', '나', '다']],
+  ];
+  for (const [tail, status, items] of cases) {
+    const r = run(['하린 | 좋아\n' + tail]);
+    equal(shape(r.all), ['하린|좋아']);
+    equal(r.all[0].kind === 'line' && r.all[0].actor_id, 'actor-harin');
+    equal(r.term.status, 'ok');
+    equal([r.term.choices_status, r.term.choices], [status, items]);
+    truth(!JSON.stringify(r).includes('나린'));
+  }
+  const aborted = run(['하린 | 좋아\n' + cases[0][0]], 'abort');
+  equal(shape(aborted.all), ['하린|좋아']);
+  equal([aborted.term.choices_status, aborted.term.choices], ['none', null]);
+});
+t('v4-V13 choice array validation', () => {
+  const cases: Array<[string[], unknown]> = [
+    [['가', '나', '다'], { status: 'valid', items: ['가', '나', '다'] }],
+    [[], { status: 'invalid', items: [] }],
+    [['  ', '\t'], { status: 'invalid', items: [] }],
+    [['가', '나린 | 대사'], { status: 'invalid', items: [] }],
+    [['가', '나', '다', '라'], { status: 'valid', items: ['가', '나', '다'] }],
+  ];
+  for (const [input, expected] of cases) equal(validateChoices(input), expected);
+});
+t('v4-V14 request failure is distinct from turn policy', () => {
+  const cases: Array<[string, EndReason, boolean]> = [
+    ['하린 | 좋아\n', 'stop', false], [`나린 | ${BAD}\n`, 'stop', true],
+    [`나린 | ${BAD}\n`, 'length', true], ['하린 | 좋아\n', 'timeout', true],
+    ['하린 | 좋아\n', 'error', true], [`나린 | ${BAD}\n`, 'abort', false],
+    ['', 'stop', false], ['NO_LINE\n', 'stop', false],
+    ['하린 | 좋아\n', 'length', false], ['가'.repeat(7200) + '\n', 'stop', true],
+  ];
+  for (const [input, reason, expected] of cases) equal(run([input], reason).term.request_failed, expected);
 });
 
 console.log(`${checks} checks passed`);
