@@ -46,13 +46,14 @@ async function main() {
   const compatPath = path.join(root, 'deploy/schema-compat.json');
 
   // 0024_role_fact_events.sql adds authenticated, append-only role decisions.
-  await t('live tree: 25 sql files, 25 required, sets equal', () => {
+  await t('live tree: 26 sql files, 26 required, sets equal', () => {
     const files = listMigrationFilenames(migDir);
     const loaded = loadRequiredMigrations(compatPath);
     assert.equal(loaded.error, undefined);
-    assert.equal(files.length, 25);
-    assert.equal(loaded.required.length, 25);
+    assert.equal(files.length, 26);
+    assert.equal(loaded.required.length, 26);
     assert.equal(files[24], '0025_path_memory.sql');
+    assert.equal(files[25], '0026_derived_provenance.sql');
     const d = diffMigrationManifest(files, loaded.required);
     assert.deepEqual(d.missingInSpec, []);
     assert.deepEqual(d.extraInSpec, []);
@@ -139,10 +140,10 @@ async function main() {
   });
 
   // Snapshot fence: any later migration must update this test and deploy manifest together.
-  await t('sql files after 0022 are exactly the approved 0023, 0024 and 0025 migrations', () => {
+  await t('sql files after 0022 match 0023-0026 source candidates (operational apply is separate)', () => {
     const files = listMigrationFilenames(migDir);
-    assert.deepEqual(files.filter((f) => f > '0022_summaries_relation_scope.sql'), ['0023_profile_instruction.sql', '0024_role_fact_events.sql', '0025_path_memory.sql']);
-    assert.equal(files.length, 25);
+    assert.deepEqual(files.filter((f) => f > '0022_summaries_relation_scope.sql'), ['0023_profile_instruction.sql', '0024_role_fact_events.sql', '0025_path_memory.sql', '0026_derived_provenance.sql']);
+    assert.equal(files.length, 26);
   });
 
   console.log(`${passed} passed`);

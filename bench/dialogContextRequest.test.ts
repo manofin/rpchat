@@ -1,3 +1,4 @@
+import { fixtureProvenance } from './helpers/derivedProvenanceFixture.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -49,7 +50,13 @@ function checkedBudget(preview: any) {
   assert.equal(preview.budget.reply_reserve, 964);
   for (const s of preview.budget.sections) assert.ok(s.est_tokens <= s.budget, JSON.stringify(s));
 }
+function captureSeededSummaries() {
+  for (const row of db.prepare('SELECT * FROM summaries WHERE input_provenance_json IS NULL').all() as any[]) {
+    if (row.covers_until_message_id) fixtureProvenance(db, 'summary', row.id, [...new Set([row.covers_from_message_id, row.covers_until_message_id].filter(Boolean))] as string[]);
+  }
+}
 async function preview(id: string, query: Record<string, string> = {}) {
+  captureSeededSummaries();
   const res = await api('GET', `/api/conversations/${id}/prompt-preview?${new URLSearchParams(query)}`);
   return res.json();
 }
@@ -61,10 +68,12 @@ async function send(id: string, content: string, inject?: string) {
 function memory(id: string, room: string, char: string, content: string, status: string, evidence: string[] = []) {
   db.prepare(`INSERT INTO memories (id, conversation_id, character_id, content, source, status, importance, scope, evidence_message_ids_json, created_at, updated_at)
     VALUES (?, ?, ?, ?, 'model', ?, 3, 'conversation', ?, '2026-01-01', '2026-01-01')`).run(id, room, char, content, status, JSON.stringify(evidence));
+  if (evidence.length) fixtureProvenance(db, 'memory', id, evidence);
 }
 function summary(id: string, room: string, content: string, status: string, until: string) {
   db.prepare(`INSERT INTO summaries (id, conversation_id, content, status, tier, covers_until_message_id, created_at)
     VALUES (?, ?, ?, ?, 'whole', ?, ?)`).run(id, room, content, status, until, id);
+  fixtureProvenance(db, 'summary', id, [until]);
 }
 
 async function main() {
@@ -307,7 +316,7 @@ async function main() {
     summary('budget-whole', c.id, 'BUDGET_SUMMARY_START ' + '승인된 사건. '.repeat(20) + '\n' + '추가설명'.repeat(1000) + ' BUDGET_SUMMARY_END', 'approved', rows[5].id);
     const history = getPath(db, conv(c.id));
     history.push({ ...rows[0], id: 'budget-draft', parent_id: parent, content: 'BUDGET_CURRENT' });
-    const assemble = (context: number) => buildDialogPrompt(db, conv(c.id), history, '## 규칙\nP2_RULES', 'BUDGET_CURRENT', context, 'mock-model');
+    const assemble = (context: number) => (captureSeededSummaries(), buildDialogPrompt(db, conv(c.id), history, '## 규칙\nP2_RULES', 'BUDGET_CURRENT', context, 'mock-model'));
     const truncated = assemble(2000);
     assert.equal(truncated.budget.summary_used, true);
     assert.ok(text(truncated).includes('BUDGET_SUMMARY_START'));

@@ -116,10 +116,10 @@ function main() {
       builderSrc,
       /SELECT \* FROM summaries WHERE conversation_id = \? AND tier = 'state' AND status = 'approved' ORDER BY created_at DESC LIMIT 5/,
     );
-    // scene approvedEpisodeIds gate stays conversation-only
+    // Scene suppression considers only conversation-local, provenance-eligible episodes.
     assert.match(
       builderSrc,
-      /SELECT id FROM summaries WHERE conversation_id = \? AND tier = 'episode' AND status = 'approved'/,
+      /onBranch\(many<SummaryRow>\(db, `SELECT \* FROM summaries WHERE conversation_id = \? AND tier = 'episode' AND status = 'approved'/,
     );
   });
 

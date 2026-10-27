@@ -387,12 +387,17 @@ export interface MemoryVerdict {
   reason: string;
 }
 
+export type GenerationAccess =
+  | { status: 'verified'; visibility: 'public' | 'private'; can_summarize: boolean }
+  | { status: 'withheld'; reason: string };
+
 export interface Memory {
   id: string;
   conversation_id: string | null;
   character_id: string | null;
   content: string;
   source: 'user' | 'model';
+  generation_access?: GenerationAccess;
   status: 'candidate' | 'pinned' | 'rejected' | 'superseded';
   importance: number;
   scope: 'conversation' | 'character';
@@ -404,6 +409,7 @@ export interface Memory {
 
 export interface Summary {
   id: string;
+  generation_access?: GenerationAccess;
   conversation_id: string;
   content: string;
   covers_until_message_id: string | null;

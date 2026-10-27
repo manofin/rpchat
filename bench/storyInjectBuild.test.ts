@@ -64,7 +64,7 @@ function seed(): DB {
   db.prepare(`INSERT INTO messages VALUES (?,?,?,?,?,?)`).run('m01', 'conv1', 'user', '시작입니다.', 'done', '0001');
   db.prepare(
     `INSERT INTO memories VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-  ).run('mem1', 'conv1', 'c1', '핀 기억 한 줄', 'manual', 'pinned', 5, 'conversation', '[]', '0001', '0001');
+  ).run('mem1', 'conv1', 'c1', '핀 기억 한 줄', 'user', 'pinned', 5, 'conversation', '[]', '0001', '0001');
   return db;
 }
 

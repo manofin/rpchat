@@ -46,10 +46,10 @@ function event(conv: string, anchor: string | null, sources: string[], key = uid
 }
 
 async function main() {
-  await test('migrations 0001-0025 and both ledger tables', () => {
+  await test('migrations 0001-0026 and both ledger tables', () => {
     const tables = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'path_memory%'`).all();
     assert.equal(tables.length, 2);
-    assert.equal(one<{ n: number }>(db, 'SELECT COUNT(*) AS n FROM schema_migrations')!.n, 25);
+    assert.equal(one<{ n: number }>(db, 'SELECT COUNT(*) AS n FROM schema_migrations')!.n, 26);
   });
 
   await test('S3 message FK blocks partial delete; conversation delete cascades', () => {

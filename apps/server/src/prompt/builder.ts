@@ -366,7 +366,7 @@ export function buildPrompt(db: DB, conv: ConversationRow, history: MessageRow[]
   const compactEnd = effectiveCompactionEndIndex(
     resolveWatermarkIndex(
       history,
-      many<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ?`, conv.id),
+      selected.compactionSummaries,
       conv.id,
     ),
     history.length,

@@ -63,7 +63,7 @@ async function room(known_by: unknown, status = 'pinned') {
   const anchor = insertMessage(db, c.id, null, 'user', '비공개 기록을 승인했다.', 'complete');
   setHead(db, c.id, anchor.id);
   db.prepare(`INSERT INTO memories(id,conversation_id,content,source,status,importance,scope,evidence_message_ids_json,created_at,updated_at)
-    VALUES(?, ?, ?, 'manual', ?, 3, 'conversation', ?, '2026', '2026')`).run(c.id, c.id, SECRET, status, JSON.stringify([anchor.id]));
+    VALUES(?, ?, ?, 'user', ?, 3, 'conversation', ?, '2026', '2026')`).run(c.id, c.id, SECRET, status, JSON.stringify([anchor.id]));
   await api('PATCH', `/api/conversations/${c.id}`, { scene: { dialog_context: { version: 1, entries: [{ memory_id: c.id, anchor_message_id: anchor.id, kind: 'fact', known_by, status: 'active' }] }, pending_edit: { head_message_id: anchor.id } } });
   return c.id;
 }
@@ -197,7 +197,7 @@ async function main() {
     const anchor = scene.dialog_context.entries[0].anchor_message_id;
     const hidden = 'GM_ONLY_CONTINUATION_9234';
     db.prepare(`INSERT INTO memories(id,conversation_id,content,source,status,importance,scope,evidence_message_ids_json,created_at,updated_at)
-      VALUES(?, ?, ?, 'manual', 'pinned', 3, 'conversation', ?, '2026', '2026')`).run(id + '-gm', id, hidden, JSON.stringify([anchor]));
+      VALUES(?, ?, ?, 'user', 'pinned', 3, 'conversation', ?, '2026', '2026')`).run(id + '-gm', id, hidden, JSON.stringify([anchor]));
     await api('PATCH', `/api/conversations/${id}`, { scene: { dialog_context: { version: 1, entries: [
       ...scene.dialog_context.entries, { memory_id: id + '-gm', anchor_message_id: anchor, kind: 'fact', known_by: [], status: 'active' },
     ] }, pending_edit: { head_message_id: anchor } } });

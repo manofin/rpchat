@@ -1,9 +1,11 @@
+import { fixtureProvenance } from './helpers/derivedProvenanceFixture.js';
 /** npx tsx bench/summaryWatermarkCompaction.test.ts
  * summary-watermark-compaction — approved covers_until removes covered turns
  * from the recent window. Isolated memory DB. No live DB, no generate, no UI.
  */
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import Database from 'better-sqlite3';
 import { migrateSummaryRelationFixture } from './helpers/summaryRelationFixture.ts';
 import type { DB } from '../apps/server/src/db/index.js';
@@ -143,6 +145,7 @@ function seed(n: number, opts?: { long?: boolean }): DB {
     INSERT INTO settings VALUES ('token_calibration','1.0');
   `);
   migrateSummaryRelationFixture(db);
+  db.exec(fs.readFileSync('apps/server/migrations/0026_derived_provenance.sql', 'utf8'));
   db.prepare(`INSERT INTO personas VALUES (?,?,?,?,?,?,?,?,?)`).run('p1', '유저', '호칭1', '외형1', '페르소나성격', '관계1', 1, '0001', '0001');
   const ins = db.prepare(`INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?)`);
   const body = opts?.long ? '가나다라마바사아자차카타파하'.repeat(30) : '짧은대사';
@@ -177,6 +180,8 @@ function insertSummary(db: DB, row: {
     row.tier ?? 'whole',
     null,
   );
+  const sources = [row.from, row.until].filter((id): id is string => !!id && !!db.prepare('SELECT id FROM messages WHERE id=?').get(id));
+  fixtureProvenance(db, 'summary', row.id ?? `s-${row.until ?? 'none'}`, sources.length ? [...new Set(sources)] : ['m01']);
 }
 
 function convOf(db: DB): ConversationRow {
@@ -265,10 +270,10 @@ t('5 build: reversed coverage does not compact', () => {
   assert.equal(turnText(reversed), turnText(clean));
 });
 
-t('6 build: farthest of several approved watermarks wins', () => {
+t('6 build: farthest of several fully included approved watermarks wins', () => {
   const db = seed(40);
   insertSummary(db, { id: 's-early', until: 'm08', from: 'm01', tier: 'scene' });
-  insertSummary(db, { id: 's-late', until: 'm16', from: 'm09', tier: 'episode' });
+  insertSummary(db, { id: 's-late', until: 'm16', from: 'm09', tier: 'episode', content: '지난 장면의 승인된 사건을 보존한다. '.repeat(8) });
   const { built, path } = build(db);
   const turns = turnText(built);
   const end = effectiveCompactionEndIndex(15, path.length)!;
@@ -373,7 +378,7 @@ t('12 build: same DB + same head is deterministic', () => {
 t('tier name does not admit or reject a watermark by itself', () => {
   for (const tier of ['scene', 'episode', 'whole', 'state']) {
     const db = seed(40);
-    insertSummary(db, { id: `t-${tier}`, until: 'm12', from: 'm01', tier });
+    insertSummary(db, { id: `t-${tier}`, until: 'm12', from: 'm01', tier, ...(tier === 'episode' ? { content: '지난 장면의 승인된 사건을 보존한다. '.repeat(8) } : {}) });
     const turns = turnText(build(db).built);
     assert.equal(turns.includes(marker('m01')), false, `${tier} with valid coverage still compacts`);
   }

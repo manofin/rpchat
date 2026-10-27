@@ -346,6 +346,7 @@ export interface MemoryAnchorRow extends Omit<MessageRow, 'role'> {
 export type StoredMessageRow = MessageRow | MemoryAnchorRow;
 
 export interface MemoryRow {
+  input_provenance_json?: string | null;
   id: string;
   conversation_id: string | null;
   character_id: string | null;
@@ -360,6 +361,7 @@ export interface MemoryRow {
 }
 
 export interface SummaryRow {
+  input_provenance_json?: string | null;
   id: string;
   conversation_id: string;
   content: string;

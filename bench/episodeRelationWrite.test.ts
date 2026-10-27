@@ -1,3 +1,5 @@
+import { fixtureProvenance } from './helpers/derivedProvenanceFixture.js';
+import { insertMessage, setHead } from '../apps/server/src/db/tree.js';
 /** npx tsx bench/episodeRelationWrite.test.ts
  * episode-relation-write — stamp rel_* on rollup-episode INSERT (reuse 0022).
  * Temp DB only. Mock model.complete — no live LLM, no live DB, no deploy.
@@ -39,9 +41,9 @@ async function main() {
     assert.ok(start > 0);
     const end = src.indexOf('});', src.indexOf('db.transaction(() => {', start)) + 3;
     const handler = src.slice(start, end);
-    // Exactly one loadConversation in the handler (the existing gate).
+    // Initial gate plus post-model head revalidation; stamping still reuses the initial conv.
     const loads = handler.match(/loadConversation\(/g) ?? [];
-    assert.equal(loads.length, 1, `expected 1 loadConversation, got ${loads.length}`);
+    assert.equal(loads.length, 2, `expected gate + revalidation, 2 loadConversation, got ${loads.length}`);
     // INSERT binds conv.character_id / conv.persona_id — no fresh SELECT for stamp.
     assert.match(handler, /rel_character_id, rel_persona_id/);
     assert.match(handler, /conv\.character_id, conv\.persona_id/);
@@ -126,6 +128,9 @@ async function main() {
       `INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier)
        VALUES (?, ?, ?, NULL, NULL, 'approved', ?, 'scene')`,
     ).run(id, convId, content, t0);
+    const parent = (db.prepare('SELECT head_message_id FROM conversations WHERE id=?').get(convId) as any).head_message_id;
+    const source = insertMessage(db, convId, parent, 'user', `SOURCE_${id}`, 'complete'); setHead(db, convId, source.id);
+    fixtureProvenance(db, 'summary', id, [source.id]);
   }
 
   const charRes = await api('POST', '/api/characters', {

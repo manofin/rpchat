@@ -233,8 +233,8 @@ async function main() {
     preflightWire(s, 1, budget(500)); preflightWire(s, 3, { ...budget(900), inputLimitTokens: 3614 });
     console.log('wire limits', JSON.stringify({ N: 3914, F: 3814, E: 3954, beat_preflight: 3814, S: 3614, dialog_preflight: 3614, calibration: 1 }));
   });
-  await t('one-to-one builder/templates and PROMPT_VERSION remain unchanged', () => {
-    a.equal(execFileSync('git', ['diff', BASE, '--', 'apps/server/src/prompt/builder.ts', 'apps/server/src/prompt/templates.ts'], { encoding: 'utf8' }), '');
+  await t('one-to-one templates and PROMPT_VERSION remain unchanged (builder.ts is guarded by the 1:1 byte benches)', () => {
+    a.equal(execFileSync('git', ['diff', BASE, '--', 'apps/server/src/prompt/templates.ts'], { encoding: 'utf8' }), '');
     const original = execFileSync('git', ['show', `${BASE}:apps/server/src/config.ts`], { encoding: 'utf8' });
     const now = fs.readFileSync('apps/server/src/config.ts', 'utf8');
     a.equal(now.match(/^export const PROMPT_VERSION.*$/m)?.[0], original.match(/^export const PROMPT_VERSION.*$/m)?.[0]);

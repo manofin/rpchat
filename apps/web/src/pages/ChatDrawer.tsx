@@ -3,7 +3,7 @@ import { del, get, patch, post } from '../lib/api';
 import { navigate } from '../lib/router';
 import { readShortcuts, resolveShortcutSubmit } from '../lib/shortcutMacro';
 import { currentApprovedState, diffWords, priorApprovedWhole } from '../lib/summaryDiff';
-import type { BudgetReport, Memory, PromptPreview, Summary } from '../types';
+import type { BudgetReport, GenerationAccess, Memory, PromptPreview, Summary } from '../types';
 import { BottomSheet, useUi } from '../components/ui';
 
 function DiffText({ before, after }: { before: string; after: string }) {
@@ -15,6 +15,16 @@ function DiffText({ before, after }: { before: string; after: string }) {
         if (seg.type === 'add') return <ins key={idx} style={{ background: 'rgba(51,180,167,0.16)', color: 'var(--role-teal-text)', textDecorationColor: 'var(--role-teal-text)' }}>{seg.text}</ins>;
         return <del key={idx} style={{ background: 'rgba(199,51,63,0.12)', color: 'var(--danger)' }}>{seg.text}</del>;
       })}
+    </div>
+  );
+}
+
+function GenerationNotice({ access }: { access?: GenerationAccess }) {
+  if (!access || (access.status === 'verified' && access.visibility === 'public')) return null;
+  return (
+    <div className="small" style={{ marginTop: 6, overflowWrap: 'anywhere', color: 'var(--fg-2)' }}>
+      <strong>{access.status === 'withheld' ? '새 답변 적용 보류' : '비공개 자료'}</strong>
+      <div>{access.status === 'withheld' ? access.reason : '허용된 대상에게 보내는 답변에만 사용할 수 있어요.'}</div>
     </div>
   );
 }
@@ -289,6 +299,7 @@ export function MemoryTab({ conversationId, open, onApplied, onClose }: { conver
                 <div className="mem-item">
                   <div className="body">
                     <div>{m.content}</div>
+                    <GenerationNotice access={m.generation_access} />
                     <div className="imp">중요도 {m.importance} · {m.source === 'model' ? '자동 추출' : '직접'}{dup ? ' · 중복 가능성' : ''}</div>
                   </div>
                   <button className="btn sm" onClick={() => setStatus(m.id, 'pinned')}>채택</button>
@@ -321,6 +332,7 @@ export function MemoryTab({ conversationId, open, onApplied, onClose }: { conver
           <div className="mem-item" key={m.id}>
             <div className="body">
               <div>{m.content}</div>
+                    <GenerationNotice access={m.generation_access} />
               <div className="imp">중요도 {m.importance}{m.scope === 'character' ? ' · 캐릭터 공용' : ''}</div>
             </div>
             <button className="btn sm ghost" onClick={() => remove(m.id)} aria-label="삭제">🗑</button>
@@ -369,7 +381,7 @@ export function SummaryTab({ conversationId, open, onApplied, onClose }: { conve
     await patch(`/api/summaries/${id}`, { status: 'approved' });
     await load();
     onApplied();
-    ui.toast('요약 승인됨 — 이후 프롬프트에 반영');
+    ui.toast('요약 승인됨 — 출처와 공개 범위를 확인해 답변에 사용합니다');
   }
   async function saveEdit() {
     if (!edit) return;
@@ -392,14 +404,14 @@ export function SummaryTab({ conversationId, open, onApplied, onClose }: { conve
     await post(`/api/summaries/${id}/restore`, {});
     await load();
     onApplied();
-    ui.toast('이전 상태로 복원됨 — 새 체크포인트로 저장');
+    ui.toast('요약 사본 저장됨 — 출처와 공개 범위는 그대로 유지됩니다');
   }
 
   const stateRows = summaries.filter((s) => s.tier === 'state');
   const sceneRows = summaries.filter((s) => s.tier === 'scene');
   const episodeRows = summaries.filter((s) => s.tier === 'episode');
   const wholeRows = summaries.filter((s) => s.tier !== 'state' && s.tier !== 'scene' && s.tier !== 'episode');
-  const foldableScenes = summaries.filter((s) => s.tier === 'scene' && s.status === 'approved' && !s.rolled_up_into).length;
+  const foldableScenes = summaries.filter((s) => s.tier === 'scene' && s.status === 'approved' && !s.rolled_up_into && s.generation_access?.status === 'verified' && s.generation_access.can_summarize).length;
 
   function renderCard(s: Summary, kind: '상태' | '전체' | '장면' | '에피소드', opts?: { onRestore?: () => void; diffBefore?: string | null }) {
     return (
@@ -411,6 +423,7 @@ export function SummaryTab({ conversationId, open, onApplied, onClose }: { conve
           </span>
           <span className="small muted">{new Date(s.created_at).toLocaleString('ko-KR')}</span>
         </div>
+        <GenerationNotice access={s.generation_access} />
         {edit?.id === s.id ? (
           <>
             <textarea value={edit.content} onChange={(e) => setEdit({ id: s.id, content: e.target.value })} style={{ width: '100%', minHeight: 120, background: 'var(--bg)', border: '1px solid var(--bg-3)', borderRadius: 8, padding: 10 }} />
@@ -440,7 +453,7 @@ export function SummaryTab({ conversationId, open, onApplied, onClose }: { conve
     <div>
       <button className="btn primary block" disabled={busy} onClick={generate}>{busy ? '요약 생성 중… (모델 호출)' : '지금까지 대화 요약하기'}</button>
       {foldableScenes >= 5 && <button className="btn sm block" onClick={rollup}>에피소드로 묶기 ({foldableScenes})</button>}
-      <div className="small muted" style={{ margin: '8px 0 14px' }}>요약과 자동 추출 기억은 <b>초안</b>으로 저장되며, 승인해야 프롬프트에 들어갑니다. 마지막 승인 이후의 새 메시지만 요약합니다.</div>
+      <div className="small muted" style={{ margin: '8px 0 14px' }}>요약과 자동 추출 기억은 <b>초안</b>으로 저장됩니다. 승인·채택 이후에도 현재 분기, 공개 범위, 입력 한도에 맞는 자료만 답변에 사용합니다. 출처가 확인되지 않은 자동 자료는 읽을 수 있지만 새 답변에는 사용하지 않아요. 다시 요약하면 확인 가능한 원문부터 새로 정리합니다.</div>
       {summaries.length === 0 && <div className="muted small">아직 요약이 없습니다.</div>}
       {(() => {
         const current = currentApprovedState(summaries);
