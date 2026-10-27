@@ -1,3 +1,4 @@
+import { partyOutputMutationBlocked } from '../prompt/partyOutput.js';
 import { STORY_PARTICIPANT_LIMIT } from '@rpchat/contracts/story-limits';
 import { supportsPartyObservation } from '../prompt/dialogContext.js';
 import { PUBLIC, audienceOf, successfulObservationRows } from '../prompt/observation.js';
@@ -602,6 +603,7 @@ export function conversationRoutes(ctx: Ctx) {
       if (m.status === 'streaming') return reply.code(409).send({ error: '생성 중인 메시지는 수정 불가' });
       const p = msgPatch.safeParse(req.body);
       if (!p.success) return reply.code(400).send({ error: p.error.flatten() });
+      if (p.data.content !== undefined && partyOutputMutationBlocked(ctx,m.conversation_id)) return reply.code(409).send({error:'생성 중에는 대화 내용을 수정할 수 없습니다.'});
       if (p.data.content !== undefined && parseMessageMeta(m.meta_json).adventure_receipt) return reply.code(409).send({ error: '확인 기록의 내용은 수정할 수 없습니다. 해당 기록을 삭제하고 다시 확인해 주세요.' });
       updateMessage(db, m.id, { content: p.data.content, bookmarked: p.data.bookmarked, status: p.data.content !== undefined && m.status === 'interrupted' ? 'complete' : undefined });
       return messageOut(db, one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', m.id)!);

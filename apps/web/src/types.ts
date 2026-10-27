@@ -362,6 +362,8 @@ export interface Message {
     beat_seq?: number;
     /** Server-chosen local asset path. Never a model-written URL. */
     image_url?: string;
+    party_output_version?: 1;
+    chat_event_script?: boolean;
     roster_portraits?: Array<{ id: string; name: string; image_url: string; emotion: string | null }>;
   };
   bookmarked: boolean;
@@ -492,4 +494,5 @@ export type SseEvent =
   | { type: 'token'; text: string; eventVersion: 1; messageId: string; events: ChatEvent[] }
   | { type: 'done'; message: Message; usage: unknown; ttftMs: number | null; totalMs: number; budget?: SseBudget }
   | { type: 'aux'; message: Message }
+  | { type: 'retract'; generationId: string; messageIds: string[] }
   | { type: 'error'; message: string; messageId?: string; code?: GenerationFailureCode };

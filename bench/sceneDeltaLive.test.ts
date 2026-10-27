@@ -200,7 +200,9 @@ function main() {
     const handler = src.slice(catchAt, src.indexOf('passMs.delta =', catchAt));
     const abortGuard = 'if (controller.signal.aborted || isTurnDeadlineError(err)) throw err;';
     assert.ok(handler.includes(abortGuard), 'abort/deadline must reach terminal cleanup');
-    assert.equal(/throw\b/.test(handler.replace(abortGuard, '')), false, 'non-terminal delta failure must not rethrow');
+    const outputGuard = 'if (outputGuard) throw err;';
+    assert.ok(handler.includes(outputGuard), 'new required delta failure reaches terminal cleanup');
+    assert.equal(/throw\b/.test(handler.replace(abortGuard, '').replace(outputGuard, '')), false, 'legacy non-terminal delta failure must not rethrow');
     assert.ok(/scene unchanged/.test(handler), 'the failure must be logged as a no-op, not swallowed silently');
     // `patch` starts null, so a failed call simply never assigns it
     const decl = src.slice(0, call);

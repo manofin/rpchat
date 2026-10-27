@@ -476,7 +476,11 @@ await t('Pass C max_tokens is the short-form cap, not the long-form 400', () => 
 
 await t('a stop during Pass C costs the chips, not the finished beat', () => {
   const chat = src('apps/server/src/routes/chat.ts');
-  const beat = chat.slice(chat.indexOf('async function generateBeat'), chat.indexOf('async function generateDialog'));
+  const all = chat.slice(chat.indexOf('async function generateBeat'), chat.indexOf('async function generateDialog'));
+  const gateStart = all.indexOf('    if (outputGuard) {');
+  const legacyStart = all.indexOf('    const profileName = convNow.profile_name;', gateStart);
+  assert.ok(gateStart > 0 && legacyStart > gateStart);
+  const beat = all.slice(0, gateStart) + all.slice(legacyStart);
   const cAt = beat.indexOf('passCWith(');
   const cCatch = beat.slice(cAt, beat.indexOf('passMs.c ='));
   // Pass N and Pass E rethrow on abort because their turn is still being written.

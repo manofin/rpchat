@@ -1,3 +1,6 @@
+import { PartyOutput, OutputPermissionGuard, partyOutputEnabled, userVisibleRequests } from '../prompt/partyOutput.js';
+import { TurnDeadline } from '../model/turnDeadline.js';
+import { PartyMetrics } from '../model/partyMetrics.js';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../ctx.js';
@@ -194,6 +197,36 @@ export function continuationRoutes(ctx: Ctx) {
       const oldMeta = parseMessageMeta(head.meta_json);
       const multi = typeof oldMeta.beat_seq === 'number';
       const startSeq = multi ? oldMeta.beat_seq! + 1 : undefined;
+      if (partyOutputEnabled() && storyCastForGenerate(conv, loadStoryRoster(db,conv))?.length) {
+        const cast=storyCastForGenerate(conv,loadStoryRoster(db,conv))!;
+        const guard=new OutputPermissionGuard(ctx,conv);
+        const turn=new TurnDeadline({deadlineMs:config.turnTotalDeadlineMs,controller,log:ctx.log,onForceRelease:()=>ctx.queue.forceRelease(generationId)});
+        ctx.queue.register({id:generationId,conversationId:conv.id,messageId:'',startedAt:nowIso(),controller});
+        ctx.queue.setTurnDeadline(generationId,turn);turn.start();
+        const output=new PartyOutput({ctx,reply,conv,generationId,parentId:head.id,restoreHead:head.id,controller,turn,guard,
+          metrics:config.partyContext?new PartyMetrics(turn.acceptedAtIso,()=>turn.elapsedMs()):null,format:'continuation',initialSeq:startSeq,
+          baseMeta:{continuation_of:head.id,...(multi?{generation_id:oldMeta.generation_id}:{})},budget:{...built.budget}});
+        try {
+          await output.run(async out=>{
+            const actor=cast.find(a=>a.id===built.meta.speaker_character_id);
+            const scope=built.meta.observation??PUBLIC;
+            const main=await out.request({pass:'continuation',params:{model:built.model!,messages:built.messages,max_tokens:built.maxTokens,temperature:built.temperature,top_p:built.topP,stop:built.stop},
+              gate:{allowed:built.meta.chat_event_actors??(actor?[actor]:[]),roomCast:cast,userName:resolvePersona(db,conv)?.name||'나',allowNarration:!actor,outputMaxTokens:built.maxTokens,...(actor?{singleActor:actor}:{})},
+              audience:scope,exposure:scope.visibility==='public'?'public_verified_stream':'private_hold_until_turn_success',timeoutMs:config.model.timeoutMs});
+            for(const scoped of userVisibleRequests(built.scopedRequests)) {
+              const id=scoped.audience.kind==='actor'?scoped.audience.actor_id:null;
+              const actor=id?cast.find(a=>a.id===id):undefined;
+              await out.request({pass:'supplement',params:{model:built.model!,messages:scoped.messages,max_tokens:scoped.maxTokens,temperature:0.7,top_p:0.95,stop:[],audience:scoped.audience},
+                gate:{allowed:actor?[actor]:[],roomCast:cast,userName:resolvePersona(db,conv)?.name||'나',allowNarration:!actor,outputMaxTokens:scoped.maxTokens},
+                audience:scoped.outputAudience,exposure:'private_hold_until_turn_success',timeoutMs:config.model.timeoutMs});
+            }
+            const portraits=built.finish(main.text).flatMap(block=>block.meta.speaker_character_id && block.meta.speaker_name && block.meta.image_url
+              ? [{id:block.meta.speaker_character_id,name:block.meta.speaker_name,image_url:block.meta.image_url,emotion:null}] : []);
+            out.success(undefined,null,undefined,portraits);
+          });
+        } finally { ctx.queue.unregister(generationId);turn.dispose(); }
+        return;
+      }
       const rowMeta: MessageMeta = { ...built.meta, continuation_of: head.id, generation_id: multi ? oldMeta.generation_id : generationId,
         beat_seq: startSeq, profile: conv.profile_name, prompt_version: PROMPT_VERSION };
       const row = insertMessage(db, conv.id, head.id, 'assistant', '', 'streaming', rowMeta);

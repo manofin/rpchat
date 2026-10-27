@@ -241,7 +241,11 @@ t('generateBeat model call count and order unchanged', () => {
   const from = chat.indexOf('async function generateBeat');
   const to = chat.indexOf('async function generateDialog', from);
   assert.ok(from > 0 && to > from);
-  const body = chat.slice(from, to);
+  const all = chat.slice(from, to);
+  const gateStart = all.indexOf('    if (outputGuard) {');
+  const legacyStart = all.indexOf('    const profileName = convNow.profile_name;', gateStart);
+  assert.ok(gateStart > 0 && legacyStart > gateStart);
+  const body = all.slice(0, gateStart) + all.slice(legacyStart);
   assert.equal(body.split('model.complete(').length - 1, 4);
   assert.equal(body.split('model.stream(').length - 1, 1);
   const n = body.indexOf('model.complete(');

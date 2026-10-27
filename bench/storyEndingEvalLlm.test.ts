@@ -282,9 +282,10 @@ async function main() {
     db.prepare('UPDATE conversations SET ended_at = NULL WHERE id = ?').run(roomId);
   });
 
-  await t('V2 wiring: 3 completion sites fire void (non-blocking), OOC excluded on main path', () => {
+  await t('V2 and gated wiring: 5 completion sites fire void (non-blocking), OOC excluded on main path', () => {
     const hits = [...chatSrc.matchAll(/void fireEndingEvalJob\(ctx, conv\.id\);/g)].length;
-    assert.equal(hits, 3, '1:1 + beat + dialog');
+    assert.equal(hits, 5, '1:1 + legacy beat/dialog + gated beat/dialog');
+    assert.equal([...chatSrc.matchAll(/if \(output\.succeeded\) void fireEndingEvalJob/g)].length, 2, 'new hooks require successful commit');
     assert.ok(/if \(!built\.isOoc\) void fireEndingEvalJob/.test(chatSrc), 'main path skips OOC');
     assert.equal(/await fireEndingEvalJob/.test(chatSrc), false, 'never awaited — streaming latency untouched');
     assert.equal(chatSrc.includes('queue.register') && /ending/i.test(chatSrc.split('queue.register')[0].slice(-200)), false);

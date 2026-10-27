@@ -1,3 +1,4 @@
+import { partyOutputMutationBlocked } from '../prompt/partyOutput.js';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../ctx.js';
@@ -95,6 +96,20 @@ export function memoryRoutes(ctx: Ctx) {
   const { db } = ctx;
   return async function plugin(app: FastifyInstance) {
     await app.register(dialogKnowledgeRoutes(ctx));
+    app.addHook('preHandler', async (req, reply) => {
+      if (!['POST','PATCH','DELETE'].includes(req.method)) return;
+      const params=(req.params??{}) as {id?:string};
+      const body=(req.body??{}) as {conversationId?:string;characterId?:string};
+      const url=req.url.split('?')[0];
+      let conversationId=body.conversationId, characterId=body.characterId;
+      if(url.startsWith('/api/memories/') && params.id) {
+        const row=one<MemoryRow>(db,'SELECT * FROM memories WHERE id=?',params.id);
+        conversationId=row?.conversation_id??undefined;characterId=row?.character_id??undefined;
+      } else if(url.startsWith('/api/summaries/') && params.id) {
+        conversationId=one<SummaryRow>(db,'SELECT * FROM summaries WHERE id=?',params.id)?.conversation_id;
+      } else if(url.startsWith('/api/conversations/')) conversationId=params.id;
+      if(partyOutputMutationBlocked(ctx,conversationId,characterId)) return reply.code(409).send({error:'생성 중에는 기억과 요약을 수정할 수 없습니다.'});
+    });
     app.get<{ Params: { id: string } }>('/api/conversations/:id/memories', async (req, reply) => {
       const conv = loadConversation(ctx, req.params.id);
       if (!conv) return reply.code(404).send({ error: 'not found' });
