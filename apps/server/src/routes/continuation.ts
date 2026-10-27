@@ -220,7 +220,9 @@ export function continuationRoutes(ctx: Ctx) {
                 gate:{allowed:actor?[actor]:[],roomCast:cast,userName:resolvePersona(db,conv)?.name||'나',allowNarration:!actor,outputMaxTokens:scoped.maxTokens},
                 audience:scoped.outputAudience,exposure:'private_hold_until_turn_success',timeoutMs:config.model.timeoutMs});
             }
-            out.success();
+            const portraits=built.finish(main.text).flatMap(block=>block.meta.speaker_character_id && block.meta.speaker_name && block.meta.image_url
+              ? [{id:block.meta.speaker_character_id,name:block.meta.speaker_name,image_url:block.meta.image_url,emotion:null}] : []);
+            out.success(undefined,null,undefined,portraits);
           });
         } finally { ctx.queue.unregister(generationId);turn.dispose(); }
         return;

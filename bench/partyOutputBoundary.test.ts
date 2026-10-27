@@ -1,3 +1,6 @@
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { MessageEvents } from '../apps/web/src/components/EventRenderer.tsx';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -138,6 +141,28 @@ async function main() {
     await room(); const before = db.prepare('SELECT scene_json FROM conversations WHERE id=?').get(current); behavior = basic;
     db.exec("CREATE TRIGGER reject_complete BEFORE INSERT ON generation_log WHEN NEW.status='complete' BEGIN SELECT RAISE(ABORT,'synthetic log failure'); END");
     try { const r = await send(); assert.ok(r.body.includes('retract')); assert.equal(rows().length, 0); assert.deepEqual(db.prepare('SELECT scene_json FROM conversations WHERE id=?').get(current), before); } finally { db.exec('DROP TRIGGER reject_complete'); }
+  });
+  await test('failed private commit restores the existing branch head after transaction rollback', async () => {
+    await room('beat',true);behavior=basic;await send();const before=rows();const conv=db.prepare('SELECT head_message_id,scene_json FROM conversations WHERE id=?').get(current);
+    db.exec("CREATE TRIGGER reject_private_complete BEFORE INSERT ON generation_log WHEN NEW.status='complete' BEGIN SELECT RAISE(ABORT,'synthetic private commit failure'); END");
+    try {const r=await send({observation:{visibility:'private',recipient_ids:[a],observer_ids:[]}});assert.ok(r.body.includes('retract'));assert.deepEqual(rows(),before);assert.deepEqual(db.prepare('SELECT head_message_id,scene_json FROM conversations WHERE id=?').get(current),conv);}finally{db.exec('DROP TRIGGER reject_private_complete');}
+  });
+  for (const format of ['beat','dialog']) await test(`${format} generation preserves server-selected images and dialog continuation retains them`, async () => {
+    await room(format);behavior=basic;
+    const old=(db.prepare('SELECT scene_catalog FROM stories WHERE id=?').get(story) as any).scene_catalog;
+    db.prepare('UPDATE stories SET scene_catalog=? WHERE id=?').run(JSON.stringify({...JSON.parse(old),outfits:['default'],emotions:{calm:0}}),story);
+    db.prepare("UPDATE conversations SET scene_json=json_set(scene_json,'$.roster',json(?)) WHERE id=?").run(JSON.stringify({[a]:{outfit:'default',emotion:'calm'},[b]:{outfit:'default',emotion:'calm'}}),current);
+    try {
+      const expected=`/media/assets/${a}/default/0.webp`;const first=await send();assert.ok(!first.body.includes('retract'));assert.ok(rows().some(row=>row.meta_json.includes(expected)));
+      if(format==='dialog') {
+        const before=rows().length;const head=(db.prepare('SELECT head_message_id FROM conversations WHERE id=?').get(current) as any).head_message_id;
+        const next=await api('POST',`/api/conversations/${current}/continue`,{messageId:head});assert.equal(next.status,200);assert.ok(rows().slice(before).some(row=>row.meta_json.includes(expected)));
+      }
+    } finally {db.prepare('UPDATE stories SET scene_catalog=? WHERE id=?').run(old,story);}
+  });
+  await test('verified script preserves each actor portrait without repeating it on every line', () => {
+    const message:any={eventVersion:1,status:'complete',role:'assistant',meta:{party_output_version:1,chat_event_script:true,roster_portraits:[{id:a,name:'하린',image_url:'/assets/a.png',emotion:null},{id:b,name:'나린',image_url:'/assets/b.png',emotion:null}]},events:[{type:'dialogue',id:'1',actorId:a,actorName:'하린',text:GOOD},{type:'dialogue',id:'2',actorId:b,actorName:'나린',text:GOOD},{type:'dialogue',id:'3',actorId:a,actorName:'하린',text:GOOD}]};
+    const html=renderToStaticMarkup(React.createElement(MessageEvents,{message}));assert.equal((html.match(/src="\/assets\/a.png"/g)||[]).length,1);assert.equal((html.match(/src="\/assets\/b.png"/g)||[]).length,1);
   });
   await test('older tabs receive compatible terminal error without unknown retract event', async () => {
     await room();behavior = async (pass,p,emit) => {emit(`하린 | ${GOOD}\n`);throw new Error(BAD);};

@@ -910,7 +910,7 @@ export function chatRoutes(ctx: Ctx) {
           ...(userText.trim() ? [userAudience] : []),
           ...finished.blocks.filter(b => b.kind === 'narration' || b.kind === 'line').map(b => b.kind === 'narration' ? planInput.narration_audience : b.speaker_character_id ? actorAudience(planInput,b.speaker_character_id) : PUBLIC),
         ]) : null;
-        out.success(finished.scene,choices,{content:JSON.stringify(plan.ui),meta:{block_kind:'ui',...(portraits.length?{roster_portraits:portraits}:{}),...(choices&&context?{choices_context:context}:{})}});
+        out.success(finished.scene,choices,{content:JSON.stringify(plan.ui),meta:{block_kind:'ui',...(portraits.length?{roster_portraits:portraits}:{}),...(choices&&context?{choices_context:context}:{})}},portraits);
       });
       if (output.succeeded) void fireEndingEvalJob(ctx, conv.id);
       return;
@@ -1471,7 +1471,7 @@ export function chatRoutes(ctx: Ctx) {
     const secretRules = dialogSecretRules(db, convNow, history, plan.applied.state);
     if (outputGuard) {
       const output = new PartyOutput({ctx,reply,conv:convNow,generationId,parentId,restoreHead:conv.head_message_id,userMessage,controller,turn,guard:outputGuard,metrics,format:'dialog',
-        budget:{},commitScene(firstId,next){stampTurnScene(conv.id,firstId,scene,next);run(db,'UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?',JSON.stringify(next),nowIso(),nowIso(),conv.id);} });
+        budget:wireSource && built.party_context_diagnostics ? {party_context:wireLog([{pass:'S',diagnostics:built.party_context_diagnostics}])} : {},commitScene(firstId,next){stampTurnScene(conv.id,firstId,scene,next);run(db,'UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?',JSON.stringify(next),nowIso(),nowIso(),conv.id);} });
       await output.run(async out=>{
         out.header([plan.header,plan.info].filter(Boolean).join('\n'));
         const main=await out.request({pass:'S',params:{model,messages:built.messages,max_tokens:built.maxTokens,temperature:0.9,top_p:0.95,stop:[],audience:{kind:'public'}},
@@ -1489,7 +1489,9 @@ export function chatRoutes(ctx: Ctx) {
         }
         if(segmentSecretViolations(segments,plan.speakers,secretRules).length)throw new PrivateValidationError();
         const finished=finishDialogBeat(planInput,plan,main.text);
-        out.success(finished.scene,main.choices);
+        const portraits = finished.blocks.flatMap(block => block.kind === 'line' && block.speaker_character_id && block.speaker_name && block.asset_path
+          ? [{id:block.speaker_character_id,name:block.speaker_name,image_url:block.asset_path,emotion:block.emotion}] : []);
+        out.success(finished.scene,main.choices,undefined,portraits);
       });
       if (output.succeeded) void fireEndingEvalJob(ctx, conv.id);
       return;

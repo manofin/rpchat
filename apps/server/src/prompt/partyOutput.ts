@@ -98,9 +98,21 @@ export class PartyOutput {
   }
   private out(id: string) { return messageOut(this.o.ctx.db, one<MessageRow>(this.o.ctx.db, 'SELECT * FROM messages WHERE id = ?', id)!); }
   private atomic<T>(fn: () => T): T {
-    return this.o.ctx.db.transaction(() => {
-      this.o.controller.signal.throwIfAborted(); this.o.guard.check(this.head); return fn();
-    })();
+    const head = this.head;
+    const rowCount = this.rows.length;
+    const publicRows = [...this.publicRows];
+    try {
+      return this.o.ctx.db.transaction(() => {
+        this.o.controller.signal.throwIfAborted(); this.o.guard.check(this.head); return fn();
+      })();
+    } catch (error) {
+      // A rolled-back insert must also roll back the in-memory chain cursor.
+      this.head = head;
+      this.rows.splice(rowCount);
+      this.publicRows.clear();
+      publicRows.forEach(id => this.publicRows.add(id));
+      throw error;
+    }
   }
   private insert(content: string, status: MessageRow['status'], meta: MessageMeta): MessageRow {
     const row = insertMessage(this.o.ctx.db, this.o.conv.id, this.head, 'assistant', content, status, {
@@ -202,26 +214,33 @@ export class PartyOutput {
       return null;
     } finally { deadline.done(); }
   }
-  success(scene?: Scene, choices: string[] | null = null, tail?: { content: string; meta: MessageMeta }) {
+  success(scene?: Scene, choices: string[] | null = null, tail?: { content: string; meta: MessageMeta }, portraits: NonNullable<MessageMeta['roster_portraits']> = []) {
     if (!this.bodyCount) throw new PrivateValidationError();
     const heldIds: string[] = [];
     this.atomic(() => {
       if (!this.o.turn.tryEnterCommit({ sceneVersionAtStart: 0, currentSceneVersion: 0, expectedHead: this.head, currentHead: this.head })) throw new PrivateValidationError();
       for (const h of this.held) heldIds.push(this.insert(h.content, 'complete', h.meta).id);
       if (tail) heldIds.push(this.insert(tail.content, 'complete', tail.meta).id);
+      for (const id of this.rows) {
+        const meta = parseMessageMeta(one<MessageRow>(this.o.ctx.db, 'SELECT * FROM messages WHERE id=?', id)!.meta_json);
+        const portrait = portraits.find(p => p.id === meta.speaker_character_id);
+        if (portrait || (meta.chat_event_script && portraits.length)) updateMessage(this.o.ctx.db, id, {meta:{
+          ...(portrait ? {image_url:portrait.image_url} : {}), ...(meta.chat_event_script ? {roster_portraits:portraits} : {}),
+        }});
+      }
       if (choices?.length && this.head) updateMessage(this.o.ctx.db, this.head, { meta: { choices } });
       if (scene && this.o.commitScene) this.o.commitScene(this.rows[0], scene);
       this.log('complete', 'completed');
     });
     this.completed = true; this.done = true;
     this.held.length = 0;
-    for (const id of heldIds) this.send({ type: 'aux', message: this.out(id) });
+    for (const id of this.rows) this.send({ type: 'aux', message: this.out(id) });
     this.closeDone();
   }
   private log(status: string, termination: 'completed' | 'user_cancelled' | 'internal_error' | 'turn_deadline_exceeded' | 'model_timeout') {
     run(this.o.ctx.db, `INSERT INTO generation_log (id,conversation_id,message_id,profile_name,prompt_version,est_prompt_tokens,total_ms,finish_reason,status,budget_json,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
       uid(), this.o.conv.id, this.head, this.o.conv.profile_name, PROMPT_VERSION, 0, this.o.turn.elapsedMs(), this.o.format, status,
-      JSON.stringify({ ...this.o.budget, turn_deadline: this.o.turn.telemetry(), party_output_version: 1, ...(this.o.metrics ? { party_metrics: this.o.metrics.finish(termination) } : {}) }), nowIso());
+      JSON.stringify({ ...this.o.budget, turn_deadline: { ...this.o.turn.telemetry(), termination }, party_output_version: 1, ...(this.o.metrics ? { party_metrics: this.o.metrics.finish(termination) } : {}) }), nowIso());
   }
   private closeDone() {
     if (!this.head) return;
