@@ -129,6 +129,7 @@ export function useChat(conversationId: string) {
         if (event.type === 'done' && event.message.status === 'complete'
           && (state.detail?.conversation.mode === 'story' || state.detail?.conversation.scene.format === 'beat'
             || state.detail?.conversation.scene.format === 'dialog')) resync = true;
+        if (event.type === 'retract') resync = true;
         if (event.type === 'error') {
           failed = true;
           requestError = event.message;

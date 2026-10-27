@@ -1,3 +1,4 @@
+import { PartyOutput, OutputPermissionGuard, partyOutputEnabled, userVisibleRequests } from '../prompt/partyOutput.js';
 import { PartyMetrics, type CallMetric, type CallStatus } from '../model/partyMetrics.js';
 import { classifyTurnTermination, generationFailure, PrivateValidationError, turnTerminationMessage, type GenerationFailureCode } from '../model/generationFailure.js';
 import type { GenerationPhase } from '../model/queue.js';
@@ -717,6 +718,7 @@ export function chatRoutes(ctx: Ctx) {
     const turn = attachTurnDeadline(ctx, generationId, controller);
     const metrics = wireSource ? new PartyMetrics(turn.acceptedAtIso, () => turn.elapsedMs()) : null;
     const retractTurn = () => retractGeneration(conv, generationId, parentId, userMessage);
+    const outputGuard = partyOutputEnabled() ? new OutputPermissionGuard(ctx, convNow) : null;
     try {
 
     // Turn Pipeline step 2-4: propose → validate → apply. One short call; any
@@ -728,7 +730,7 @@ export function chatRoutes(ctx: Ctx) {
     let deltaMetric: CallMetric | undefined;
     try {
       // User cancel / turn deadline must reach the model call (partyGenerationLifecycle fence).
-      const deltaPrompt = renderSceneDeltaPrompt({ scene, catalog: { ...catalog, cast }, userText: project(userText, userAudience, GM, observationEnabled) });
+      const deltaPrompt = renderSceneDeltaPrompt({ scene, catalog: { ...catalog, cast }, userText: outputGuard && userAudience?.visibility === 'private' ? '' : project(userText, userAudience, GM, observationEnabled) });
       deltaMetric = metrics?.start('delta', estimateMessageTokens(deltaPrompt, getCalibration(db)), SCENE_DELTA_MAX_TOKENS);
       const proposal = await ctx.queue.runGeneration(generationId, () =>
         ctx.model.complete({
@@ -748,7 +750,7 @@ export function chatRoutes(ctx: Ctx) {
     } catch (err) {
       if (metrics && deltaMetric) metrics.fail(deltaMetric, metricFailure(controller, err, turn));
       // Let the outer pre-stream failure path reclaim and record the turn.
-      if (controller.signal.aborted || isTurnDeadlineError(err)) throw err;
+      if (outputGuard || controller.signal.aborted || isTurnDeadlineError(err)) throw err;
       clockParse = 'fail';
       req.log.warn({ err, conversationId: conv.id }, 'scene delta proposal failed; scene unchanged');
     }
@@ -867,6 +869,51 @@ export function chatRoutes(ctx: Ctx) {
         else throw failure;
       }
     };
+
+    if (outputGuard) {
+      const output = new PartyOutput({ ctx, reply, conv: convNow, generationId, parentId, restoreHead: conv.head_message_id,
+        userMessage, controller, turn, guard: outputGuard, metrics, format: 'beat',
+        budget: wireSource ? { party_context: wireLog(wireRequests) } : {},
+        commitScene(firstId, next) { stampTurnScene(conv.id, firstId, scene, next);
+          run(db, 'UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?', JSON.stringify(next), nowIso(), nowIso(), conv.id); },
+      });
+      await output.run(async out => {
+        if (plan.header) out.header(plan.header);
+        const gate = (allowed: CastMember[], max: number, single = false) => ({ allowed, roomCast: cast, userName: planInput.user_name || '나', allowNarration: !single,
+          outputMaxTokens: max, ...(single ? { singleActor: allowed[0] } : {}) });
+        const exposure = (audience: import('../prompt/observation.js').Audience) => audience.visibility === 'public' ? 'public_verified_stream' as const : 'private_hold_until_turn_success' as const;
+        const n = await out.request({ pass:'N', params:{model,messages:[{role:'user',content:fitObservationPass(input=>planBeat(input).pass_n,PASS_N_MAX_TOKENS,'')}],max_tokens:PASS_N_MAX_TOKENS,temperature:0.8,top_p:0.95,stop:[]},
+          gate:gate([],PASS_N_MAX_TOKENS), audience:planInput.narration_audience!,exposure:exposure(planInput.narration_audience!),hold:true,optional:true,timeoutMs:PASS_N_TIMEOUT_MS });
+        let focusText='';
+        const focus = cast.find(c=>c.id===plan.focus.focus_id);
+        if(focus && plan.pass_f) {
+          const prompt=fitObservationPass(input=>passFWith(input,plan,n.text)!+responseLengthHint(responseScene),focusMaxTokens,focus.name,focus.id);
+          const f=await out.request({pass:'F',params:{model,messages:[{role:'user',content:prompt}],max_tokens:focusMaxTokens,temperature:0.9,top_p:0.95,stop:[]},
+            gate:gate([focus],focusMaxTokens,true),audience:planInput.focus_audience!,exposure:exposure(planInput.focus_audience!),timeoutMs:config.model.timeoutMs});
+          focusText=f.text;
+        }
+        const extras:Record<string,string>={};
+        for(const e of planPassE(observationEnabled?{...planInput,observations:[]}:planInput,plan,n.text,speechObservation(focusText,planInput.focus_audience,observationEnabled))) {
+          const actor=cast.find(c=>c.id===e.character_id)!;
+          const audience=observationEnabled?actorAudience(planInput,actor.id):PUBLIC;
+          const prompt=fitObservationPass(input=>planPassE(input,plan,n.text,speechObservation(focusText,input.focus_audience,observationEnabled)).find(x=>x.character_id===actor.id)!.prompt,AUX_MAX_TOKENS,actor.name,actor.id);
+          const result=await out.request({pass:'E',params:{model,messages:[{role:'user',content:prompt}],max_tokens:AUX_MAX_TOKENS,temperature:0.85,top_p:0.95,stop:[]},
+            gate:gate([actor],AUX_MAX_TOKENS,true),audience,exposure:exposure(audience),timeoutMs:config.model.timeoutMs});
+          extras[actor.id]=result.text;
+        }
+        const finished=finishBeat(planInput,plan,{narration:n.text,focus_text:focusText,extra_texts:extras});
+        const choices=await out.choices({model,messages:[{role:'user',content:passCWith(planInput,finished)}],max_tokens:PASS_C_MAX_TOKENS,temperature:0.9,top_p:0.95,stop:[]},PASS_C_TIMEOUT_MS);
+        const portraits = finished.blocks.flatMap(block => block.kind === 'line' && block.speaker_character_id && block.speaker_name && block.asset_path
+          ? [{id:block.speaker_character_id,name:block.speaker_name,image_url:block.asset_path,emotion:block.emotion}] : []);
+        const context = observationEnabled ? choiceContext([
+          ...(userText.trim() ? [userAudience] : []),
+          ...finished.blocks.filter(b => b.kind === 'narration' || b.kind === 'line').map(b => b.kind === 'narration' ? planInput.narration_audience : b.speaker_character_id ? actorAudience(planInput,b.speaker_character_id) : PUBLIC),
+        ]) : null;
+        out.success(finished.scene,choices,{content:JSON.stringify(plan.ui),meta:{block_kind:'ui',...(portraits.length?{roster_portraits:portraits}:{}),...(choices&&context?{choices_context:context}:{})}});
+      });
+      if (output.succeeded) void fireEndingEvalJob(ctx, conv.id);
+      return;
+    }
 
     const profileName = convNow.profile_name;
     const sse = openSse(reply, metrics);
@@ -1361,6 +1408,7 @@ export function chatRoutes(ctx: Ctx) {
     const turn = attachTurnDeadline(ctx, generationId, controller);
     const metrics = wireSource ? new PartyMetrics(turn.acceptedAtIso, () => turn.elapsedMs()) : null;
     const retractTurn = () => retractGeneration(conv, generationId, parentId, userMessage);
+    const outputGuard = partyOutputEnabled() ? new OutputPermissionGuard(ctx, convNow) : null;
     try {
 
     // Scene delta — identical contract to the beat path, including the allow-list.
@@ -1391,7 +1439,7 @@ export function chatRoutes(ctx: Ctx) {
     } catch (err) {
       if (metrics && deltaMetric) metrics.fail(deltaMetric, metricFailure(controller, err, turn));
       // Let the outer pre-stream failure path reclaim and record the turn.
-      if (controller.signal.aborted || isTurnDeadlineError(err)) throw err;
+      if (outputGuard || controller.signal.aborted || isTurnDeadlineError(err)) throw err;
       clockParse = 'fail';
       req.log.warn({ err, conversationId: conv.id }, 'scene delta proposal failed; scene unchanged');
     }
@@ -1419,6 +1467,33 @@ export function chatRoutes(ctx: Ctx) {
     // between here and the finish below reads `scene_json` back.
 
     const secretRules = dialogSecretRules(db, convNow, history, plan.applied.state);
+    if (outputGuard) {
+      const output = new PartyOutput({ctx,reply,conv:convNow,generationId,parentId,restoreHead:conv.head_message_id,userMessage,controller,turn,guard:outputGuard,metrics,format:'dialog',
+        budget:{},commitScene(firstId,next){stampTurnScene(conv.id,firstId,scene,next);run(db,'UPDATE conversations SET scene_json = ?, updated_at = ?, last_message_at = ? WHERE id = ?',JSON.stringify(next),nowIso(),nowIso(),conv.id);} });
+      await output.run(async out=>{
+        out.header([plan.header,plan.info].filter(Boolean).join('\n'));
+        const main=await out.request({pass:'S',params:{model,messages:built.messages,max_tokens:built.maxTokens,temperature:0.9,top_p:0.95,stop:[],audience:{kind:'public'}},
+          gate:{allowed:plan.speakers,roomCast:planInput.cast,userName:planInput.user_name||'나',allowNarration:true,outputMaxTokens:built.maxTokens},
+          audience:PUBLIC,exposure:secretRules.length?'private_hold_until_turn_success':'public_verified_stream',timeoutMs:config.model.timeoutMs});
+        const segments:SecretSegment[]=[{audience:'public',text:main.text}];
+        for(const scoped of userVisibleRequests([...(built.narrator_request?[built.narrator_request]:[]),...built.actor_requests])) {
+          const actorId=scoped.audience.kind==='actor'?scoped.audience.actor_id:null;
+          const actor=actorId?plan.speakers.find(a=>a.id===actorId):undefined;
+          const audience=scoped.outputAudience;
+          const extra=await out.request({pass:'supplement',params:{model,messages:scoped.messages,max_tokens:scoped.maxTokens,temperature:0.7,top_p:0.95,stop:[],audience:scoped.audience},
+            gate:{allowed:actor?[actor]:[],roomCast:planInput.cast,userName:planInput.user_name||'나',allowNarration:!actor,outputMaxTokens:scoped.maxTokens},
+            audience,exposure:'private_hold_until_turn_success',timeoutMs:config.model.timeoutMs});
+          segments.push({audience:actor?`actor:${actor.id}`:'narrator',text:extra.text});
+        }
+        if(segmentSecretViolations(segments,plan.speakers,secretRules).length)throw new PrivateValidationError();
+        const finished=finishDialogBeat(planInput,plan,main.text);
+        out.success(finished.scene,main.choices);
+      });
+      if (output.succeeded) void fireEndingEvalJob(ctx, conv.id);
+      return;
+    }
+
+
     const profileName = convNow.profile_name;
     const sse = openSse(reply, metrics);
     ctx.queue.watchProgress(generationId, g => sse.send({ type: 'progress', generationId, phase: g.phase!, startedAt: g.startedAt }));

@@ -74,6 +74,12 @@ export function reduceChatEvent(state: ChatState, event: SseEvent, conversationI
     case 'aux':
       if (event.message.conversation_id !== conversationId) return state;
       return { ...state, messages: upsert(state.messages, event.message, true) };
+    case 'retract': {
+      const removed = new Set(event.messageIds);
+      return { ...state, messages: state.messages.filter(message => !removed.has(message.id)),
+        streamingId: null, generating: false, generationProgress: null,
+        error: '이번 응답이 철회되었습니다. 이전 장면을 불러옵니다.' };
+    }
     case 'error': {
       const id = event.messageId ?? state.streamingId;
       const settlesActive = !state.streamingId || id === state.streamingId;

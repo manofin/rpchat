@@ -267,6 +267,7 @@ export interface ConversationRow {
 export type MessageStatus = 'streaming' | 'complete' | 'interrupted' | 'error';
 
 export interface MessageMeta {
+  party_output_version?: 1;
   adventure_receipt?: { key: string; hash: string; action: import('@rpchat/contracts/adventure').AdventureAction };
   adventure_before?: Scene;
   continuation_of?: string;

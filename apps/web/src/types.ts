@@ -492,4 +492,5 @@ export type SseEvent =
   | { type: 'token'; text: string; eventVersion: 1; messageId: string; events: ChatEvent[] }
   | { type: 'done'; message: Message; usage: unknown; ttftMs: number | null; totalMs: number; budget?: SseBudget }
   | { type: 'aux'; message: Message }
+  | { type: 'retract'; generationId: string; messageIds: string[] }
   | { type: 'error'; message: string; messageId?: string; code?: GenerationFailureCode };
