@@ -33,6 +33,20 @@ export function project(text: string, audience: Audience | undefined, actor: str
   if (audience.visibility === 'public' || audience.recipient_ids.includes(actor)) return sanitizeGeneratedContent(text).trim();
   return audience.observer_ids.includes(actor) ? OBSERVATION : '';
 }
+
+/** Public output has an open audience; a private recipient list cannot grant it. */
+export function audienceAllowsOutput(input: Audience | undefined, output: Audience): boolean {
+  if (!input) return false;
+  if (input.visibility === 'public') return true;
+  return output.visibility === 'private' && output.recipient_ids.length > 0
+    && output.recipient_ids.every(id => input.recipient_ids.includes(id));
+}
+
+export function projectForOutput(text: string, input: Audience | undefined, output: Audience, enabled: boolean): string {
+  if (!enabled || audienceAllowsOutput(input, output)) return sanitizeGeneratedContent(text).trim();
+  if (input?.visibility !== 'private' || output.visibility !== 'private' || !output.recipient_ids.length) return '';
+  return output.recipient_ids.every(id => input.recipient_ids.includes(id) || input.observer_ids.includes(id)) ? OBSERVATION : '';
+}
 export function inheritedAudience(audiences: Array<Audience | undefined>, actor: string): Audience {
   const privateInputs = audiences.filter((a): a is Extract<Audience, {visibility:'private'}> => a?.visibility === 'private' && a.recipient_ids.includes(actor));
   if (!privateInputs.length) return PUBLIC;

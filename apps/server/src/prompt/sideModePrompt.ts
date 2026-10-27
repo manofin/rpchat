@@ -4,16 +4,21 @@ import { getPath } from '../db/tree.js';
 import type { SideMode } from '../db/sideMode.js';
 import type { ChatMessage, ConversationRow, MemoryRow, Scene, SummaryRow } from '../types.js';
 import { sanitizeGeneratedContent } from '../contracts/chatEventAdapter.js';
-import { audienceOf, GM, observationText, project } from './observation.js';
+import { audienceOf, audienceAllowsOutput, GM, USER, PUBLIC, observationText, projectForOutput, type Audience } from './observation.js';
 import { dialogContextSchema } from './dialogActorContext.js';
 import { loadStoryRoster } from './dialogContext.js';
 import { dialogHistory } from './dialogPrompt.js';
 import { getCalibration, estimateMessageTokens, estimateTokens, truncateToTokens } from './tokens.js';
 import { resolveStory } from './resolveStory.js';
-import { reduceRoleFacts, roleFactsForAudience } from './roleFacts.js';
+import { reduceRoleFacts } from './roleFacts.js';
 import { loadRoleEvents } from '../db/roleFacts.js';
+import { provenanceReader } from '../memory/provenance.js';
 
 export const SIDE_MODE_MAX_TOKENS = 1600;
+
+export function sideModeOutputAudience(mode: SideMode): Audience {
+  return mode === 'summary' ? { visibility: 'private', recipient_ids: [USER, GM], observer_ids: [] } : PUBLIC;
+}
 
 /** Public community is deliberately less privileged than the summary's GM view. */
 export function buildSideModePrompt(db: DB, conv: ConversationRow, mode: SideMode, prompt: string, contextTokens: number, roleEvents: readonly unknown[] = loadRoleEvents(db, conv.id)) {
@@ -22,6 +27,9 @@ export function buildSideModePrompt(db: DB, conv: ConversationRow, mode: SideMod
   const path = getPath(db, conv).filter(row => row.status === 'complete');
   const ids = new Set(path.map(row => row.id));
   const actor = mode === 'summary' ? GM : 'public-community';
+  const outputAudience = sideModeOutputAudience(mode);
+  const access = provenanceReader(db, new Map([[conv.id, ids]]));
+  const readableIds = new Set<string>();
   // Explicit private provenance remains private even if the room later disables its filter.
   const visible = path.map(row => {
     const audience = audienceOf(row);
@@ -29,28 +37,33 @@ export function buildSideModePrompt(db: DB, conv: ConversationRow, mode: SideMod
     // Public beat readers still receive only the speech observation proved by the main path.
     const text = scene.format === 'dialog' ? row.content : observationText(row, true, actor);
     const classifyLegacy = scene.format !== 'dialog' && scene.observation_filter === true;
-    return { ...row, content: project(text, audience, actor, Boolean(audience) || classifyLegacy) };
+    const enforced = Object.hasOwn(parseMessageMeta(row.meta_json), 'observation') || classifyLegacy;
+    const content = projectForOutput(text, audience, outputAudience, enforced);
+    // An existence notice does not authorize the source body or its derived facts.
+    if (content.trim() && (!enforced || audienceAllowsOutput(audience, outputAudience))) readableIds.add(row.id);
+    return { ...row, content };
   }).filter(row => row.content.trim());
-  const visibleIds = new Set(visible.map(row => row.id));
   const history = dialogHistory(db, visible, { includePrivate: true });
   const roster = loadStoryRoster(db, conv);
   const characterIds = new Set([conv.character_id, ...roster.map(row => row.id)]);
   // Internal server records only: authenticated routes assign keys, recorder and versions;
   // no model output is parsed into this event stream.
   // Reduce the complete branch before history truncation, then project its evidence.
-  const roleState = roleEvents.length ? roleFactsForAudience(reduceRoleFacts(roleEvents, {
-    conversationId: conv.id, pathIds: ids, visibleIds, actorIds: characterIds,
+  const roleState = roleEvents.length ? reduceRoleFacts(roleEvents, {
+    conversationId: conv.id, pathIds: ids, visibleIds: readableIds, actorIds: characterIds,
     speakerByMessage: new Map(path.flatMap(row => {
       const speaker = parseMessageMeta(row.meta_json).speaker_character_id;
       return row.role === 'assistant' && typeof speaker === 'string' ? [[row.id, speaker] as const] : [];
     })),
-  }), actor) : undefined;
+  }) : undefined;
+  const roleFacts = roleState?.facts.filter(f => audienceAllowsOutput(f.audience, outputAudience)) ?? [];
+  const roleIds = new Set(roleFacts.map(f => f.id));
   const actorName = (id: string) => id === 'user' ? '사용자' : sanitizeGeneratedContent(roster.find(row => row.id === id)?.name || id);
   const rolePacket = roleState ? {
-    facts: roleState.facts.map(f => ({ id: f.id, kind: f.kind, subject_id: f.subject_id,
+    facts: roleFacts.map(f => ({ id: f.id, kind: f.kind, subject_id: f.subject_id,
       description: sanitizeGeneratedContent(f.description), subject: actorName(f.subject_id), proposer: actorName(f.proposed_by), status: f.status,
       decision_by: f.decision_by, last_decision: f.last_decision })),
-    conflicts: roleState.conflicts.map(c => ({ ...c, speaker: actorName(c.speaker_id),
+    conflicts: roleState.conflicts.filter(c => roleIds.has(c.proposal_id)).map(c => ({ ...c, speaker: actorName(c.speaker_id),
       statement: sanitizeGeneratedContent(path.find(row => row.id === c.source_message_id)!.content) })),
   } : undefined;
   const assignments = dialogContextSchema.safeParse(scene.dialog_context);
@@ -58,9 +71,10 @@ export function buildSideModePrompt(db: DB, conv: ConversationRow, mode: SideMod
   const reserved = new Set(rawEntries.flatMap(entry => entry && typeof entry === 'object' && 'memory_id' in entry && typeof entry.memory_id === 'string' ? [entry.memory_id] : []));
   const approved: string[] = [];
   for (const m of many<MemoryRow>(db, `SELECT * FROM memories WHERE status = 'pinned' ORDER BY importance DESC, created_at`)) {
+    if (!access.canUse(m, 'memory', outputAudience)) continue;
     if (!(m.scope === 'conversation' && m.conversation_id === conv.id) && !(m.scope === 'character' && m.character_id && characterIds.has(m.character_id))) continue;
     const evidence = parseJson<unknown>(m.evidence_message_ids_json, []);
-    if (!Array.isArray(evidence) || evidence.some(id => typeof id !== 'string' || !visibleIds.has(id))) continue;
+    if (!Array.isArray(evidence) || evidence.some(id => typeof id !== 'string' || !readableIds.has(id))) continue;
     if (reserved.has(m.id)) {
       const entry = assignments.success ? assignments.data.entries.find(entry => entry.memory_id === m.id) : undefined;
       if (!entry || entry.status !== 'active' || !ids.has(entry.anchor_message_id)) continue;
@@ -70,10 +84,11 @@ export function buildSideModePrompt(db: DB, conv: ConversationRow, mode: SideMod
     approved.push(sanitizeGeneratedContent(m.content));
   }
   for (const s of many<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND status = 'approved' ORDER BY created_at DESC`, conv.id)) {
+    if (!access.canUse(s, 'summary', outputAudience)) continue;
     const from = s.covers_from_message_id ? path.findIndex(row => row.id === s.covers_from_message_id) : 0;
     const until = s.covers_until_message_id ? path.findIndex(row => row.id === s.covers_until_message_id) : -1;
     // An aggregate cannot be declassified merely because its last message was public.
-    if (from < 0 || until < from || !path.slice(from, until + 1).every(row => visibleIds.has(row.id))) continue;
+    if (from < 0 || until < from || !path.slice(from, until + 1).every(row => readableIds.has(row.id))) continue;
     approved.push(sanitizeGeneratedContent(s.content));
   }
   const rules = [

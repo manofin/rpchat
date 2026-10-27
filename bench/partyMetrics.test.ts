@@ -66,7 +66,7 @@ async function room(format: string, scoped = false) {
     const root = insertMessage(db, c.id, null, 'user', '비공개 기록 승인', 'complete'); setHead(db, c.id, root.id);
     const entries = [[cast[0].id], []].map((known_by, i) => {
       const mid = `${c.id}-${i}`;
-      db.prepare("INSERT INTO memories(id,conversation_id,content,source,status,importance,scope,evidence_message_ids_json,created_at,updated_at) VALUES(?,?,?,'manual','pinned',3,'conversation',?,'2026','2026')").run(mid, c.id, `SECRET_CANARY_${i}`, JSON.stringify([root.id]));
+      db.prepare("INSERT INTO memories(id,conversation_id,content,source,status,importance,scope,evidence_message_ids_json,created_at,updated_at) VALUES(?,?,?,'user','pinned',3,'conversation',?,'2026','2026')").run(mid, c.id, `SECRET_CANARY_${i}`, JSON.stringify([root.id]));
       return { memory_id: mid, anchor_message_id: root.id, kind: 'fact', known_by, status: 'active' };
     });
     await api('PATCH', `/api/conversations/${c.id}`, { scene: { dialog_context: { version: 1, entries }, pending_edit: { head_message_id: root.id } } });

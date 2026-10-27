@@ -1,3 +1,4 @@
+import { fixtureProvenance } from './helpers/derivedProvenanceFixture.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -43,8 +44,10 @@ async function main() {
   const baseHead = parent; setHead(db, c.id, baseHead);
   db.prepare(`INSERT INTO lorebooks (id, story_id, name, created_at) VALUES ('virtual-book', ?, 'fixture', '2026')`).run(story.id);
   db.prepare(`INSERT INTO lore_entries (id, lorebook_id, title, keywords_json, content) VALUES ('virtual-lore', 'virtual-book', 'fixture', '["CURRENT_KEYWORD"]', 'DRAFT_KEYWORD_LORE')`).run();
-  const addSummary = (tier: string, id: string, content: string, until: string, conversationId = c.id) => db.prepare(`INSERT INTO summaries (id, conversation_id, content, status, tier, covers_until_message_id, created_at)
+  const addSummary = (tier: string, id: string, content: string, until: string, conversationId = c.id) => { db.prepare(`INSERT INTO summaries (id, conversation_id, content, status, tier, covers_until_message_id, created_at)
     VALUES (?, ?, ?, 'approved', ?, ?, ?)`).run(id, conversationId, content, tier, until, id);
+    fixtureProvenance(db, 'summary', id, [until]);
+  };
   const compare = async (conversationId = c.id, maxTokens = 900, expectLore = true) => {
     const p = await api('GET', `/api/conversations/${conversationId}/prompt-preview?draft=${encodeURIComponent('나리, CURRENT_KEYWORD')}`);
     calls.length = 0; await api('POST', `/api/conversations/${conversationId}/messages`, { content: '나리, CURRENT_KEYWORD' });

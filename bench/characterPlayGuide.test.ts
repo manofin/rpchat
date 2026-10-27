@@ -13,6 +13,7 @@ import Fastify from 'fastify';
 import { characterRoutes } from '../apps/server/src/routes/characters.ts';
 import { openMigratedDb, one, run, uid, nowIso, setSetting } from '../apps/server/src/db/index.ts';
 import { buildPrompt } from '../apps/server/src/prompt/builder.ts';
+import { fixtureProvenance } from './helpers/derivedProvenanceFixture.js';
 import { PROMPT_VERSION } from '../apps/server/src/config.ts';
 import type { ConversationRow, MessageRow } from '../apps/server/src/types.ts';
 import {
@@ -255,6 +256,7 @@ async function runHttpAndPrompt(): Promise<void> {
     const personaId = uid();
     const convId = uid();
     const msgId = uid();
+    const sumId = uid();
     const lorebook = one<{ id: string }>(db, 'SELECT id FROM lorebooks WHERE character_id = ?', leakId);
     assert.ok(lorebook);
     run(
@@ -306,8 +308,9 @@ async function runHttpAndPrompt(): Promise<void> {
       db,
       `INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, status, created_at, tier)
        VALUES (?, ?, ?, ?, 'approved', ?, 'whole')`,
-      uid(), convId, 'SUM-PATH-C3-OK', msgId, tnow,
+      sumId, convId, 'SUM-PATH-C3-OK', msgId, tnow,
     );
+    fixtureProvenance(db, 'summary', sumId, [msgId]);
     run(
       db,
       `INSERT INTO lore_entries (id, lorebook_id, title, content, always_on, enabled, priority)

@@ -6,7 +6,7 @@ import { many, nowIso, one, run, uid } from '../db/index.js';
 import { getPath, messageOut, updateMessage } from '../db/tree.js';
 import { isSideModeMessage, sideModeVisible } from '../db/sideMode.js';
 import { createChatEventStream, sanitizeGeneratedContent } from '../contracts/chatEventAdapter.js';
-import { buildSideModePrompt, SIDE_MODE_MAX_TOKENS } from '../prompt/sideModePrompt.js';
+import { buildSideModePrompt, sideModeOutputAudience, SIDE_MODE_MAX_TOKENS } from '../prompt/sideModePrompt.js';
 import { loadProfile } from '../prompt/builder.js';
 import type { ConversationRow, MessageMeta, MessageRow } from '../types.js';
 
@@ -48,7 +48,7 @@ export function sideModeRoutes(ctx: Ctx) {
       const controller = new AbortController();
       const meta: MessageMeta = { side_mode: { mode, prompt, anchor_message_id: conv.head_message_id }, generation_id: generationId,
         block_kind: 'system', ooc: true, profile: conv.profile_name,
-        observation: mode === 'summary' ? { visibility: 'private', recipient_ids: ['user', 'gm'], observer_ids: [] } : { visibility: 'public' } };
+        observation: sideModeOutputAudience(mode) };
       // A side result is attached for deletion/provenance only. insertMessage would
       // also reorder the main conversation; no conversation column changes here.
       run(db, `INSERT INTO messages (id, conversation_id, parent_id, role, content, status, meta_json, bookmarked, created_at)

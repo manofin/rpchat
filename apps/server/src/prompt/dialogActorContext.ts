@@ -5,6 +5,8 @@ import { getPath } from '../db/tree.js';
 import type { ConversationRow, MemoryRow } from '../types.js';
 import { memoryEvidenceAllowed } from './contextSelection.js';
 import { estimateTokens } from './tokens.js';
+import { provenanceReader } from '../memory/provenance.js';
+import { PUBLIC, USER, GM, type Audience } from './observation.js';
 
 const id = z.string().min(1).max(100);
 const entrySchema = z.object({
@@ -104,6 +106,8 @@ export function buildActorContext(db: DB, conv: ConversationRow, pathIds: Set<st
     return { packet, text: '', tokens: 0, reservedIds };
   }
   const actorIds = new Set(actors.map(a => a.id));
+  const access = provenanceReader(db, new Map([[conv.id, pathIds]]));
+  const privateOutput = (id: string): Audience => ({ visibility: 'private', recipient_ids: [USER, id], observer_ids: [] });
   const entityIds = new Set([...actorIds, 'user']);
   const sourcePaths = new Map([[conv.id, pathIds]]);
   const sourcePath = (room: string) => {
@@ -126,7 +130,14 @@ export function buildActorContext(db: DB, conv: ConversationRow, pathIds: Set<st
     else if ((Array.isArray(e.known_by) && e.known_by.some(v => !actorIds.has(v))) || (e.subject_id && !entityIds.has(e.subject_id)) || (e.target_id && !entityIds.has(e.target_id))) reason = 'unknown-actor';
     if (reason) { packet.excluded.push({ memory_id: e.memory_id, reason }); continue; }
     const fact: Fact = { memory_id: e.memory_id, kind: e.kind, text: m!.content, ...(e.subject_id ? { subject_id: e.subject_id } : {}), ...(e.target_id ? { target_id: e.target_id } : {}) };
-    const holders = e.known_by === 'public' ? packet.actors : packet.actors.filter(a => e.known_by.includes(a.id));
+    if (e.known_by === 'public' && !access.canUse(m!, 'memory', PUBLIC)
+      || Array.isArray(e.known_by) && !e.known_by.length && !access.canUse(m!, 'memory', privateOutput(GM))) {
+      packet.excluded.push({ memory_id: e.memory_id, reason: 'source-audience' }); continue;
+    }
+    const holders = e.known_by === 'public' ? packet.actors : packet.actors.filter(a => e.known_by.includes(a.id) && access.canUse(m!, 'memory', privateOutput(a.id)));
+    if (Array.isArray(e.known_by) && e.known_by.length && !holders.length) {
+      packet.excluded.push({ memory_id: e.memory_id, reason: 'source-audience' }); continue;
+    }
     if (e.known_by === 'public') { packet.public_facts.push(fact); for (const a of holders) a.public_memory_ids.push(e.memory_id); }
     else if (!holders.length) packet.narrator_facts.push(fact);
     else for (const a of holders) a.facts.push(fact);

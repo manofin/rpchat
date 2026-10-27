@@ -1,3 +1,4 @@
+import { fixtureProvenance } from './helpers/derivedProvenanceFixture.js';
 // npm run test:benches -- sideModes
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -220,7 +221,8 @@ try {
       { memory_id: off.id, anchor_message_id: sibling.id, known_by: 'public', status: 'active', kind: 'fact' },
     ];
     run(db, 'UPDATE conversations SET scene_json = ? WHERE id = ?', JSON.stringify({ ...oldScene, dialog_context: { version: 1, entries } }), room.id);
-    run(db, `INSERT INTO summaries (id, conversation_id, content, covers_from_message_id, covers_until_message_id, status, tier, created_at) VALUES (?, ?, ?, ?, ?, 'approved', 'whole', ?)`, uid(), room.id, 'SAFE_APPROVED_SUMMARY', root.id, leaf.id, nowIso());
+    run(db, `INSERT INTO summaries (id, conversation_id, content, covers_from_message_id, covers_until_message_id, status, tier, created_at) VALUES (?, ?, ?, ?, ?, 'approved', 'whole', ?)`, 'safe-approved-summary', room.id, 'SAFE_APPROVED_SUMMARY', root.id, leaf.id, nowIso());
+    fixtureProvenance(db, 'summary', 'safe-approved-summary', [root.id, leaf.id]);
     for (const mode of ['summary', 'community'] as const) {
       const body = JSON.stringify(buildSideModePrompt(db, conv(room.id), mode, '', 10000).messages);
       assert.ok(body.includes('ASSIGNED_PUBLIC')); assert.ok(body.includes('SAFE_APPROVED_SUMMARY'));

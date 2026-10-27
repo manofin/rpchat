@@ -1,3 +1,4 @@
+import { fixtureProvenance } from './helpers/derivedProvenanceFixture.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -334,6 +335,7 @@ async function main() {
     assert.deepEqual(calls.find(v => v.max_tokens === 900)!.messages, p.messages);
     db.prepare(`INSERT INTO summaries (id, conversation_id, content, status, tier, covers_until_message_id, created_at)
       VALUES ('collision-summary', ?, 'COLLISION_SUMMARY', 'approved', 'whole', 'draft', '2026')`).run(c.id);
+    fixtureProvenance(db, 'summary', 'collision-summary', ['draft']);
     const stored = db.prepare('SELECT * FROM conversations WHERE id = ?').get(c.id) as any;
     const history = getPath(db, stored);
     const virtual = { ...history[0], id: 'draft', role: 'user' as const, content: 'VIRTUAL_CURRENT', prompt_preview_draft: true };

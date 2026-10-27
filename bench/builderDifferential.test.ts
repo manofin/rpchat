@@ -5,6 +5,8 @@
  * allocateSummaryBudget을 오라클로 쓰지 않는다.
  */
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { fixtureProvenance } from './helpers/derivedProvenanceFixture.js';
 import Database from 'better-sqlite3';
 import { migrateSummaryRelationFixture } from './helpers/summaryRelationFixture.ts';
 import type { DB } from '../apps/server/src/db/index.js';
@@ -27,7 +29,7 @@ function seed(): DB {
     INSERT INTO model_profiles VALUES ('rp-balanced',NULL,0.8,0.95,400,'[]','system',NULL);
     CREATE TABLE conversations (id TEXT PRIMARY KEY, character_id TEXT, persona_id TEXT, mode TEXT, profile_name TEXT, scene_json TEXT);
     INSERT INTO conversations VALUES ('conv1','c1','p1','story',NULL,'{}');
-    CREATE TABLE messages (id TEXT PRIMARY KEY, conversation_id TEXT, role TEXT, content TEXT, status TEXT, created_at TEXT);
+    CREATE TABLE messages (id TEXT PRIMARY KEY, conversation_id TEXT, role TEXT, content TEXT, status TEXT, created_at TEXT, meta_json TEXT DEFAULT '{}');
     CREATE TABLE memories (id TEXT PRIMARY KEY, conversation_id TEXT, character_id TEXT, content TEXT, source TEXT, status TEXT, importance INTEGER, scope TEXT, evidence_message_ids_json TEXT, created_at TEXT, updated_at TEXT);
     CREATE TABLE summaries (id TEXT PRIMARY KEY, conversation_id TEXT, content TEXT, covers_until_message_id TEXT, covers_from_message_id TEXT, status TEXT, created_at TEXT, tier TEXT, rolled_up_into TEXT);
     CREATE TABLE lorebooks (id TEXT PRIMARY KEY, character_id TEXT, story_id TEXT);
@@ -36,9 +38,10 @@ function seed(): DB {
     INSERT INTO settings VALUES ('token_calibration','1.0');
   `);
   migrateSummaryRelationFixture(db);
+  db.exec(fs.readFileSync('apps/server/migrations/0026_derived_provenance.sql', 'utf8'));
   // 메시지 60개 — created_at zero-pad (사전식 정렬 = 시간순). 최근 24창 = m37~m60.
-  const ins = db.prepare(`INSERT INTO messages VALUES (?,?,?,?,?,?)`);
-  for (let i = 1; i <= 60; i++) ins.run(`m${String(i).padStart(2, '0')}`, 'conv1', i % 2 ? 'user' : 'assistant', `대화 ${i}입니다.`, 'done', String(i).padStart(4, '0'));
+  const ins = db.prepare(`INSERT INTO messages(id,conversation_id,role,content,status,created_at) VALUES (?,?,?,?,?,?)`);
+  for (let i = 1; i <= 60; i++) ins.run(`m${String(i).padStart(2, '0')}`, 'conv1', i % 2 ? 'user' : 'assistant', `대화 ${i}입니다.`, 'complete', String(i).padStart(4, '0'));
   return db;
 }
 
@@ -46,6 +49,7 @@ type Row = Record<string, unknown>;
 function seedSummaries(db: DB, rows: Array<Partial<Row> & { tier: string }>) {
   const ins = db.prepare(`INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier, rolled_up_into) VALUES (?,?,?,?,?,?,?,?,?)`);
   rows.forEach((r, i) => ins.run(r.id ?? `s${i}`, 'conv1', r.content ?? '요약 본문입니다.', r.covers_until ?? null, r.covers_from ?? null, 'approved', r.created ?? String(i), r.tier, r.rolled_up_into ?? null));
+  rows.forEach((r, i) => fixtureProvenance(db, 'summary', String(r.id ?? `s${i}`), [String(r.covers_until ?? 'm01')]));
 }
 
 /** pre-wire 오라클 — builder.ts@35d0a01 L188~216의 episode/scene 결정 루프를 그대로 옮긴 것.

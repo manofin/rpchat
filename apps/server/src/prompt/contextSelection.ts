@@ -6,6 +6,7 @@ import { loreEntryMatch } from './loreMatch.js';
 import { MIN_EPISODE_TOKENS, SCENE_RECENT_GUARD, allocateSummaryBudget } from './summaryBudget.js';
 import { renderEpisode, renderLore, renderMemories, renderState, renderSummary } from './templates.js';
 import { promptPathIds, promptRecentIds } from './promptHistory.js';
+import { provenanceReader } from '../memory/provenance.js';
 const LORE_SCAN_MESSAGES = 6;
 /**
  * ADR §5 OR-by-union episode candidate SQL (prod path — never a single naive OR).
@@ -69,6 +70,7 @@ export function memoryEvidenceAllowed(db: DB, m: MemoryRow, sourcePath: (id: str
 
 export function selectContext(db: DB, conv: ConversationRow, history: MessageRow[], budgets: { lore: number; memory: number }, cal: number, opts?: { pathIds?: Set<string>; branchScoped?: boolean; strictBudget?: boolean; excludeMemoryIds?: ReadonlySet<string> }): SelectedContext {
   const pathIds = opts?.pathIds ?? promptPathIds(history);
+  const access = provenanceReader(db, new Map([[conv.id, pathIds]]));
   const sections: BudgetReport['sections'] = [];
   const sourcePaths = new Map<string, Set<string>>([[conv.id, pathIds]]);
   const sourcePath = (id: string) => {
@@ -80,17 +82,17 @@ export function selectContext(db: DB, conv: ConversationRow, history: MessageRow
     }
     return ids;
   };
-  const onBranch = (rows: SummaryRow[]) => opts?.branchScoped
-    ? rows.filter((r) => {
+  const onBranch = (rows: SummaryRow[]) => rows.filter(r => access.canUse(r, 'summary')).filter((r) => {
+      if (!opts?.branchScoped) return true;
       const ids = sourcePath(r.conversation_id);
       return (!r.covers_from_message_id || ids.has(r.covers_from_message_id)) && (!r.covers_until_message_id || ids.has(r.covers_until_message_id));
-    }) : rows;
+    });
   // Dialog limits eligible candidates, so newer sibling rows cannot starve an active summary.
   const localSummaryCandidates = (tier: 'whole' | 'state') => {
     const query = tier === 'whole'
       ? `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'whole' AND status = 'approved' ORDER BY created_at DESC LIMIT 5`
       : `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'state' AND status = 'approved' ORDER BY created_at DESC LIMIT 5`;
-    return onBranch(many<SummaryRow>(db, opts?.branchScoped ? query.replace(' LIMIT 5', '') : query, conv.id)).slice(0, 5);
+    return onBranch(many<SummaryRow>(db, query.replace(' LIMIT 5', ''), conv.id)).slice(0, 5);
   };
   // 2) 활성 로어: 최근 발화 키워드 매칭 (결정론적)
   //
@@ -159,6 +161,7 @@ export function selectContext(db: DB, conv: ConversationRow, history: MessageRow
   const memCap = Math.floor(budgets.memory * 0.5);
   for (const m of pinned) {
     if (opts?.excludeMemoryIds?.has(m.id)) continue;
+    if (!access.canUse(m, 'memory')) continue;
     if (opts?.branchScoped && !memoryEvidenceAllowed(db, m, sourcePath)) continue;
     const t = estimateTokens(`- ${m.content}`, cal);
     if (memEst + t > memCap) {
@@ -189,9 +192,7 @@ export function selectContext(db: DB, conv: ConversationRow, history: MessageRow
   const recentGuardIds = promptRecentIds(history, SCENE_RECENT_GUARD);
   // episode: 최신 approved 1건, 예약(상태 후 잔여의 35%), recentGuard 적용
   const episodeRow = pickEpisodeCandidate(
-    onBranch(opts?.branchScoped
-      ? many<SummaryRow>(db, `${episodeRelationInjectParts(conv.persona_id).unionSql} ORDER BY created_at DESC`, ...episodeRelationInjectBinds(conv))
-      : loadApprovedEpisodeCandidates(db, conv)).slice(0, 5),
+    onBranch(many<SummaryRow>(db, `${episodeRelationInjectParts(conv.persona_id).unionSql} ORDER BY created_at DESC`, ...episodeRelationInjectBinds(conv))).slice(0, 5),
     pathIds,
     conv.id,
   );
@@ -225,13 +226,11 @@ export function selectContext(db: DB, conv: ConversationRow, history: MessageRow
   let sceneEst = 0;
   if (sceneBudget > 0) {
     const scenes = many<SummaryRow>(db,
-      `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'scene' AND status = 'approved'
-         AND (rolled_up_into IS NULL OR rolled_up_into NOT IN (SELECT id FROM summaries WHERE tier = 'episode' AND status = 'approved'))
-       ORDER BY created_at DESC`,
+      `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'scene' AND status = 'approved' ORDER BY created_at DESC`,
       conv.id);
     // 헬퍼로 개별 장면 채택(recentGuard/pathIds/rollup 제외/최대 2/예산 break)을 계산한다.
     const approvedEpisodeIds = new Set(
-      many<{ id: string }>(db, `SELECT id FROM summaries WHERE conversation_id = ? AND tier = 'episode' AND status = 'approved'`, conv.id).map((r) => r.id),
+      onBranch(many<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'episode' AND status = 'approved'`, conv.id)).map((r) => r.id),
     );
     const sceneAlloc = allocateSummaryBudget({
       sumBudget: sceneBudget,

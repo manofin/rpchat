@@ -14,9 +14,19 @@ import { evidenceIdsForSlice, isSummarizeBlocked, sceneCoverRange } from './summ
 import type { CharacterRow, MemoryRow, SummaryRow, MessageRow } from '../types.js';
 import { loadConversation } from './conversations.js';
 import { dialogKnowledgeRoutes } from './dialogKnowledge.js';
+import { encodeProvenance, provenanceAfterEdit, provenanceReader, type ProvenanceSource } from '../memory/provenance.js';
+import { audienceAllowsOutput, type Audience } from '../prompt/observation.js';
+import { parseMessageMeta } from '../db/messageMeta.js';
 
-function memoryOut(m: MemoryRow) {
-  return { ...m, evidence_message_ids: parseJson<string[]>(m.evidence_message_ids_json, []) };
+const EDITOR_AUDIENCE: Audience = { visibility: 'private', recipient_ids: ['user'], observer_ids: [] };
+function generationAccess(db: Ctx['db'], row: MemoryRow | SummaryRow, kind: 'memory' | 'summary', reader = provenanceReader(db)) {
+  const audience = reader.audience(row, kind);
+  return audience ? { status: 'verified' as const, visibility: audience.visibility, can_summarize: audienceAllowsOutput(audience, EDITOR_AUDIENCE) }
+    : { status: 'withheld' as const, reason: '출처를 확인할 수 없어 새 답변에 사용하지 않아요. 원문에서 다시 요약해 주세요.' };
+}
+
+function memoryOut(m: MemoryRow, db: Ctx['db'], reader = provenanceReader(db)) {
+  return { ...m, evidence_message_ids: parseJson<string[]>(m.evidence_message_ids_json, []), generation_access: generationAccess(db, m, 'memory', reader) };
 }
 
 const memoryCreate = z.object({
@@ -118,10 +128,11 @@ export function memoryRoutes(ctx: Ctx) {
         `SELECT * FROM memories WHERE status IN ('pinned', 'candidate') AND (conversation_id = ? OR (scope = 'character' AND character_id = ?))
          ORDER BY status DESC, importance DESC, created_at`,
         conv.id, conv.character_id,
-      ).map(memoryOut);
+      );
+      const reader = provenanceReader(db);
       const withVerdict = rows.map((m) => {
         const v = classify(m, rows.filter((o) => o.id !== m.id));
-        return { ...memoryOut(m), conflict: v.kind !== 'new' ? v : null };
+        return { ...memoryOut(m, db, reader), conflict: v.kind !== 'new' ? v : null };
       });
       return { pinned: withVerdict.filter((m) => m.status === 'pinned'), candidates: withVerdict.filter((m) => m.status === 'candidate') };
     });
@@ -141,6 +152,14 @@ export function memoryRoutes(ctx: Ctx) {
       }
       if (!d.conversationId && !characterId) return reply.code(400).send({ error: 'conversationId 또는 characterId 필요' });
       const content = d.content.trim();
+      const reader = provenanceReader(db);
+      const sources: ProvenanceSource[] = [];
+      for (const id of d.evidenceMessageIds) {
+        const row = one<MessageRow>(db, 'SELECT * FROM messages WHERE id = ?', id);
+        const source = row && reader.messageSource(row, row.content, { includeOffBranch: true });
+        if (!source || !audienceAllowsOutput(source.audience, EDITOR_AUDIENCE)) return reply.code(400).send({ error: '이 기억의 근거를 확인할 수 없습니다.' });
+        sources.push(source);
+      }
       // Pin path: warn on Jaccard duplicate unless ?confirm=1 (HTTP 200 warn schema — never 409).
       if (d.status === 'pinned' && !wantsConfirm(req)) {
         const peers = memoryPeers(db, d.conversationId ?? null, characterId, null);
@@ -153,11 +172,11 @@ export function memoryRoutes(ctx: Ctx) {
       const t = nowIso();
       run(
         db,
-        `INSERT INTO memories (id, conversation_id, character_id, content, source, status, importance, scope, evidence_message_ids_json, created_at, updated_at)
-         VALUES (?, ?, ?, ?, 'user', ?, ?, ?, ?, ?, ?)`,
-        id, d.conversationId ?? null, characterId, content, d.status, d.importance, d.scope, JSON.stringify(d.evidenceMessageIds), t, t,
+        `INSERT INTO memories (id, conversation_id, character_id, content, source, status, importance, scope, evidence_message_ids_json, created_at, updated_at, input_provenance_json)
+         VALUES (?, ?, ?, ?, 'user', ?, ?, ?, ?, ?, ?, ?)`,
+        id, d.conversationId ?? null, characterId, content, d.status, d.importance, d.scope, JSON.stringify(d.evidenceMessageIds), t, t, encodeProvenance(content, sources, 'user-declared'),
       );
-      return reply.code(201).send(memoryOut(one<MemoryRow>(db, 'SELECT * FROM memories WHERE id = ?', id)!));
+      return reply.code(201).send(memoryOut(one<MemoryRow>(db, 'SELECT * FROM memories WHERE id = ?', id)!, db));
     });
 
     app.patch<{ Params: { id: string } }>('/api/memories/:id', async (req, reply) => {
@@ -178,10 +197,10 @@ export function memoryRoutes(ctx: Ctx) {
       }
       run(
         db,
-        'UPDATE memories SET content = COALESCE(?, content), scope = COALESCE(?, scope), importance = COALESCE(?, importance), status = COALESCE(?, status), updated_at = ? WHERE id = ?',
-        d.content?.trim() ?? null, d.scope ?? null, d.importance ?? null, d.status ?? null, nowIso(), m.id,
+        'UPDATE memories SET content = COALESCE(?, content), scope = COALESCE(?, scope), importance = COALESCE(?, importance), status = COALESCE(?, status), updated_at = ?, input_provenance_json = ? WHERE id = ?',
+        d.content?.trim() ?? null, d.scope ?? null, d.importance ?? null, d.status ?? null, nowIso(), provenanceAfterEdit(m, d.content?.trim() ?? m.content), m.id,
       );
-      const out = memoryOut(one<MemoryRow>(db, 'SELECT * FROM memories WHERE id = ?', m.id)!);
+      const out = memoryOut(one<MemoryRow>(db, 'SELECT * FROM memories WHERE id = ?', m.id)!, db);
       return out;
     });
 
@@ -194,7 +213,9 @@ export function memoryRoutes(ctx: Ctx) {
     // ---- 요약 ----
     app.get<{ Params: { id: string } }>('/api/conversations/:id/summaries', async (req, reply) => {
       if (!loadConversation(ctx, req.params.id)) return reply.code(404).send({ error: 'not found' });
-      return many<SummaryRow>(db, 'SELECT * FROM summaries WHERE conversation_id = ? ORDER BY created_at DESC', req.params.id);
+      const reader = provenanceReader(db);
+      return many<SummaryRow>(db, 'SELECT * FROM summaries WHERE conversation_id = ? ORDER BY created_at DESC', req.params.id)
+        .map(row => ({ ...row, generation_access: generationAccess(db, row, 'summary', reader) }));
     });
 
     app.patch<{ Params: { id: string } }>('/api/summaries/:id', async (req, reply) => {
@@ -213,7 +234,7 @@ export function memoryRoutes(ctx: Ctx) {
             s.conversation_id, s.created_at,
           );
         }
-        run(db, 'UPDATE summaries SET content = COALESCE(?, content), status = COALESCE(?, status) WHERE id = ?', p.data.content ?? null, p.data.status ?? null, s.id);
+        run(db, 'UPDATE summaries SET content = COALESCE(?, content), status = COALESCE(?, status), input_provenance_json = ? WHERE id = ?', p.data.content ?? null, p.data.status ?? null, provenanceAfterEdit(s, p.data.content ?? s.content), s.id);
       })();
       return one<SummaryRow>(db, 'SELECT * FROM summaries WHERE id = ?', s.id);
     });
@@ -236,8 +257,8 @@ export function memoryRoutes(ctx: Ctx) {
       const t = nowIso();
       run(
         db,
-        'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        id, s.conversation_id, s.content, s.covers_until_message_id, s.covers_from_message_id, 'approved', t, s.tier,
+        'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier, input_provenance_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        id, s.conversation_id, s.content, s.covers_until_message_id, s.covers_from_message_id, 'approved', t, s.tier, s.input_provenance_json ?? null,
       );
       return one<SummaryRow>(db, 'SELECT * FROM summaries WHERE id = ?', id);
     });
@@ -255,9 +276,11 @@ export function memoryRoutes(ctx: Ctx) {
       const userName = persona?.name || '나';
       const profile = loadProfile(db, 'summary');
       const cal = getCalibration(db);
-      const prev = one<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'whole' AND status = 'approved' ORDER BY created_at DESC LIMIT 1`, conv.id);
-
-      const path = getPath(db, conv).filter((m) => m.status !== 'error' && m.content.trim() && !isOocMessage(m));
+      const reader = provenanceReader(db);
+      const path = getPath(db, conv).filter((m) => m.status === 'complete' && m.content.trim() && !isOocMessage(m));
+      const pathIds = new Set(path.map(m => m.id));
+      const prev = many<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'whole' AND status = 'approved' ORDER BY created_at DESC`, conv.id)
+        .find(s => (!s.covers_from_message_id || pathIds.has(s.covers_from_message_id)) && (!s.covers_until_message_id || pathIds.has(s.covers_until_message_id)) && reader.canUse(s, 'summary', EDITOR_AUDIENCE));
       let start = 0;
       if (prev?.covers_until_message_id) {
         const idx = path.findIndex((m) => m.id === prev.covers_until_message_id);
@@ -268,17 +291,27 @@ export function memoryRoutes(ctx: Ctx) {
 
       const budget = Math.max(1024, config.model.contextTokens - profile.max_tokens - 1200);
       const lines: string[] = [];
+      const selected: MessageRow[] = [];
+      const sources: ProvenanceSource[] = [];
       let used = 0;
       for (let i = slice.length - 1; i >= 0; i--) {
         const m = slice[i];
-        const line = `${m.role === 'user' ? userName : character.name}: ${m.content}`;
+        const meta = parseMessageMeta(m.meta_json);
+        const speaker = meta.speaker_character_id ? one<CharacterRow>(db, 'SELECT * FROM characters WHERE id = ?', meta.speaker_character_id)?.name : undefined;
+        const line = `${m.role === 'user' ? userName : speaker ?? meta.speaker_name ?? character.name}: ${m.content}`;
+        const source = reader.messageSource(m, line);
+        if (!source || !audienceAllowsOutput(source.audience, EDITOR_AUDIENCE)) continue;
         const t = estimateTokens(line, cal);
         if (used + t > budget) break;
         lines.unshift(line);
+        selected.unshift(m); sources.unshift(source);
         used += t;
       }
+      if (!selected.length) return reply.code(422).send({ error: '허용된 요약 원문이 없거나 입력 한도를 초과했습니다.' });
       const transcript = lines.join('\n');
-      const prompt = renderSummaryPrompt(character.name, userName, prev ? truncateToTokens(prev.content, 600, cal) : null, transcript);
+      const previousText = prev ? truncateToTokens(prev.content, 600, cal) : null;
+      if (prev && previousText) sources.unshift(reader.summarySource(prev, previousText)!);
+      const prompt = renderSummaryPrompt(character.name, userName, previousText, transcript);
       const messages = profile.system_mode === 'merge'
         ? [{ role: 'user' as const, content: prompt }]
         : [{ role: 'system' as const, content: '당신은 역할극 기록을 정확하게 요약하는 편집자다. 요청된 JSON 만 출력한다.' }, { role: 'user' as const, content: prompt }];
@@ -301,12 +334,15 @@ export function memoryRoutes(ctx: Ctx) {
 
       const parsed = lenientJson(text) as { summary?: unknown; memories?: unknown; state?: unknown; scene?: unknown } | null;
       if (!parsed || typeof parsed.summary !== 'string') return reply.code(502).send({ error: '모델 출력을 JSON 으로 해석하지 못함', raw: text.slice(0, 2000) });
+      if (loadConversation(ctx, conv.id)?.head_message_id !== conv.head_message_id || !provenanceReader(db).unchanged(sources)) {
+        return reply.code(409).send({ error: '요약 도중 원문이나 분기가 바뀌었습니다. 다시 요약해 주세요.' });
+      }
 
       const t = nowIso();
       const sumId = uid();
       const stateId = uid();
-      const lastId = slice[slice.length - 1].id;
-      const [firstId] = evidenceIdsForSlice(slice);
+      const lastId = selected[selected.length - 1].id;
+      const evidence = evidenceIdsForSlice(selected);
       const sceneText = typeof parsed.scene === 'string' ? parsed.scene.trim() : '';
       const sceneId = uid();
       const created: string[] = [];
@@ -317,14 +353,14 @@ export function memoryRoutes(ctx: Ctx) {
         : null;
       const stateBullets = stateToBullets(stateObj);
       db.transaction(() => {
-        run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', sumId, conv.id, String(parsed.summary).trim(), lastId, null, 'draft', t, 'whole');
+        run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier, input_provenance_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', sumId, conv.id, String(parsed.summary).trim(), lastId, null, 'draft', t, 'whole', encodeProvenance(String(parsed.summary).trim(), sources));
         if (stateBullets) {
-          run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', stateId, conv.id, stateBullets, lastId, null, 'draft', t, 'state');
+          run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier, input_provenance_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', stateId, conv.id, stateBullets, lastId, null, 'draft', t, 'state', encodeProvenance(stateBullets, sources));
         }
         if (sceneText) {
-          const cover = sceneCoverRange(slice);
-          run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-              sceneId, conv.id, sceneText, cover.coversUntil, cover.coversFrom, 'draft', t, 'scene');
+          const cover = sceneCoverRange(selected);
+          run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier, input_provenance_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+              sceneId, conv.id, sceneText, cover.coversUntil, cover.coversFrom, 'draft', t, 'scene', encodeProvenance(sceneText, sources));
         }
         const mems = Array.isArray(parsed.memories) ? (parsed.memories as Array<Record<string, unknown>>) : [];
         for (const m of mems.slice(0, 8)) {
@@ -334,9 +370,9 @@ export function memoryRoutes(ctx: Ctx) {
           const id = uid();
           run(
             db,
-            `INSERT INTO memories (id, conversation_id, character_id, content, source, status, importance, scope, evidence_message_ids_json, created_at, updated_at)
-             VALUES (?, ?, ?, ?, 'model', 'candidate', ?, 'conversation', ?, ?, ?)`,
-            id, conv.id, conv.character_id, content, imp, JSON.stringify([firstId]), t, t,
+            `INSERT INTO memories (id, conversation_id, character_id, content, source, status, importance, scope, evidence_message_ids_json, created_at, updated_at, input_provenance_json)
+             VALUES (?, ?, ?, ?, 'model', 'candidate', ?, 'conversation', ?, ?, ?, ?)`,
+            id, conv.id, conv.character_id, content, imp, JSON.stringify(evidence), t, t, encodeProvenance(content, sources),
           );
           created.push(id);
         }
@@ -349,7 +385,7 @@ export function memoryRoutes(ctx: Ctx) {
         candidates: created.map((id) => {
           const m = one<MemoryRow>(db, 'SELECT * FROM memories WHERE id = ?', id)!;
           const v = classify(m, many<MemoryRow>(db, `SELECT * FROM memories WHERE status IN ('pinned','candidate') AND id != ?`, id));
-          return { ...memoryOut(m), conflict: v.kind !== 'new' ? v : null };
+          return { ...memoryOut(m, db), conflict: v.kind !== 'new' ? v : null };
         }),
         inputMessages: lines.length,
       };
@@ -362,7 +398,9 @@ export function memoryRoutes(ctx: Ctx) {
       const THRESHOLD = 5;
       const force = req.query.force === '1';
       const scenes = many<SummaryRow>(db, `SELECT * FROM summaries WHERE conversation_id = ? AND tier = 'scene' AND status = 'approved' AND rolled_up_into IS NULL ORDER BY created_at ASC`, conv.id);
-      const targets = scenes.slice(0, THRESHOLD);
+      const reader = provenanceReader(db);
+      const targets = scenes.filter(s => reader.canUse(s, 'summary', EDITOR_AUDIENCE)).slice(0, THRESHOLD);
+      const sources = targets.map(s => reader.summarySource(s, s.content)!);
       if (targets.length === 0) return reply.code(400).send({ error: '묶을 장면 없음' });
       if (targets.length < THRESHOLD && !force) return reply.code(400).send({ error: `묶을 장면이 부족 (${targets.length}/${THRESHOLD})` });
 
@@ -386,13 +424,16 @@ export function memoryRoutes(ctx: Ctx) {
       const parsed = lenientJson(text) as { episode?: unknown } | null;
       const episodeText = parsed && typeof parsed.episode === 'string' ? parsed.episode.trim() : '';
       if (!episodeText) return reply.code(502).send({ error: '모델 출력을 JSON 으로 해석하지 못함', raw: text.slice(0, 2000) });
+      if (loadConversation(ctx, conv.id)?.head_message_id !== conv.head_message_id || !provenanceReader(db).unchanged(sources)) {
+        return reply.code(409).send({ error: '요약 도중 원문이나 분기가 바뀌었습니다. 다시 요약해 주세요.' });
+      }
 
       const epId = uid();
       const t = nowIso();
       const coversFrom = targets[0].covers_from_message_id ?? targets[0].covers_until_message_id;
       const coversUntil = targets[targets.length - 1].covers_until_message_id;
       db.transaction(() => {
-        run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier, rel_character_id, rel_persona_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', epId, conv.id, episodeText, coversUntil, coversFrom, 'draft', t, 'episode', conv.character_id, conv.persona_id);
+        run(db, 'INSERT INTO summaries (id, conversation_id, content, covers_until_message_id, covers_from_message_id, status, created_at, tier, rel_character_id, rel_persona_id, input_provenance_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', epId, conv.id, episodeText, coversUntil, coversFrom, 'draft', t, 'episode', conv.character_id, conv.persona_id, encodeProvenance(episodeText, sources));
         run(db, `UPDATE summaries SET rolled_up_into = ? WHERE id IN (${targets.map(() => '?').join(',')})`, epId, ...targets.map((s) => s.id));
       })();
       return { episode: one<SummaryRow>(db, 'SELECT * FROM summaries WHERE id = ?', epId), rolledScenes: targets.map((s) => s.id) };

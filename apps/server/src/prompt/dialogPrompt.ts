@@ -44,14 +44,15 @@ export function dialogHistory(db: DB, history: MessageRow[], opts: { includePriv
   const out: MessageRow[] = [];
   let skipAssistant = false;
   for (const m of history) {
+    const meta = parseMessageMeta(m.meta_json);
+    const privateExcluded = !opts.includePrivate && meta.observation?.visibility === 'private';
     if (m.role === 'user') {
       skipAssistant = isOocMessage(m);
-      if (!skipAssistant && m.content.trim()) out.push(m);
+      if (!skipAssistant && !privateExcluded && m.content.trim()) out.push(m);
       continue;
     }
     if (skipAssistant) continue;
-    const meta = parseMessageMeta(m.meta_json);
-    if (!opts.includePrivate && meta.observation?.visibility === 'private') continue;
+    if (privateExcluded) continue;
     if (meta.block_kind && !['line', 'narration'].includes(meta.block_kind)) continue;
     const content = extractChoices(sanitizeGeneratedContent(m.content)).content.trim();
     if (!content) continue;
