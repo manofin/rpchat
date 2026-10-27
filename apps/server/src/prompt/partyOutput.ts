@@ -256,7 +256,10 @@ export class PartyOutput {
         const foreignChild = removed.length && one(this.o.ctx.db, 'SELECT id FROM messages WHERE parent_id IN (SELECT value FROM json_each(?)) AND id NOT IN (SELECT value FROM json_each(?)) LIMIT 1', JSON.stringify(removed), JSON.stringify(removed));
         if (!foreignChild) for (const id of [...removed].reverse()) run(this.o.ctx.db, 'DELETE FROM messages WHERE id=? AND conversation_id=?', id, this.o.conv.id);
       })();
-      this.send({ type: 'retract', generationId: this.o.generationId, messageIds: removed });
+      // Older open tabs only understand the existing error + authoritative GET flow.
+      if (this.o.reply.request.headers['x-rpchat-output-retract'] === '1') {
+        this.send({ type: 'retract', generationId: this.o.generationId, messageIds: removed });
+      }
       this.send({ type: 'error', code: term === 'user_cancelled' ? 'user_cancelled' : 'validation', message: term === 'user_cancelled' ? '생성을 중단했습니다.' : '이번 응답을 저장하지 못했습니다. 이전 장면으로 돌아갑니다.' });
     }
     this.log(keep ? 'interrupted' : 'error', term); this.done = true;

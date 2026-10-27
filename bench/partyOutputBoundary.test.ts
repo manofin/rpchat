@@ -39,7 +39,7 @@ let a: string, b: string, story: string;
 let count = 0;
 const rows = () => db.prepare('SELECT * FROM messages WHERE conversation_id=? ORDER BY rowid').all(current) as any[];
 const saved = () => JSON.stringify(rows());
-async function api(method: any, url: string, payload?: any) { const r = await app.inject({ method, url, payload }); return { status: r.statusCode, body: r.body, json: () => r.json() }; }
+async function api(method: any, url: string, payload?: any) { const r = await app.inject({ method, url, payload, headers: { 'x-rpchat-output-retract': '1' } }); return { status: r.statusCode, body: r.body, json: () => r.json() }; }
 async function room(format = 'dialog', filter = false) { const r = await api('POST', '/api/conversations', { characterId: a, storyId: story, mode: 'story' }); assert.equal(r.status, 201, r.body); current = r.json().id; const p = await api('PATCH', `/api/conversations/${current}`, { scene: { format, location: '합성실', present_ids: [a, b], observation_filter: filter } }); assert.equal(p.status, 200, p.body); calls = []; prompts = []; completeFailure = false; deltaFailure = false; return current; }
 const send = (extra = {}) => api('POST', `/api/conversations/${current}/messages`, { content: '하린, 대답해 주세요.', ...extra });
 const basic = async (pass: string, p: GenParams, emit: (s: string) => void) => { const text = pass === 'N' ? '고요한 방.\n' : pass === 'S' ? `하린 | ${GOOD}\n` : `${GOOD}\n`; emit(text); return result(text); };
@@ -138,6 +138,12 @@ async function main() {
     await room(); const before = db.prepare('SELECT scene_json FROM conversations WHERE id=?').get(current); behavior = basic;
     db.exec("CREATE TRIGGER reject_complete BEFORE INSERT ON generation_log WHEN NEW.status='complete' BEGIN SELECT RAISE(ABORT,'synthetic log failure'); END");
     try { const r = await send(); assert.ok(r.body.includes('retract')); assert.equal(rows().length, 0); assert.deepEqual(db.prepare('SELECT scene_json FROM conversations WHERE id=?').get(current), before); } finally { db.exec('DROP TRIGGER reject_complete'); }
+  });
+  await test('older tabs receive compatible terminal error without unknown retract event', async () => {
+    await room();behavior = async (pass,p,emit) => {emit(`하린 | ${GOOD}\n`);throw new Error(BAD);};
+    const response = await app.inject({method:'POST',url:`/api/conversations/${current}/messages`,payload:{content:'하린, 대답해 주세요.'}});
+    assert.ok(response.body.includes('"type":"error"'));assert.ok(!response.body.includes('"type":"retract"'));assert.equal(rows().length,0);
+    assert.equal((await api('GET',`/api/conversations/${current}`)).json().messages.length,0);
   });
   await test('model actor and narrator roles never imply player output permission', () => {
     assert.deepEqual(userVisibleRequests([{ audience: { kind: 'actor', actor_id: a, actor_name: '하린' } }, { audience: { kind: 'narrator' } }]), []);

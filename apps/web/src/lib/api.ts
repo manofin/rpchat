@@ -97,7 +97,7 @@ export async function streamPost(path: string, body: unknown, onEvent: (e: SseEv
   const res = await fetch(path, {
     method: 'POST',
     credentials: 'same-origin',
-    headers: { 'content-type': 'application/json', accept: 'text/event-stream', 'x-rpchat-generation-progress': '1' },
+    headers: { 'content-type': 'application/json', accept: 'text/event-stream', 'x-rpchat-generation-progress': '1', 'x-rpchat-output-retract': '1' },
     body: JSON.stringify(body),
     signal,
   });
